@@ -1,0 +1,8 @@
+{
+  "name": "ZenMaster: AI Article Generator for Dzen",
+  "description": "A powerful generator for Yandex Dzen articles featuring dramatic storytelling, emotional triggers, and AI-generated imagery.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
