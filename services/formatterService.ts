@@ -1,139 +1,113 @@
 /**
- * Formatter Service - Оформление текста для Яндекс.Дзен
- * Выделение заголовков, разделителей, автоматическое форматирование
+ * Formatter Service - Структурированное форматирование для Дзена
+ * НЕ использует Markdown (Дзен его не поддерживает)!
+ * Вместо этого возвращает JSON с информацией о позициях форматирования.
+ * Playwright потом применяет форматирование вручную через клики кнопок.
  */
 
-export interface FormattedArticle {
+export interface BoldRange {
+  start: number;  // символ с этой позиции
+  end: number;    // до этой позиции
+  reason: string; // "first_paragraph" | "keyword" | "user_selected"
+}
+
+export interface FormattingData {
+  bold_ranges: BoldRange[];
+  separators_after_line: number[];  // номера строк, после которых вставить разделитель
+  highlighted_keywords: string[];   // слова для выделения жирным
+}
+
+export interface StructuredArticle {
   title: string;
-  content: string;          // оформленный вывод
-  plainText: string;        // без форматирования
+  plainContent: string;  // СЫРОЙ текст, без любого форматирования!
+  formatting: FormattingData;
 }
 
 export class FormatterService {
   /**
-   * Автоматически форматирует текст для Дзена
+   * Форматирует статью в структурированный вид для Playwright
+   * ВАЖНО: НЕ вставляет Markdown! Возвращает информацию о позициях.
    */
-  formatArticle(title: string, content: string): FormattedArticle {
-    // Очистка текста
-    let formatted = content.trim();
-
-    // 1. Выделение первых слов в первом абзаце жирным
-    formatted = this.boldFirstSentence(formatted);
-
-    // 2. Добавление разделителей между абзацами
-    formatted = this.addSeparators(formatted);
-
-    // 3. Выделение ключевых слов
-    formatted = this.highlightKeywords(formatted);
-
-    // 4. Добавление кавычек и тире в диалогах
-    formatted = this.formatDialogues(formatted);
-
-    // 5. Оформление нумерации
-    formatted = this.formatNumbering(formatted);
-
-    // 6. Орматирование вывода абзацев
-    formatted = this.formatParagraphs(formatted);
-
-    // 7. Добавление вопроса в конце
-    formatted = this.addEndingQuestion(formatted);
+  formatArticleForDzen(title: string, content: string): StructuredArticle {
+    const plainContent = content.trim();
+    const formatting = this.extractFormattingData(plainContent);
 
     return {
-      title: this.formatTitle(title),
-      content: formatted,
-      plainText: content,
+      title: this.cleanTitle(title),
+      plainContent,
+      formatting,
     };
   }
 
   /**
-   * Оформление заголовка
+   * Извлекает информацию о форматировании из текста
    */
-  private formatTitle(title: string): string {
-    // При необходимости красивые сымволы
-    return title.trim().charAt(0).toUpperCase() + title.trim().slice(1);
+  private extractFormattingData(content: string): FormattingData {
+    const boldRanges = this.calculateBoldRanges(content);
+    const separatorsAfterLine = this.calculateSeparatorLines(content);
+    const highlightedKeywords = this.getKeywordsToHighlight();
+
+    return {
+      bold_ranges: boldRanges,
+      separators_after_line: separatorsAfterLine,
+      highlighted_keywords: highlightedKeywords,
+    };
   }
 
   /**
-   * Оформление диалогов с тире
-   * Трансформирует: - Говорит в – Говорит
+   * Вычисляет, какие части текста должны быть жирными
+   * Сейчас: первые 5-7 слов первого абзаца
    */
-  private formatDialogues(text: string): string {
-    // Используем долгое тире вместо короткого
-    return text.replace(/^\s*-\s+(говор|скаж)/gm, '– $1');
-  }
-
-  /**
-   * Наполняет порядок номерации
-   * 1. -> 1.
-   * 2. -> 2.
-   */
-  private formatNumbering(text: string): string {
-    let counter = 1;
-    return text.replace(/^\d+\.\s+/gm, () => `${counter++}. `);
-  }
-
-  /**
-   * Выделяет жирным первые 5-7 слов первого абзаца
-   */
-  private boldFirstSentence(text: string): string {
-    const lines = text.split('\n');
-    if (lines.length === 0) return text;
+  private calculateBoldRanges(content: string): BoldRange[] {
+    const lines = content.split('\n');
+    if (lines.length === 0) return [];
 
     const firstParagraph = lines[0];
     const words = firstParagraph.split(' ');
-    const boldWords = Math.min(7, Math.ceil(words.length * 0.4)); // Первые 40% слов
+    const wordsToMakeBold = Math.min(7, Math.ceil(words.length * 0.4));
 
-    // В Яндекс.Дзене для жирного можно использовать **
-    const boldedWords = words
-      .slice(0, boldWords)
-      .map(w => `**${w}**`)
-      .join(' ');
-    const restWords = words.slice(boldWords).join(' ');
+    let charCount = 0;
+    const ranges: BoldRange[] = [];
 
-    lines[0] = `${boldedWords} ${restWords}`;
-    return lines.join('\n');
+    for (let i = 0; i < wordsToMakeBold; i++) {
+      const word = words[i];
+      const start = charCount;
+      const end = charCount + word.length;
+
+      ranges.push({
+        start,
+        end,
+        reason: 'first_paragraph',
+      });
+
+      charCount = end + 1; // +1 на пробел
+    }
+
+    return ranges;
   }
 
   /**
-   * Добавляет разделители между абзацами
-   * Один ис пяти делится разделителем
+   * Вычисляет, после каких строк нужно вставлять разделители
+   * Каждый 4-й абзац
    */
-  private addSeparators(text: string): string {
-    const paragraphs = text.split('\n\n');
-    
-    // Добавляем разделитель каждые 3-4 абзаца
-    const withSeparators = paragraphs.map((para, index) => {
-      if (index > 0 && index % 4 === 0) {
-        return `---\n${para}`; // Новая строка и разделитель
+  private calculateSeparatorLines(content: string): number[] {
+    const paragraphs = content.split('\n\n');
+    const separators: number[] = [];
+
+    for (let i = 0; i < paragraphs.length; i++) {
+      if (i > 0 && i % 4 === 0) {
+        separators.push(i);
       }
-      return para;
-    });
+    }
 
-    return withSeparators.join('\n\n');
+    return separators;
   }
 
   /**
-   * Оформляет абзацы со специальным выставлением
+   * Список ключевых слов, которые нужно выделить жирным
    */
-  private formatParagraphs(text: string): string {
-    return text
-      .split('\n')
-      .map(line => {
-        // Не добавляем отступ к пустым строкам
-        if (!line.trim()) return line;
-        // Оформление с отступом
-        return `  ${line}`;
-      })
-      .join('\n');
-  }
-
-  /**
-   * Находит и выделяет ключевые слова
-   * Ключевые слова выносятся в пронъсые **
-   */
-  private highlightKeywords(text: string): string {
-    // Ключевые слова для выделения
-    const keywords = [
+  private getKeywordsToHighlight(): string[] {
+    return [
       'справедливость',
       'добро',
       'зло',
@@ -142,38 +116,63 @@ export class FormatterService {
       'квартира',
       'деньги',
       'возмездие',
+      'мама',
+      'свекровь',
+      'сын',
+      'дочь',
+      'родители',
+      'дом',
+      'имущество',
+      'миллион',
+      'подарок',
+      'подлость',
+      'ложь',
     ];
-
-    let result = text;
-    for (const keyword of keywords) {
-      // Не выделяем если уже выделено
-      const regex = new RegExp(`(?<!\\*\\*)${keyword}(?!\\*\\*)`, 'gi');
-      result = result.replace(regex, `**${keyword}**`);
-    }
-
-    return result;
   }
 
   /**
-   * Добавляет вопрос в конце для вовлечения рчитателей
+   * Очищает заголовок
    */
-  private addEndingQuestion(text: string): string {
-    const questions = [
-      '\n\nА вы что думаете? Правильно ли чините?',
-      '\n\nОт чего бы вы так не сделали? Напишите мне в комментариях.',
-      '\n\nКак вы чините эту ситуацию? Пделитесь сними в комментариях.',
-      '\n\nКто по вашему мнению неправ в этой истории?',
-    ];
+  private cleanTitle(title: string): string {
+    return title.trim().charAt(0).toUpperCase() + title.trim().slice(1);
+  }
 
-    // Выбираем случайный вопрос
-    const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-    
-    // Проверяем не добавлен ли он уже
-    if (!text.endsWith('?')) {
-      return text + randomQuestion;
+  /**
+   * Преобразует массив диапазонов в набор позиций (для удобства Playwright)
+   * Возвращает список { start, end, length } для каждого диапазона
+   */
+  getBoldSelections(plainContent: string, boldRanges: BoldRange[]) {
+    return boldRanges.map(range => ({
+      start: range.start,
+      end: range.end,
+      length: range.end - range.start,
+      text: plainContent.substring(range.start, range.end),
+    }));
+  }
+
+  /**
+   * Находит позиции ключевых слов в тексте
+   */
+  findKeywordPositions(
+    plainContent: string,
+    keywords: string[]
+  ): Array<{ word: string; start: number; end: number }> {
+    const positions: Array<{ word: string; start: number; end: number }> = [];
+
+    for (const keyword of keywords) {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      let match;
+
+      while ((match = regex.exec(plainContent)) !== null) {
+        positions.push({
+          word: keyword,
+          start: match.index,
+          end: match.index + keyword.length,
+        });
+      }
     }
 
-    return text;
+    return positions;
   }
 }
 
