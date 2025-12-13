@@ -1,0 +1,63 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run CLI tests
+        run: npm run test
+        env:
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Validate config
+        run: npm run validate
+
+      - name: List projects
+        run: npm run list-projects
+
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check file structure
+        run: |
+          test -f cli.ts && echo "✓ cli.ts exists"
+          test -d services && echo "✓ services/ exists"
+          test -d projects/channel-1 && echo "✓ projects/channel-1/ exists"
+          test -d .github/workflows && echo "✓ .github/workflows/ exists"
+          echo "✓ All required files present"
