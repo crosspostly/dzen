@@ -1,23 +1,30 @@
 {
-  "name": "zenmaster:-ai-article-generator-for-dzen",
+  "name": "zenmaster-ai-article-generator-for-dzen",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate": "tsx cli.ts generate",
+    "validate": "tsx cli.ts validate",
+    "list-projects": "tsx cli.ts list-projects",
+    "test": "tsx cli.ts test",
+    "test:full": "npm run test && npm run validate && npm run list-projects"
   },
   "dependencies": {
     "react": "^19.2.3",
     "@google/genai": "^1.33.0",
     "react-dom": "^19.2.3",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "natural": "^6.11.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "tsx": "^4.7.0"
   }
 }
