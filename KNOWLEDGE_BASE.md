@@ -7,6 +7,8 @@
 
 ## 📁 channel-1
 
+## 📁 examples
+
 ## 📁 services
 
 ## 📁 ПРОМТЫ
