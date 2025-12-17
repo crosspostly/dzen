@@ -85,3 +85,48 @@ export interface LongFormArticle {
     dialogueCount: number;
   };
 }
+
+// ============================================================================
+// PHASE 2: ANTI-DETECTION COMPONENTS
+// ============================================================================
+
+export interface PerplexityMetrics {
+  score: number;                   // 1.0-5.0 (higher = more entropy)
+  wordFrequency: Map<string, number>;
+  rarityRatio: number;             // 0-1 (higher = more rare words)
+}
+
+export interface BurstinessMetrics {
+  standardDeviation: number;       // Std dev of sentence lengths
+  minLength: number;
+  maxLength: number;
+  variance: number;
+  distribution: "uniform" | "balanced" | "bursty";
+}
+
+export interface SkazMetrics {
+  particleCount: number;           // Count of Russian particles
+  syntaxDislocations: number;      // Non-standard word order instances
+  dialectalWords: number;          // Count of non-standard lexicon
+  score: number;                   // 0-100
+}
+
+export interface AdversarialScore {
+  perplexity: number;              // 0-100
+  burstiness: number;              // 0-100
+  skazRussianness: number;         // 0-100
+  contentLength: number;           // 0-100
+  noClichés: number;               // 0-100
+  overallScore: number;            // 0-100
+  passesAllChecks: boolean;        // ≥80 = ready to publish
+  issues: string[];                // List of issues found
+}
+
+export interface SanitizedImage {
+  originalPath: string;
+  processedPath: string;
+  metadataRemoved: boolean;
+  noiseAdded: boolean;
+  noiseLevel: number;              // 2-5% (percentage)
+  timestamp: number;
+}
