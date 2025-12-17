@@ -12,6 +12,9 @@ on:
       - '.github/workflows/merge-to-markdown.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   merge:
     runs-on: ubuntu-latest
