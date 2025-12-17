@@ -25,10 +25,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Select random theme
+        id: theme_selector
+        run: |
+          themes=(
+            "I learned the truth about my father after many years"
+            "They didn't believe in my dream"
+            "One conversation changed everything"
+            "I left silently and never regretted it"
+            "I endured this in silence for 20 years"
+            "My neighbor brought a pie and shared a secret"
+            "I opened a letter and realized I wasn't living my own life"
+            "My daughter asked me directly and I couldn't lie"
+            "We didn't speak for months, then she came in the evening"
+            "I arrived for five minutes and left as a different person"
+          )
+          RANDOM_THEME=${themes[$((RANDOM % ${#themes[@]}))]}
+          echo "theme=$RANDOM_THEME" >> $GITHUB_OUTPUT
+          echo "📝 Selected theme: $RANDOM_THEME"
+      
       - name: Generate article for Dzen Women 35-60
         run: |
           npx tsx cli.ts generate:v2 \
-            --dzen-channel=women-35-60
+            --dzen-channel=women-35-60 \
+            --theme="${{ steps.theme_selector.outputs.theme }}"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -37,13 +57,13 @@ jobs:
         run: |
           git config --local user.email "zenmaster-bot@github.com"
           git config --local user.name "ZenMaster Bot"
-          git add generated/dzen/
-          git commit -m "[AUTO] Dzen article" || echo "No changes"
-          git push origin feature/zenmaster-v2.0
+          git add generated/dzen/ || true
+          git commit -m "🎬 [AUTO] Generated Dzen article" || echo "No changes"
+          git push origin feature/zenmaster-v2.0 || true
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
-        if: success()
+        if: always()
         with:
           name: dzen-article-${{ github.run_id }}
           path: generated/dzen/
