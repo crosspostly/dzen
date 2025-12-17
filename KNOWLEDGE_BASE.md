@@ -383,7 +383,7 @@ curl -X POST https://api.github.com/repos/crosspostly/dzen/actions/workflows/gen
 
 - **Phase 1 (Generation)**: 60–90 seconds typical
   - 10–15s: Outline generation (Gemini 2.5 Flash)
-  - 45–75s: 12× parallel episodes (Gemini 2.5-Flash)
+  - 45–75s: 12× parallel episodes (Gemini 2.5 Flash)
   
 - **Phase 2 (Anti-Detection)**: 30–60 seconds
   - Perplexity + Burstiness + Skaz + Validation
@@ -7483,7 +7483,7 @@ npm run generate:v2 -- --theme="Your theme"
 
 ### 🔧 Technical
 - **Stage 0**: Outline (Gemini 2.5 Flash)
-- **Stage 1**: Episodes (12× Gemini 2.5-Flash in parallel)
+- **Stage 1**: Episodes (12× Gemini 2.5 Flash in parallel)
 - **Future**: Montage, Humanization, Quality Control
 
 ---
@@ -7497,7 +7497,7 @@ npm run generate:v2 -- --theme="Your theme"
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
-│ Stage 1: Parallel Draft             │ ← 12× Gemini 2.5-Flash
+│ Stage 1: Parallel Draft             │ ← 12× Gemini 2.5 Flash
 │ (12 episodes simultaneously)        │   5-7 minutes
 │ + Context Manager                   │
 └──────────────┬──────────────────────┘
@@ -9698,12 +9698,12 @@ function calculateBurstiness(text: string): BurstinessScore {
   };
 }
 B. Secondary Detection Markers
-Marker    AI-Text    Human-Text    Detection Method
-Lexical Diversity    Limited vocabulary, word repetition    Varied vocabulary, synonyms, dialectisms    Type-Token Ratio (TTR)
-Stopwords Pattern    "thus", "therefore", "in conclusion", "consider"    "so", "basically", "listen", "you know"    Keyword frequency analysis
-Emotional Consistency    Flat affect, uniform tone throughout    Emotional spikes, varied tone, exclamations    Sentiment analysis per segment
-Factual Accuracy    Logically consistent but potentially inaccurate    May have contradictions (like real life)    Cross-reference validation
-Personal Context    Absent or generated context    Specific details: smells, sounds, people    Named entity recognition + specificity
+Marker	AI-Text	Human-Text	Detection Method
+Lexical Diversity	Limited vocabulary, word repetition	Varied vocabulary, synonyms, dialectisms	Type-Token Ratio (TTR)
+Stopwords Pattern	"thus", "therefore", "in conclusion", "consider"	"so", "basically", "listen", "you know"	Keyword frequency analysis
+Emotional Consistency	Flat affect, uniform tone throughout	Emotional spikes, varied tone, exclamations	Sentiment analysis per segment
+Factual Accuracy	Logically consistent but potentially inaccurate	May have contradictions (like real life)	Cross-reference validation
+Personal Context	Absent or generated context	Specific details: smells, sounds, people	Named entity recognition + specificity
 II. SYSTEM ARCHITECTURE: TWO-STAGE GENERATION PIPELINE
 Stage 1: Plot Generation (Raw Narrative)
 Input: User brief (topic, angle, target emotion)
