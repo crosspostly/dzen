@@ -1,0 +1,136 @@
+name: ZenMaster v2.0 - Generate Every 3 Hours
+
+on:
+  schedule:
+    # Генерация каждые 3 часа: 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 UTC
+    - cron: '0 0,3,6,9,12,15,18,21 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate-article:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: feature/zenmaster-v2.0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Select random theme
+        id: theme_selector
+        run: |
+          # Массив тем для генерации
+          themes=(
+            "Я много лет не знала правду об отце"
+            "Они не верили в мою мечту"
+            "Один разговор всё изменил"
+            "Я ушла молча и не пожалела"
+            "20 лет я терпела это молча"
+            "Соседка принесла пирог и рассказала тайну"
+            "Я открыла письмо и поняла, что живу не своей жизнью"
+            "Дочь спросила меня прямо и я не смогла соврать"
+            "Мы не разговаривали месяцы, а потом она пришла вечером"
+            "Я приехала на пять минут и уехала другим человеком"
+          )
+          
+          # Случайная тема
+          RANDOM_THEME=${themes[$((RANDOM % ${#themes[@]}))]}
+          
+          # Случайные параметры
+          angles=("confession" "scandal" "observer")
+          emotions=("triumph" "guilt" "shame" "liberation" "anger")
+          
+          ANGLE=${angles[$((RANDOM % ${#angles[@]}))]}
+          EMOTION=${emotions[$((RANDOM % ${#emotions[@]}))]}
+          
+          echo "theme=$RANDOM_THEME" >> $GITHUB_OUTPUT
+          echo "angle=$ANGLE" >> $GITHUB_OUTPUT
+          echo "emotion=$EMOTION" >> $GITHUB_OUTPUT
+          echo "audience=Women 35-60" >> $GITHUB_OUTPUT
+          
+          echo "📝 Selected theme: $RANDOM_THEME"
+          echo "🎯 Angle: $ANGLE"
+          echo "💫 Emotion: $EMOTION"
+      
+      - name: Generate longform article
+        run: |
+          npx ts-node cli.ts generate:v2 \
+            --theme="${{ steps.theme_selector.outputs.theme }}" \
+            --angle="${{ steps.theme_selector.outputs.angle }}" \
+            --emotion="${{ steps.theme_selector.outputs.emotion }}" \
+            --audience="${{ steps.theme_selector.outputs.audience }}"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      
+      - name: Create output directory
+        run: mkdir -p generated/articles
+      
+      - name: Save article metadata
+        run: |
+          TIMESTAMP=$(date -u +'%Y-%m-%d_%H-%M-%S')
+          cat > "generated/articles/article_${TIMESTAMP}.json" << 'EOF'
+          {
+            "theme": "${{ steps.theme_selector.outputs.theme }}",
+            "angle": "${{ steps.theme_selector.outputs.angle }}",
+            "emotion": "${{ steps.theme_selector.outputs.emotion }}",
+            "audience": "${{ steps.theme_selector.outputs.audience }}",
+            "generatedAt": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
+            "trigger": "scheduled-3-hour",
+            "workflowRun": "${{ github.run_id }}"
+          }
+          EOF
+          echo "✅ Metadata saved to generated/articles/article_${TIMESTAMP}.json"
+      
+      - name: Commit and push
+        run: |
+          git config --local user.email "zenmaster-bot@github.com"
+          git config --local user.name "ZenMaster Automated Bot"
+          
+          git add generated/
+          git commit -m "🎬 [AUTO] Generated article: ${{ steps.theme_selector.outputs.theme }} [${{ steps.theme_selector.outputs.angle }}]" || echo "No changes to commit"
+          git push origin feature/zenmaster-v2.0
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: generated-article-${{ github.run_id }}
+          path: generated/articles/
+          retention-days: 90
+      
+      - name: Create workflow summary
+        run: |
+          cat > $GITHUB_STEP_SUMMARY << 'EOF'
+          ## 🎬 ZenMaster v2.0 Generation Summary
+          
+          **Theme**: ${{ steps.theme_selector.outputs.theme }}
+          **Angle**: ${{ steps.theme_selector.outputs.angle }}
+          **Emotion**: ${{ steps.theme_selector.outputs.emotion }}
+          **Audience**: ${{ steps.theme_selector.outputs.audience }}
+          
+          **Generated at**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          **Workflow ID**: ${{ github.run_id }}
+          **Branch**: feature/zenmaster-v2.0
+          
+          ### Generated Files
+          - ✅ Metadata saved
+          - 📝 Article generated
+          - 🔄 Committed to branch
+          
+          EOF
+      
+      - name: On failure notification
+        if: failure()
+        run: |
+          echo "❌ Generation failed for theme: ${{ steps.theme_selector.outputs.theme }}"
+          echo "Check workflow logs at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
