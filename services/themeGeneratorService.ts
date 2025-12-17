@@ -1,0 +1,183 @@
+/**
+ * Theme Generator Service
+ * Generates NEW unique themes based on real top articles from GitHub CSV
+ * Uses Gemini API to create variations that ensure every run generates different themes
+ */
+
+import { GoogleGenAI } from "@google/genai";
+import https from "https";
+
+const LOG = {
+  INFO: '🔷',
+  SUCCESS: '✅',
+  ERROR: '❌',
+  WARN: '⚠️',
+  LOADING: '📁',
+  BRAIN: '🧠',
+};
+
+export class ThemeGeneratorService {
+  private geminiClient: GoogleGenAI;
+  private csvUrl = "https://raw.githubusercontent.com/crosspostly/dzen/main/top_articles_formatted.csv";
+  private cachedThemes: string[] = [];
+  private lastFetchTime: number = 0;
+  private cacheDuration = 3600000; // 1 hour
+
+  constructor(apiKey?: string) {
+    const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+    this.geminiClient = new GoogleGenAI({ apiKey: key });
+  }
+
+  /**
+   * Fetch CSV from GitHub and extract themes
+   */
+  private async fetchThemesFromCSV(): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+      https.get(this.csvUrl, (res) => {
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => {
+          try {
+            const lines = data.split('\n').slice(1); // Skip header
+            const themes = lines
+              .map(line => {
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                  return parts[1].trim().replace(/^"|"$/g, ''); // Column 2 = title
+                }
+                return '';
+              })
+              .filter(t => t.length > 5)
+              .slice(0, 50); // Get top 50 themes
+            
+            resolve(themes);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }).on('error', reject);
+    });
+  }
+
+  /**
+   * Get themes from cache or fetch fresh
+   */
+  private async getAvailableThemes(): Promise<string[]> {
+    const now = Date.now();
+    
+    // Use cache if fresh
+    if (this.cachedThemes.length > 0 && (now - this.lastFetchTime) < this.cacheDuration) {
+      console.log(`${LOG.BRAIN} Using cached themes (${this.cachedThemes.length} items)`);
+      return this.cachedThemes;
+    }
+
+    try {
+      console.log(`${LOG.LOADING} Fetching themes from GitHub CSV...`);
+      const themes = await this.fetchThemesFromCSV();
+      this.cachedThemes = themes;
+      this.lastFetchTime = now;
+      console.log(`${LOG.SUCCESS} Loaded ${themes.length} real themes from top articles`);
+      return themes;
+    } catch (error) {
+      console.warn(`${LOG.WARN} Failed to fetch CSV, using fallback list`);
+      return this.getFallbackThemes();
+    }
+  }
+
+  /**
+   * Fallback themes if CSV fetch fails
+   */
+  private getFallbackThemes(): string[] {
+    return [
+      'Я терпела это 20 лет и вот что произошло',
+      'Одна фраза изменила всё в нашей семье',
+      'Я не знала что делать когда узнала правду',
+      'После этого дня ничего не было как раньше',
+      'Я должна была послушать свою интуицию',
+      'Никто не верил мне и я была одна',
+      'Это случилось в один день и разрушило всё',
+      'Я потеряла всё но получила главное',
+      'Когда я сказала нет мир перевернулся',
+      'Деньги разрушили нашу семью за месяц',
+    ];
+  }
+
+  /**
+   * MAIN: Generate NEW unique theme using Gemini
+   */
+  async generateNewTheme(): Promise<string> {
+    try {
+      // Get existing themes for context
+      const contextThemes = await this.getAvailableThemes();
+      const themesExample = contextThemes.slice(0, 15).join('\n  - ');
+
+      // Build prompt for Gemini
+      const prompt = `\
+You are a creative writer for Yandex.Zen confessional articles (Russian audience, women 35-60).
+
+REAL SUCCESSFUL THEMES FROM TOP ARTICLES:
+  - ${themesExample}
+  - [... and more similar topics]
+
+YOUR TASK:
+Generate ONE NEW UNIQUE theme/hook that:
+1. Is emotional and personal (not generic advice)
+2. Starts with first person: "Я..." (I...)
+3. Promises drama or revelation: "и вот...", "когда...", "потом...", "это..."
+4. 7-12 words maximum
+5. Would make someone click to read the story
+6. NEVER seen in the examples above
+7. NEVER generic like "10 ways to...", "How to...", "Tips for..."
+
+RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
+
+      console.log(`${LOG.BRAIN} Generating new theme with Gemini...`);
+
+      const response = await this.geminiClient.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          temperature: 0.95,
+          topK: 40,
+          topP: 0.95,
+        },
+      });
+
+      const theme = (response.text || "").trim();
+
+      if (!theme || theme.length < 10) {
+        throw new Error("Generated theme too short");
+      }
+
+      console.log(`${LOG.SUCCESS} New theme generated: "${theme}"`);
+      return theme;
+
+    } catch (error) {
+      console.error(`${LOG.ERROR} Theme generation failed:`, error);
+      // Fallback to random from CSV if Gemini fails
+      const themes = await this.getAvailableThemes();
+      const random = themes[Math.floor(Math.random() * themes.length)];
+      console.log(`${LOG.WARN} Using fallback theme from CSV: "${random}"`);
+      return random;
+    }
+  }
+
+  /**
+   * Generate multiple themes (for batch/schedule operations)
+   */
+  async generateMultipleThemes(count: number): Promise<string[]> {
+    const themes: string[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const theme = await this.generateNewTheme();
+      themes.push(theme);
+      
+      // Delay between requests (be nice to API)
+      if (i < count - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    return themes;
+  }
+}
