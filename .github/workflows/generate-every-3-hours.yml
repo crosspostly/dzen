@@ -64,7 +64,7 @@ jobs:
       
       - name: Generate article for Dzen Women 35-60
         run: |
-          npx tsx cli.ts generate:v2 \
+          npm run generate:v2 -- \
             --dzen-channel=women-35-60 \
             --theme="${{ steps.theme_selector.outputs.theme }}"
         env:

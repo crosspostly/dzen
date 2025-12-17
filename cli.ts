@@ -35,15 +35,20 @@ const LOG = {
 };
 
 const args = process.argv.slice(2);
-const command = args[0];
+
+// Handle commands that might be in any position
+const allArgs = process.argv.slice(2);
+
+// Find command - can be first or after flags
+const command = allArgs.find(arg => !arg.startsWith('--')) || 'help';
 
 function getArg(name: string, defaultValue?: string): string | undefined {
-  const match = args.find(a => a.startsWith(`--${name}=`));
+  const match = allArgs.find(a => a.startsWith(`--${name}=`));
   return match?.split('=')[1] || defaultValue;
 }
 
 function getFlag(name: string): boolean {
-  return args.includes(`--${name}`);
+  return allArgs.includes(`--${name}`);
 }
 
 function formatTime(ms: number): string {
@@ -53,7 +58,62 @@ function formatTime(ms: number): string {
 
 (async () => {
   try {
-    if (command === 'generate:v2') {
+    // ============================================================================
+    // Handle different CLI commands
+    // ============================================================================
+    
+    if (command === 'list-dzen-channels') {
+      // List all available Dzen channels
+      console.log(`\n${LOG.CHART} ============================================`);
+      console.log(`${LOG.CHART} ZenMaster v2.0 - Dzen Channels List`);
+      console.log(`${LOG.CHART} ============================================\n`);
+      
+      const channels = getAllDzenChannels();
+      console.log(`${LOG.BRAIN} Available Dzen Channels (${channels.length}):`);
+      console.log('');
+      
+      channels.forEach(channel => {
+        console.log(`📡 ${channel.id}`);
+        console.log(`   Name: ${channel.name}`);
+        console.log(`   Description: ${channel.description}`);
+        console.log(`   Angle: ${channel.defaultAngle}`);
+        console.log(`   Emotion: ${channel.defaultEmotion}`);
+        console.log(`   Audience: ${channel.defaultAudience}`);
+        console.log(`   Models: ${channel.modelOutline} (outline), ${channel.modelEpisodes} (episodes)`);
+        console.log(`   Output: ${channel.outputDir}`);
+        console.log(`   Themes: ${channel.channelThemes.length} pre-configured themes`);
+        console.log('');
+      });
+      
+      console.log(`${LOG.SUCCESS} ✅ Use --dzen-channel=<channel-id> to generate for specific channel`);
+      console.log(`${LOG.INFO} Example: npm run generate:v2 -- --dzen-channel=women-35-60`);
+      console.log('');
+      
+    } else if (command === 'validate-dzen-config') {
+      // Validate Dzen channels configuration
+      console.log(`\n${LOG.LOADING} ============================================`);
+      console.log(`${LOG.LOADING} ZenMaster v2.0 - Validate Dzen Config`);
+      console.log(`${LOG.LOADING} ============================================\n`);
+      
+      const validation = validateDzenChannelsConfig();
+      
+      if (validation.valid) {
+        console.log(`${LOG.SUCCESS} ✅ All Dzen channels configuration is valid!`);
+        console.log(`${LOG.CHART} Configuration summary:`);
+        
+        const channels = getAllDzenChannels();
+        channels.forEach(channel => {
+          console.log(`   📡 ${channel.id}: ${channel.channelThemes.length} themes, output: ${channel.outputDir}`);
+        });
+      } else {
+        console.log(`${LOG.ERROR} ❌ Configuration validation failed:`);
+        validation.errors.forEach(error => console.log(`   ❌ ${error}`));
+        process.exit(1);
+      }
+      
+      console.log('');
+      
+    } else if (command === 'generate:v2') {
       // ============================================================================
       // ZenMaster v2.0 - Multi-Agent Longform Generation (35K+ symbols)
       // SUPPORTS: Direct parameters OR Dzen Channel Configuration
