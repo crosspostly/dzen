@@ -21,6 +21,7 @@ npm run generate:v2 -- --theme="Your theme"
 
 ## 📚 Documentation Index
 
+### Phase 1 (Complete)
 | Document | Purpose | Read Time |
 |----------|---------|-----------|
 | **[QUICK_START.md](QUICK_START.md)** | Quick reference & common commands | 2 min |
@@ -29,6 +30,17 @@ npm run generate:v2 -- --theme="Your theme"
 | **[ZENMASTER_V2_INTEGRATION.md](ZENMASTER_V2_INTEGRATION.md)** | Full integration guide | 10 min |
 | **[CHANGELOG_PHASE1.md](CHANGELOG_PHASE1.md)** | Detailed changelog | 5 min |
 | **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** | Complete summary | 8 min |
+
+### Phase 2 (Ready to Implement)
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| **[PHASE2_ANTI_DETECTION.md](PHASE2_ANTI_DETECTION.md)** | Anti-Detection specifications | 10 min |
+| **[PHASE2_STATUS.md](PHASE2_STATUS.md)** | Phase 2 implementation status | 5 min |
+| **[services/antiDetection/README.md](services/antiDetection/README.md)** | Component documentation | 3 min |
+
+### General
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
 | **[ZENMASTER_V2_README.md](ZENMASTER_V2_README.md)** | Architecture overview | 15 min |
 
 ---
@@ -38,7 +50,8 @@ npm run generate:v2 -- --theme="Your theme"
 ### 🎯 Features
 - **35K+ character longform** articles (3-4x longer than v1.0)
 - **Multi-agent parallel processing** (12 episodes simultaneously)
-- **Structured pipeline** (Outline → Draft → Montage → Humanization → QA)
+- **Structured pipeline** (Outline → Draft → Anti-Detection → Humanization → QA)
+- **Anti-Detection Engine** (Phase 2) - AI detection < 15% 🔥
 - **Automated workflow** (every 3 hours)
 - **Voice passport** (7 consistent author habits)
 
