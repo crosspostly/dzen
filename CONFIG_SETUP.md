@@ -1,28 +1,27 @@
 # ⚡ КОНФИГУРАЦИЯ ПО КАНАЛАМ
 
-## НА ЧТО УПравляется
+## ЧТО УПравляется
 
-**Один канал = один конфиг = свои ключи + параметры**
+**Один канал = один конфиг = сВОЙ КЛЮЧ К ГЕМИНИ**
 
 ```
 config/channels.config.ts
-├── DZEN_CONFIG (Women 35-60)
-├── MEDIUM_CONFIG (Tech Founders)
-├── SUBSTACK_CONFIG (Newsletter)
-└── HABR_CONFIG (Tech Stories RU)
+├── DZEN_CONFIG → GEMINI_API_KEY_DZEN
+├── MEDIUM_CONFIG → GEMINI_API_KEY_MEDIUM
+├── SUBSTACK_CONFIG → GEMINI_API_KEY_SUBSTACK
+└── HABR_CONFIG → GEMINI_API_KEY_HABR
 ```
+
+🙋 НО ТАК! Каждый канал вытягивает сВОЙ ключ из среды!
 
 ---
 
-## 🔐 GITHUB SECRETS (одна запись за ВСЕ каналы)
+## 🔐 GITHUB SECRETS (РАЗНЫЕ для каждого)
 
-**ДО** (неудобно):
-```
-GEMINI_API_KEY = ...
-DEFAULT_ANGLE = confession
-```
+**ПО ОДНОМУ КЛЮЧУ ДЛЯ КАЖДОГО КАНАЛА:**
 
-**СЕЙЧАС** (правильно):
+`Settings → Secrets and variables → Repository secrets`
+
 ```
 GEMINI_API_KEY_DZEN = sk-...
 GEMINI_API_KEY_MEDIUM = sk-...
@@ -30,190 +29,133 @@ GEMINI_API_KEY_SUBSTACK = sk-...
 GEMINI_API_KEY_HABR = sk-...
 ```
 
+⚠️ **Это РАЗНЫЕ ключи!** Каждый для своего проекта в Gemini API.
+
 ---
 
-## 💫 КОД: КАК ИСПОЛЬЗОВАТЬ
+## 💫 КОД: КАК РАБОТАЕТ
 
-### Способ 1: По ID канала
+### В Коде (снуты):
+
+```typescript
+// Dzen вытягивает ключ ВАШНО (читает с диска)
+geminiApiKey: process.env.GEMINI_API_KEY_DZEN || ''
+
+// Medium вытягивает ключ сВОЙ (medium-only key)
+geminiApiKey: process.env.GEMINI_API_KEY_MEDIUM || ''
+
+// Каждый агент работает с сВОИМ ключом
+```
+
+### Команд использования:
 
 ```typescript
 import { getChannelConfig } from './config/channels.config';
 
-const config = getChannelConfig('dzen');
-console.log(config.defaultTheme);      // "Я терпела это 20 лет"
-console.log(config.defaultAudience);   // "Women 35-60"
-```
+// Канал Dzen автоматически гружит GEMINI_API_KEY_DZEN
+const dzenConfig = getChannelConfig('dzen');
+console.log(dzenConfig.geminiApiKey); // sk-xyz (from GEMINI_API_KEY_DZEN)
 
-### Способ 2: Все каналы сразу
-
-```typescript
-import { getAllChannels } from './config/channels.config';
-
-const allChannels = getAllChannels();
-allChannels.forEach(ch => {
-  console.log(`${ch.name}: ${ch.scheduleUtc}`);
-});
-```
-
-### Способ 3: По платформе
-
-```typescript
-import { getChannelsByPlatform } from './config/channels.config';
-
-const zenChannels = getChannelsByPlatform('yandex-dzen');
-// → DZEN_CONFIG
+// Канал Medium автоматически гружит GEMINI_API_KEY_MEDIUM
+const mediumConfig = getChannelConfig('medium');
+console.log(mediumConfig.geminiApiKey); // sk-abc (from GEMINI_API_KEY_MEDIUM)
 ```
 
 ---
 
-## 📄 СТРУКТУРА КОНФИГА
+## 🏰 КАНАЛЫ (текущие)
 
-```typescript
-interface ChannelConfig {
-  // Идентификатор
-  id: string;
-  name: string;
-  platform: 'yandex-dzen' | 'medium' | 'substack' | 'habr';
-  
-  // API Ключи (РАЗНЫЕ для каждого канала)
-  geminiApiKey: string;
-  platformApiKey?: string;  // Medium, Substack, Habr
-  
-  // Генерация
-  defaultTheme: string;
-  defaultAngle: 'confession' | 'scandal' | 'observer';
-  defaultEmotion: 'triumph' | 'guilt' | 'shame' | 'liberation';
-  defaultAudience: string;
-  
-  // Модели
-  modelOutline: string;      // gemini-2.5-pro
-  modelEpisodes: string;     // gemini-2.5-flash
-  
-  // Параметры
-  episodeCount: number;      // 9-12
-  minCharacters: number;     // 25K-32K
-  maxCharacters: number;     // 35K-40K
-  readingTimeMinutes: number;
-  
-  // Выход
-  outputDir: string;         // ./generated/{channelId}/
-  publishAutomatically: boolean;
-  
-  // Schedule (UTC)
-  scheduleUtc: string[];
-}
-```
+| ID | Name | Audience | Ключ из | Schedule |
+|----|----|----------|---------|----------|
+| `dzen` | Яндекс.Дзен | Women 35-60 | `GEMINI_API_KEY_DZEN` | Каждые 3ч |
+| `medium` | Medium | Tech Founders | `GEMINI_API_KEY_MEDIUM` | 3× в день |
+| `substack` | Substack | Premium | `GEMINI_API_KEY_SUBSTACK` | 4× в день |
+| `habr` | Habr | Tech RU | `GEMINI_API_KEY_HABR` | 3× в день |
 
 ---
 
-## 🔇 НОВЫЙ КАНАЛ? 
+## 🔇 ДОБАВИТЬ НОВЫЙ КАНАЛ?
 
-### 1. Добавь конфиг в `channels.config.ts`
+### 1. Установи отдельные проекты в Gemini API Console
+
+- Project 1: для Dzen
+- Project 2: для Medium
+- Project 3: для Substack
+- Project 4: для Habr
+- Project 5: для твоего нового канала
+
+### 2. Найди API keys
+
+```bash
+# Project 1 канала
+gcloud auth application-default print-access-token --project=dzen-project
+
+# Project 2 канала
+gcloud auth application-default print-access-token --project=medium-project
+```
+
+### 3. Добавь в файл
 
 ```typescript
-export const NEW_CHANNEL_CONFIG: ChannelConfig = {
+// config/channels.config.ts
+
+export const MY_CHANNEL_CONFIG: ChannelConfig = {
   id: 'my-channel',
   name: 'My Channel',
-  platform: 'some-platform',
+  platform: 'my-platform',
   
+  // 🔐 ОТДЕЛЬНЫЙ ключ для этого канала!
   geminiApiKey: process.env.GEMINI_API_KEY_MY_CHANNEL || '',
   
   defaultTheme: 'Your theme',
-  defaultAngle: 'confession',
-  defaultEmotion: 'triumph',
   defaultAudience: 'Your audience',
-  
-  modelOutline: 'gemini-2.5-pro',
-  modelEpisodes: 'gemini-2.5-flash',
-  
-  episodeCount: 10,
-  minCharacters: 28000,
-  maxCharacters: 38000,
-  readingTimeMinutes: 8,
-  
-  outputDir: './generated/my-channel/',
-  publishAutomatically: true,
-  
-  scheduleUtc: ['00:00', '06:00', '12:00', '18:00'],
+  // ... остальное
 };
-```
 
-### 2. Добавь в реестр
-
-```typescript
 export const CHANNELS_REGISTRY: Record<string, ChannelConfig> = {
   dzen: DZEN_CONFIG,
   medium: MEDIUM_CONFIG,
   substack: SUBSTACK_CONFIG,
   habr: HABR_CONFIG,
-  'my-channel': NEW_CHANNEL_CONFIG,  // ← НОВОЕ
+  'my-channel': MY_CHANNEL_CONFIG,  // ← НОВЫЙ
 };
 ```
 
-### 3. Добавь GitHub Secret
+### 4. Добавь Secret
+
+`Settings → Secrets and variables → Add`
 
 ```
 GEMINI_API_KEY_MY_CHANNEL = sk-...
 ```
 
-**Done!** 🎉
+**Done!** 🎉 Новый канал работает с сВОИМ ключом!
 
 ---
 
-## 🏰 ТЕКУЩИЕ КАНАЛЫ
+## ✅ ПО РОСТРОЯННОЙ КОНФИГ
 
-| ID | Name | Platform | Audience | Schedule |
-|----|----|----------|----------|----------|
-| `dzen` | Яндекс.Дзен | yandex-dzen | Women 35-60 | Каждые 3 часа |
-| `medium` | Medium | medium | Tech Founders 25-45 | 3× в день |
-| `substack` | Substack | substack | Premium 30-50 | 4× в день |
-| `habr` | Habr | habr | Tech RU 25-45 | 3× в день |
-
----
-
-## 🔐 GITHUB SECRETS TEMPLATE
-
-```bash
-# Дзен
-GEMINI_API_KEY_DZEN=sk-ant-...
-
-# Medium
-GEMINI_API_KEY_MEDIUM=sk-ant-...
-MEDIUM_API_KEY=...
-
-# Substack
-GEMINI_API_KEY_SUBSTACK=sk-ant-...
-SUBSTACK_API_KEY=...
-
-# Habr
-GEMINI_API_KEY_HABR=sk-ant-...
-HABR_API_KEY=...
-
-# Shared
-GEMINI_MODEL_OUTLINE=gemini-2.5-pro
-GEMINI_MODEL_EPISODES=gemini-2.5-flash
 ```
+GitHub Secrets:
+GEMINI_API_KEY_DZEN = sk-...
+GEMINI_API_KEY_MEDIUM = sk-...
+GEMINI_API_KEY_SUBSTACK = sk-...
+GEMINI_API_KEY_HABR = sk-...
 
----
+        ⬇️
+        
+ config/channels.config.ts:
+DZEN_CONFIG → process.env.GEMINI_API_KEY_DZEN
+MEDIUM_CONFIG → process.env.GEMINI_API_KEY_MEDIUM
 
-## 🚀 CLI ИСПОЛЬЗОВАНИЕ
-
-### Генерировать для Дзена
-```bash
-npx ts-node cli.ts generate:v2 --channel=dzen
-```
-
-### Обработать через Phase 2
-```bash
-npx ts-node cli.ts phase2 --channel=dzen --content=article.txt
-```
-
-### Все каналы сразу
-```bash
-npx ts-node cli.ts generate:all
+        ⬇️
+        
+Каждый канал работает с СОБСТВЕННЫМ ключом!
+Каждые stats отделены.
+Каждые quota отделены.
 ```
 
 ---
 
 **Status**: ✅ READY
-**Next**: Update CLI to use channel config
+**Each channel**: Has its own Gemini API project
