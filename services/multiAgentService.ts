@@ -80,6 +80,16 @@ export class MultiAgentService {
   }
 
   /**
+   * Helper: Strip markdown code blocks from response
+   * Gemini sometimes wraps JSON in ```json ... ```
+   */
+  private stripMarkdownJson(text: string): string {
+    // Remove markdown code blocks
+    let cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    return cleaned;
+  }
+
+  /**
    * Stage 0: Generate outline structure
    */
   private async generateOutline(params: {
@@ -135,9 +145,11 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
     });
 
     try {
-      return JSON.parse(response) as OutlineStructure;
+      const cleanedJson = this.stripMarkdownJson(response);
+      return JSON.parse(cleanedJson) as OutlineStructure;
     } catch (e) {
       console.error("Outline parse failed:", e);
+      console.error("Response was:", response.substring(0, 200));
       throw new Error("Failed to generate outline");
     }
   }
@@ -230,7 +242,8 @@ Respond as JSON: {"title": "Your title"}`;
         model: "gemini-2.5-flash",
         temperature: 0.8,
       });
-      const parsed = JSON.parse(response);
+      const cleanedJson = this.stripMarkdownJson(response);
+      const parsed = JSON.parse(cleanedJson);
       return parsed.title || outline.theme;
     } catch {
       return outline.theme;
@@ -264,7 +277,8 @@ Respond as JSON:
         model: "gemini-2.5-flash",
         temperature: 0.8,
       });
-      return JSON.parse(response) as VoicePassport;
+      const cleanedJson = this.stripMarkdownJson(response);
+      return JSON.parse(cleanedJson) as VoicePassport;
     } catch {
       return {
         apologyPattern: "I know this sounds strange, but...",
