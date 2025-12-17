@@ -7,11 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "generate": "tsx cli.ts generate",
-    "generate:v2": "tsx cli.ts generate:v2",
-    "validate": "tsx cli.ts validate",
-    "list-projects": "tsx cli.ts list-projects",
-    "test": "tsx cli.ts test",
+    "generate": "node --import tsx cli.ts generate",
+    "generate:v2": "node --import tsx cli.ts generate:v2",
+    "generate:all-dzen": "node --import tsx cli.ts generate:all-dzen",
+    "list-dzen-channels": "node --import tsx cli.ts list-dzen-channels",
+    "validate-dzen-config": "node --import tsx cli.ts validate-dzen-config",
+    "validate": "node --import tsx cli.ts validate",
+    "list-projects": "node --import tsx cli.ts list-projects",
+    "test": "node --import tsx cli.ts test",
     "test:full": "npm run test && npm run validate && npm run list-projects"
   },
   "dependencies": {
@@ -20,12 +23,12 @@
     "natural": "^6.11.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "tsx": "^4.7.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "tsx": "^4.7.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
