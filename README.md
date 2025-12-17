@@ -37,7 +37,7 @@ Add:
 DEFAULT_ANGLE = confession
 DEFAULT_EMOTION = triumph
 DEFAULT_AUDIENCE = Women 35-60
-GEMINI_MODEL_OUTLINE = gemini-2.5-pro
+GEMINI_MODEL_OUTLINE = gemini-2.5-flash
 GEMINI_MODEL_EPISODES = gemini-2.5-flash
 ```
 
@@ -73,9 +73,9 @@ Each run generates a 35K+ article → saves to `generated/articles/`
 ## 📊 Pipeline
 
 ```
-Stage 0: Outline (Gemini 2.5-Pro)
+Stage 0: Outline (Gemini 2.5 Flash)
     ↓
-Stage 1: Parallel Draft (12× Gemini 2.5-Flash)
+Stage 1: Parallel Draft (12× Gemini 2.5 Flash)
     ↓
 Stage 2: Anti-Detection Processing (Phase 2) ✨
     ├── Perplexity boost

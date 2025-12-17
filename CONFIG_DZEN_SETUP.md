@@ -45,7 +45,7 @@ export const DZEN_YOUNG_MOMS_CONFIG: DzenChannelConfig = {
   defaultAudience: 'Young Moms 25-35',
   
   // Model Configuration  
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
   // Output Configuration
@@ -147,7 +147,7 @@ jobs:
 | `defaultAngle` | 'confession' \| 'scandal' \| 'observer' | Основной угол повествования |
 | `defaultEmotion` | 'triumph' \| 'guilt' \| 'shame' \| 'liberation' \| 'anger' | Основная эмоция |
 | `defaultAudience` | string | Целевая аудитория |
-| `modelOutline` | string | Модель для генерации плана (gemini-2.5-pro) |
+| `modelOutline` | string | Модель для генерации плана (gemini-2.5-flash) |
 | `modelEpisodes` | string | Модель для генерации эпизодов (gemini-2.5-flash) |
 | `outputDir` | string | Папка для сохранения статей |
 | `scheduleCron` | string | Расписание запуска в GitHub Actions |
@@ -216,7 +216,7 @@ generated/
 DEFAULT_ANGLE = confession
 DEFAULT_EMOTION = triumph
 DEFAULT_AUDIENCE = Women 35-60
-GEMINI_MODEL_OUTLINE = gemini-2.5-pro
+GEMINI_MODEL_OUTLINE = gemini-2.5-flash
 GEMINI_MODEL_EPISODES = gemini-2.5-flash
 
 # Workflow (старая версия)
@@ -238,7 +238,7 @@ export const DZEN_WOMEN_35_60_CONFIG: DzenChannelConfig = {
   defaultAngle: 'confession',
   defaultEmotion: 'triumph',
   defaultAudience: 'Women 35-60',
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   // ... другие параметры
 };
@@ -269,7 +269,7 @@ export const DZEN_MEN_25_40_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Men 25-40',
   
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
   outputDir: './generated/dzen/men-25-40/',

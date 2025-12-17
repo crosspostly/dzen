@@ -65,7 +65,7 @@ GEMINI_API_KEY=sk-... npx ts-node cli.ts generate:v2 \
 ### Stage 0: Outline Engineering
 - [ ] Generates 12-episode structure
 - [ ] Dual tension lines (external + internal)
-- [ ] Uses Gemini 2.5-Pro
+- [ ] Uses Gemini 2.5 Flash
 - [ ] JSON output validation
 
 ### Stage 1: Parallel Draft

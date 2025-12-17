@@ -72,7 +72,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
     angle: 'confession',
     emotion: 'triumph',
     audience: 'Women 35-60',
-    modelOutline: 'gemini-2.5-pro',
+    modelOutline: 'gemini-2.5-flash',
     modelEpisodes: 'gemini-2.5-flash',
     outputDir: './generated/articles/'
   };
@@ -107,7 +107,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
     generationParams.angle = getArg('angle', 'confession');
     generationParams.emotion = getArg('emotion', 'triumph');
     generationParams.audience = getArg('audience', 'Women 35-60');
-    generationParams.modelOutline = getArg('model-outline', 'gemini-2.5-pro');
+    generationParams.modelOutline = getArg('model-outline', 'gemini-2.5-flash');
     generationParams.modelEpisodes = getArg('model-episodes', 'gemini-2.5-flash');
     generationParams.outputDir = './generated/zenmaster-v2/';
 

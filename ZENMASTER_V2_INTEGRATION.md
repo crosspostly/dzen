@@ -93,7 +93,7 @@ Each file contains:
 ## Architecture
 
 ```
-Stage 0: Outline Engineering (Gemini 2.5-Pro)
+Stage 0: Outline Engineering (Gemini 2.5 Flash)
     ↓
 Stage 1: Parallel Draft (12× Gemini 2.5-Flash)
     ↓

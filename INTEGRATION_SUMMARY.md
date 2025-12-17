@@ -138,7 +138,7 @@ npm run generate:v2 -- --theme="Your theme"
 
 ```
 ┌─────────────────────────────────────┐
-│ Stage 0: Outline Engineering        │ ← Gemini 2.5-Pro
+│ Stage 0: Outline Engineering        │ ← Gemini 2.5 Flash
 │ (12 episodes structure)             │
 └──────────────┬──────────────────────┘
                ↓

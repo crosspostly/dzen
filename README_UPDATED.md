@@ -57,7 +57,7 @@ Each project (Yandex.Zen channel) has its own config in `projects/<channel-id>/c
     "tone": "confession"
   },
   
-  "gemini_model": "gemini-2.5-pro",
+  "gemini_model": "gemini-2.5-flash",
   "temperature": 0.95
 }
 ```
@@ -365,7 +365,7 @@ This is normal (Gemini API latency). Phase 1 + Phase 2 ≈ 60-120 seconds.
 ```
 Theme + Angle + Emotion
         ↓
-Stage 0: Outline (Gemini 2.5-Pro)
+Stage 0: Outline (Gemini 2.5 Flash)
         ↓
 Stage 1: 12× Parallel Episodes (Gemini 2.5-Flash)
         ↓

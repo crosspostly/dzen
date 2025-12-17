@@ -106,7 +106,7 @@ export class GeminiService {
         metadata: {
           total_chars: finalChars,
           generation_time_ms: Date.now() - startTime,
-          model_used: config.gemini_model || 'gemini-2.5-pro',
+          model_used: config.gemini_model || 'gemini-2.5-flash',
         },
       };
     } catch (error) {
@@ -151,7 +151,7 @@ ${examplesContext}
 
     const response = await this.callGemini({
       prompt,
-      model: 'gemini-2.5-pro',
+      model: 'gemini-2.5-flash',
       temperature: 0.9,
     });
 
@@ -224,7 +224,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-2.5-pro',
+      model: 'gemini-2.5-flash',
       temperature: 0.95,
     });
   }
@@ -262,7 +262,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-2.5-pro',
+      model: 'gemini-2.5-flash',
       temperature: 0.95,
     });
   }

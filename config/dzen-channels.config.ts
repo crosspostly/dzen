@@ -15,7 +15,7 @@ export interface DzenChannelConfig {
   defaultAudience: string;
   
   // Model Configuration (from GitHub Variables)
-  modelOutline: string;     // e.g., gemini-2.5-pro
+  modelOutline: string;     // e.g., gemini-2.5-flash
   modelEpisodes: string;    // e.g., gemini-2.5-flash
   
   // Output Configuration
@@ -43,7 +43,7 @@ export const DZEN_WOMEN_35_60_CONFIG: DzenChannelConfig = {
   defaultAudience: 'Women 35-60',
   
   // Previously from GitHub Variables  
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
   outputDir: './generated/dzen/women-35-60/',
@@ -77,7 +77,7 @@ export const DZEN_YOUNG_MOMS_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'liberation',
   defaultAudience: 'Young Moms 25-35',
   
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
   outputDir: './generated/dzen/young-moms/',
@@ -110,7 +110,7 @@ export const DZEN_MEN_25_40_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Men 25-40',
   
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
   outputDir: './generated/dzen/men-25-40/',
@@ -143,7 +143,7 @@ export const DZEN_TEENS_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'shame',
   defaultAudience: 'Teens 14-18',
   
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
   outputDir: './generated/dzen/teens/',

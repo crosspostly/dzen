@@ -60,7 +60,7 @@ export GEMINI_API_KEY="your-api-key"
     "required_triggers": ["keyword1", "keyword2"],
     "tone": "confession"
   },
-  "gemini_model": "gemini-2.5-pro"
+  "gemini_model": "gemini-2.5-flash"
 }
 ```
 
@@ -382,7 +382,7 @@ curl -X POST https://api.github.com/repos/crosspostly/dzen/actions/workflows/gen
 ## Performance Notes
 
 - **Phase 1 (Generation)**: 60–90 seconds typical
-  - 10–15s: Outline generation (Gemini 2.5-Pro)
+  - 10–15s: Outline generation (Gemini 2.5 Flash)
   - 45–75s: 12× parallel episodes (Gemini 2.5-Flash)
   
 - **Phase 2 (Anti-Detection)**: 30–60 seconds
@@ -484,7 +484,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
     angle: 'confession',
     emotion: 'triumph',
     audience: 'Women 35-60',
-    modelOutline: 'gemini-2.5-pro',
+    modelOutline: 'gemini-2.5-flash',
     modelEpisodes: 'gemini-2.5-flash',
     outputDir: './generated/articles/'
   };
@@ -519,7 +519,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
     generationParams.angle = getArg('angle', 'confession');
     generationParams.emotion = getArg('emotion', 'triumph');
     generationParams.audience = getArg('audience', 'Women 35-60');
-    generationParams.modelOutline = getArg('model-outline', 'gemini-2.5-pro');
+    generationParams.modelOutline = getArg('model-outline', 'gemini-2.5-flash');
     generationParams.modelEpisodes = getArg('model-episodes', 'gemini-2.5-flash');
     generationParams.outputDir = './generated/zenmaster-v2/';
 
@@ -815,7 +815,7 @@ npm run generate:v2 -- --project=channel-1 --theme="Override Theme"
 - **Benefit**: 3-4x more content, faster generation
 
 ### 2. Structured Pipeline
-- Stage 0: Outline (Gemini 2.5-Pro)
+- Stage 0: Outline (Gemini 2.5 Flash)
 - Stage 1: Episodes (12× Gemini 2.5-Flash in parallel)
 - Clear separation of concerns
 
@@ -1446,7 +1446,7 @@ npm run generate:v2 -- --dzen-channel=women-35-60
 🎯 Angle: confession
 💫 Emotion: triumph  
 👥 Audience: Women 35-60
-🤖 Models: gemini-2.5-pro (outline), gemini-2.5-flash (episodes)
+🤖 Models: gemini-2.5-flash (outline), gemini-2.5-flash (episodes)
 📁 Output: ./generated/zenmaster-v2/
 
 🔷 ============================================
@@ -1615,7 +1615,7 @@ export const DZEN_YOUNG_MOMS_CONFIG: DzenChannelConfig = {
   defaultAudience: 'Young Moms 25-35',
   
   // Model Configuration  
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
   // Output Configuration
@@ -1717,7 +1717,7 @@ jobs:
 | `defaultAngle` | 'confession' \| 'scandal' \| 'observer' | Основной угол повествования |
 | `defaultEmotion` | 'triumph' \| 'guilt' \| 'shame' \| 'liberation' \| 'anger' | Основная эмоция |
 | `defaultAudience` | string | Целевая аудитория |
-| `modelOutline` | string | Модель для генерации плана (gemini-2.5-pro) |
+| `modelOutline` | string | Модель для генерации плана (gemini-2.5-flash) |
 | `modelEpisodes` | string | Модель для генерации эпизодов (gemini-2.5-flash) |
 | `outputDir` | string | Папка для сохранения статей |
 | `scheduleCron` | string | Расписание запуска в GitHub Actions |
@@ -1786,7 +1786,7 @@ generated/
 DEFAULT_ANGLE = confession
 DEFAULT_EMOTION = triumph
 DEFAULT_AUDIENCE = Women 35-60
-GEMINI_MODEL_OUTLINE = gemini-2.5-pro
+GEMINI_MODEL_OUTLINE = gemini-2.5-flash
 GEMINI_MODEL_EPISODES = gemini-2.5-flash
 
 # Workflow (старая версия)
@@ -1808,7 +1808,7 @@ export const DZEN_WOMEN_35_60_CONFIG: DzenChannelConfig = {
   defaultAngle: 'confession',
   defaultEmotion: 'triumph',
   defaultAudience: 'Women 35-60',
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   // ... другие параметры
 };
@@ -1839,7 +1839,7 @@ export const DZEN_MEN_25_40_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Men 25-40',
   
-  modelOutline: 'gemini-2.5-pro',
+  modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
   outputDir: './generated/dzen/men-25-40/',
@@ -2607,7 +2607,7 @@ npx ts-node cli.ts generate:v2 \
   --angle="confession" \
   --emotion="triumph" \
   --audience="Women 35-60" \
-  --model-outline="gemini-2.5-pro" \
+  --model-outline="gemini-2.5-flash" \
   --model-episodes="gemini-2.5-flash"
 ```
 
@@ -3358,7 +3358,7 @@ npm run generate:v2 -- --theme="Your theme"
 
 ```
 ┌─────────────────────────────────────┐
-│ Stage 0: Outline Engineering        │ ← Gemini 2.5-Pro
+│ Stage 0: Outline Engineering        │ ← Gemini 2.5 Flash
 │ (12 episodes structure)             │
 └──────────────┬──────────────────────┘
                ↓
@@ -5950,7 +5950,7 @@ choco install exiftool ffmpeg         # Windows
 Phase 2 components are ready to integrate with the existing ZenMaster v2.0 pipeline:
 
 ```
-Stage 0: Outline Engineering (Gemini 2.5-Pro)
+Stage 0: Outline Engineering (Gemini 2.5 Flash)
     ↓
 Stage 1: Parallel Draft (12× Gemini 2.5-Flash)
     ↓
@@ -7061,7 +7061,7 @@ Each project (Yandex.Zen channel) has its own config in `projects/<channel-id>/c
     "tone": "confession"
   },
   
-  "gemini_model": "gemini-2.5-pro",
+  "gemini_model": "gemini-2.5-flash",
   "temperature": 0.95
 }
 ```
@@ -7369,7 +7369,7 @@ This is normal (Gemini API latency). Phase 1 + Phase 2 ≈ 60-120 seconds.
 ```
 Theme + Angle + Emotion
         ↓
-Stage 0: Outline (Gemini 2.5-Pro)
+Stage 0: Outline (Gemini 2.5 Flash)
         ↓
 Stage 1: 12× Parallel Episodes (Gemini 2.5-Flash)
         ↓
@@ -7482,7 +7482,7 @@ npm run generate:v2 -- --theme="Your theme"
 - **Generation time**: 8-10 minutes
 
 ### 🔧 Technical
-- **Stage 0**: Outline (Gemini 2.5-Pro)
+- **Stage 0**: Outline (Gemini 2.5 Flash)
 - **Stage 1**: Episodes (12× Gemini 2.5-Flash in parallel)
 - **Future**: Montage, Humanization, Quality Control
 
@@ -7492,7 +7492,7 @@ npm run generate:v2 -- --theme="Your theme"
 
 ```
 ┌─────────────────────────────────────┐
-│ Stage 0: Outline Engineering        │ ← Gemini 2.5-Pro
+│ Stage 0: Outline Engineering        │ ← Gemini 2.5 Flash
 │ (Structure 12 episodes)             │   2 minutes
 └──────────────┬──────────────────────┘
                ↓
@@ -7740,7 +7740,7 @@ See repository license file.
 
 - Architecture: ZenMaster v2.0 Specification
 - Integration: December 2024
-- Model: Google Gemini 2.5 (Pro & Flash)
+- Model: Google Gemini 2.5 Flash
 
 ---
 
@@ -8055,7 +8055,7 @@ You can also set default values (these are NOT secrets, they're public):
 - `DEFAULT_ANGLE` = `confession`
 - `DEFAULT_EMOTION` = `triumph`
 - `DEFAULT_AUDIENCE` = `Women 35-60`
-- `GEMINI_MODEL_OUTLINE` = `gemini-2.5-pro`
+- `GEMINI_MODEL_OUTLINE` = `gemini-2.5-flash`
 - `GEMINI_MODEL_EPISODES` = `gemini-2.5-flash`
 
 *Note: These have defaults in code, so they're truly optional*
@@ -8268,7 +8268,7 @@ Phase 2 Anti-Detection Engine reduces AI detection to **<15%** using:
 
 ```
 ┌─────────────────────────────────────┐
-│ Stage 0: Outline Engineering        │ ← Gemini 2.5-Pro
+│ Stage 0: Outline Engineering        │ ← Gemini 2.5 Flash
 │ (12 episodes structure)             │   Phase 1 ✅
 └──────────────┬──────────────────────┘
                ↓
@@ -8744,7 +8744,7 @@ Each file contains:
 ## Architecture
 
 ```
-Stage 0: Outline Engineering (Gemini 2.5-Pro)
+Stage 0: Outline Engineering (Gemini 2.5 Flash)
     ↓
 Stage 1: Parallel Draft (12× Gemini 2.5-Flash)
     ↓
@@ -8834,7 +8834,7 @@ Generates **35-40K character longform articles** for Yandex.Zen with:
 ## Architecture Overview
 
 ```
-Stage 0: Outline Engineering (Gemini 2.5-Pro)
+Stage 0: Outline Engineering (Gemini 2.5 Flash)
          ↓
 Stage 1: Parallel Draft (12× Gemini 2.5-Flash)
          ↓
@@ -8976,7 +8976,7 @@ Refer to:
 
 **Сейчас**: Параметры генерации хранятся в GitHub Variables
 ```
-GEMINI_MODEL_OUTLINE = gemini-2.5-pro
+GEMINI_MODEL_OUTLINE = gemini-2.5-flash
 GEMINI_MODEL_EPISODES = gemini-2.5-flash
 DEFAULT_ANGLE = confession
 DEFAULT_EMOTION = triumph
@@ -8997,7 +8997,7 @@ config/dzen-channels.config.ts ← ВСЕ каналы Дзена здесь!
 │   ├── defaultAngle: 'confession'
 │   ├── defaultEmotion: 'triumph'
 │   ├── defaultAudience: 'Women 35-60'
-│   ├── modelOutline: 'gemini-2.5-pro'
+│   ├── modelOutline: 'gemini-2.5-flash'
 │   └── modelEpisodes: 'gemini-2.5-flash'
 ├── DZEN_YOUNG_MOMS_CONFIG
 │   ├── defaultAngle: 'scandal'
@@ -9061,7 +9061,7 @@ npx ts-node cli.ts generate:v2 \
   --angle="confession" \
   --emotion="triumph" \
   --audience="Women 35-60" \
-  --model-outline="gemini-2.5-pro" \
+  --model-outline="gemini-2.5-flash" \
   --model-episodes="gemini-2.5-flash"
 ```
 
@@ -9168,7 +9168,7 @@ npx ts-node cli.ts generate:v2 --dzen-channel=women-35-60 --theme="Я терпе
   - angle: confession
   - emotion: triumph
   - audience: Women 35-60
-  - model: gemini-2.5-pro (outline), gemini-2.5-flash (episodes)
+  - model: gemini-2.5-flash (outline), gemini-2.5-flash (episodes)
   - output: ./generated/dzen/women-35-60/
 ```
 
@@ -9180,7 +9180,7 @@ npx ts-node cli.ts generate:v2 --dzen-channel=young-moms --theme="Как я сп
   - angle: scandal
   - emotion: liberation
   - audience: Young Moms 25-35
-  - model: gemini-2.5-pro (outline), gemini-2.5-flash (episodes)
+  - model: gemini-2.5-flash (outline), gemini-2.5-flash (episodes)
   - output: ./generated/dzen/young-moms/
 ```
 
@@ -9698,12 +9698,12 @@ function calculateBurstiness(text: string): BurstinessScore {
   };
 }
 B. Secondary Detection Markers
-Marker	AI-Text	Human-Text	Detection Method
-Lexical Diversity	Limited vocabulary, word repetition	Varied vocabulary, synonyms, dialectisms	Type-Token Ratio (TTR)
-Stopwords Pattern	"thus", "therefore", "in conclusion", "consider"	"so", "basically", "listen", "you know"	Keyword frequency analysis
-Emotional Consistency	Flat affect, uniform tone throughout	Emotional spikes, varied tone, exclamations	Sentiment analysis per segment
-Factual Accuracy	Logically consistent but potentially inaccurate	May have contradictions (like real life)	Cross-reference validation
-Personal Context	Absent or generated context	Specific details: smells, sounds, people	Named entity recognition + specificity
+Marker    AI-Text    Human-Text    Detection Method
+Lexical Diversity    Limited vocabulary, word repetition    Varied vocabulary, synonyms, dialectisms    Type-Token Ratio (TTR)
+Stopwords Pattern    "thus", "therefore", "in conclusion", "consider"    "so", "basically", "listen", "you know"    Keyword frequency analysis
+Emotional Consistency    Flat affect, uniform tone throughout    Emotional spikes, varied tone, exclamations    Sentiment analysis per segment
+Factual Accuracy    Logically consistent but potentially inaccurate    May have contradictions (like real life)    Cross-reference validation
+Personal Context    Absent or generated context    Specific details: smells, sounds, people    Named entity recognition + specificity
 II. SYSTEM ARCHITECTURE: TWO-STAGE GENERATION PIPELINE
 Stage 1: Plot Generation (Raw Narrative)
 Input: User brief (topic, angle, target emotion)

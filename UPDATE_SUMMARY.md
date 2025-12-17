@@ -73,7 +73,7 @@ Phase 2 Anti-Detection Engine reduces AI detection to **<15%** using:
 
 ```
 ┌─────────────────────────────────────┐
-│ Stage 0: Outline Engineering        │ ← Gemini 2.5-Pro
+│ Stage 0: Outline Engineering        │ ← Gemini 2.5 Flash
 │ (12 episodes structure)             │   Phase 1 ✅
 └──────────────┬──────────────────────┘
                ↓

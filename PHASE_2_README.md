@@ -242,7 +242,7 @@ choco install exiftool ffmpeg         # Windows
 Phase 2 components are ready to integrate with the existing ZenMaster v2.0 pipeline:
 
 ```
-Stage 0: Outline Engineering (Gemini 2.5-Pro)
+Stage 0: Outline Engineering (Gemini 2.5 Flash)
     ↓
 Stage 1: Parallel Draft (12× Gemini 2.5-Flash)
     ↓

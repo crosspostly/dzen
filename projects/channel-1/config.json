@@ -41,6 +41,6 @@
   },
   
   "examples_count": 3,
-  "gemini_model": "gemini-2.5-pro",
+  "gemini_model": "gemini-2.5-flash",
   "temperature": 0.95
 }

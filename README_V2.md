@@ -64,8 +64,8 @@ npm run generate:v2 -- --theme="Your theme"
 - **Generation time**: 8-10 minutes
 
 ### 🔧 Technical
-- **Stage 0**: Outline (Gemini 2.5-Pro)
-- **Stage 1**: Episodes (12× Gemini 2.5-Flash in parallel)
+- **Stage 0**: Outline (Gemini 2.5 Flash)
+- **Stage 1**: Episodes (12× Gemini 2.5 Flash in parallel)
 - **Future**: Montage, Humanization, Quality Control
 
 ---
@@ -74,12 +74,12 @@ npm run generate:v2 -- --theme="Your theme"
 
 ```
 ┌─────────────────────────────────────┐
-│ Stage 0: Outline Engineering        │ ← Gemini 2.5-Pro
+│ Stage 0: Outline Engineering        │ ← Gemini 2.5 Flash
 │ (Structure 12 episodes)             │   2 minutes
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
-│ Stage 1: Parallel Draft             │ ← 12× Gemini 2.5-Flash
+│ Stage 1: Parallel Draft             │ ← 12× Gemini 2.5 Flash
 │ (12 episodes simultaneously)        │   5-7 minutes
 │ + Context Manager                   │
 └──────────────┬──────────────────────┘
@@ -322,7 +322,7 @@ See repository license file.
 
 - Architecture: ZenMaster v2.0 Specification
 - Integration: December 2024
-- Model: Google Gemini 2.5 (Pro & Flash)
+- Model: Google Gemini 2.5 Flash
 
 ---
 

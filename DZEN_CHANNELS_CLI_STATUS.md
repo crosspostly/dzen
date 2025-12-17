@@ -22,7 +22,7 @@ npx ts-node cli.ts generate:v2 \
   --angle="confession" \
   --emotion="triumph" \
   --audience="Women 35-60" \
-  --model-outline="gemini-2.5-pro" \
+  --model-outline="gemini-2.5-flash" \
   --model-episodes="gemini-2.5-flash"
 ```
 
