@@ -1,0 +1,69 @@
+name: Merge All Files to Markdown
+
+on:
+  push:
+    branches: [main, feature/**]
+    paths:
+      - 'docs/**'
+      - 'src/**'
+      - 'config/**'
+      - 'services/**'
+      - '*.md'
+      - '.github/workflows/merge-to-markdown.yml'
+  workflow_dispatch:
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Merge files to markdown
+        run: |
+          {
+            echo '# Knowledge Base'
+            echo ''
+            echo 'Auto-generated from repository files'
+            echo ''
+            echo '## Documentation'
+            echo ''
+            
+            for file in *.md; do
+              if [ "$file" != "KNOWLEDGE_BASE.md" ] && [ "$file" != "README.md" ]; then
+                echo "### $file"
+                echo '```markdown'
+                cat "$file"
+                echo '```'
+                echo ''
+              fi
+            done
+            
+            if [ -d docs ]; then
+              find docs -name '*.md' | while read file; do
+                echo "### $file"
+                echo '```markdown'
+                cat "$file"
+                echo '```'
+                echo ''
+              done
+            fi
+          } > KNOWLEDGE_BASE.md
+      
+      - name: Commit and push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if ! git diff --quiet KNOWLEDGE_BASE.md; then
+            git add KNOWLEDGE_BASE.md
+            git commit -m "🤖 Auto-update: Merge all files to KNOWLEDGE_BASE.md"
+            git push
+          fi
