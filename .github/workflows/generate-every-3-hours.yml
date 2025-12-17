@@ -71,6 +71,7 @@ jobs:
             --audience="${{ steps.theme_selector.outputs.audience }}"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
       
       - name: Create output directory
         run: mkdir -p generated/articles

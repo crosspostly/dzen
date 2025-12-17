@@ -388,9 +388,10 @@ ${climax}
   }
 
   /**
-   * Внутренний метод для вызова Gemini с обработкой ошибок
+   * Публичный метод для вызова Gemini с обработкой ошибок
+   * Используется как в этом сервисе, так и в других (например, MultiAgentService)
    */
-  private async callGemini(params: {
+  public async callGemini(params: {
     prompt: string;
     model: string;
     temperature: number;
