@@ -162,13 +162,13 @@ function formatTime(ms: number): string {
 
       } else {
         // Legacy direct parameters
-        generationParams.theme = theme || 'Я услышала одну фразу и всё изменилось';
+        generationParams.theme = theme || 'Я терпела это 20 лет';
         generationParams.angle = getArg('angle', 'confession');
         generationParams.emotion = getArg('emotion', 'triumph');
         generationParams.audience = getArg('audience', 'Women 35-60');
         generationParams.modelOutline = getArg('model-outline', 'gemini-2.5-pro');
         generationParams.modelEpisodes = getArg('model-episodes', 'gemini-2.5-flash');
-        generationParams.outputDir = './generated/articles/';
+        generationParams.outputDir = './generated/zenmaster-v2/';
 
         console.log(`${LOG.WARN} ⚠️  Using legacy direct parameters (deprecated)`);
         console.log(`${LOG.INFO} 💡 Use --dzen-channel instead for better configuration management`);
