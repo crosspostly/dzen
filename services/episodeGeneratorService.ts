@@ -6,16 +6,20 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
+import { ContentSanitizer } from "./contentSanitizer";
+import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
+  private titleGenerator: EpisodeTitleGenerator;
   private readonly RETRY_DELAY = 2000; // 2 seconds between retries
   private readonly MAX_RETRIES = 3;
   private readonly DELAY_BETWEEN_REQUESTS = 1500; // 1.5 seconds between episodes
 
   constructor(apiKey?: string) {
-    const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+    const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || "";
     this.geminiClient = new GoogleGenAI({ apiKey: key });
+    this.titleGenerator = new EpisodeTitleGenerator(key);
   }
 
   /**
@@ -31,23 +35,24 @@ export class EpisodeGeneratorService {
       try {
         console.log(`   📝 Episode #${episodeOutline.id} - Attempt ${attempt}/${this.MAX_RETRIES}...`);
 
-        const prompt = `Write Episode #${episodeOutline.id} for serialized Zen longform:
+        const prompt = `Напиши эпизод #${episodeOutline.id} для сериальной статьи Яндекс.Дзен (исповедь). Пиши ТОЛЬКО ПО-РУССКИ.
 
-- Question: "${episodeOutline.hookQuestion}"
-- External conflict: "${episodeOutline.externalConflict}"
-- Internal emotion: "${episodeOutline.internalConflict}"
-- Turning point: "${episodeOutline.keyTurning}"
-- Open loop: "${episodeOutline.openLoop}"
+- Вопрос-крючок: "${episodeOutline.hookQuestion}"
+- Внешний конфликт: "${episodeOutline.externalConflict}"
+- Внутренний конфликт/эмоция: "${episodeOutline.internalConflict}"
+- Поворотный момент: "${episodeOutline.keyTurning}"
+- Открытая петля (что тянет дальше): "${episodeOutline.openLoop}"
 
 REQUIREMENTS:
-1. Length: EXACTLY 2400-3200 characters (with spaces)
+0. Language: RUSSIAN ONLY (no English)
+1. Length: 3000-4000 characters (with spaces)
 2. Structure: Event → Dialogue/Thought → Turning point → Cliffhanger
 3. Pure narrative text (NO headings, NO metadata, NO comments)
 4. Show action, not summary
 5. At least 1 natural dialogue
 6. Tone: Like neighbor telling story over tea
 
-Output ONLY the episode text (no JSON, no formatting, no explanations):`;
+ОТВЕТ: только текст эпизода (без JSON, без форматирования, без пояснений):`;
 
         const response = await this.geminiClient.models.generateContent({
           model: "gemini-2.5-flash",
@@ -56,30 +61,44 @@ Output ONLY the episode text (no JSON, no formatting, no explanations):`;
             temperature: 0.95,
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: 2000,
+            maxOutputTokens: 2400,
           },
         });
 
         let content = response.text || "";
 
-        // Clean markdown wrappers if present
-        content = content
-          .replace(/^```[\s\S]*?\n/, '')
-          .replace(/\n```[\s\S]*?$/, '')
-          .trim();
+        console.log(`   🧹 Sanitizing content...`);
+        content = ContentSanitizer.cleanEpisodeContent(content);
 
-        // Validate length
-        if (content.length < 2400) {
-          throw new Error(`Content too short: ${content.length} chars (need 2400+)`);
+        console.log(`   ✔️ Validating content...`);
+        const validation = ContentSanitizer.validateEpisodeContent(content);
+
+        if (!validation.valid) {
+          console.error(`   ❌ Validation failed:`);
+          validation.errors.forEach((e) => console.error(`      ${e}`));
+          throw new Error(`Content validation failed: ${validation.errors[0]}`);
         }
 
-        console.log(`   ✅ Episode #${episodeOutline.id} success: ${content.length} chars`);
+        if (validation.warnings.length > 0) {
+          validation.warnings.forEach((w) => console.log(`   ${w}`));
+        }
+
+        const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
+          episodeOutline.id,
+          content,
+          episodeOutline.openLoop
+        );
+
+        console.log(`   📝 Episode #${episodeOutline.id}: "${episodeTitle}"`);
+        console.log(
+          `   ✅ Episode #${episodeOutline.id} clean & valid: ${validation.charCount} chars (${validation.wordCount} words)`
+        );
 
         return {
           id: episodeOutline.id,
-          title: `Episode ${episodeOutline.id}`,
+          title: episodeTitle,
           content,
-          charCount: content.length,
+          charCount: validation.charCount,
           openLoop: episodeOutline.openLoop,
           turnPoints: [episodeOutline.keyTurning],
           emotions: [episodeOutline.internalConflict],

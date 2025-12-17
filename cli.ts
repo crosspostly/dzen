@@ -12,6 +12,7 @@ import { uniquenessService } from './services/uniquenessService';
 import { Phase2AntiDetectionService } from './services/phase2AntiDetectionService';
 import { MultiAgentService } from './services/multiAgentService';
 import { ThemeGeneratorService } from './services/themeGeneratorService';
+import { ArticleExporter } from './services/articleExporter';
 import { getDzenChannelConfig, getAllDzenChannels, getRandomThemeForChannel, validateDzenChannelsConfig } from './config/dzen-channels.config';
 import fs from 'fs';
 import path from 'path';
@@ -248,48 +249,31 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
 
       const totalTime = Date.now() - startTime;
 
-      // Save result to channel-specific directory
-      console.log(`\n${LOG.SAVE} Saving result...`);
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const outDir = path.join(process.cwd(), generationParams.outputDir.replace('./', ''));
-      fs.mkdirSync(outDir, { recursive: true });
+      // Export result to structured directory: ./articles/{projectId}/{YYYY-MM-DD}/
+      console.log(`\n${LOG.SAVE} Exporting article (JSON + TXT + HTML)...`);
 
-      const outputPath = path.join(outDir, `article_${timestamp}.json`);
-      fs.writeFileSync(
-        outputPath,
-        JSON.stringify({
-          id: article.id,
-          title: article.title,
-          lede: article.lede,
-          channel: dzenChannel || projectId,
-          episodes: article.episodes.map(ep => ({
-            id: ep.id,
-            title: ep.title,
-            content: ep.content,
-            charCount: ep.charCount,
-            openLoop: ep.openLoop,
-          })),
-          finale: article.finale,
-          voicePassport: article.voicePassport,
-          metadata: article.metadata,
-          outline: {
-            theme: article.outline.theme,
-            angle: article.outline.angle,
-            emotion: article.outline.emotion,
-            audience: article.outline.audience,
-          },
-          generation: {
-            modelOutline: generationParams.modelOutline,
-            modelEpisodes: generationParams.modelEpisodes,
-            channelConfig: dzenChannel || projectId,
-            themePriority: {
-              cliTheme: theme || null,
-              configTriggers: !theme && !dzenChannel,
-              hardcodedDefault: !theme && !dzenChannel,
-            },
-            generatedAt: new Date().toISOString(),
-          },
-        }, null, 2)
+      const articleForExport = {
+        ...article,
+        outline: {
+          ...article.outline,
+          audience: article.outline.audience || generationParams.audience,
+        },
+        generation: {
+          modelOutline: generationParams.modelOutline,
+          modelEpisodes: generationParams.modelEpisodes,
+          channelConfig: dzenChannel || projectId,
+          generatedAt: new Date().toISOString(),
+        },
+      };
+
+      const exportResult = await ArticleExporter.exportArticle(
+        articleForExport,
+        dzenChannel || projectId || "channel-1",
+        {
+          includeJson: true,
+          includeText: true,
+          includeHtml: true,
+        }
       );
 
       // Enhanced final results output
@@ -308,7 +292,14 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`${LOG.TIMER} Time:`);
       console.log(`   - Total: ${formatTime(totalTime)}`);
       console.log(``);
-      console.log(`${LOG.SAVE} File saved: ${outputPath}`);
+
+      console.log(`${LOG.SAVE} ============================================`);
+      console.log(`${LOG.SAVE} Article exported to three formats:`);
+      console.log(`${LOG.SAVE}   📋 JSON: ${path.basename(exportResult.jsonPath || '')}`);
+      console.log(`${LOG.SAVE}   📄 TXT:  ${path.basename(exportResult.textPath || '')}`);
+      console.log(`${LOG.SAVE}   🌐 HTML: ${path.basename(exportResult.htmlPath || '')}`);
+      console.log(`${LOG.SAVE} Directory: ${exportResult.directoryPath}`);
+      console.log(`${LOG.SAVE} ============================================`);
       console.log(``);
 
     } else if (command === 'generate') {
