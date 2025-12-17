@@ -5,6 +5,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
+import { EpisodeGeneratorService } from "./episodeGeneratorService";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -35,9 +36,9 @@ export class MultiAgentService {
     console.log("📋 Stage 0: Building outline (12 episodes)...");
     const outline = await this.generateOutline(params);
     
-    // Stage 1: Parallel Episode Generation
-    console.log("🔄 Stage 1: Generating 12 episodes in parallel (batch by 3)...");
-    const episodes = await this.generateEpisodesInParallel(outline);
+    // Stage 1: Sequential Episode Generation
+    console.log("🔄 Stage 1: Generating 12 episodes sequentially...");
+    const episodes = await this.generateEpisodesSequentially(outline);
     
     // Generate Lede & Finale
     console.log("🎯 Generating lede (600-900) and finale (1200-1800)...");
@@ -153,26 +154,23 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   }
 
   /**
-   * Stage 1: Parallel episode generation
+   * Stage 1: Sequential episode generation
+   * Each episode = one API request, waiting between requests to avoid overload
    */
-  private async generateEpisodesInParallel(outline: OutlineStructure): Promise<Episode[]> {
-    const episodes: Episode[] = [];
-    const batchSize = 3;
+  private async generateEpisodesSequentially(outline: OutlineStructure): Promise<Episode[]> {
+    const episodeGenerator = new EpisodeGeneratorService(
+      process.env.GEMINI_API_KEY || process.env.API_KEY
+    );
 
-    for (let i = 0; i < outline.episodes.length; i += batchSize) {
-      const batch = outline.episodes.slice(i, i + batchSize);
-      console.log(`   Batch ${Math.floor(i / batchSize) + 1}/4 (episodes ${i + 1}-${Math.min(i + batchSize, outline.episodes.length)})...`);
-      
-      const results = await Promise.all(
-        batch.map((ep, idx) => 
-          this.agents[idx].generateEpisode(ep, this.contextManager.getSnapshot(ep.id))
-        )
-      );
-      
-      episodes.push(...results);
-    }
-
-    return episodes;
+    return await episodeGenerator.generateEpisodesSequentially(
+      outline.episodes,
+      {
+        delayBetweenRequests: 1500,
+        onProgress: (current, total) => {
+          console.log(`   ✅ Episode ${current}/${total} complete`);
+        }
+      }
+    );
   }
 
   /**

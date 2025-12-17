@@ -7,7 +7,7 @@
 
   "stage_1_plan": {
     "name": "Построение плана структуры",
-    "model": "gemini-2.5-pro",
+    "model": "gemini-2.5-flash",
     "temperature": 0.75,
     "prompt": "Постройте ДЕТАЛЬНЫЙ план для драматичной истории о: \"{theme}\"
 
@@ -61,7 +61,7 @@
 
   "stage_3_development": {
     "name": "Развитие конфликта (основная часть)",
-    "model": "gemini-2.5-pro",
+    "model": "gemini-2.5-flash",
     "temperature": 0.80,
     "prompt": "Продолжи историю. Вот что уже написано:
 
@@ -109,7 +109,7 @@
 
   "stage_4_climax": {
     "name": "Кульминация (пик напряжения)",
-    "model": "gemini-2.5-pro",
+    "model": "gemini-2.5-flash",
     "temperature": 0.75,
     "prompt": "Вот текущее состояние истории (последние абзацы):
 
