@@ -11,6 +11,7 @@ import { geminiService } from './services/geminiService';
 import { uniquenessService } from './services/uniquenessService';
 import { Phase2AntiDetectionService } from './services/phase2AntiDetectionService';
 import { MultiAgentService } from './services/multiAgentService';
+import { ThemeGeneratorService } from './services/themeGeneratorService';
 import { getDzenChannelConfig, getAllDzenChannels, getRandomThemeForChannel, validateDzenChannelsConfig } from './config/dzen-channels.config';
 import fs from 'fs';
 import path from 'path';
@@ -196,11 +197,23 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
         console.log(`   📁 Output: ${generationParams.outputDir}\n`);
 
       } else {
-        // NEW: Using Project Configuration with Theme Priority System
+        // Using Project Configuration with AI-Generated Theme
         console.log(`${LOG.BRAIN} Loading project configuration: ${projectId}`);
         
-        // NEW: Theme selection with priority hierarchy
-        generationParams.theme = getThemeWithPriority(projectId, theme);
+        // Theme selection with priority hierarchy
+        if (theme) {
+          // Priority 1: CLI explicit theme (highest)
+          generationParams.theme = theme;
+          console.log(`${LOG.INFO} Theme from CLI (highest priority): "${theme}"`);
+        } else {
+          // Priority 2: AI-generated theme from real data
+          console.log(`${LOG.BRAIN} Generating new theme from top articles...`);
+          const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+          const themeService = new ThemeGeneratorService(apiKey);
+          generationParams.theme = await themeService.generateNewTheme();
+          console.log(`${LOG.SUCCESS} Using AI-generated theme: "${generationParams.theme}"`);
+        }
+        
         generationParams.angle = getArg('angle', 'confession');
         generationParams.emotion = getArg('emotion', 'triumph');
         generationParams.audience = getArg('audience', 'Women 35-60');
@@ -756,14 +769,15 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(``);
       console.log(`📝 Examples:`);
       console.log(`  # Using Dzen Channel Configuration (RECOMMENDED)`);
-      console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=women-35-60 --theme="Test theme"`);
-      console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=young-moms`);
+      console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=women-35-60`);
+      console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=young-moms --theme="Custom theme"`);
       console.log(`  npx ts-node cli.ts generate:all-dzen`);
       console.log(`  npx ts-node cli.ts list-dzen-channels`);
       console.log(``);
-      console.log(`  # Legacy direct parameters (deprecated)`);
-      console.log(`  npx ts-node cli.ts generate:v2 --theme="Я терпела это 20 лет" --angle=confession`);
-      console.log(`  npx ts-node cli.ts generate:v2 --theme="Test" --emotion=triumph --audience="Women 35-60"`);
+      console.log(`  # Using Project Configuration with AI-Generated Themes`);
+      console.log(`  npx ts-node cli.ts generate:v2 --project=channel-1`);
+      console.log(`  npx ts-node cli.ts generate:v2 --project=channel-1 --theme="Custom theme" --angle=confession`);
+      console.log(`  npx ts-node cli.ts generate:v2 --project=channel-1 --emotion=triumph --audience="Women 35-60"`);
       console.log(``);
       console.log(`  # Other commands`);
       console.log(`  npx ts-node cli.ts phase2 --content=article.txt --title="Моя статья"`);

@@ -30,10 +30,7 @@ jobs:
       - name: Generate longform article (ZenMaster v2.0)
         run: |
           npx tsx cli.ts generate:v2 \
-            --theme="Я терпела это 20 лет" \
-            --angle="confession" \
-            --emotion="triumph" \
-            --audience="Women 35-60" \
+            --project=channel-1 \
             --verbose
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
