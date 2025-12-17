@@ -56,6 +56,40 @@ function formatTime(ms: number): string {
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
+/**
+ * Get theme with priority hierarchy:
+ * 1. --theme CLI argument (highest priority)
+ * 2. Random from config.required_triggers (mid priority)  
+ * 3. Hardcoded default (lowest priority)
+ */
+function getThemeWithPriority(projectId: string, cliTheme?: string): string {
+  // Priority 1: CLI theme (highest priority)
+  if (cliTheme && cliTheme.trim()) {
+    console.log(`${LOG.BRAIN} Using CLI theme (highest priority): "${cliTheme}"`);
+    return cliTheme.trim();
+  }
+  
+  // Priority 2: Random from config required_triggers
+  try {
+    const config = configService.loadConfig(projectId);
+    const triggers = config.content_rules?.required_triggers;
+    
+    if (triggers && triggers.length > 0) {
+      const randomIndex = Math.floor(Math.random() * triggers.length);
+      const selectedTheme = triggers[randomIndex];
+      console.log(`${LOG.BRAIN} Using random theme from config (mid priority): "${selectedTheme}"`);
+      return selectedTheme;
+    }
+  } catch (error) {
+    console.log(`${LOG.WARN} Could not load config for project ${projectId}, using default`);
+  }
+  
+  // Priority 3: Hardcoded default (lowest priority)
+  const defaultTheme = 'Я терпела это 20 лет';
+  console.log(`${LOG.BRAIN} Using hardcoded default theme (lowest priority): "${defaultTheme}"`);
+  return defaultTheme;
+}
+
 (async () => {
   try {
     // ============================================================================
@@ -116,9 +150,10 @@ function formatTime(ms: number): string {
     } else if (command === 'generate:v2') {
       // ============================================================================
       // ZenMaster v2.0 - Multi-Agent Longform Generation (35K+ symbols)
-      // SUPPORTS: Direct parameters OR Dzen Channel Configuration
+      // SUPPORTS: Project Config (with theme priority) OR Dzen Channel Configuration
       // ============================================================================
       
+      const projectId = getArg('project', 'channel-1');
       const dzenChannel = getArg('dzen-channel');
       const theme = getArg('theme');
       const verbose = getFlag('verbose');
@@ -140,7 +175,7 @@ function formatTime(ms: number): string {
       };
 
       if (dzenChannel) {
-        // Using Dzen Channel Configuration
+        // Using Dzen Channel Configuration (existing logic)
         console.log(`${LOG.BRAIN} Loading Dzen channel configuration: ${dzenChannel}`);
         const channelConfig = getDzenChannelConfig(dzenChannel);
         
@@ -161,8 +196,11 @@ function formatTime(ms: number): string {
         console.log(`   📁 Output: ${generationParams.outputDir}\n`);
 
       } else {
-        // Legacy direct parameters
-        generationParams.theme = theme || 'Я терпела это 20 лет';
+        // NEW: Using Project Configuration with Theme Priority System
+        console.log(`${LOG.BRAIN} Loading project configuration: ${projectId}`);
+        
+        // NEW: Theme selection with priority hierarchy
+        generationParams.theme = getThemeWithPriority(projectId, theme);
         generationParams.angle = getArg('angle', 'confession');
         generationParams.emotion = getArg('emotion', 'triumph');
         generationParams.audience = getArg('audience', 'Women 35-60');
@@ -170,14 +208,13 @@ function formatTime(ms: number): string {
         generationParams.modelEpisodes = getArg('model-episodes', 'gemini-2.5-flash');
         generationParams.outputDir = './generated/zenmaster-v2/';
 
-        console.log(`${LOG.WARN} ⚠️  Using legacy direct parameters (deprecated)`);
-        console.log(`${LOG.INFO} 💡 Use --dzen-channel instead for better configuration management`);
-        console.log(`${LOG.BRAIN} Parameters:`);
+        console.log(`${LOG.SUCCESS} ✅ Using PROJECT_${projectId.toUpperCase()}_CONFIG:`);
         console.log(`   📝 Theme: "${generationParams.theme}"`);
         console.log(`   🎯 Angle: ${generationParams.angle}`);
         console.log(`   💫 Emotion: ${generationParams.emotion}`);
         console.log(`   👥 Audience: ${generationParams.audience}`);
-        console.log(`   🤖 Models: ${generationParams.modelOutline} (outline), ${generationParams.modelEpisodes} (episodes)\n`);
+        console.log(`   🤖 Models: ${generationParams.modelOutline} (outline), ${generationParams.modelEpisodes} (episodes)`);
+        console.log(`   📁 Output: ${generationParams.outputDir}\n`);
       }
 
       // Initialize Multi-Agent Service
@@ -211,7 +248,7 @@ function formatTime(ms: number): string {
           id: article.id,
           title: article.title,
           lede: article.lede,
-          channel: dzenChannel || 'legacy',
+          channel: dzenChannel || projectId,
           episodes: article.episodes.map(ep => ({
             id: ep.id,
             title: ep.title,
@@ -231,29 +268,34 @@ function formatTime(ms: number): string {
           generation: {
             modelOutline: generationParams.modelOutline,
             modelEpisodes: generationParams.modelEpisodes,
-            channelConfig: dzenChannel,
+            channelConfig: dzenChannel || projectId,
+            themePriority: {
+              cliTheme: theme || null,
+              configTriggers: !theme && !dzenChannel,
+              hardcodedDefault: !theme && !dzenChannel,
+            },
             generatedAt: new Date().toISOString(),
           },
         }, null, 2)
       );
 
-      // Final results
+      // Enhanced final results output
       console.log(`\n${LOG.SUCCESS} ============================================`);
-      console.log(`${LOG.SUCCESS} ARTICLE COMPLETE (ZenMaster v2.0)`);
+      console.log(`${LOG.SUCCESS} ARTICLE COMPLETE!`);
       console.log(`${LOG.SUCCESS} ============================================`);
       console.log(``);
       console.log(`${LOG.SUCCESS} Details:`);
       console.log(`   📄 Title: ${article.title}`);
-      console.log(`   📊 Size: ${article.metadata.totalChars} symbols`);
-      console.log(`   📖 Reading time: ${article.metadata.totalReadingTime} min`);
-      console.log(`   📝 Episodes: ${article.metadata.episodeCount}`);
+      console.log(`   📊 Characters: ${article.metadata.totalChars}`);
+      console.log(`   ⏱️  Reading time: ${article.metadata.totalReadingTime} min`);
+      console.log(`   📄 Episodes: ${article.metadata.episodeCount}`);
       console.log(`   🎬 Scenes: ${article.metadata.sceneCount}`);
       console.log(`   💬 Dialogues: ${article.metadata.dialogueCount}`);
       console.log(``);
       console.log(`${LOG.TIMER} Time:`);
       console.log(`   - Total: ${formatTime(totalTime)}`);
       console.log(``);
-      console.log(`${LOG.SAVE} File: ${outputPath}`);
+      console.log(`${LOG.SAVE} File saved: ${outputPath}`);
       console.log(``);
 
     } else if (command === 'generate') {
