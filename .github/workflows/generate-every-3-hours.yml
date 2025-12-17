@@ -29,7 +29,7 @@ jobs:
       
       - name: Generate article
         run: |
-          npx tsx cli.ts generate:v2 --dzen-channel=women-35-60
+          npx tsx cli.ts generate --project=women-35-60 --verbose
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -38,7 +38,7 @@ jobs:
         run: |
           git config --local user.email "zenmaster-bot@github.com"
           git config --local user.name "ZenMaster Bot"
-          git add generated/dzen/ || true
+          git add projects/ || true
           git commit -m "[AUTO] Dzen article generated" || echo "No changes"
           git push origin HEAD:${{ github.ref_name }} || true
       
@@ -47,5 +47,5 @@ jobs:
         if: always()
         with:
           name: dzen-${{ github.run_id }}
-          path: generated/dzen/
+          path: projects/
           retention-days: 90
