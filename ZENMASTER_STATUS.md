@@ -6,6 +6,7 @@
 - Type definitions ✅
 - MultiAgentService ✅
 - Workflow (каждые 3 часа) ✅
+- **Каналы конфиг** ✅ ← НОВОЕ!
 - **Статус**: Ждёт интеграции
 
 ### Phase 2 (Stage 2: Обработка)  
@@ -16,53 +17,72 @@
 
 ---
 
-## 🎯 ЧТО СЕЙЧАС
+## 🎯 КАНАЛЫ (разные конфиги!)
 
-| Что | Где | Статус |
-|-----|-----|--------|
-| PR конфликты | cli.ts | 🔄 Агент решает |
-| Phase 2 код | 6 сервисов | ✅ DONE |
-| Tests | test-phase2.ts | ✅ DONE |
-| Docs | 4 файла | ✅ DONE |
-
----
-
-## 🎁 РЕЗУЛЬТАТЫ (Phase 2)
-
-- ZeroGPT: >70% → <15% ✅
-- Originality.ai: >80% → <20% ✅
-- Publication success: 20% → 90% ✅
+| Канал | ID | Аудитория | Schedule | Скрипт |
+|-------|----|---------|---------|---------|
+| Яндекс.Дзен | `dzen` | Women 35-60 | Каждые 3ч | `config/channels.config.ts` |
+| Medium | `medium` | Tech Founders | 3× | `DZEN_CONFIG, MEDIUM_CONFIG...` |
+| Substack | `substack` | Premium | 4× | Каждый канал иет свои |
+| Habr | `habr` | Tech RU | 3× | API keys + parameters |
 
 ---
 
-## ⚡ КОГДА СТАТЬИ ЗАПУСТЯТСЯ
+## ⚡ GITHUB SECRETS
 
-1. Merge PR #3 (cli.ts конфликты решены)
-2. Запустить workflow
-3. **→ СТАТЬИ ГЕНЕРИРУЮТСЯ КАЖДЫЕ 3 ЧАСА**
+Было (неудобно):
+```
+GEMINI_API_KEY = ...
+DEFAULT_ANGLE = confession
+```
+
+**Теперь** (для каждого канала):
+```
+GEMINI_API_KEY_DZEN = sk-...
+GEMINI_API_KEY_MEDIUM = sk-...
+GEMINI_API_KEY_SUBSTACK = sk-...
+GEMINI_API_KEY_HABR = sk-...
+
+MEDIUM_API_KEY = ...
+SUBSTACK_API_KEY = ...
+HABR_API_KEY = ...
+```
+
+Адд в `Settings → Secrets and variables`
 
 ---
 
-## 📋 КОМАНДЫ
+## 📝 КОМАНДЫ
 
 ```bash
-# Phase 1: Генерация
-npx ts-node cli.ts generate:v2 --theme="Test"
+# Генерировать для Дзена
+npx ts-node cli.ts generate:v2 --channel=dzen
 
-# Phase 2: Обработка
-npx ts-node cli.ts phase2 --content=article.txt --title="Title"
-npx ts-node cli.ts phase2-info
+# Обработать (Phase 2)
+npx ts-node cli.ts phase2 --channel=dzen --content=article.txt
+
+# Все каналы сразу
+npx ts-node cli.ts generate:all
 ```
 
 ---
 
-## 🔗 ССЫЛКИ
+## 🚀 ПОРЯДОК РАБОты
 
-- **PR #3**: https://github.com/crosspostly/dzen/pull/3
-- **Phase 2 Docs**: PHASE_2_ANTI_DETECTION.md
-- **Workflow**: .github/workflows/generate-every-3-hours.yml
+1. ✅ Merge PR #3 (resolve cli.ts conflicts)
+2. ✅ Добавить SECRETS (разные ключи для каждого)
+3. **→ WORKFLOW STARTS**
+4. → Статьи генерируются автоматически
 
 ---
 
-**Status**: 🟡 Waiting for PR #3 merge
+## 📚 ФАЙЛЫ
+
+- `config/channels.config.ts` - Все конфиги
+- `CONFIG_SETUP.md` - Как добавить новый канал
+- `PHASE_2_ANTI_DETECTION.md` - Обработка (обход детекторов)
+
+---
+
+**Status**: 🟡 Waiting for: PR #3 merge + SECRETS config
 **Next**: Phase 3-4 (humanization + QA)
