@@ -11,8 +11,9 @@ export class MultiAgentService {
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
 
-  constructor(apiKey: string) {
-    this.geminiClient = new GoogleGenAI({ apiKey });
+  constructor(apiKey?: string) {
+    const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+    this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.contextManager = new ContextManager();
     this.initializeAgents(12);
   }

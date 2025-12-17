@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "generate": "tsx cli.ts generate",
+    "generate:v2": "tsx cli.ts generate:v2",
     "validate": "tsx cli.ts validate",
     "list-projects": "tsx cli.ts list-projects",
     "test": "tsx cli.ts test",

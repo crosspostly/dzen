@@ -9,6 +9,7 @@ import { configService } from './services/configService';
 import { examplesService } from './services/examplesService';
 import { geminiService } from './services/geminiService';
 import { uniquenessService } from './services/uniquenessService';
+import { MultiAgentService } from './services/multiAgentService';
 import fs from 'fs';
 import path from 'path';
 
@@ -50,7 +51,93 @@ function formatTime(ms: number): string {
 
 (async () => {
   try {
-    if (command === 'generate') {
+    if (command === 'generate:v2') {
+      // ============================================================================
+      // ZenMaster v2.0 - Multi-Agent Longform Generation (35K+ symbols)
+      // ============================================================================
+      const theme = getArg('theme', 'Я услышала одну фразу и всё изменилось');
+      const angle = getArg('angle', 'confession');
+      const emotion = getArg('emotion', 'triumph');
+      const audience = getArg('audience', 'Women 35-60');
+      const verbose = getFlag('verbose');
+
+      console.log(`\n${LOG.ROCKET} ============================================`);
+      console.log(`${LOG.ROCKET} ZenMaster v2.0 - Multi-Agent Generation`);
+      console.log(`${LOG.ROCKET} ============================================\n`);
+
+      const startTime = Date.now();
+
+      console.log(`${LOG.BRAIN} Parameters:`);
+      console.log(`   📝 Theme: "${theme}"`);
+      console.log(`   🎯 Angle: ${angle}`);
+      console.log(`   💫 Emotion: ${emotion}`);
+      console.log(`   👥 Audience: ${audience}\n`);
+
+      // Initialize Multi-Agent Service
+      const multiAgentService = new MultiAgentService();
+
+      // Generate 35K+ longform article
+      const article = await multiAgentService.generateLongFormArticle({
+        theme,
+        angle,
+        emotion,
+        audience,
+      });
+
+      const totalTime = Date.now() - startTime;
+
+      // Save result
+      console.log(`\n${LOG.SAVE} Saving result...`);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const outDir = path.join(process.cwd(), 'generated', 'articles');
+      fs.mkdirSync(outDir, { recursive: true });
+
+      const outputPath = path.join(outDir, `article_${timestamp}.json`);
+      fs.writeFileSync(
+        outputPath,
+        JSON.stringify({
+          id: article.id,
+          title: article.title,
+          lede: article.lede,
+          episodes: article.episodes.map(ep => ({
+            id: ep.id,
+            title: ep.title,
+            content: ep.content,
+            charCount: ep.charCount,
+            openLoop: ep.openLoop,
+          })),
+          finale: article.finale,
+          voicePassport: article.voicePassport,
+          metadata: article.metadata,
+          outline: {
+            theme: article.outline.theme,
+            angle: article.outline.angle,
+            emotion: article.outline.emotion,
+            audience: article.outline.audience,
+          },
+        }, null, 2)
+      );
+
+      // Final results
+      console.log(`\n${LOG.SUCCESS} ============================================`);
+      console.log(`${LOG.SUCCESS} ARTICLE COMPLETE (ZenMaster v2.0)`);
+      console.log(`${LOG.SUCCESS} ============================================`);
+      console.log(``);
+      console.log(`${LOG.SUCCESS} Details:`);
+      console.log(`   📄 Title: ${article.title}`);
+      console.log(`   📊 Size: ${article.metadata.totalChars} symbols`);
+      console.log(`   📖 Reading time: ${article.metadata.totalReadingTime} min`);
+      console.log(`   📝 Episodes: ${article.metadata.episodeCount}`);
+      console.log(`   🎬 Scenes: ${article.metadata.sceneCount}`);
+      console.log(`   💬 Dialogues: ${article.metadata.dialogueCount}`);
+      console.log(``);
+      console.log(`${LOG.TIMER} Time:`);
+      console.log(`   - Total: ${formatTime(totalTime)}`);
+      console.log(``);
+      console.log(`${LOG.SAVE} File: ${outputPath}`);
+      console.log(``);
+
+    } else if (command === 'generate') {
       const projectId = getArg('project', 'channel-1');
       const theme = getArg('theme');
       const verbose = getFlag('verbose');
@@ -182,7 +269,7 @@ function formatTime(ms: number): string {
 
     } else if (command === 'test') {
       console.log(`${LOG.BRAIN} Короткий тест системы...`);
-      console.log(`${LOG.LOADING} Конфигсервис: `, end = '');
+      process.stdout.write(`${LOG.LOADING} Конфигсервис: `);
       try {
         const config = configService.loadConfig('channel-1');
         console.log(LOG.SUCCESS);
@@ -190,7 +277,7 @@ function formatTime(ms: number): string {
         console.log(LOG.ERROR);
       }
 
-      console.log(`${LOG.LOADING} Примерысервис: `, end = '');
+      process.stdout.write(`${LOG.LOADING} Примерысервис: `);
       try {
         const examples = examplesService.loadExamples('./projects/channel-1/examples');
         console.log(LOG.SUCCESS, `(${examples.length} примеров)`);
@@ -198,7 +285,7 @@ function formatTime(ms: number): string {
         console.log(LOG.ERROR);
       }
 
-      console.log(`${LOG.LOADING} Уникальностьсервис: `, end = '');
+      process.stdout.write(`${LOG.LOADING} Уникальностьсервис: `);
       try {
         const result = await uniquenessService.checkUniqueness(
           'Это тест',
@@ -215,20 +302,30 @@ function formatTime(ms: number): string {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
       console.log(`Команды:`);
-      console.log(`  generate      - Генерировать статью`);
-      console.log(`  validate      - Проверить конфиг`);
-      console.log(`  list-projects - Лист проектов`);
-      console.log(`  test          - Короткие тесты`);
+      console.log(`  generate          - Генерировать статью (10-15K)`);
+      console.log(`  generate:v2       - Генерировать лонгрид (35K+) [ZenMaster v2.0]`);
+      console.log(`  validate          - Проверить конфиг`);
+      console.log(`  list-projects     - Лист проектов`);
+      console.log(`  test              - Короткие тесты`);
       console.log(``);
-      console.log(`Опции:`);
+      console.log(`Опции для generate:`);
       console.log(`  --project=NAME   - Название проекта`);
       console.log(`  --theme=TEXT     - Описание темы`);
       console.log(`  --verbose        - Подробная информация`);
+      console.log(``);
+      console.log(`Опции для generate:v2:`);
+      console.log(`  --theme=TEXT     - Описание темы (required)`);
+      console.log(`  --angle=TYPE     - confession|scandal|observer (default: confession)`);
+      console.log(`  --emotion=TYPE   - triumph|guilt|shame|liberation|anger (default: triumph)`);
+      console.log(`  --audience=TEXT  - Целевая аудитория (default: Women 35-60)`);
       console.log(``);
       console.log(`Примеры:`);
       console.log(`  npm run generate`);
       console.log(`  npm run generate -- --project=channel-1`);
       console.log(`  npm run generate -- --theme="Пончик" --verbose`);
+      console.log(``);
+      console.log(`  tsx cli.ts generate:v2 --theme="Я терпела это 20 лет"`);
+      console.log(`  tsx cli.ts generate:v2 --theme="Одна фраза всё изменила" --angle=confession --emotion=triumph`);
       console.log(``);
     }
 

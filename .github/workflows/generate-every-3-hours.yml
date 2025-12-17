@@ -64,13 +64,14 @@ jobs:
       
       - name: Generate longform article
         run: |
-          npx ts-node cli.ts generate:v2 \
+          npx tsx cli.ts generate:v2 \
             --theme="${{ steps.theme_selector.outputs.theme }}" \
             --angle="${{ steps.theme_selector.outputs.angle }}" \
             --emotion="${{ steps.theme_selector.outputs.emotion }}" \
             --audience="${{ steps.theme_selector.outputs.audience }}"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
       
       - name: Create output directory
         run: mkdir -p generated/articles
