@@ -65,7 +65,7 @@ function formatTime(ms: number): string {
 function getThemeWithPriority(projectId: string, cliTheme?: string): string {
   // Priority 1: CLI theme (highest priority)
   if (cliTheme && cliTheme.trim()) {
-    console.log(`${LOG.BRAIN} Using CLI theme (highest priority): "${cliTheme}"`);
+    console.log(`${LOG.INFO} Theme from CLI (highest priority): "${cliTheme}"`);
     return cliTheme.trim();
   }
   
@@ -77,7 +77,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
     if (triggers && triggers.length > 0) {
       const randomIndex = Math.floor(Math.random() * triggers.length);
       const selectedTheme = triggers[randomIndex];
-      console.log(`${LOG.BRAIN} Using random theme from config (mid priority): "${selectedTheme}"`);
+      console.log(`${LOG.INFO} Theme from config (RANDOM pick): "${selectedTheme}" [${randomIndex + 1}/${triggers.length}]`);
       return selectedTheme;
     }
   } catch (error) {
@@ -86,7 +86,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
   
   // Priority 3: Hardcoded default (lowest priority)
   const defaultTheme = 'Я терпела это 20 лет';
-  console.log(`${LOG.BRAIN} Using hardcoded default theme (lowest priority): "${defaultTheme}"`);
+  console.log(`${LOG.WARN} Using hardcoded default theme: "${defaultTheme}"`);
   return defaultTheme;
 }
 
