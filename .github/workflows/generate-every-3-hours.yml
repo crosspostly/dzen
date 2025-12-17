@@ -62,13 +62,11 @@ jobs:
           echo "🎯 Angle: $ANGLE"
           echo "💫 Emotion: $EMOTION"
       
-      - name: Generate longform article
+      - name: Generate article for Dzen Women 35-60
         run: |
           npx tsx cli.ts generate:v2 \
-            --theme="${{ steps.theme_selector.outputs.theme }}" \
-            --angle="${{ steps.theme_selector.outputs.angle }}" \
-            --emotion="${{ steps.theme_selector.outputs.emotion }}" \
-            --audience="${{ steps.theme_selector.outputs.audience }}"
+            --dzen-channel=women-35-60 \
+            --theme="${{ steps.theme_selector.outputs.theme }}"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -112,12 +110,17 @@ jobs:
       - name: Create workflow summary
         run: |
           cat > $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 🎬 ZenMaster v2.0 Generation Summary
+          ## 🎬 ZenMaster v2.0 Generation Summary - Dzen Women 35-60
           
+          **Channel**: Women 35-60 (confession, triumph)
           **Theme**: ${{ steps.theme_selector.outputs.theme }}
-          **Angle**: ${{ steps.theme_selector.outputs.angle }}
-          **Emotion**: ${{ steps.theme_selector.outputs.emotion }}
-          **Audience**: ${{ steps.theme_selector.outputs.audience }}
+          **Configuration**: Using DZEN_WOMEN_35_60_CONFIG
+          
+          **Parameters (from config)**:
+          - Angle: confession
+          - Emotion: triumph
+          - Audience: Women 35-60
+          - Model: gemini-2.5-pro (outline), gemini-2.5-flash (episodes)
           
           **Generated at**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
           **Workflow ID**: ${{ github.run_id }}
@@ -125,8 +128,14 @@ jobs:
           
           ### Generated Files
           - ✅ Metadata saved
-          - 📝 Article generated
+          - 📝 Article generated for Dzen channel
           - 🔄 Committed to branch
+          - 📁 Saved to: generated/dzen/women-35-60/
+          
+          ### Migration Status
+          - ✅ Parameters moved from GitHub Variables to channel config
+          - ✅ Workflow updated to use --dzen-channel parameter
+          - ✅ Legacy angle/emotion/audience variables no longer needed
           
           EOF
       

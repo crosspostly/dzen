@@ -11,6 +11,7 @@ import { geminiService } from './services/geminiService';
 import { uniquenessService } from './services/uniquenessService';
 import { Phase2AntiDetectionService } from './services/phase2AntiDetectionService';
 import { MultiAgentService } from './services/multiAgentService';
+import { getDzenChannelConfig, getAllDzenChannels, getRandomThemeForChannel, validateDzenChannelsConfig } from './config/dzen-channels.config';
 import fs from 'fs';
 import path from 'path';
 
@@ -55,11 +56,11 @@ function formatTime(ms: number): string {
     if (command === 'generate:v2') {
       // ============================================================================
       // ZenMaster v2.0 - Multi-Agent Longform Generation (35K+ symbols)
+      // SUPPORTS: Direct parameters OR Dzen Channel Configuration
       // ============================================================================
-      const theme = getArg('theme', 'Я услышала одну фразу и всё изменилось');
-      const angle = getArg('angle', 'confession');
-      const emotion = getArg('emotion', 'triumph');
-      const audience = getArg('audience', 'Women 35-60');
+      
+      const dzenChannel = getArg('dzen-channel');
+      const theme = getArg('theme');
       const verbose = getFlag('verbose');
 
       console.log(`\n${LOG.ROCKET} ============================================`);
@@ -68,29 +69,79 @@ function formatTime(ms: number): string {
 
       const startTime = Date.now();
 
-      console.log(`${LOG.BRAIN} Parameters:`);
-      console.log(`   📝 Theme: "${theme}"`);
-      console.log(`   🎯 Angle: ${angle}`);
-      console.log(`   💫 Emotion: ${emotion}`);
-      console.log(`   👥 Audience: ${audience}\n`);
+      let generationParams = {
+        theme: '',
+        angle: 'confession',
+        emotion: 'triumph',
+        audience: 'Women 35-60',
+        modelOutline: 'gemini-2.5-pro',
+        modelEpisodes: 'gemini-2.5-flash',
+        outputDir: './generated/articles/'
+      };
+
+      if (dzenChannel) {
+        // Using Dzen Channel Configuration
+        console.log(`${LOG.BRAIN} Loading Dzen channel configuration: ${dzenChannel}`);
+        const channelConfig = getDzenChannelConfig(dzenChannel);
+        
+        generationParams.theme = theme || getRandomThemeForChannel(dzenChannel);
+        generationParams.angle = channelConfig.defaultAngle;
+        generationParams.emotion = channelConfig.defaultEmotion;
+        generationParams.audience = channelConfig.defaultAudience;
+        generationParams.modelOutline = channelConfig.modelOutline;
+        generationParams.modelEpisodes = channelConfig.modelEpisodes;
+        generationParams.outputDir = channelConfig.outputDir;
+
+        console.log(`${LOG.SUCCESS} ✅ Using DZEN_${dzenChannel.toUpperCase()}_CONFIG:`);
+        console.log(`   📝 Theme: "${generationParams.theme}"`);
+        console.log(`   🎯 Angle: ${generationParams.angle}`);
+        console.log(`   💫 Emotion: ${generationParams.emotion}`);
+        console.log(`   👥 Audience: ${generationParams.audience}`);
+        console.log(`   🤖 Models: ${generationParams.modelOutline} (outline), ${generationParams.modelEpisodes} (episodes)`);
+        console.log(`   📁 Output: ${generationParams.outputDir}\n`);
+
+      } else {
+        // Legacy direct parameters
+        generationParams.theme = theme || 'Я услышала одну фразу и всё изменилось';
+        generationParams.angle = getArg('angle', 'confession');
+        generationParams.emotion = getArg('emotion', 'triumph');
+        generationParams.audience = getArg('audience', 'Women 35-60');
+        generationParams.modelOutline = getArg('model-outline', 'gemini-2.5-pro');
+        generationParams.modelEpisodes = getArg('model-episodes', 'gemini-2.5-flash');
+        generationParams.outputDir = './generated/articles/';
+
+        console.log(`${LOG.WARN} ⚠️  Using legacy direct parameters (deprecated)`);
+        console.log(`${LOG.INFO} 💡 Use --dzen-channel instead for better configuration management`);
+        console.log(`${LOG.BRAIN} Parameters:`);
+        console.log(`   📝 Theme: "${generationParams.theme}"`);
+        console.log(`   🎯 Angle: ${generationParams.angle}`);
+        console.log(`   💫 Emotion: ${generationParams.emotion}`);
+        console.log(`   👥 Audience: ${generationParams.audience}`);
+        console.log(`   🤖 Models: ${generationParams.modelOutline} (outline), ${generationParams.modelEpisodes} (episodes)\n`);
+      }
 
       // Initialize Multi-Agent Service
-      const multiAgentService = new MultiAgentService();
+      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+      if (!apiKey) {
+        throw new Error('GEMINI_API_KEY не установлен. Используйте: export GEMINI_API_KEY=sk-...');
+      }
+      
+      const multiAgentService = new MultiAgentService(apiKey);
 
       // Generate 35K+ longform article
       const article = await multiAgentService.generateLongFormArticle({
-        theme,
-        angle,
-        emotion,
-        audience,
+        theme: generationParams.theme,
+        angle: generationParams.angle,
+        emotion: generationParams.emotion,
+        audience: generationParams.audience,
       });
 
       const totalTime = Date.now() - startTime;
 
-      // Save result
+      // Save result to channel-specific directory
       console.log(`\n${LOG.SAVE} Saving result...`);
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const outDir = path.join(process.cwd(), 'generated', 'articles');
+      const outDir = path.join(process.cwd(), generationParams.outputDir.replace('./', ''));
       fs.mkdirSync(outDir, { recursive: true });
 
       const outputPath = path.join(outDir, `article_${timestamp}.json`);
@@ -100,6 +151,7 @@ function formatTime(ms: number): string {
           id: article.id,
           title: article.title,
           lede: article.lede,
+          channel: dzenChannel || 'legacy',
           episodes: article.episodes.map(ep => ({
             id: ep.id,
             title: ep.title,
@@ -115,6 +167,12 @@ function formatTime(ms: number): string {
             angle: article.outline.angle,
             emotion: article.outline.emotion,
             audience: article.outline.audience,
+          },
+          generation: {
+            modelOutline: generationParams.modelOutline,
+            modelEpisodes: generationParams.modelEpisodes,
+            channelConfig: dzenChannel,
+            generatedAt: new Date().toISOString(),
           },
         }, null, 2)
       );
@@ -244,68 +302,196 @@ function formatTime(ms: number): string {
       console.log(`${LOG.SAVE} Файл: ${outputPath}`);
       console.log(``);
 
-    } else if (command === 'generate:v2') {
-      // ZenMaster v2.0 — 35K+ Longform Generation
-      const theme = getArg('theme', 'Мой опыт жизни');
-      const angle = getArg('angle', 'confession');
-      const emotion = getArg('emotion', 'triumph');
-      const audience = getArg('audience', 'Women 35-60');
-      const verbose = getFlag('verbose');
-
+        } else if (command === 'generate:all-dzen') {
+      // ============================================================================
+      // Generate articles for ALL Dzen channels simultaneously
+      // ============================================================================
+      
       console.log(`\n${LOG.ROCKET} ============================================`);
-      console.log(`${LOG.ROCKET} ZenMaster v2.0 — Longform Generation`);
+      console.log(`${LOG.ROCKET} ZenMaster v2.0 - Generate All Dzen Channels`);
       console.log(`${LOG.ROCKET} ============================================\n`);
 
-      try {
-        const { MultiAgentService } = await import('./services/multiAgentService');
-        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-        
-        if (!apiKey) {
-          throw new Error('GEMINI_API_KEY не установлен. Используйте: export GEMINI_API_KEY=sk-...');
-        }
+      const startTime = Date.now();
+      
+      // Validate all channels have valid configuration
+      console.log(`${LOG.LOADING} Validating Dzen channels configuration...`);
+      const validation = validateDzenChannelsConfig();
+      if (!validation.valid) {
+        console.log(`${LOG.ERROR} Configuration validation failed:`);
+        validation.errors.forEach(error => console.log(`   ❌ ${error}`));
+        process.exit(1);
+      }
+      console.log(`${LOG.SUCCESS} All Dzen channels configuration is valid\n`);
 
-        const service = new MultiAgentService(apiKey);
-        const startTime = Date.now();
-        
-        const article = await service.generateLongFormArticle({
-          theme,
-          angle,
-          emotion,
-          audience,
+      const allChannels = getAllDzenChannels();
+      console.log(`${LOG.BRAIN} Found ${allChannels.length} Dzen channels:`);
+      allChannels.forEach(channel => {
+        console.log(`   📡 ${channel.id}: ${channel.name} (${channel.defaultAngle}, ${channel.defaultEmotion})`);
+      });
+      console.log('');
+
+      const results: Array<{channelId: string, success: boolean, error?: string, filePath?: string}> = [];
+
+      // Generate for each channel
+      for (const channel of allChannels) {
+        console.log(`${LOG.ROCKET} ============================================`);
+        console.log(`${LOG.ROCKET} Generating for ${channel.name}`);
+        console.log(`${LOG.ROCKET} ============================================\n`);
+
+        try {
+          const channelStartTime = Date.now();
+          
+          // Get random theme for this channel
+          const theme = getRandomThemeForChannel(channel.id);
+          console.log(`${LOG.BRAIN} Using theme: "${theme}"`);
+
+          // Initialize Multi-Agent Service
+          const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+          if (!apiKey) {
+            throw new Error('GEMINI_API_KEY не установлен');
+          }
+          
+          const multiAgentService = new MultiAgentService(apiKey);
+
+          // Generate article
+          const article = await multiAgentService.generateLongFormArticle({
+            theme,
+            angle: channel.defaultAngle,
+            emotion: channel.defaultEmotion,
+            audience: channel.defaultAudience,
+          });
+
+          const channelTime = Date.now() - channelStartTime;
+
+          // Save result
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const outDir = path.join(process.cwd(), channel.outputDir.replace('./', ''));
+          fs.mkdirSync(outDir, { recursive: true });
+
+          const outputPath = path.join(outDir, `article_${timestamp}.json`);
+          fs.writeFileSync(
+            outputPath,
+            JSON.stringify({
+              id: article.id,
+              title: article.title,
+              lede: article.lede,
+              channel: channel.id,
+              episodes: article.episodes.map(ep => ({
+                id: ep.id,
+                title: ep.title,
+                content: ep.content,
+                charCount: ep.charCount,
+                openLoop: ep.openLoop,
+              })),
+              finale: article.finale,
+              voicePassport: article.voicePassport,
+              metadata: article.metadata,
+              outline: {
+                theme: article.outline.theme,
+                angle: article.outline.angle,
+                emotion: article.outline.emotion,
+                audience: article.outline.audience,
+              },
+              generation: {
+                modelOutline: channel.modelOutline,
+                modelEpisodes: channel.modelEpisodes,
+                channelConfig: channel.id,
+                generatedAt: new Date().toISOString(),
+              },
+            }, null, 2)
+          );
+
+          console.log(`${LOG.SUCCESS} ✅ ${channel.name} complete:`);
+          console.log(`   📄 Title: ${article.title}`);
+          console.log(`   📊 Size: ${article.metadata.totalChars} symbols`);
+          console.log(`   📁 File: ${outputPath}`);
+          console.log(`   ⏱️  Time: ${formatTime(channelTime)}\n`);
+
+          results.push({
+            channelId: channel.id,
+            success: true,
+            filePath: outputPath
+          });
+
+        } catch (error) {
+          console.error(`${LOG.ERROR} ❌ ${channel.name} failed:`, error);
+          results.push({
+            channelId: channel.id,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      const totalTime = Date.now() - startTime;
+
+      // Final summary
+      console.log(`${LOG.ROCKET} ============================================`);
+      console.log(`${LOG.ROCKET} GENERATION COMPLETE - ALL DZEN CHANNELS`);
+      console.log(`${LOG.ROCKET} ============================================\n`);
+
+      const successful = results.filter(r => r.success);
+      const failed = results.filter(r => !r.success);
+
+      console.log(`${LOG.SUCCESS} Successful: ${successful.length}/${results.length}`);
+      console.log(`${failed.length > 0 ? LOG.ERROR : LOG.WARN} Failed: ${failed.length}/${results.length}`);
+      console.log(``);
+
+      if (successful.length > 0) {
+        console.log(`${LOG.SUCCESS} Generated articles:`);
+        successful.forEach(result => {
+          console.log(`   ✅ ${result.channelId}: ${result.filePath}`);
         });
+        console.log('');
+      }
 
-        const totalTime = Date.now() - startTime;
+      if (failed.length > 0) {
+        console.log(`${LOG.ERROR} Failed channels:`);
+        failed.forEach(result => {
+          console.log(`   ❌ ${result.channelId}: ${result.error}`);
+        });
+        console.log('');
+      }
 
-        console.log(`\n${LOG.SUCCESS} ============================================`);
-        console.log(`${LOG.SUCCESS} СТАТЬЯ ГОТОВА!`);
-        console.log(`${LOG.SUCCESS} ============================================`);
-        console.log(``);
-        console.log(`${LOG.SUCCESS} Детали:`);
-        console.log(`   📰 Название: ${article.title}`);
-        console.log(`   📊 Размер: ${article.metadata.totalChars} символов`);
-        console.log(`   ⏱️  Время чтения: ${article.metadata.totalReadingTime} минут`);
-        console.log(`   📄 Эпизодов: ${article.metadata.episodeCount}`);
-        console.log(`   🎬 Сцен: ${article.metadata.sceneCount}`);
-        console.log(`   💬 Диалогов: ${article.metadata.dialogueCount}`);
-        console.log(``);
-        console.log(`${LOG.TIMER} Время генерации: ${formatTime(totalTime)}`);
-        console.log(``);
+      console.log(`${LOG.TIMER} Total time: ${formatTime(totalTime)}`);
+      console.log(`${LOG.SAVE} Results saved to ./generated/dzen/{channelId}/`);
+      console.log('');
 
-        // Save to file
-        const timestamp = new Date().toISOString().split('T')[0];
-        const outDir = path.join('./generated/articles', timestamp);
-        fs.mkdirSync(outDir, { recursive: true });
-        const outputPath = path.join(outDir, 'longform-article.json');
+    } else if (command === 'list-dzen-channels') {
+      // List all available Dzen channels
+      console.log(`${LOG.BRAIN} Available Dzen Channels:\n`);
+      
+      const allChannels = getAllDzenChannels();
+      allChannels.forEach(channel => {
+        console.log(`${LOG.INFO} ${channel.id}:`);
+        console.log(`   Name: ${channel.name}`);
+        console.log(`   Description: ${channel.description}`);
+        console.log(`   Angle: ${channel.defaultAngle}`);
+        console.log(`   Emotion: ${channel.defaultEmotion}`);
+        console.log(`   Audience: ${channel.defaultAudience}`);
+        console.log(`   Models: ${channel.modelOutline} (outline), ${channel.modelEpisodes} (episodes)`);
+        console.log(`   Output: ${channel.outputDir}`);
+        console.log(`   Themes: ${channel.channelThemes.length} themes available`);
+        console.log(`   Schedule: ${channel.scheduleCron}`);
+        console.log('');
+      });
+
+    } else if (command === 'validate-dzen-config') {
+      // Validate Dzen channels configuration
+      console.log(`${LOG.LOADING} Validating Dzen channels configuration...`);
+      
+      const validation = validateDzenChannelsConfig();
+      if (validation.valid) {
+        console.log(`${LOG.SUCCESS} ✅ All Dzen channels configuration is valid`);
         
-        fs.writeFileSync(outputPath, JSON.stringify(article, null, 2));
-        console.log(`${LOG.SAVE} Файл: ${outputPath}`);
-        console.log(``);
-
-      } catch (error) {
-        console.error(`${LOG.ERROR} Ошибка при генерации:`, error);
-        if (verbose) {
-          console.error(error);
-        }
+        const allChannels = getAllDzenChannels();
+        console.log(`${LOG.SUCCESS} ${allChannels.length} channels configured:`);
+        allChannels.forEach(channel => {
+          console.log(`   ✅ ${channel.id}: ${channel.name}`);
+        });
+      } else {
+        console.log(`${LOG.ERROR} ❌ Configuration validation failed:`);
+        validation.errors.forEach(error => console.log(`   ❌ ${error}`));
         process.exit(1);
       }
 
@@ -441,44 +627,52 @@ function formatTime(ms: number): string {
     } else {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
-      console.log(`Команды:`);
-      console.log(`  generate       - Генерировать статью`);
-      console.log(`  validate       - Проверить конфиг`);
-      console.log(`  list-projects  - Лист проектов`);
-      console.log(`  phase2         - Phase 2: Anti-Detection обработка`);
-      console.log(`  phase2-info    - Информация о Phase 2 компонентах`);
-      console.log(`  test           - Короткие тесты`);
-      console.log(`  generate          - Генерировать статью (10-15K)`);
-      console.log(`  generate:v2       - Генерировать лонгрид (35K+) [ZenMaster v2.0]`);
-      console.log(`  validate          - Проверить конфиг`);
-      console.log(`  list-projects     - Лист проектов`);
-      console.log(`  test              - Короткие тесты`);
+      console.log(`🚀 ZenMaster v2.0 Commands:`);
+      console.log(`  generate           - Генерировать статью (10-15K)`);
+      console.log(`  generate:v2        - Генерировать лонгрид (35K+) [ZenMaster v2.0]`);
+      console.log(`  generate:all-dzen  - Генерировать для ВСЕХ каналов Дзена`);
+      console.log(`  list-dzen-channels - Список всех каналов Дзена`);
+      console.log(`  validate-dzen-config - Проверить конфигурацию каналов Дзена`);
+      console.log(`  phase2             - Phase 2: Anti-Detection обработка`);
+      console.log(`  phase2-info        - Информация о Phase 2 компонентах`);
+      console.log(`  validate           - Проверить конфиг проекта`);
+      console.log(`  list-projects      - Лист проектов`);
+      console.log(`  test               - Короткие тесты`);
       console.log(``);
-      console.log(`Опции для generate:`);
-      console.log(`  --project=NAME   - Название проекта`);
-      console.log(`  --theme=TEXT     - Описание темы`);
-      console.log(`  --verbose        - Подробная информация`);
+      console.log(`📡 Dzen Channel Commands:`);
+      console.log(`  generate:v2 --dzen-channel=women-35-60     - Канал Women 35-60`);
+      console.log(`  generate:v2 --dzen-channel=young-moms      - Канал Young Moms`);
+      console.log(`  generate:v2 --dzen-channel=men-25-40       - Канал Men 25-40`);
+      console.log(`  generate:v2 --dzen-channel=teens           - Канал Teens`);
+      console.log(`  generate:all-dzen                          - Все каналы одновременно`);
       console.log(``);
-      console.log(`Опции для phase2:`);
-      console.log(`  --title=TEXT      - Название статьи`);
-      console.log(`  --content=PATH    - Путь к файлу с контентом`);
-      console.log(`  --images=PATH1,PATH2 - Пути к изображениям`);
-      console.log(`  --verbose         - Подробные логи`);
-      console.log(`Опции для generate:v2:`);
-      console.log(`  --theme=TEXT     - Описание темы (required)`);
-      console.log(`  --angle=TYPE     - confession|scandal|observer (default: confession)`);
-      console.log(`  --emotion=TYPE   - triumph|guilt|shame|liberation|anger (default: triumph)`);
-      console.log(`  --audience=TEXT  - Целевая аудитория (default: Women 35-60)`);
+      console.log(`⚙️  Options:`);
+      console.log(`  --dzen-channel=ID   - ID канала Дзена (women-35-60, young-moms, etc)`);
+      console.log(`  --theme=TEXT        - Описание темы`);
+      console.log(`  --verbose           - Подробная информация`);
+      console.log(`  Legacy options (deprecated): --angle, --emotion, --audience, --model-*`);
       console.log(``);
-      console.log(`Примеры:`);
-      console.log(`  npm run generate`);
-      console.log(`  npm run generate -- --project=channel-1`);
-      console.log(`  npm run generate -- --theme="Пончик" --verbose`);
+      console.log(`📝 Examples:`);
+      console.log(`  # Using Dzen Channel Configuration (RECOMMENDED)`);
+      console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=women-35-60 --theme="Test theme"`);
+      console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=young-moms`);
+      console.log(`  npx ts-node cli.ts generate:all-dzen`);
+      console.log(`  npx ts-node cli.ts list-dzen-channels`);
       console.log(``);
+      console.log(`  # Legacy direct parameters (deprecated)`);
+      console.log(`  npx ts-node cli.ts generate:v2 --theme="Я терпела это 20 лет" --angle=confession`);
+      console.log(`  npx ts-node cli.ts generate:v2 --theme="Test" --emotion=triumph --audience="Women 35-60"`);
+      console.log(``);
+      console.log(`  # Other commands`);
       console.log(`  npx ts-node cli.ts phase2 --content=article.txt --title="Моя статья"`);
       console.log(`  npx ts-node cli.ts phase2-info`);
-      console.log(`  tsx cli.ts generate:v2 --theme="Я терпела это 20 лет"`);
-      console.log(`  tsx cli.ts generate:v2 --theme="Одна фраза всё изменила" --angle=confession --emotion=triumph`);
+      console.log(`  npx ts-node cli.ts validate-dzen-config`);
+      console.log(``);
+      console.log(`🎯 Available Dzen Channels:`);
+      const channels = getAllDzenChannels();
+      channels.forEach(channel => {
+        console.log(`   ${channel.id} - ${channel.name} (${channel.defaultAngle}, ${channel.defaultEmotion})`);
+      });
       console.log(``);
     }
 
