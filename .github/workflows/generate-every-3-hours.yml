@@ -64,7 +64,7 @@ jobs:
       
       - name: Generate longform article
         run: |
-          npx ts-node cli.ts generate:v2 \
+          npx tsx cli.ts generate:v2 \
             --theme="${{ steps.theme_selector.outputs.theme }}" \
             --angle="${{ steps.theme_selector.outputs.angle }}" \
             --emotion="${{ steps.theme_selector.outputs.emotion }}" \

@@ -157,6 +157,71 @@ function formatTime(ms: number): string {
       console.log(`${LOG.SAVE} Файл: ${outputPath}`);
       console.log(``);
 
+    } else if (command === 'generate:v2') {
+      // ZenMaster v2.0 — 35K+ Longform Generation
+      const theme = getArg('theme', 'Мой опыт жизни');
+      const angle = getArg('angle', 'confession');
+      const emotion = getArg('emotion', 'triumph');
+      const audience = getArg('audience', 'Women 35-60');
+      const verbose = getFlag('verbose');
+
+      console.log(`\n${LOG.ROCKET} ============================================`);
+      console.log(`${LOG.ROCKET} ZenMaster v2.0 — Longform Generation`);
+      console.log(`${LOG.ROCKET} ============================================\n`);
+
+      try {
+        const { MultiAgentService } = await import('./services/multiAgentService');
+        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        
+        if (!apiKey) {
+          throw new Error('GEMINI_API_KEY не установлен. Используйте: export GEMINI_API_KEY=sk-...');
+        }
+
+        const service = new MultiAgentService(apiKey);
+        const startTime = Date.now();
+        
+        const article = await service.generateLongFormArticle({
+          theme,
+          angle,
+          emotion,
+          audience,
+        });
+
+        const totalTime = Date.now() - startTime;
+
+        console.log(`\n${LOG.SUCCESS} ============================================`);
+        console.log(`${LOG.SUCCESS} СТАТЬЯ ГОТОВА!`);
+        console.log(`${LOG.SUCCESS} ============================================`);
+        console.log(``);
+        console.log(`${LOG.SUCCESS} Детали:`);
+        console.log(`   📰 Название: ${article.title}`);
+        console.log(`   📊 Размер: ${article.metadata.totalChars} символов`);
+        console.log(`   ⏱️  Время чтения: ${article.metadata.totalReadingTime} минут`);
+        console.log(`   📄 Эпизодов: ${article.metadata.episodeCount}`);
+        console.log(`   🎬 Сцен: ${article.metadata.sceneCount}`);
+        console.log(`   💬 Диалогов: ${article.metadata.dialogueCount}`);
+        console.log(``);
+        console.log(`${LOG.TIMER} Время генерации: ${formatTime(totalTime)}`);
+        console.log(``);
+
+        // Save to file
+        const timestamp = new Date().toISOString().split('T')[0];
+        const outDir = path.join('./generated/articles', timestamp);
+        fs.mkdirSync(outDir, { recursive: true });
+        const outputPath = path.join(outDir, 'longform-article.json');
+        
+        fs.writeFileSync(outputPath, JSON.stringify(article, null, 2));
+        console.log(`${LOG.SAVE} Файл: ${outputPath}`);
+        console.log(``);
+
+      } catch (error) {
+        console.error(`${LOG.ERROR} Ошибка при генерации:`, error);
+        if (verbose) {
+          console.error(error);
+        }
+        process.exit(1);
+      }
+
     } else if (command === 'validate') {
       const projectId = getArg('project', 'channel-1');
       console.log(`${LOG.LOADING} Проверяю конфиг ${projectId}...`);

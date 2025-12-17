@@ -1,3 +1,4 @@
+import { LongFormArticle } from './types/ContentArchitecture';
 
 export interface Article {
   id: string;
@@ -18,9 +19,16 @@ export enum GenerationState {
   STORYBOARDING = 'STORYBOARDING',
   GENERATING_IMAGES = 'GENERATING_IMAGES',
   POST_PROCESSING = 'POST_PROCESSING',
+  OUTLINE_GENERATION = 'OUTLINE_GENERATION',
+  EPISODE_GENERATION = 'EPISODE_GENERATION',
+  ANTI_DETECTION = 'ANTI_DETECTION',
+  MONTAGE = 'MONTAGE',
+  HUMANIZATION = 'HUMANIZATION',
   COMPLETED = 'COMPLETED',
   ERROR = 'ERROR'
 }
+
+export type { LongFormArticle };
 
 export interface RubricData {
   name: string;
