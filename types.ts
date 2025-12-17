@@ -28,7 +28,7 @@ export enum GenerationState {
   ERROR = 'ERROR'
 }
 
-export type { LongFormArticle }
+export type { LongFormArticle };
 
 export interface RubricData {
   name: string;

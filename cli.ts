@@ -9,6 +9,7 @@ import { configService } from './services/configService';
 import { examplesService } from './services/examplesService';
 import { geminiService } from './services/geminiService';
 import { uniquenessService } from './services/uniquenessService';
+import { Phase2AntiDetectionService } from './services/phase2AntiDetectionService';
 import { MultiAgentService } from './services/multiAgentService';
 import fs from 'fs';
 import path from 'path';
@@ -243,6 +244,71 @@ function formatTime(ms: number): string {
       console.log(`${LOG.SAVE} Файл: ${outputPath}`);
       console.log(``);
 
+    } else if (command === 'generate:v2') {
+      // ZenMaster v2.0 — 35K+ Longform Generation
+      const theme = getArg('theme', 'Мой опыт жизни');
+      const angle = getArg('angle', 'confession');
+      const emotion = getArg('emotion', 'triumph');
+      const audience = getArg('audience', 'Women 35-60');
+      const verbose = getFlag('verbose');
+
+      console.log(`\n${LOG.ROCKET} ============================================`);
+      console.log(`${LOG.ROCKET} ZenMaster v2.0 — Longform Generation`);
+      console.log(`${LOG.ROCKET} ============================================\n`);
+
+      try {
+        const { MultiAgentService } = await import('./services/multiAgentService');
+        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        
+        if (!apiKey) {
+          throw new Error('GEMINI_API_KEY не установлен. Используйте: export GEMINI_API_KEY=sk-...');
+        }
+
+        const service = new MultiAgentService(apiKey);
+        const startTime = Date.now();
+        
+        const article = await service.generateLongFormArticle({
+          theme,
+          angle,
+          emotion,
+          audience,
+        });
+
+        const totalTime = Date.now() - startTime;
+
+        console.log(`\n${LOG.SUCCESS} ============================================`);
+        console.log(`${LOG.SUCCESS} СТАТЬЯ ГОТОВА!`);
+        console.log(`${LOG.SUCCESS} ============================================`);
+        console.log(``);
+        console.log(`${LOG.SUCCESS} Детали:`);
+        console.log(`   📰 Название: ${article.title}`);
+        console.log(`   📊 Размер: ${article.metadata.totalChars} символов`);
+        console.log(`   ⏱️  Время чтения: ${article.metadata.totalReadingTime} минут`);
+        console.log(`   📄 Эпизодов: ${article.metadata.episodeCount}`);
+        console.log(`   🎬 Сцен: ${article.metadata.sceneCount}`);
+        console.log(`   💬 Диалогов: ${article.metadata.dialogueCount}`);
+        console.log(``);
+        console.log(`${LOG.TIMER} Время генерации: ${formatTime(totalTime)}`);
+        console.log(``);
+
+        // Save to file
+        const timestamp = new Date().toISOString().split('T')[0];
+        const outDir = path.join('./generated/articles', timestamp);
+        fs.mkdirSync(outDir, { recursive: true });
+        const outputPath = path.join(outDir, 'longform-article.json');
+        
+        fs.writeFileSync(outputPath, JSON.stringify(article, null, 2));
+        console.log(`${LOG.SAVE} Файл: ${outputPath}`);
+        console.log(``);
+
+      } catch (error) {
+        console.error(`${LOG.ERROR} Ошибка при генерации:`, error);
+        if (verbose) {
+          console.error(error);
+        }
+        process.exit(1);
+      }
+
     } else if (command === 'validate') {
       const projectId = getArg('project', 'channel-1');
       console.log(`${LOG.LOADING} Проверяю конфиг ${projectId}...`);
@@ -266,6 +332,80 @@ function formatTime(ms: number): string {
       projects.forEach(p => {
         console.log(`   ${LOG.SUCCESS} ${p}`);
       });
+
+    } else if (command === 'phase2') {
+      const title = getArg('title', 'Без названия');
+      const contentFile = getArg('content');
+      const images = getArg('images')?.split(',') || [];
+      const verbose = getFlag('verbose');
+
+      if (!contentFile) {
+        console.log(`${LOG.ERROR} Требуется параметр: --content=path/to/article.txt`);
+        process.exit(1);
+      }
+
+      if (!fs.existsSync(contentFile)) {
+        console.log(`${LOG.ERROR} Файл не найден: ${contentFile}`);
+        process.exit(1);
+      }
+
+      console.log(`\n${LOG.ROCKET} ============================================`);
+      console.log(`${LOG.ROCKET} PHASE 2: ANTI-DETECTION PROCESSING`);
+      console.log(`${LOG.ROCKET} ============================================\n`);
+
+      const content = fs.readFileSync(contentFile, 'utf-8');
+
+      const phase2Service = new Phase2AntiDetectionService();
+      const result = await phase2Service.processArticle(
+        title,
+        content,
+        {
+          applyPerplexity: true,
+          applyBurstiness: true,
+          applySkazNarrative: true,
+          enableGatekeeper: true,
+          sanitizeImages: images.length > 0,
+          verbose,
+        },
+        images
+      );
+
+      // Сохраняем результаты
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const outDir = path.join('./generated/phase2', timestamp);
+      fs.mkdirSync(outDir, { recursive: true });
+
+      // Сохраняем обработанный контент
+      fs.writeFileSync(
+        path.join(outDir, 'processed.txt'),
+        result.processedContent
+      );
+
+      // Сохраняем отчет
+      fs.writeFileSync(
+        path.join(outDir, 'report.json'),
+        JSON.stringify({
+          title,
+          originalLength: result.originalContent.length,
+          processedLength: result.processedContent.length,
+          adversarialScore: result.adversarialScore,
+          sanitizedImages: result.sanitizedImages,
+          processingTime: result.processingTime,
+        }, null, 2)
+      );
+
+      // Выводим финальный отчет
+      console.log(`\n${LOG.SUCCESS} ============================================`);
+      console.log(`${LOG.SUCCESS} PROCESSING COMPLETE!`);
+      console.log(`${LOG.SUCCESS} ============================================`);
+      console.log(`\nFinal Score: ${result.adversarialScore.overallScore}/100`);
+      console.log(`Status: ${result.adversarialScore.passesAllChecks ? LOG.SUCCESS + ' READY FOR PUBLICATION' : LOG.WARN + ' NEEDS REVISION'}`);
+      console.log(`\nOutput directory: ${outDir}`);
+      console.log(`Processing time: ${formatTime(result.processingTime)}`);
+
+    } else if (command === 'phase2-info') {
+      const phase2Service = new Phase2AntiDetectionService();
+      console.log(phase2Service.getComponentsInfo());
 
     } else if (command === 'test') {
       console.log(`${LOG.BRAIN} Короткий тест системы...`);
@@ -302,6 +442,12 @@ function formatTime(ms: number): string {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
       console.log(`Команды:`);
+      console.log(`  generate       - Генерировать статью`);
+      console.log(`  validate       - Проверить конфиг`);
+      console.log(`  list-projects  - Лист проектов`);
+      console.log(`  phase2         - Phase 2: Anti-Detection обработка`);
+      console.log(`  phase2-info    - Информация о Phase 2 компонентах`);
+      console.log(`  test           - Короткие тесты`);
       console.log(`  generate          - Генерировать статью (10-15K)`);
       console.log(`  generate:v2       - Генерировать лонгрид (35K+) [ZenMaster v2.0]`);
       console.log(`  validate          - Проверить конфиг`);
@@ -313,6 +459,11 @@ function formatTime(ms: number): string {
       console.log(`  --theme=TEXT     - Описание темы`);
       console.log(`  --verbose        - Подробная информация`);
       console.log(``);
+      console.log(`Опции для phase2:`);
+      console.log(`  --title=TEXT      - Название статьи`);
+      console.log(`  --content=PATH    - Путь к файлу с контентом`);
+      console.log(`  --images=PATH1,PATH2 - Пути к изображениям`);
+      console.log(`  --verbose         - Подробные логи`);
       console.log(`Опции для generate:v2:`);
       console.log(`  --theme=TEXT     - Описание темы (required)`);
       console.log(`  --angle=TYPE     - confession|scandal|observer (default: confession)`);
@@ -324,6 +475,8 @@ function formatTime(ms: number): string {
       console.log(`  npm run generate -- --project=channel-1`);
       console.log(`  npm run generate -- --theme="Пончик" --verbose`);
       console.log(``);
+      console.log(`  npx ts-node cli.ts phase2 --content=article.txt --title="Моя статья"`);
+      console.log(`  npx ts-node cli.ts phase2-info`);
       console.log(`  tsx cli.ts generate:v2 --theme="Я терпела это 20 лет"`);
       console.log(`  tsx cli.ts generate:v2 --theme="Одна фраза всё изменила" --angle=confession --emotion=triumph`);
       console.log(``);
