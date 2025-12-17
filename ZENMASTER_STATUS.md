@@ -6,7 +6,7 @@
 - Type definitions ✅
 - MultiAgentService ✅
 - Workflow (каждые 3 часа) ✅
-- **Каналы конфиг** ✅ ← НОВОЕ!
+- **Мулти-канальная система** ✅ (каждый канал = сВОЙ ключ Gemini!)
 - **Статус**: Ждёт интеграции
 
 ### Phase 2 (Stage 2: Обработка)  
@@ -17,46 +17,40 @@
 
 ---
 
-## 🎯 КАНАЛЫ (разные конфиги!)
+## 🎯 КАНАЛЫ (НЕ ОДИН КЛЮЧ!)
 
-| Канал | ID | Аудитория | Schedule | Скрипт |
-|-------|----|---------|---------|---------|
-| Яндекс.Дзен | `dzen` | Women 35-60 | Каждые 3ч | `config/channels.config.ts` |
-| Medium | `medium` | Tech Founders | 3× | `DZEN_CONFIG, MEDIUM_CONFIG...` |
-| Substack | `substack` | Premium | 4× | Каждый канал иет свои |
-| Habr | `habr` | Tech RU | 3× | API keys + parameters |
+| ID | Name | Audience | **Gemini Key** | Schedule |
+|----|----|----------|--------|----------|
+| `dzen` | Яндекс.Дзен | Women 35-60 | `GEMINI_API_KEY_DZEN` | Каждые 3ч |
+| `medium` | Medium | Tech Founders | `GEMINI_API_KEY_MEDIUM` | 3× в день |
+| `substack` | Substack | Premium | `GEMINI_API_KEY_SUBSTACK` | 4× в день |
+| `habr` | Habr | Tech RU | `GEMINI_API_KEY_HABR` | 3× в день |
+
+🚨 **КАЖДЫЙ канал читает СВОЙ ключ!**
 
 ---
 
-## ⚡ GITHUB SECRETS
+## ⚡ GITHUB SECRETS (ПО ОДНОМУ НА КАНАЛ)
 
-Было (неудобно):
-```
-GEMINI_API_KEY = ...
-DEFAULT_ANGLE = confession
-```
+`Settings → Secrets and variables → Repository secrets`
 
-**Теперь** (для каждого канала):
 ```
 GEMINI_API_KEY_DZEN = sk-...
 GEMINI_API_KEY_MEDIUM = sk-...
 GEMINI_API_KEY_SUBSTACK = sk-...
 GEMINI_API_KEY_HABR = sk-...
-
-MEDIUM_API_KEY = ...
-SUBSTACK_API_KEY = ...
-HABR_API_KEY = ...
 ```
 
-Адд в `Settings → Secrets and variables`
+⚠️ **РАЗНЫЕ ключи для каждого проекта в Gemini API!**
 
 ---
 
 ## 📝 КОМАНДЫ
 
 ```bash
-# Генерировать для Дзена
+# Генерировать для разных каналов
 npx ts-node cli.ts generate:v2 --channel=dzen
+npx ts-node cli.ts generate:v2 --channel=medium
 
 # Обработать (Phase 2)
 npx ts-node cli.ts phase2 --channel=dzen --content=article.txt
@@ -69,20 +63,21 @@ npx ts-node cli.ts generate:all
 
 ## 🚀 ПОРЯДОК РАБОты
 
-1. ✅ Merge PR #3 (resolve cli.ts conflicts)
-2. ✅ Добавить SECRETS (разные ключи для каждого)
-3. **→ WORKFLOW STARTS**
-4. → Статьи генерируются автоматически
+1. ✅ Настроить **ОТДЕЛЬНЫЕ проекты** в Gemini API Console
+2. ✅ Merge PR #3 (resolve cli.ts conflicts)
+3. ✅ Добавить **РАЗНЫЕ SECRETS** (не один!)
+4. **→ WORKFLOW STARTS**
+5. → Статьи генерируются автоматически для КАЖДОГО канала
 
 ---
 
 ## 📚 ФАЙЛЫ
 
-- `config/channels.config.ts` - Все конфиги
-- `CONFIG_SETUP.md` - Как добавить новый канал
+- `config/channels.config.ts` - Все конфиги (каждый с сВОИМ ключом)
+- `CONFIG_SETUP.md` - Как добавить новый канал (КОНКРЕТНО!)
 - `PHASE_2_ANTI_DETECTION.md` - Обработка (обход детекторов)
 
 ---
 
-**Status**: 🟡 Waiting for: PR #3 merge + SECRETS config
+**Status**: 🟡 Waiting for: Separate Gemini projects + PR #3 merge + SECRETS
 **Next**: Phase 3-4 (humanization + QA)
