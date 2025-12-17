@@ -139,7 +139,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 
     const response = await this.callGemini({
       prompt,
-      model: "gemini-2.5-pro",
+      model: "gemini-2.5-flash",
       temperature: 0.85,
     });
 
