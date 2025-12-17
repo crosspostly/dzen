@@ -120,7 +120,7 @@
 - **Benefit**: 3-4x more content, faster generation
 
 ### 2. Structured Pipeline
-- Stage 0: Outline (Gemini 2.5-Pro)
+- Stage 0: Outline (Gemini 2.5 Flash)
 - Stage 1: Episodes (12× Gemini 2.5-Flash in parallel)
 - Clear separation of concerns
 

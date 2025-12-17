@@ -63,7 +63,7 @@ You can also set default values (these are NOT secrets, they're public):
 - `DEFAULT_ANGLE` = `confession`
 - `DEFAULT_EMOTION` = `triumph`
 - `DEFAULT_AUDIENCE` = `Women 35-60`
-- `GEMINI_MODEL_OUTLINE` = `gemini-2.5-pro`
+- `GEMINI_MODEL_OUTLINE` = `gemini-2.5-flash`
 - `GEMINI_MODEL_EPISODES` = `gemini-2.5-flash`
 
 *Note: These have defaults in code, so they're truly optional*

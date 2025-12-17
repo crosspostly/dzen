@@ -52,7 +52,7 @@ export GEMINI_API_KEY="your-api-key"
     "required_triggers": ["keyword1", "keyword2"],
     "tone": "confession"
   },
-  "gemini_model": "gemini-2.5-pro"
+  "gemini_model": "gemini-2.5-flash"
 }
 ```
 
@@ -374,8 +374,8 @@ curl -X POST https://api.github.com/repos/crosspostly/dzen/actions/workflows/gen
 ## Performance Notes
 
 - **Phase 1 (Generation)**: 60–90 seconds typical
-  - 10–15s: Outline generation (Gemini 2.5-Pro)
-  - 45–75s: 12× parallel episodes (Gemini 2.5-Flash)
+  - 10–15s: Outline generation (Gemini 2.5 Flash)
+  - 45–75s: 12× parallel episodes (Gemini 2.5 Flash)
   
 - **Phase 2 (Anti-Detection)**: 30–60 seconds
   - Perplexity + Burstiness + Skaz + Validation

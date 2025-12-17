@@ -99,7 +99,7 @@ npm run generate:v2 -- --dzen-channel=women-35-60
 🎯 Angle: confession
 💫 Emotion: triumph  
 👥 Audience: Women 35-60
-🤖 Models: gemini-2.5-pro (outline), gemini-2.5-flash (episodes)
+🤖 Models: gemini-2.5-flash (outline), gemini-2.5-flash (episodes)
 📁 Output: ./generated/zenmaster-v2/
 
 🔷 ============================================

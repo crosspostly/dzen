@@ -4,7 +4,7 @@
 
 **Сейчас**: Параметры генерации хранятся в GitHub Variables
 ```
-GEMINI_MODEL_OUTLINE = gemini-2.5-pro
+GEMINI_MODEL_OUTLINE = gemini-2.5-flash
 GEMINI_MODEL_EPISODES = gemini-2.5-flash
 DEFAULT_ANGLE = confession
 DEFAULT_EMOTION = triumph
@@ -25,7 +25,7 @@ config/dzen-channels.config.ts ← ВСЕ каналы Дзена здесь!
 │   ├── defaultAngle: 'confession'
 │   ├── defaultEmotion: 'triumph'
 │   ├── defaultAudience: 'Women 35-60'
-│   ├── modelOutline: 'gemini-2.5-pro'
+│   ├── modelOutline: 'gemini-2.5-flash'
 │   └── modelEpisodes: 'gemini-2.5-flash'
 ├── DZEN_YOUNG_MOMS_CONFIG
 │   ├── defaultAngle: 'scandal'
@@ -89,7 +89,7 @@ npx ts-node cli.ts generate:v2 \
   --angle="confession" \
   --emotion="triumph" \
   --audience="Women 35-60" \
-  --model-outline="gemini-2.5-pro" \
+  --model-outline="gemini-2.5-flash" \
   --model-episodes="gemini-2.5-flash"
 ```
 
@@ -196,7 +196,7 @@ npx ts-node cli.ts generate:v2 --dzen-channel=women-35-60 --theme="Я терпе
   - angle: confession
   - emotion: triumph
   - audience: Women 35-60
-  - model: gemini-2.5-pro (outline), gemini-2.5-flash (episodes)
+  - model: gemini-2.5-flash (outline), gemini-2.5-flash (episodes)
   - output: ./generated/dzen/women-35-60/
 ```
 
@@ -208,7 +208,7 @@ npx ts-node cli.ts generate:v2 --dzen-channel=young-moms --theme="Как я сп
   - angle: scandal
   - emotion: liberation
   - audience: Young Moms 25-35
-  - model: gemini-2.5-pro (outline), gemini-2.5-flash (episodes)
+  - model: gemini-2.5-flash (outline), gemini-2.5-flash (episodes)
   - output: ./generated/dzen/young-moms/
 ```
 
