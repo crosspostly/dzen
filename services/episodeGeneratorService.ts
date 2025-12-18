@@ -104,7 +104,7 @@ export class EpisodeGeneratorService {
       imageDataUrlPromise
     ]);
 
-    // 🎨 Обрабатываем изображение (если есть)
+    // 🎪 Обрабатываем изображение (если есть)
     let imageBuffer: Buffer | undefined;
     if (imageDataUrl) {
       console.log(`   ✅ Image generated, processing...`);
@@ -527,13 +527,13 @@ Output ONLY text:`;
       const errorMessage = (error as Error).message;
       console.error(`   ❌ Gemini call failed:`, errorMessage);
       
-      // 🔄 ФОЛБЕК: если модель перегружена (503), используем gemini-2.5-flash-exp-02-05
+      // 🔄 ФОЛБЕК: если модель перегружена (503), используем gemini-2.5-flash-lite
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`   🔄 Model overloaded, trying fallback to gemini-2.5-flash-exp-02-05...`);
+        console.log(`   🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
         
         try {
           const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: prompt,
             config: {
               temperature: 0.95,
