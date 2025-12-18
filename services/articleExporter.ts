@@ -82,73 +82,36 @@ export class ArticleExporter {
   private static formatArticleAsText(article: LongFormArticle): string {
     const lines: string[] = [];
 
-    lines.push("═".repeat(80));
+    // Заголовок
     lines.push(article.title);
-    lines.push("═".repeat(80));
     lines.push("");
 
-    lines.push(`📌 Тема: ${article.outline.theme}`);
-    lines.push(`🎯 Угол: ${article.outline.angle}`);
-    lines.push(`💫 Эмоция: ${article.outline.emotion}`);
-    lines.push(`👥 Аудитория: ${article.outline.audience || ""}`);
-    lines.push("");
-
-    lines.push("📊 СТАТИСТИКА:");
-    lines.push(`   -  Всего символов: ${article.metadata.totalChars}`);
-    lines.push(`   -  Время чтения: ${article.metadata.totalReadingTime} минут`);
-    lines.push(`   -  Эпизодов: ${article.metadata.episodeCount}`);
-    lines.push(`   -  Сцен: ${article.metadata.sceneCount}`);
-    lines.push(`   -  Диалогов: ${article.metadata.dialogueCount}`);
-    lines.push("");
-    lines.push("─".repeat(80));
-    lines.push("");
-
-    lines.push("ВВОДНАЯ (LEDE):");
-    lines.push("");
+    // Вступление
     lines.push(article.lede);
     lines.push("");
-    lines.push("─".repeat(80));
+
+    // Разделитель между вступлением и основным текстом
+    lines.push("***");
     lines.push("");
 
-    lines.push(`ЭПИЗОДЫ (${article.episodes.length}):`);
-    lines.push("");
-
+    // Основной текст - все эпизоды подряд
     article.episodes.forEach((episode, idx) => {
-      lines.push(`[${String(episode.id).padStart(2, " ")}] ${episode.title}`);
-      lines.push("");
       lines.push(episode.content);
-      lines.push("");
-      lines.push(`   >> Open Loop: ${episode.openLoop}`);
-      lines.push("");
-
+      
+      // Добавляем разделитель между эпизодами, кроме последнего
       if (idx < article.episodes.length - 1) {
-        lines.push("◆ ◆ ◆");
+        lines.push("");
         lines.push("");
       }
     });
 
-    lines.push("─".repeat(80));
+    // Разделитель перед финалом
+    lines.push("");
+    lines.push("***");
     lines.push("");
 
-    lines.push("РАЗВЯЗКА (FINALE):");
-    lines.push("");
+    // Финал
     lines.push(article.finale);
-    lines.push("");
-    lines.push("═".repeat(80));
-
-    if (article.generation) {
-      lines.push("");
-      lines.push("📄 МЕТАДАННЫЕ:");
-      if (article.generation.generatedAt) {
-        lines.push(`   Generated: ${article.generation.generatedAt}`);
-      }
-      if (article.generation.modelOutline) {
-        lines.push(`   Model (Outline): ${article.generation.modelOutline}`);
-      }
-      if (article.generation.modelEpisodes) {
-        lines.push(`   Model (Episodes): ${article.generation.modelEpisodes}`);
-      }
-    }
 
     return lines.join("\n");
   }
