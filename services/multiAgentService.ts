@@ -342,7 +342,7 @@ Respond as JSON:
   }
 
   /**
-   * Helper: Call Gemini API
+   * Helper: Call Gemini API with fallback
    */
   private async callGemini(params: {
     prompt: string;
@@ -350,6 +350,7 @@ Respond as JSON:
     temperature: number;
   }): Promise<string> {
     try {
+      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
       const response = await this.geminiClient.models.generateContent({
         model: params.model,
         contents: params.prompt,
@@ -361,7 +362,32 @@ Respond as JSON:
       });
       return response.text || "";
     } catch (error) {
-      console.error(`Gemini call failed (${params.model}):`, error);
+      const errorMessage = (error as Error).message;
+      console.warn(`Gemini call failed (${params.model}): ${errorMessage}`);
+      
+      // 🔄 ФОЛБЕК: если модель перегружена
+      if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
+        console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-exp-02-05...`);
+        
+        try {
+          const fallbackResponse = await this.geminiClient.models.generateContent({
+            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            contents: params.prompt,
+            config: {
+              temperature: params.temperature,
+              topK: 40,
+              topP: 0.95,
+            },
+          });
+          
+          console.log(`✅ Fallback successful`);
+          return fallbackResponse.text || "";
+        } catch (fallbackError) {
+          console.error(`❌ Fallback also failed:`, (fallbackError as Error).message);
+          throw fallbackError;
+        }
+      }
+      
       throw error;
     }
   }
@@ -474,6 +500,7 @@ Output ONLY the episode text. No titles, no metadata.`;
     temperature: number;
   }): Promise<string> {
     try {
+      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
       const response = await this.geminiClient.models.generateContent({
         model: "gemini-2.5-flash",
         contents: params.prompt,
@@ -485,6 +512,32 @@ Output ONLY the episode text. No titles, no metadata.`;
       });
       return response.text || "";
     } catch (error) {
+      const errorMessage = (error as Error).message;
+      console.warn(`Agent #${this.id} primary model failed: ${errorMessage}`);
+      
+      // 🔄 ФОЛБЕК: если модель перегружена
+      if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
+        console.log(`Agent #${this.id} trying fallback to gemini-2.5-flash-exp-02-05...`);
+        
+        try {
+          const fallbackResponse = await this.geminiClient.models.generateContent({
+            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            contents: params.prompt,
+            config: {
+              temperature: params.temperature,
+              topK: 40,
+              topP: 0.95,
+            },
+          });
+          
+          console.log(`Agent #${this.id} fallback successful`);
+          return fallbackResponse.text || "";
+        } catch (fallbackError) {
+          console.error(`Agent #${this.id} fallback also failed:`, (fallbackError as Error).message);
+          throw fallbackError;
+        }
+      }
+      
       console.error(`Agent #${this.id} failed:`, error);
       throw error;
     }

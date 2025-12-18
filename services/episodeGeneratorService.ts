@@ -507,6 +507,7 @@ Output ONLY text:`;
     prompt: string
   ): Promise<string> {
     try {
+      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель gemini-2.5-flash
       const response = await this.geminiClient.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,
@@ -519,12 +520,39 @@ Output ONLY text:`;
       });
 
       let content = response.text || "";
-
       content = ContentSanitizer.cleanEpisodeContent(content);
 
       return content;
     } catch (error) {
-      console.error(`   ❌ Gemini call failed:`, (error as Error).message);
+      const errorMessage = (error as Error).message;
+      console.error(`   ❌ Gemini call failed:`, errorMessage);
+      
+      // 🔄 ФОЛБЕК: если модель перегружена (503), используем gemini-2.5-flash-exp-02-05
+      if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
+        console.log(`   🔄 Model overloaded, trying fallback to gemini-2.5-flash-exp-02-05...`);
+        
+        try {
+          const fallbackResponse = await this.geminiClient.models.generateContent({
+            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            contents: prompt,
+            config: {
+              temperature: 0.95,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2500,
+            },
+          });
+
+          let fallbackContent = fallbackResponse.text || "";
+          fallbackContent = ContentSanitizer.cleanEpisodeContent(fallbackContent);
+          
+          console.log(`   ✅ Fallback successful: ${fallbackContent.length} chars`);
+          return fallbackContent;
+        } catch (fallbackError) {
+          console.error(`   ❌ Fallback also failed:`, (fallbackError as Error).message);
+        }
+      }
+      
       return "";
     }
   }
