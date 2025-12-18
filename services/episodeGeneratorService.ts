@@ -1,15 +1,21 @@
 import { GoogleGenAI } from "@google/genai";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { ContentSanitizer } from "./contentSanitizer";
+import { ImageGeneratorService } from "./imageGeneratorService";
+import { ImageProcessorService } from "./imageProcessorService";
 
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
   private readonly INITIAL_RETRY_DELAY = 2000;
   private readonly MAX_RETRIES = 3;
+  private imageGenerator: ImageGeneratorService;
+  private imageProcessor: ImageProcessorService;
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
+    this.imageGenerator = new ImageGeneratorService(key);
+    this.imageProcessor = new ImageProcessorService();
   }
 
   async generateSingleEpisode(
@@ -74,6 +80,44 @@ export class EpisodeGeneratorService {
     }
 
     return this.buildEpisode(episodeOutline, content);
+  }
+
+  /**
+   * 🖼️ ПАРАЛЛЕЛЬНАЯ ГЕНЕРАЦИЯ: текст + изображение одновременно
+   */
+  async generateSingleEpisodeWithImage(
+    episodeOutline: EpisodeOutline
+  ): Promise<Episode & { imageBuffer?: Buffer }> {
+    console.log(`\n🎬 Episode #${episodeOutline.id} - Starting PARALLEL generation...`);
+
+    // 🧠 Генерируем текст эпизода (как обычно)
+    const contentPromise = this.generateSingleEpisode(episodeOutline);
+    
+    // 🖼️ Параллельно генерируем изображение
+    const imageDataUrlPromise = this.imageGenerator.generateVisual(
+      `${episodeOutline.internalConflict} - ${episodeOutline.externalConflict}`
+    );
+
+    // ⚡ ПАРАЛЛЕЛЬНОЕ выполнение
+    const [episode, imageDataUrl] = await Promise.all([
+      contentPromise,
+      imageDataUrlPromise
+    ]);
+
+    // 🎨 Обрабатываем изображение (если есть)
+    let imageBuffer: Buffer | undefined;
+    if (imageDataUrl) {
+      console.log(`   ✅ Image generated, processing...`);
+      imageBuffer = await this.imageProcessor.processImage(imageDataUrl);
+      console.log(`   ✅ Image processed: ${Math.round(imageBuffer.length / 1024)} KB`);
+    } else {
+      console.log(`   ⚠️  Image generation failed, episode without image`);
+    }
+
+    return {
+      ...episode,
+      imageBuffer
+    };
   }
 
   /**
@@ -533,8 +577,9 @@ Output ONLY text:`;
       const outline = outlines[i];
 
       try {
-        const episode = await this.generateSingleEpisode(outline);
-        results.push(episode);
+        // 🖼️ Параллельная генерация текста + изображения
+        const episodeWithImage = await this.generateSingleEpisodeWithImage(outline);
+        results.push(episodeWithImage);
 
         if (options.onProgress) {
           options.onProgress(i + 1, outlines.length);
