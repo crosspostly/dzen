@@ -133,15 +133,41 @@ RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
 
       console.log(`${LOG.BRAIN} Generating new theme with Gemini...`);
 
-      const response = await this.geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          temperature: 0.95,
-          topK: 40,
-          topP: 0.95,
-        },
-      });
+      let response;
+      try {
+        // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
+        response = await this.geminiClient.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: {
+            temperature: 0.95,
+            topK: 40,
+            topP: 0.95,
+          },
+        });
+      } catch (error) {
+        const errorMessage = (error as Error).message;
+        console.warn(`${LOG.WARN} Primary model failed (${errorMessage}), trying fallback...`);
+        
+        // 🔄 ФОЛБЕК: если модель перегружена
+        if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
+          console.log(`${LOG.LOADING} Trying fallback to gemini-2.5-flash-exp-02-05...`);
+          
+          response = await this.geminiClient.models.generateContent({
+            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            contents: prompt,
+            config: {
+              temperature: 0.95,
+              topK: 40,
+              topP: 0.95,
+            },
+          });
+          
+          console.log(`${LOG.SUCCESS} Fallback successful`);
+        } else {
+          throw error;
+        }
+      }
 
       const theme = (response.text || "").trim();
 

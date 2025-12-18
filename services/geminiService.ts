@@ -399,6 +399,7 @@ ${climax}
     const { prompt, model, temperature } = params;
     
     try {
+      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
       const response = await this.ai.models.generateContent({
         model,
         contents: prompt,
@@ -410,7 +411,32 @@ ${climax}
       });
       return response.text;
     } catch (error) {
-      console.error(`Ошибка вызова ${model}:`, error);
+      const errorMessage = (error as Error).message;
+      console.error(`Ошибка вызова ${model}:`, errorMessage);
+      
+      // 🔄 ФОЛБЕК: если модель перегружена, используем gemini-2.5-flash-exp-02-05
+      if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
+        console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-exp-02-05...`);
+        
+        try {
+          const fallbackResponse = await this.ai.models.generateContent({
+            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            contents: prompt,
+            config: {
+              temperature,
+              topK: 40,
+              topP: 0.95,
+            },
+          });
+          
+          console.log(`✅ Fallback successful`);
+          return fallbackResponse.text;
+        } catch (fallbackError) {
+          console.error(`❌ Fallback also failed:`, (fallbackError as Error).message);
+          throw fallbackError;
+        }
+      }
+      
       throw error;
     }
   }

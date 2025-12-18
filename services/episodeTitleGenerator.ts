@@ -58,6 +58,7 @@ export class EpisodeTitleGenerator {
 ОТВЕТЬ ТОЛЬКО НАЗВАНИЕМ (без JSON, без кавычек, без объяснений):`;
 
     try {
+      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
       const response = await this.geminiClient.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,
@@ -92,6 +93,45 @@ export class EpisodeTitleGenerator {
 
       return title;
     } catch (error) {
+      const errorMessage = (error as Error).message;
+      console.warn(`Episode #${episodeNumber} primary model failed (${errorMessage}), trying fallback...`);
+      
+      // 🔄 ФОЛБЕК: если модель перегружена
+      if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
+        console.log(`Trying fallback to gemini-2.5-flash-exp-02-05...`);
+        
+        try {
+          const fallbackResponse = await this.geminiClient.models.generateContent({
+            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            contents: prompt,
+            config: {
+              temperature: 0.85,
+              topK: 40,
+              topP: 0.95,
+            },
+          });
+
+          const fallbackTitle = (fallbackResponse.text || "")
+            .trim()
+            .replace(/^[\s"'`({\[<]+/, "")
+            .replace(/[\s"'`)\}\]\>]+$/, "")
+            .replace(/^[-–—]\s*/, "")
+            .replace(/\.+$/, "")
+            .replace(/\s+/g, " ")
+            .substring(0, 60);
+
+          if (fallbackTitle && fallbackTitle.length >= 3) {
+            const words = fallbackTitle.split(/\s+/).filter(Boolean);
+            if (words.length >= 2 && words.length <= 5) {
+              console.log(`✅ Fallback successful: "${fallbackTitle}"`);
+              return fallbackTitle;
+            }
+          }
+        } catch (fallbackError) {
+          console.error(`❌ Fallback also failed:`, (fallbackError as Error).message);
+        }
+      }
+      
       console.error(`Episode #${episodeNumber} title generation failed:`, error);
       return `Часть ${episodeNumber}`;
     }
