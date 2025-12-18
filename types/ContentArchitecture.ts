@@ -71,18 +71,25 @@ export interface LongFormArticle {
   title: string;
   outline: OutlineStructure;
   episodes: Episode[];
-  
-  lede: string;                    // 600-900 символов
-  finale: string;                  // 1200-1800 символов
-  
+
+  lede: string; // 600-900 символов
+  finale: string; // 1200-1800 символов
+
   voicePassport: VoicePassport;
-  
+
   metadata: {
-    totalChars: number;            // 32-40K
-    totalReadingTime: number;      // в минутах
+    totalChars: number; // 32-40K
+    totalReadingTime: number; // в минутах
     episodeCount: number;
     sceneCount: number;
     dialogueCount: number;
+  };
+
+  generation?: {
+    modelOutline?: string;
+    modelEpisodes?: string;
+    channelConfig?: string;
+    generatedAt?: string;
   };
 }
 

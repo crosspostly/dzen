@@ -6,6 +6,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
+import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -52,6 +53,7 @@ export class MultiAgentService {
     // Generate Title
     console.log("📰 Generating title (55-90 chars)...");
     const title = await this.generateTitle(outline, lede);
+    console.log(`✅ Title (Russian): "${title}"`);
     
     // Assemble article
     const article: LongFormArticle = {
@@ -109,6 +111,7 @@ INPUT:
 - Audience: ${params.audience}
 
 REQUIREMENTS:
+0. All text fields MUST be in Russian (no English)
 1. Each episode: hook question + external conflict + internal conflict + turning point + open loop
 2. Episodes 1-4: Escalating tension
 3. Episodes 5-8: Deepening conflict
@@ -120,10 +123,11 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   "theme": "${params.theme}",
   "angle": "${params.angle}",
   "emotion": "${params.emotion}",
+  "audience": "${params.audience}",
   "episodes": [
     {
       "id": 1,
-      "title": "Episode 1: ...",
+      "title": "Часть 1: ...",
       "hookQuestion": "...",
       "externalConflict": "...",
       "internalConflict": "...",
@@ -179,13 +183,15 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   private async generateLede(outline: OutlineStructure): Promise<string> {
     const firstEpisode = outline.episodes[0];
     
-    const prompt = `Write a 600-900 character lede for Zen article:
-- Start with PARADOX or INTRIGUE (not explanation)
-- Hook: "${firstEpisode.hookQuestion}"
-- Tone: Personal, confessional, real (not literary)
-- Ending: Pull reader forward
+    const prompt = `Напиши вводную часть (LEDE) для статьи Яндекс.Дзен: 600-900 символов, ТОЛЬКО РУССКИЙ язык.
 
-Output ONLY the lede text (no metadata).`;
+ТРЕБОВАНИЯ:
+- Начни с ПАРАДОКСА или ИНТРИГИ (не с объяснений)
+- Крючок: "${firstEpisode.hookQuestion}"
+- Тон: личный, исповедальный, как разговор на кухне
+- В конце: подтолкни читать дальше
+
+ОТВЕТ: только текст вводной, без заголовков и метаданных.`;
 
     return await this.callGemini({
       prompt,
@@ -198,17 +204,19 @@ Output ONLY the lede text (no metadata).`;
    * Generate closing (finale): 1200-1800 chars
    */
   private async generateFinale(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
-    const prompt = `Write a 1200-1800 character finale for Zen article:
-- Resolve external conflict (justice/triumph/hard truth)
-- Leave emotional residue (not neat happiness)
-- End with honest question for comments (not preaching)
+    const prompt = `Напиши финал (FINALE) для статьи Яндекс.Дзен: 1200-1800 символов, ТОЛЬКО РУССКИЙ язык.
 
-Theme: "${outline.theme}"
-Central emotion: ${outline.emotion}
+ТРЕБОВАНИЯ:
+- Разреши внешний конфликт (справедливость / триумф / горькая правда)
+- Оставь эмоциональный след (без приторного хэппи-энда)
+- Заверши честным вопросом к читателям (без наставлений)
 
-Example questions: "Would you have done the same?" "Do you think forgiveness is possible?"
+Тема: "${outline.theme}"
+Главная эмоция: ${outline.emotion}
 
-Output ONLY the finale text (no metadata).`;
+Примеры вопросов: "Вы бы смогли так поступить?" "А вы верите в прощение?"
+
+ОТВЕТ: только текст финала, без заголовков и метаданных.`;
 
     return await this.callGemini({
       prompt,
@@ -218,19 +226,45 @@ Output ONLY the finale text (no metadata).`;
   }
 
   /**
-   * Generate article title: 55-90 chars
+   * Generate article title: 55-90 chars (Russian only)
    */
   private async generateTitle(outline: OutlineStructure, lede: string): Promise<string> {
-    const prompt = `Create ONE compelling 55-90 character Zen title based on:
+    const prompt = `Ты редактор Яндекс.Дзен. Создай ОДИН привлекательный заголовок (55-90 символов, РУССКИЙ ЯЗЫК ТОЛЬКО).
 
-Premise: ${lede.substring(0, 150)}...
+КОНТЕКСТ:
+- Тема: "${outline.theme}"
+- Начало статьи: ${lede.substring(0, 200)}...
+- Жанр: Исповедь
+- Эмоция: ${outline.emotion}
+- Аудитория: Женщины 35-60 лет
 
-Formula: [EMOTION] + [I/WE] + [ACTION] + [INTRIGUE]
+ФОРМУЛА ХОРОШЕГО ЗАГОЛОВКА:
+[ЭМОЦИЯ] + [Я/МЫ] + [ДЕЙСТВИЕ] + [ИНТРИГА]
 
-GOOD: "I tolerated it 20 years... then one phrase changed everything"
-BAD: "10 Ways to Improve Relationships"
+✅ ОТЛИЧНЫЕ ПРИМЕРЫ:
+- "Я терпела это 20 лет, пока одна фраза не изменила всё"
+- "После его слов я не могла молчать больше"
+- "Седая я поняла, что вся моя жизнь была ложью"
+- "Тридцать лет я жила чужой жизнью"
+- "В один момент я потеряла всё и обрела себя"
 
-Respond as JSON: {"title": "Your title"}`;
+❌ ПЛОХИЕ ПРИМЕРЫ (избегать!):
+- "10 способов улучшить отношения" (лайфхак-тон, не подходит)
+- "Как жить счастливо?" (обобщённо, скучно)
+- "История одной женщины" (неинформативно)
+- "Женщина и её проблемы" (размыто)
+
+ТРЕБОВАНИЯ:
+1. ТОЛЬКО РУССКИЙ язык
+2. 55-90 символов
+3. Начинается с Я/Мы (первое лицо)
+4. Содержит глагол действия (сказала, потеряла, узнала, услышала и т.д.)
+5. Обещает неожиданный twist/откровение
+6. Без кавычек, без восклицательных знаков в конце
+7. Без слова "история"
+8. Без скучных формул типа "как", "10 способов"
+
+ОТВЕТ: Напиши ТОЛЬКО заголовок (без JSON, без кавычек, без пояснений):`;
 
     try {
       const response = await this.callGemini({
@@ -238,10 +272,27 @@ Respond as JSON: {"title": "Your title"}`;
         model: "gemini-2.5-flash",
         temperature: 0.8,
       });
-      const cleanedJson = this.stripMarkdownJson(response);
-      const parsed = JSON.parse(cleanedJson);
-      return parsed.title || outline.theme;
-    } catch {
+
+      let title = response
+        ?.trim()
+        .replace(/^\s*["'`]+/, "")
+        .replace(/["'`]+\s*$/, "")
+        .replace(/\.$/, "")
+        .replace(/\s+/g, " ")
+        .substring(0, 100);
+
+      if (!title || !/[а-яёА-ЯЁ]/.test(title) || /[a-zA-Z]/.test(title)) {
+        return outline.theme;
+      }
+
+      if (title.length < 55 || title.length > 90) {
+        console.warn(`Title length ${title.length} not in range (55-90), using fallback`);
+        return outline.theme;
+      }
+
+      return title;
+    } catch (error) {
+      console.error("Title generation failed:", error);
       return outline.theme;
     }
   }
@@ -359,10 +410,14 @@ Respond as JSON:
 class ContentAgent {
   private id: number;
   private geminiClient: GoogleGenAI;
+  private titleGenerator: EpisodeTitleGenerator;
 
   constructor(geminiClient: GoogleGenAI, id: number) {
     this.id = id;
     this.geminiClient = geminiClient;
+    this.titleGenerator = new EpisodeTitleGenerator(
+      process.env.GEMINI_API_KEY || process.env.API_KEY
+    );
   }
 
   async generateEpisode(
@@ -378,7 +433,7 @@ class ContentAgent {
 - Open loop: "${outline.openLoop}"
 
 REQUIREMENTS:
-1. Length: 2400-3200 chars (with spaces)
+1. Length: 3000-4000 chars (with spaces)
 2. Structure: Event → Dialogue/Thought → Turning point → Cliff-hanger
 3. No explanation, no preaching
 4. Show action, not summary
@@ -393,9 +448,15 @@ Output ONLY the episode text. No titles, no metadata.`;
       temperature: 0.9,
     });
 
+    const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
+      outline.id,
+      content,
+      outline.openLoop
+    );
+
     return {
       id: outline.id,
-      title: `Episode ${outline.id}`,
+      title: episodeTitle,
       content,
       charCount: content.length,
       openLoop: outline.openLoop,
