@@ -343,6 +343,8 @@ Respond as JSON:
 
   /**
    * Helper: Call Gemini API with fallback
+   * Primary: gemini-2.5-flash
+   * Fallback: gemini-2.5-flash-lite
    */
   private async callGemini(params: {
     prompt: string;
@@ -367,11 +369,11 @@ Respond as JSON:
       
       // 🔄 ФОЛБЕК: если модель перегружена
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-exp-02-05...`);
+        console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
         
         try {
           const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: params.prompt,
             config: {
               temperature: params.temperature,
@@ -517,11 +519,11 @@ Output ONLY the episode text. No titles, no metadata.`;
       
       // 🔄 ФОЛБЕК: если модель перегружена
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`Agent #${this.id} trying fallback to gemini-2.5-flash-exp-02-05...`);
+        console.log(`Agent #${this.id} trying fallback to gemini-2.5-flash-lite...`);
         
         try {
           const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: params.prompt,
             config: {
               temperature: params.temperature,
