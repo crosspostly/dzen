@@ -1,16 +1,19 @@
 import fs from "fs";
 import path from "path";
 import { LongFormArticle } from "../types/ContentArchitecture";
+import { MetadataCleanerService } from "./metadataCleanerService";
 
 const LOG = {
   SAVE: "💾",
   SUCCESS: "✅",
+  IMAGE: "🖼️",
 };
 
 type ExportOptions = {
   includeJson?: boolean;
   includeText?: boolean;
   includeHtml?: boolean;
+  includeImages?: boolean;  // 🖼️ НОВОЕ: сохранение изображений
 };
 
 /**
@@ -21,11 +24,12 @@ export class ArticleExporter {
   static async exportArticle(
     article: LongFormArticle,
     projectId: string = "channel-1",
-    options: ExportOptions = { includeJson: true, includeText: true, includeHtml: true }
+    options: ExportOptions = { includeJson: true, includeText: true, includeHtml: true, includeImages: true }
   ): Promise<{
     jsonPath?: string;
     textPath?: string;
     htmlPath?: string;
+    imagePaths?: string[];     // 🖼️ НОВОЕ: пути к изображениям
     directoryPath: string;
   }> {
     const dateDir = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
@@ -48,8 +52,36 @@ export class ArticleExporter {
       jsonPath?: string;
       textPath?: string;
       htmlPath?: string;
+      imagePaths?: string[];     // 🖼️ НОВОЕ: пути к изображениям
       directoryPath: string;
     } = { directoryPath: articleDir };
+
+    // 🖼️ Сохраняем изображения для эпизодов
+    const imagePaths: string[] = [];
+    if (options.includeImages && article.episodes.some(ep => ep.imageBuffer)) {
+      console.log(`${LOG.IMAGE} Saving episode images...`);
+      
+      for (const episode of article.episodes) {
+        if (episode.imageBuffer) {
+          try {
+            const imageFileName = `${themeSlug}_episode_${episode.id}.jpg`;
+            const imagePath = path.join(articleDir, imageFileName);
+            
+            fs.writeFileSync(imagePath, episode.imageBuffer, 'binary');
+            imagePaths.push(imagePath);
+            
+            // Обновляем путь в эпизоде
+            episode.imagePath = imagePath;
+            
+            console.log(`${LOG.SUCCESS} Image saved: ${imageFileName} (${Math.round(episode.imageBuffer.length / 1024)} KB)`);
+          } catch (error) {
+            console.error(`❌ Failed to save image for episode ${episode.id}:`, (error as Error).message);
+          }
+        }
+      }
+      
+      result.imagePaths = imagePaths;
+    }
 
     if (options.includeJson) {
       const jsonPath = `${fileBase}.json`;
@@ -76,6 +108,18 @@ export class ArticleExporter {
     }
 
     console.log(`${LOG.SUCCESS} Article exported to: ${articleDir}\n`);
+
+    // 🧹 ПОСТ-ЭКСПОРТ: Автоматическая очистка метаданных изображений
+    if (options.includeImages && imagePaths.length > 0) {
+      console.log(`🧹 Post-processing images...`);
+      try {
+        const cleaner = new MetadataCleanerService();
+        await cleaner.cleanDirectory(articleDir, false);
+      } catch (error) {
+        console.error(`❌ Metadata cleaning failed:`, (error as Error).message);
+      }
+    }
+
     return result;
   }
 

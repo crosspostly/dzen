@@ -23,6 +23,10 @@ export interface Episode {
   
   generatedAt: number;
   stage: "draft" | "montage" | "humanized";
+  
+  // 🖼️ ИЗОБРАЖЕНИЯ
+  imageBuffer?: Buffer;       // Буфер обработанного изображения
+  imagePath?: string;         // Путь к сохраненному файлу
 }
 
 export interface EpisodeOutline {
@@ -90,6 +94,17 @@ export interface LongFormArticle {
     modelEpisodes?: string;
     channelConfig?: string;
     generatedAt?: string;
+  };
+
+  // 🖼️ ИЗОБРАЖЕНИЯ
+  hasImages?: boolean;        // Флаг наличия изображений
+  totalImages?: number;       // Количество изображений
+  imageMetadata?: {
+    aspectRatio: string;      // "16:9"
+    resolution: string;       // "1280x720"
+    format: string;           // "JPEG"
+    quality: number;          // 0.8
+    metadataCleaned: boolean; // true после очистки
   };
 }
 
