@@ -12,9 +12,9 @@ dist
 dist-ssr
 *.local
 
-# Generated articles (except what's explicitly committed by workflow)
+# Generated articles - now committed via GitHub Actions workflow
 # generated/
-articles/
+# articles/
 
 # Editor directories and files
 .vscode/*
