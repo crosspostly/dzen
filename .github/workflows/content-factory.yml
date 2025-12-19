@@ -1,0 +1,86 @@
+name: Content Factory - Batch Articles (10x)
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Number of articles to generate'
+        required: false
+        default: '10'
+      project:
+        description: 'Project (channel-1, channel-2, etc)'
+        required: false
+        default: 'channel-1'
+
+permissions:
+  contents: write
+
+jobs:
+  factory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - run: npm install
+      
+      - name: Content Factory - ${{ inputs.count }} articles
+        run: |
+          COUNT=${{ inputs.count }}
+          PROJECT=${{ inputs.project }}
+          
+          echo "🏭 ========================================"
+          echo "🏭 CONTENT FACTORY - BATCH MODE"
+          echo "🏭 Articles: $COUNT"
+          echo "🏭 Project: $PROJECT"
+          echo "🏭 ========================================"
+          
+          for i in $(seq 1 $COUNT); do
+            echo ""
+            echo "📰 [$i/$COUNT] Generating article #$i..."
+            npx tsx cli.ts generate:v2 --project=$PROJECT --verbose
+            
+            if [ $i -lt $COUNT ]; then
+              echo "⏳ Waiting 5 seconds before next article..."
+              sleep 5
+            fi
+          done
+          
+          echo ""
+          echo "✅ ========================================"
+          echo "✅ BATCH COMPLETE: $COUNT articles"
+          echo "✅ ========================================"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      
+      - name: Count articles
+        run: |
+          echo "📊 Articles generated:"
+          find articles/${{ inputs.project }}/ -name "*.txt" 2>/dev/null | wc -l
+          echo ""
+          echo "📁 Latest files:"
+          find articles/${{ inputs.project }}/ -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -5 | cut -d' ' -f2-
+      
+      - name: Commit and push
+        run: |
+          git config --local user.email "zenmaster-bot@github.com"
+          git config --local user.name "ZenMaster Bot"
+          
+          ARTICLE_COUNT=$(find articles/ -name "*.txt" -type f 2>/dev/null | wc -l)
+          
+          git add articles/ generated/zenmaster-v2/ || true
+          git commit -m "[FACTORY] Batch: ${{ inputs.count }} articles ($ARTICLE_COUNT total)" || echo "No changes"
+          git push origin HEAD:main || true
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: factory-batch-${{ github.run_id }}
+          path: articles/
+          retention-days: 90

@@ -1,0 +1,60 @@
+name: Image Generator - Test Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      description:
+        description: 'Scene description for image generation'
+        required: true
+        default: 'Amateur lifestyle photo: woman in home interior, natural lighting'
+      count:
+        description: 'Number of images to generate'
+        required: false
+        default: '3'
+      delay:
+        description: 'Delay between generations (ms)'
+        required: false
+        default: '3000'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - run: npm install
+      
+      - name: Generate images
+        run: |
+          npx tsx scripts/generateImages.ts "${{ inputs.description }}" \
+            --count=${{ inputs.count }} \
+            --delay=${{ inputs.delay }} \
+            --output=generated/test-images/ \
+            --verbose
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      
+      - name: Verify images
+        run: |
+          echo "📊 Generated images:"
+          ls -lh generated/test-images/ || echo "No images found"
+          echo ""
+          echo "📈 Total size:"
+          du -sh generated/test-images/ || echo "N/A"
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated-images-${{ github.run_id }}
+          path: generated/test-images/
+          retention-days: 7
