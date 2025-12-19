@@ -24,6 +24,7 @@ output/
 
 # Test files
 test-v4-modules.ts
+test-cover-images.ts
 
 # Editor directories and files
 .vscode/*

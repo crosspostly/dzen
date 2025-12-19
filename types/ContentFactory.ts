@@ -63,7 +63,8 @@ export interface FactoryError {
 }
 
 /**
- * Complete article with metadata and images
+ * Complete article with metadata and ONE cover image
+ * 🎯 SIMPLIFIED v4.0: 1 article = 1 cover image (not 12!)
  */
 export interface Article {
   id: string;
@@ -71,7 +72,13 @@ export interface Article {
   content: string;
   charCount: number;
   episodes: ArticleEpisode[];
-  images: GeneratedImage[];
+  
+  // ✅ CHANGED: Single cover image instead of array
+  coverImage?: GeneratedImage; // ONE cover image from title + lede
+  
+  // @deprecated - remove this, use coverImage
+  images?: GeneratedImage[];
+  
   metadata: ArticleMetadata;
   stats: ArticleStats;
 }

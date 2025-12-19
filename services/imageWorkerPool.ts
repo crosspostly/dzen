@@ -1,18 +1,20 @@
 /**
- * 🖼️ ZenMaster v4.0 - Image Worker Pool
+ * 🖼️ ZenMaster v4.0 SIMPLIFIED - Image Worker Pool
  * 
- * Manages serial image generation with strict rate limiting (1 per minute)
- * Integrates with ArticleWorkerPool for complete article+image production
+ * Manages serial COVER image generation (1 per article, not 12!)
+ * Rate limiting: 1 per minute
+ * 
+ * ✅ UPDATED: Now generates ONE cover image per article
  */
 
 import { ImageQueueManager } from './imageQueueManager';
 import { PlotBibleBuilder } from './plotBibleBuilder';
 import {
-  ImageGenerationRequest,
+  CoverImageRequest,
   GeneratedImage,
   ImageQueueStatus
 } from '../types/ImageGeneration';
-import { Article, ArticleEpisode } from '../types/ContentFactory';
+import { Article } from '../types/ContentFactory';
 
 export class ImageWorkerPool {
   private queueManager: ImageQueueManager;
@@ -24,11 +26,11 @@ export class ImageWorkerPool {
   }
 
   /**
-   * 📥 Enqueue images for all episodes in article
+   * 📥 Enqueue ONE cover image for article
+   * ✅ UPDATED v4.0: Generates single cover from title + lede, not 12 episode images!
    */
-  enqueueArticle(article: Article, priority: number = 0): void {
-    console.log(`\n🖼️  Enqueuing images for article: "${article.title}"`);
-    console.log(`📊 Episodes: ${article.episodes.length}`);
+  enqueueArticle(article: Article, lede: string, priority: number = 0): void {
+    console.log(`\n🖼️  Enqueuing COVER image for article: "${article.title}"`);
 
     // Build PlotBible from article theme
     const plotBible = PlotBibleBuilder.buildFromTheme({
@@ -36,34 +38,34 @@ export class ImageWorkerPool {
       audience: article.metadata.targetAudience
     });
 
-    // Enqueue each episode
-    for (const episode of article.episodes) {
-      const request: ImageGenerationRequest = {
-        episodeId: episode.episodeNumber,
-        episodeText: episode.content,
-        plotBible,
-        sceneDescription: episode.sceneDescription,
-        emotion: episode.emotion
-      };
+    // Create SINGLE cover image request
+    const request: CoverImageRequest = {
+      articleId: article.id,
+      title: article.title,
+      ledeText: lede, // First paragraph
+      plotBible
+    };
 
-      this.queueManager.enqueue(request, priority);
-    }
+    this.queueManager.enqueue(request, priority);
 
-    console.log(`✅ ${article.episodes.length} images enqueued`);
+    console.log(`✅ 1 cover image enqueued (not 12!)`);
   }
 
   /**
-   * 📥 Enqueue images for multiple articles
+   * 📥 Enqueue cover images for multiple articles
+   * ✅ UPDATED v4.0: 1 cover per article (not 12!)
    */
-  enqueueArticles(articles: Article[]): void {
-    console.log(`\n🖼️  Enqueuing images for ${articles.length} articles...`);
+  enqueueArticles(articles: Article[], ledes: string[]): void {
+    console.log(`\n🖼️  Enqueuing COVER images for ${articles.length} articles...`);
 
-    for (const article of articles) {
-      this.enqueueArticle(article, 0);
+    for (let i = 0; i < articles.length; i++) {
+      const article = articles[i];
+      const lede = ledes[i] || article.content.substring(0, 500); // Fallback to first 500 chars
+      this.enqueueArticle(article, lede, 0);
     }
 
     const status = this.queueManager.getStatus();
-    console.log(`✅ Total images enqueued: ${status.pending}`);
+    console.log(`✅ Total COVER images enqueued: ${status.pending} (1 per article!)`);
     console.log(`⏱️  Estimated time: ${status.estimatedTimeRemaining} minutes`);
   }
 
@@ -103,38 +105,24 @@ export class ImageWorkerPool {
   }
 
   /**
-   * 🔗 Attach generated images back to articles
-   * Call this after queue processing is complete
+   * 🔗 Attach generated COVER images back to articles
+   * ✅ UPDATED v4.0: Attaches ONE cover image per article
    */
-  attachImagesToArticles(articles: Article[], images: GeneratedImage[]): void {
-    console.log(`\n🔗 Attaching ${images.length} images to ${articles.length} articles...`);
+  attachCoverImagesToArticles(articles: Article[], images: GeneratedImage[]): void {
+    console.log(`\n🔗 Attaching ${images.length} COVER images to ${articles.length} articles...`);
 
-    // Group images by article (assuming episodeId maps to article)
-    const imagesPerArticle = Math.floor(images.length / articles.length);
-
-    let imageIndex = 0;
-    for (const article of articles) {
-      article.images = [];
-
-      for (let i = 0; i < article.episodes.length && imageIndex < images.length; i++) {
-        const image = images[imageIndex];
-        
-        // Attach to article
-        article.images.push(image);
-        
-        // Attach to specific episode
-        const episode = article.episodes[i];
-        if (episode) {
-          episode.image = image;
-        }
-
-        imageIndex++;
-      }
-
-      console.log(`✅ Article "${article.title}": ${article.images.length} images attached`);
+    // Simple 1:1 mapping - each article gets one cover image
+    for (let i = 0; i < articles.length && i < images.length; i++) {
+      const article = articles[i];
+      const image = images[i];
+      
+      // Attach as cover image
+      article.coverImage = image;
+      
+      console.log(`✅ Article "${article.title}": cover image attached`);
     }
 
-    console.log(`\n✅ Image attachment complete`);
+    console.log(`\n✅ Cover image attachment complete (1 per article)`);
   }
 
   /**
@@ -160,13 +148,14 @@ export class ImageWorkerPool {
 
   /**
    * ⏱️ Calculate processing time estimate
+   * ✅ UPDATED v4.0: 1 cover per article (not 12 episode images!)
    */
-  getEstimatedTime(articleCount: number, episodesPerArticle: number = 12): {
+  getEstimatedTime(articleCount: number): {
     totalImages: number;
     timeInMinutes: number;
     timeFormatted: string;
   } {
-    const totalImages = articleCount * episodesPerArticle;
+    const totalImages = articleCount; // ✅ 1 cover per article!
     const timeInMinutes = totalImages * (60 / this.rateLimit);
     const hours = Math.floor(timeInMinutes / 60);
     const minutes = Math.ceil(timeInMinutes % 60);
@@ -182,21 +171,25 @@ export class ImageWorkerPool {
 
   /**
    * 📋 Print processing plan
+   * ✅ UPDATED v4.0: Shows 1 cover per article (not 12!)
    */
   printProcessingPlan(articleCount: number): void {
     const estimate = this.getEstimatedTime(articleCount);
 
     console.log(`
 ╔════════════════════════════════════════════════════════════
-║ 🖼️  IMAGE PROCESSING PLAN
+║ 🖼️  COVER IMAGE PROCESSING PLAN
 ╠════════════════════════════════════════════════════════════
 ║ Articles:        ${articleCount}
-║ Episodes/article: 12
-║ Total images:    ${estimate.totalImages}
-║ Rate limit:      ${this.rateLimit} image/minute
+║ Covers/article:  1 (simplified v4.0!)
+║ Total covers:    ${estimate.totalImages}
+║ Rate limit:      ${this.rateLimit} cover/minute
 ║ Estimated time:  ${estimate.timeFormatted}
 ║ 
-║ ⚠️  NOTE: Images will be generated SERIALLY (one at a time)
+║ ✅ SIMPLIFIED: One cover per article from title + lede
+║                (not 12 episode images!)
+║ 
+║ ⚠️  NOTE: Covers will be generated SERIALLY (one at a time)
 ║           to respect API rate limits.
 ║           This process will run in background after articles
 ║           are generated.

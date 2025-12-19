@@ -88,11 +88,11 @@ export class ContentFactoryOrchestrator {
     // Initialize progress
     this.progress.state = "initializing";
     this.progress.articlesTotal = config.articleCount;
-    this.progress.imagesTotal = config.includeImages ? config.articleCount * 12 : 0;
+    this.progress.imagesTotal = config.includeImages ? config.articleCount : 0; // ✅ 1 cover per article!
 
     // Estimate time
     const articleTime = config.articleCount * 5; // ~5 min per article
-    const imageTime = config.includeImages ? (config.articleCount * 12) : 0; // 1 min per image
+    const imageTime = config.includeImages ? config.articleCount : 0; // ✅ 1 min per cover (not 12!)
     this.progress.estimatedTimeRemaining = (articleTime + imageTime) * 60; // in seconds
 
     this.progress.state = "running";
@@ -121,15 +121,15 @@ export class ContentFactoryOrchestrator {
 
       console.log(`\n✅ Stage 1 complete: ${this.articles.length} articles generated\n`);
 
-      // Stage 2: Generate images (serial)
+      // Stage 2: Generate COVER images (serial, 1 per article!)
       if (this.config.includeImages && this.articles.length > 0) {
         console.log(`\n${'='.repeat(60)}`);
-        console.log(`🖼️  STAGE 2: Image Generation (${this.articles.length * 12} images)`);
+        console.log(`🖼️  STAGE 2: COVER Image Generation (${this.articles.length} covers, not ${this.articles.length * 12}!)`);
         console.log(`${'='.repeat(60)}\n`);
 
-        await this.generateImages();
+        await this.generateCoverImages();
 
-        console.log(`\n✅ Stage 2 complete: Images generated and attached\n`);
+        console.log(`\n✅ Stage 2 complete: Cover images generated and attached (1 per article)\n`);
       }
 
       // Mark as completed
@@ -194,21 +194,29 @@ export class ContentFactoryOrchestrator {
   }
 
   /**
-   * 🖼️ Generate images using image worker pool
+   * 🖼️ Generate COVER images using image worker pool
+   * ✅ UPDATED v4.0: Generates ONE cover per article (not 12!)
    */
-  private async generateImages(): Promise<void> {
-    // Enqueue all articles
-    this.imageWorkerPool.enqueueArticles(this.articles);
+  private async generateCoverImages(): Promise<void> {
+    // Extract ledes (first paragraphs) from articles
+    const ledes = this.articles.map(article => {
+      // Get lede from article (first paragraph after splitting by double newline)
+      const paragraphs = article.content.split('\n\n');
+      return paragraphs[0] || article.content.substring(0, 500);
+    });
 
-    // Start processing
-    const images = await this.imageWorkerPool.start();
+    // Enqueue all articles with their ledes
+    this.imageWorkerPool.enqueueArticles(this.articles, ledes);
 
-    // Attach images to articles
-    this.imageWorkerPool.attachImagesToArticles(this.articles, images);
+    // Start processing (serial, 1 per minute)
+    const coverImages = await this.imageWorkerPool.start();
+
+    // Attach COVER images to articles (1:1 mapping)
+    this.imageWorkerPool.attachCoverImagesToArticles(this.articles, coverImages);
 
     // Update progress
-    this.progress.imagesCompleted = images.length;
-    this.progress.imagesFailed = this.progress.imagesTotal - images.length;
+    this.progress.imagesCompleted = coverImages.length;
+    this.progress.imagesFailed = this.progress.imagesTotal - coverImages.length;
   }
 
   /**
@@ -242,45 +250,48 @@ export class ContentFactoryOrchestrator {
 
   /**
    * 📤 Export articles for Zen
+   * ✅ UPDATED v4.0: Each article in its own folder with cover image
    */
   async exportForZen(outputDir: string = './output'): Promise<string> {
     console.log(`\n📤 Exporting ${this.articles.length} articles to: ${outputDir}\n`);
 
-    // Create output directories
-    const articlesDir = path.join(outputDir, 'articles');
-    const imagesDir = path.join(outputDir, 'images');
-    
-    fs.mkdirSync(articlesDir, { recursive: true });
-    if (this.config.includeImages) {
-      fs.mkdirSync(imagesDir, { recursive: true });
-    }
+    // Create main output directory
+    fs.mkdirSync(outputDir, { recursive: true });
 
     const exportedFiles: string[] = [];
 
-    // Export each article
-    for (const article of this.articles) {
-      // Save article JSON
-      const articlePath = path.join(articlesDir, `article-${article.id}.json`);
-      fs.writeFileSync(articlePath, JSON.stringify(article, null, 2));
-      exportedFiles.push(articlePath);
+    // Export each article to its own folder
+    for (let i = 0; i < this.articles.length; i++) {
+      const article = this.articles[i];
+      const articleNum = i + 1;
+      
+      // Create article folder: article-1, article-2, etc
+      const articleDir = path.join(outputDir, `article-${articleNum}`);
+      fs.mkdirSync(articleDir, { recursive: true });
 
-      // Save article Markdown
-      const markdownPath = path.join(articlesDir, `article-${article.id}.md`);
-      const markdown = this.convertToMarkdown(article);
-      fs.writeFileSync(markdownPath, markdown);
-      exportedFiles.push(markdownPath);
+      // Save article as TEXT (for copy-paste to Zen)
+      const textPath = path.join(articleDir, `article-${articleNum}.txt`);
+      fs.writeFileSync(textPath, article.content);
+      exportedFiles.push(textPath);
 
-      // Save images
-      if (this.config.includeImages) {
-        for (let i = 0; i < article.images.length; i++) {
-          const image = article.images[i];
-          const imagePath = path.join(imagesDir, `article-${article.id}-episode-${i + 1}.png`);
-          
-          // Save base64 image
-          const base64Data = image.base64.replace(/^data:image\/\w+;base64,/, '');
-          fs.writeFileSync(imagePath, Buffer.from(base64Data, 'base64'));
-          exportedFiles.push(imagePath);
-        }
+      // Save article JSON (full metadata)
+      const jsonPath = path.join(articleDir, `article-${articleNum}.json`);
+      fs.writeFileSync(jsonPath, JSON.stringify(article, null, 2));
+      exportedFiles.push(jsonPath);
+
+      // Save COVER image (ONE per article!)
+      if (this.config.includeImages && article.coverImage) {
+        const coverPath = path.join(articleDir, `article-${articleNum}-cover.png`);
+        
+        // Save base64 image
+        const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
+        fs.writeFileSync(coverPath, Buffer.from(base64Data, 'base64'));
+        exportedFiles.push(coverPath);
+      }
+
+      console.log(`✅ Article ${articleNum}: ${textPath}`);
+      if (article.coverImage) {
+        console.log(`   🖼️  Cover: article-${articleNum}-cover.png`);
       }
     }
 
@@ -294,9 +305,9 @@ export class ContentFactoryOrchestrator {
     const reportPath = path.join(outputDir, 'REPORT.md');
     fs.writeFileSync(reportPath, this.formatReport(report));
 
-    console.log(`✅ Export complete:`);
+    console.log(`\n✅ Export complete:`);
     console.log(`   📄 Articles: ${this.articles.length}`);
-    console.log(`   🖼️  Images: ${this.articles.reduce((sum, a) => sum + a.images.length, 0)}`);
+    console.log(`   🖼️  Cover images: ${this.articles.filter(a => a.coverImage).length} (1 per article)`);
     console.log(`   📋 Manifest: ${manifestPath}`);
     console.log(`   📊 Report: ${reportPath}\n`);
 
@@ -319,6 +330,7 @@ export class ContentFactoryOrchestrator {
 
   /**
    * 📋 Generate manifest
+   * ✅ UPDATED v4.0: Count cover images (not episode images)
    */
   private generateManifest(outputDir: string, files: string[]): FactoryManifest {
     return {
@@ -327,10 +339,10 @@ export class ContentFactoryOrchestrator {
       config: this.config,
       articleCount: this.articles.length,
       totalCharacters: this.articles.reduce((sum, a) => sum + a.charCount, 0),
-      totalImages: this.articles.reduce((sum, a) => sum + a.images.length, 0),
+      totalImages: this.articles.filter(a => a.coverImage).length, // ✅ Count cover images
       outputPaths: {
-        articles: files.filter(f => f.includes('articles')),
-        images: files.filter(f => f.includes('images')),
+        articles: files.filter(f => f.includes('.txt') || f.includes('.json')),
+        images: files.filter(f => f.includes('-cover.png')),
         report: path.join(outputDir, 'REPORT.md')
       }
     };
@@ -338,10 +350,11 @@ export class ContentFactoryOrchestrator {
 
   /**
    * 📊 Generate report
+   * ✅ UPDATED v4.0: Count cover images (not episode images)
    */
   private generateReport(): FactoryReport {
     const totalArticles = this.articles.length;
-    const totalImages = this.articles.reduce((sum, a) => sum + a.images.length, 0);
+    const totalImages = this.articles.filter(a => a.coverImage).length; // ✅ Cover images only
     const totalCharacters = this.articles.reduce((sum, a) => sum + a.charCount, 0);
     const totalTime = this.progress.completedAt && this.progress.startedAt
       ? (this.progress.completedAt - this.progress.startedAt) / 1000

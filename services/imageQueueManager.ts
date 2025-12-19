@@ -14,6 +14,7 @@
 import { ImageGeneratorAgent } from './imageGeneratorAgent';
 import {
   ImageGenerationRequest,
+  CoverImageRequest,
   GeneratedImage,
   ImageQueueStatus,
   QueueItem,
@@ -37,11 +38,12 @@ export class ImageQueueManager {
   }
 
   /**
-   * 📥 Add request to queue
+   * 📥 Add cover image request to queue
+   * ✅ UPDATED v4.0: Now works with CoverImageRequest (one per article)
    */
-  enqueue(request: ImageGenerationRequest, priority: number = 0): void {
+  enqueue(request: CoverImageRequest, priority: number = 0): void {
     const item: QueueItem = {
-      id: `queue_${request.episodeId}_${Date.now()}`,
+      id: `queue_${request.articleId}_${Date.now()}`,
       request,
       priority,
       addedAt: Date.now(),
@@ -54,7 +56,7 @@ export class ImageQueueManager {
     // Sort by priority (higher first)
     this.queue.sort((a, b) => b.priority - a.priority);
 
-    console.log(`📥 Added to queue: Episode ${request.episodeId} (priority: ${priority})`);
+    console.log(`📥 Added to queue: Article "${request.title}" (ID: ${request.articleId}, priority: ${priority})`);
     console.log(`📊 Queue size: ${this.queue.length}`);
   }
 
@@ -186,18 +188,19 @@ export class ImageQueueManager {
 
   /**
    * 🔨 Process single queue item
+   * ✅ UPDATED v4.0: Generates cover image (not episode image)
    */
   private async processItem(item: QueueItem): Promise<void> {
     item.status = "processing";
     item.attempts++;
 
     const status = this.getStatus();
-    console.log(`\n📸 Processing [${status.processed + 1}/${status.total}] Episode ${item.request.episodeId}`);
+    console.log(`\n📸 Processing [${status.processed + 1}/${status.total}] Article "${item.request.title}"`);
     console.log(`📊 Progress: ${status.percentage.toFixed(1)}% | ETA: ${status.estimatedTimeRemaining} min`);
 
     try {
-      // Generate image
-      const image = await this.agent.generateImage(item.request);
+      // Generate COVER image (not episode image!)
+      const image = await this.agent.generateCoverImage(item.request);
       
       // Success
       item.status = "completed";
@@ -208,11 +211,11 @@ export class ImageQueueManager {
       // Remove from queue
       this.queue = this.queue.filter(q => q.id !== item.id);
 
-      console.log(`✅ Episode ${item.request.episodeId} completed`);
+      console.log(`✅ Cover image for "${item.request.title}" completed`);
 
     } catch (error) {
       const errorMsg = (error as Error).message;
-      console.error(`❌ Episode ${item.request.episodeId} failed: ${errorMsg}`);
+      console.error(`❌ Cover image for "${item.request.title}" failed: ${errorMsg}`);
 
       // Check if should retry
       if (item.attempts < 3) {
@@ -221,13 +224,13 @@ export class ImageQueueManager {
         // Don't remove from queue, will retry
       } else {
         // Max retries reached
-        console.error(`❌ Max retries reached for episode ${item.request.episodeId}`);
+        console.error(`❌ Max retries reached for article ${item.request.articleId}`);
         item.status = "failed";
         item.error = errorMsg;
 
         // Add to errors
         this.errors.push({
-          episodeId: item.request.episodeId,
+          episodeId: 0, // Legacy field, not used
           error: errorMsg,
           timestamp: Date.now(),
           retryCount: item.attempts

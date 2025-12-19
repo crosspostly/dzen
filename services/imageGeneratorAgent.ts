@@ -14,6 +14,7 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import {
   ImageGenerationRequest,
+  CoverImageRequest,
   GeneratedImage,
   ExtractedScene,
   PromptComponents,
@@ -46,6 +47,138 @@ export class ImageGeneratorAgent {
   }
 
   /**
+   * 🎯 NEW v4.0 SIMPLIFIED: Generate ONE cover image from title + lede
+   * This is the NEW main entry point for article cover generation
+   */
+  async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
+    console.log(`🎨 Generating COVER image for article: "${request.title}"`);
+
+    try {
+      // Build cover image prompt from title + lede (first paragraph)
+      const prompt = this.buildCoverImagePrompt(request);
+      console.log(`📝 Cover prompt built (${prompt.length} chars)`);
+
+      // Generate with primary model
+      const image = await this.generateWithModel(
+        this.primaryModel,
+        prompt,
+        request.articleId
+      );
+
+      console.log(`✅ Cover image generated successfully for article ${request.articleId}`);
+      return image;
+
+    } catch (error) {
+      const errorMsg = (error as Error).message;
+      console.warn(`⚠️ Primary generation failed: ${errorMsg}`);
+
+      // Try fallback if enabled
+      if (this.config.enableFallback) {
+        console.log(`🔄 Attempting fallback cover generation...`);
+        return await this.generateCoverImageFallback(request);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * 📝 Build cover image prompt from article title + lede
+   */
+  private buildCoverImagePrompt(request: CoverImageRequest): string {
+    const { title, ledeText, plotBible } = request;
+
+    // Extract key visual elements from lede (first paragraph)
+    const visualElements = this.extractVisualElements(ledeText);
+
+    const prompt = `
+AUTHENTIC mobile phone photo for article cover image.
+Title: "${title}"
+
+Scene from opening paragraph: ${visualElements}
+
+NARRATOR CONTEXT:
+- Age: ${plotBible.narrator.age} years old
+- Gender: ${plotBible.narrator.gender}
+- Tone: ${plotBible.narrator.tone}
+
+SENSORY PALETTE:
+${plotBible.sensoryPalette.details.slice(0, 5).join(', ')}
+
+REQUIREMENTS:
+- 16:9 aspect ratio, horizontal orientation
+- Natural lighting ONLY (window light, desk lamp, shadows)
+- Domestic realism (Russian interior, everyday life)
+- Amateur framing (NOT professional composition)
+- Depth of field (slight background blur)
+- Slight digital noise (like real smartphone camera)
+- Natural colors (NOT oversaturated)
+
+MUST AVOID:
+- Stock photography or glossy look
+- Text, watermarks, or logos
+- Surrealism or strange proportions
+- Western style (no American kitchens)
+- Violence or shocking content
+- Perfect models or professional posing
+- Studio lighting
+- Fancy interior design
+
+STYLE: Like a photo from neighbor's WhatsApp - authentic, slightly imperfect, real life.
+RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
+    `.trim();
+
+    return prompt;
+  }
+
+  /**
+   * 🔍 Extract visual elements from lede text (first paragraph)
+   */
+  private extractVisualElements(ledeText: string): string {
+    // Simple extraction: take first 300 chars of lede as visual description
+    const maxLength = 300;
+    if (ledeText.length <= maxLength) {
+      return ledeText;
+    }
+    
+    // Find last complete sentence within maxLength
+    const truncated = ledeText.substring(0, maxLength);
+    const lastPeriod = truncated.lastIndexOf('.');
+    
+    if (lastPeriod > 100) {
+      return truncated.substring(0, lastPeriod + 1);
+    }
+    
+    return truncated + '...';
+  }
+
+  /**
+   * 🔄 Fallback cover generation with simpler prompt
+   */
+  private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
+    console.log(`🔄 Using fallback model for cover: ${this.fallbackModel}`);
+
+    const simplifiedPrompt = `
+Russian woman ${request.plotBible.narrator.age} years old in apartment, natural light, realistic photo on smartphone.
+Article: "${request.title}"
+Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
+16:9 aspect ratio, amateur photo aesthetic, NOT stock photography.
+    `.trim();
+
+    try {
+      return await this.generateWithModel(
+        this.fallbackModel,
+        simplifiedPrompt,
+        request.articleId
+      );
+    } catch (error) {
+      console.error(`❌ Fallback also failed:`, (error as Error).message);
+      throw new Error(`Both primary and fallback cover generation failed: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * @deprecated Use generateCoverImage instead. This generates per-episode images (old v4.0)
    * 🎯 Main entry point: Generate image from episode
    */
   async generateImage(request: ImageGenerationRequest): Promise<GeneratedImage> {
@@ -196,7 +329,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   private async generateWithModel(
     model: string,
     prompt: string,
-    episodeId: number
+    idForMetadata: string | number // Can be articleId or episodeId
   ): Promise<GeneratedImage> {
     const startTime = Date.now();
 
@@ -237,7 +370,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     }
 
     const generatedImage: GeneratedImage = {
-      id: `img_${episodeId}_${Date.now()}`,
+      id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data,
       mimeType: this.config.format === "png" ? "image/png" : "image/jpg",
       width: 1920, // 16:9 standard
@@ -247,10 +380,12 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
       model: model,
       prompt: prompt,
       metadata: {
-        episodeId,
+        articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
         sceneDescription: prompt.substring(0, 200) + "...",
         generationAttempts: 1,
-        fallbackUsed: model !== this.primaryModel
+        fallbackUsed: model !== this.primaryModel,
+        // Legacy support
+        episodeId: typeof idForMetadata === 'number' ? idForMetadata : undefined
       }
     };
 

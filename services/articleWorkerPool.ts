@@ -240,7 +240,8 @@ export class ArticleWorkerPool {
         sceneDescription: ep.sceneDescription,
         emotion: ep.emotion
       })),
-      images: [], // Will be populated by ImageWorkerPool
+      // ✅ v4.0: coverImage will be populated by ImageWorkerPool (not images array!)
+      coverImage: undefined,
       metadata: {
         theme,
         genre: "personal story",

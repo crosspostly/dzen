@@ -8,15 +8,26 @@
 import { PlotBible } from './PlotBible';
 
 /**
- * Request to generate an image for an episode
+ * 🎯 ZenMaster v4.0 SIMPLIFIED: Request to generate ONE cover image per article
+ * Cover image is generated from article title + first paragraph (lede)
+ */
+export interface CoverImageRequest {
+  articleId: string;
+  title: string;
+  ledeText: string; // First paragraph of the article
+  plotBible: PlotBible;
+}
+
+/**
+ * @deprecated Use CoverImageRequest instead. One article = one cover image.
  */
 export interface ImageGenerationRequest {
   episodeId: number;
   episodeText: string;
   plotBible: PlotBible;
-  sceneDescription?: string; // Optional override
-  emotion?: string; // "tense" | "sad" | "hopeful" | "revelatory"
-  keyMoment?: string; // Specific moment to visualize
+  sceneDescription?: string;
+  emotion?: string;
+  keyMoment?: string;
 }
 
 /**
@@ -36,7 +47,7 @@ export interface GeneratedImage {
 }
 
 export interface ImageMetadata {
-  episodeId: number;
+  articleId: string; // Article ID this cover belongs to
   sceneDescription: string;
   authenticity_score?: number; // 0-100, higher = more authentic/realistic
   emotion?: string;
@@ -44,6 +55,9 @@ export interface ImageMetadata {
   subjects?: string[]; // ["woman 40s", "kitchen table", "tea cup"]
   generationAttempts?: number; // How many tries before success
   fallbackUsed?: boolean;
+  
+  // @deprecated - use articleId instead
+  episodeId?: number;
 }
 
 /**
@@ -150,11 +164,11 @@ export interface ImageStorageResult {
 }
 
 /**
- * Queue item for internal use
+ * Queue item for internal use (UPDATED: now uses CoverImageRequest)
  */
 export interface QueueItem {
   id: string;
-  request: ImageGenerationRequest;
+  request: CoverImageRequest; // ✅ Changed from ImageGenerationRequest
   priority: number; // Higher = process first
   addedAt: number;
   attempts: number;
