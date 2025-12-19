@@ -730,12 +730,93 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
 
       console.log(`\n${LOG.SUCCESS} Все тесты пройдены!`);
 
+    } else if (command === 'factory') {
+      // ============================================================================
+      // 🏭 ZenMaster v4.0: Content Factory
+      // Generate 1-100 articles with parallel processing and image generation
+      // ============================================================================
+      
+      const { ContentFactoryOrchestrator } = await import('./services/contentFactoryOrchestrator');
+      const { FactoryPresets } = await import('./types/ContentFactory');
+      
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`🏭 ZenMaster v4.0 - Content Factory`);
+      console.log(`${'='.repeat(60)}\n`);
+
+      // Parse options
+      const count = parseInt(getArg('count', '1') || '1');
+      const preset = getArg('preset', 'quick-test');
+      const includeImages = getFlag('images');
+      const qualityLevel = getArg('quality', 'standard') as 'standard' | 'premium';
+      const outputDir = getArg('output', './output');
+      const verbose = getFlag('verbose');
+
+      // Validate count
+      const validCounts = [1, 5, 10, 25, 50, 100];
+      if (!validCounts.includes(count)) {
+        console.error(`${LOG.ERROR} Invalid count: ${count}`);
+        console.error(`${LOG.INFO} Valid values: ${validCounts.join(', ')}`);
+        process.exit(1);
+      }
+
+      // Get config (use preset or custom)
+      let config;
+      if (preset && FactoryPresets[preset]) {
+        config = { 
+          ...FactoryPresets[preset],
+          articleCount: count as any,
+          includeImages: includeImages !== undefined ? includeImages : FactoryPresets[preset].includeImages,
+          qualityLevel
+        };
+        console.log(`${LOG.INFO} Using preset: "${preset}"`);
+      } else {
+        config = {
+          articleCount: count as any,
+          parallelEpisodes: 3,
+          imageGenerationRate: 1,
+          includeImages: includeImages || false,
+          qualityLevel,
+          outputFormat: 'zen' as const,
+          timeoutPerArticle: 300000,
+          enableAntiDetection: true,
+          enablePlotBible: true
+        };
+      }
+
+      if (verbose) {
+        console.log(`${LOG.INFO} Configuration:`, JSON.stringify(config, null, 2));
+      }
+
+      // Initialize factory
+      const factory = new ContentFactoryOrchestrator();
+      await factory.initialize(config);
+
+      // Start generation
+      const startTime = Date.now();
+      const articles = await factory.start();
+      const duration = Date.now() - startTime;
+
+      // Export articles
+      console.log(`\n${LOG.SAVE} Exporting articles...`);
+      const exportPath = await factory.exportForZen(outputDir);
+
+      // Print summary
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`✅ FACTORY COMPLETE`);
+      console.log(`${'='.repeat(60)}`);
+      console.log(`📄 Articles generated: ${articles.length}`);
+      console.log(`⏱️  Total time: ${formatTime(duration)}`);
+      console.log(`💾 Output directory: ${exportPath}`);
+      console.log(`📊 Average time/article: ${formatTime(duration / articles.length)}`);
+      console.log(`${'='.repeat(60)}\n`);
+
     } else {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
-      console.log(`🚀 ZenMaster v2.0 Commands:`);
+      console.log(`🚀 ZenMaster v4.0 Commands:`);
       console.log(`  generate           - Генерировать статью (10-15K)`);
       console.log(`  generate:v2        - Генерировать лонгрид (35K+) [ZenMaster v2.0]`);
+      console.log(`  factory            - 🏭 Content Factory: 1-100 статей + изображения [v4.0]`);
       console.log(`  generate:all-dzen  - Генерировать для ВСЕХ каналов Дзена`);
       console.log(`  list-dzen-channels - Список всех каналов Дзена`);
       console.log(`  validate-dzen-config - Проверить конфигурацию каналов Дзена`);
@@ -764,6 +845,12 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=young-moms --theme="Custom theme"`);
       console.log(`  npx ts-node cli.ts generate:all-dzen`);
       console.log(`  npx ts-node cli.ts list-dzen-channels`);
+      console.log(``);
+      console.log(`  # Using Content Factory (v4.0) - Mass generation`);
+      console.log(`  npx ts-node cli.ts factory --count=1 --preset=quick-test`);
+      console.log(`  npx ts-node cli.ts factory --count=5 --images --quality=premium`);
+      console.log(`  npx ts-node cli.ts factory --count=10 --preset=medium-batch --output=./my-output`);
+      console.log(`  npx ts-node cli.ts factory --count=100 --preset=large-batch --verbose`);
       console.log(``);
       console.log(`  # Using Project Configuration with AI-Generated Themes`);
       console.log(`  npx ts-node cli.ts generate:v2 --project=channel-1`);
