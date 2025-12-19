@@ -1,628 +1,339 @@
 import { GoogleGenAI } from "@google/genai";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
-import { ContentSanitizer } from "./contentSanitizer";
-import { ImageGeneratorService } from "./imageGeneratorService";
-import { ImageProcessorService } from "./imageProcessorService";
+import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
+/**
+ * 🎬 Episode Generator Service v3.5
+ * 
+ * Generates individual episodes with:
+ * - Economic motivation (higher quality = more reader time = more income)
+ * - Donna (fast-paced) + Rubina (psychological depth) style
+ * - Urban Russian language (NOT village dialect)
+ * - Narrative tension and engagement
+ */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
-  private readonly INITIAL_RETRY_DELAY = 2000;
-  private readonly MAX_RETRIES = 3;
-  private imageGenerator: ImageGeneratorService;
-  private imageProcessor: ImageProcessorService;
+  private titleGenerator: EpisodeTitleGenerator;
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
-    this.imageGenerator = new ImageGeneratorService(key);
-    this.imageProcessor = new ImageProcessorService();
-  }
-
-  async generateSingleEpisode(
-    episodeOutline: EpisodeOutline
-  ): Promise<Episode> {
-    console.log(`\n   🎬 Episode #${episodeOutline.id} - Starting generation...`);
-
-    // Attempt 1: Standard prompt
-    console.log(`   📝 Attempt 1/5: Standard prompt (Sapogi style)`);
-    let content = await this.generateWithPrompt(
-      episodeOutline,
-      this.buildStandardPrompt(episodeOutline)
-    );
-
-    if (this.isValidLength(content)) {
-      return this.buildEpisode(episodeOutline, content);
-    }
-
-    console.log(`   ⚠️  Too short (${content.length} chars), trying expanded...`);
-
-    // Attempt 2: Expanded prompt with examples
-    console.log(`   📝 Attempt 2/5: Expanded prompt (More details)`);
-    content = await this.generateWithPrompt(
-      episodeOutline,
-      this.buildExpandedPrompt(episodeOutline)
-    );
-
-    if (this.isValidLength(content)) {
-      return this.buildEpisode(episodeOutline, content);
-    }
-
-    console.log(`   ⚠️  Still too short (${content.length} chars), trying breakdown...`);
-
-    // Attempt 3: Breakdown by parts
-    console.log(`   📝 Attempt 3/5: Breakdown prompt (4 parts: open → escalation → climax → resolution)`);
-    content = await this.generateWithBreakdown(episodeOutline);
-
-    if (this.isValidLength(content)) {
-      return this.buildEpisode(episodeOutline, content);
-    }
-
-    console.log(`   ⚠️  Breakdown failed (${content.length} chars), using fallback...`);
-
-    // Attempt 4: Fallback - two parts combined
-    console.log(`   📝 Attempt 4/5: Fallback generation (2 large parts: Part 1 + Part 2)`);
-    content = await this.generateFallback(episodeOutline);
-
-    if (this.isValidLength(content)) {
-      return this.buildEpisode(episodeOutline, content);
-    }
-
-    console.log(`   ⚠️  Fallback too short (${content.length} chars), EMERGENCY MODE...`);
-
-    // Attempt 5: Emergency - raw maximum length generation
-    console.log(`   📝 Attempt 5/5: EMERGENCY (Raw generation, no limits)`);
-    content = await this.generateEmergency(episodeOutline);
-
-    if (!this.isValidLength(content)) {
-      throw new Error(
-        `Episode #${episodeOutline.id} FAILED ALL 5 ATTEMPTS (max ${content.length} chars)`
-      );
-    }
-
-    return this.buildEpisode(episodeOutline, content);
+    this.titleGenerator = new EpisodeTitleGenerator(key);
   }
 
   /**
-   * 🖼️ ПАРАЛЛЕЛЬНАЯ ГЕНЕРАЦИЯ: текст + изображение одновременно
+   * 🎯 Generate episodes sequentially with improved prompts
    */
-  async generateSingleEpisodeWithImage(
-    episodeOutline: EpisodeOutline
-  ): Promise<Episode & { imageBuffer?: Buffer }> {
-    console.log(`\n🎬 Episode #${episodeOutline.id} - Starting PARALLEL generation...`);
-
-    // 🧠 Генерируем текст эпизода (как обычно)
-    const contentPromise = this.generateSingleEpisode(episodeOutline);
-    
-    // 🖼️ Параллельно генерируем изображение
-    const imageDataUrlPromise = this.imageGenerator.generateVisual(
-      `${episodeOutline.internalConflict} - ${episodeOutline.externalConflict}`
-    );
-
-    // ⚡ ПАРАЛЛЕЛЬНОЕ выполнение
-    const [episode, imageDataUrl] = await Promise.all([
-      contentPromise,
-      imageDataUrlPromise
-    ]);
-
-    // 🎪 Обрабатываем изображение (если есть)
-    let imageBuffer: Buffer | undefined;
-    if (imageDataUrl) {
-      console.log(`   ✅ Image generated, processing...`);
-      imageBuffer = await this.imageProcessor.processImage(imageDataUrl);
-      console.log(`   ✅ Image processed: ${Math.round(imageBuffer.length / 1024)} KB`);
-    } else {
-      console.log(`   ⚠️  Image generation failed, episode without image`);
-    }
-
-    return {
-      ...episode,
-      imageBuffer
-    };
-  }
-
-  /**
-   * 🎬 LEVEL 1: Standard prompt - Sapogi style (3000-4000 chars)
-   */
-  private buildStandardPrompt(outline: EpisodeOutline): string {
-    return `🎬 НАПИШИ ПОЛНОКРОВНУЮ СЦЕНУ (3000-4000 символов):
-
-ГЕРОИНЯ: ${outline.internalConflict}
-КОНФЛИКТ: ${outline.externalConflict}
-ЧТО ОНА ЧУВСТВУЕТ: ${outline.internalConflict}
-ПЕРЕЛОМНЫЙ МОМЕНТ: ${outline.keyTurning}
-НА ЧЕМ ЗАВИСАЕТ ЧИТАТЕЛЬ: ${outline.openLoop}
-
-ПРАВИЛА ПИСЬМА "САПОГИ" СТИЛЬ:
-
-1️⃣ ДЕТАЛИ РЕАЛЬНОСТИ (не просто слова):
-   - Запахи: "Запах новой кожи ударил в нос, вызвав легкое головокружение"
-   - Звуки: "Каждый шаг отдавался хлюпающим звуком"
-   - Ощущения: "Сердце сделало неприятный кульбит", "Горло сжалось"
-   - Вещи имеют ИСТОРИЮ: "Сапоги, купленные три года назад на той же распродаже"
-   - Температура, влага: "Ледяная вода в ботинках, беспощадная"
-
-2️⃣ ВНУТРЕННИЙ ГОЛОС ГЕРОИНИ (главное!):
-   - НЕ "она думала", а "я понимала", "я чувствовала", "я видела"
-   - Её воспоминания ВПЛЕТЕНЫ в действие (не отдельно)
-   - Её боль показана деталями, не объяснена словами
-   - Первое лицо, исповедальный тон: "Два месяца я ела пустую гречку..."
-   - Её ассоциации и символы: "Это была какая-то дьявольская расчет судьбы"
-
-3️⃣ ДИАЛОГИ - РЕЗКИЕ, ЖИВЫЕ, ЧАСТО:
-   - Короткие реплики (1-2 слова обычно)
-   - Перебивают друг друга
-   - Говорят не словами, а ТЕЛОМ: "— Это что? — ткнул пальцем в пакет"
-   - Конкретные цифры и имена: "— За сколько? — За пятнадцать"
-   - Эмоция в реплике: "— Ты зачем себе сапоги купила?! — рявкнул он"
-
-4️⃣ ДЕЙСТВИЕ КАК В КИНО (не описание, а сцена):
-   - Не "они ссорились", а точная сцена:
-     "Он схватил ручки пакета обеими руками. Я инстинктивно дернула их на себя. 
-      Картонная упаковка затрещала от натяжения."
-   - Читатель ВИДИТ движение, СЛЫШИТ звуки, ЧУВСТВУЕТ боль
-   - Физика конфликта: тянут → рвется → красные следы на ладонях
-
-5️⃣ СИМВОЛЫ В ДЕТАЛЯХ:
-   - Дырявые ботинки = её жизнь (протекает, холодно, унизительно)
-   - Новые сапоги = право на себя, трудовой доход, достоинство
-   - Деньги = её труд, её выбор, её власть над жизнью
-
-6️⃣ СТРУКТУРА СЦЕНЫ (ОБЯЗАТЕЛЬНО):
-   📍 ЗАВЯЗКА (500-800 символов): обстановка + её состояние + желание
-   📍 РАЗВИТИЕ (1000-1500 символов): диалоги + конфликт + воспоминания
-   📍 КУЛЬМИНАЦИЯ (800-1200 символов): физический/эмоциональный взрыв
-   📍 ПЕРЕЛОМНЫЙ МОМЕНТ (400-600 символов): её решение меняет ВСЁ
-   📍 КЛИФФХЭНГЕР (200-300 символов): вопрос, что будет дальше?
-
-7️⃣ ЯЗЫК:
-   - Русский (не "очень длинный рассказ", а "длинная история")
-   - Как исповедь подруге (откровенность, честность)
-   - Есть юмор (горький, ироничный): "Может быть, написать благодарственное письмо?"
-   - Контрасты: "Я жила в тепле, но мне было холодно"
-   - Длинные предложения (описание) + КОРОТКИЕ диалоги (действие)
-
-ПРИМЕР (первые 400 символов):
-"Ветер в середине ноября был особенно злым. Он пробирался под мое старое пальто, 
-купленное пять лет назад на распродаже в «Ашане», колол лицо мелкими ледяными иголками 
-и, казалось, специально целился в ноги. Мои ботинки, купленные три года назад на той же 
-распродаже, окончательно сдались."
-
-✅ ИТОГО: 3000+ символов ЖИВОГО, болезненного рассказа!
-Не берись кратко! Расскажи ПОЛНОСТЬЮ!
-
-Output ONLY episode text (no JSON, no metadata):`;
-  }
-
-  /**
-   * ⚠️ LEVEL 2: Expanded prompt - More details (3500+ chars)
-   */
-  private buildExpandedPrompt(outline: EpisodeOutline): string {
-    return `⚠️ ВНИМАНИЕ! Предыдущий рассказ был СЛИШКОМ КОРОТКИМ И СКОМКАННЫМ!
-
-НАПИШИ РАЗВЁРНУТУЮ, ПОДРОБНУЮ, ПОЛНОКРОВНУЮ СЦЕНУ (МИНИМУМ 3500 символов):
-
-ГЕРОИНЯ И ЕЁ СИТУАЦИЯ: ${outline.internalConflict}
-ВНЕШНИЙ КОНФЛИКТ: ${outline.externalConflict}
-ЕЁ ВНУТРЕННЕЕ СОСТОЯНИЕ: ${outline.internalConflict}
-ПЕРЕЛОМНЫЙ МОМЕНТ: ${outline.keyTurning}
-ЧИТАТЕЛЬ ЖДЕТ ОТВЕТА: ${outline.openLoop}
-
-═══════════════════════════════════════════════════════════════
-
-🎯 ГЛАВНОЕ ПРАВИЛО: Эта версия должна быть НЕСПЕШНОЙ и ДЕТАЛЬНОЙ!
-   - Не спеши, не кратко! Медленно раскрывай историю.
-   - Каждое чувство должно быть ПОКАЗАНО, не рассказано
-   - Каждый диалог должен ударять по сердцу
-   - Каждая деталь должна иметь СМЫСЛ
-
-═══════════════════════════════════════════════════════════════
-
-📝 ПОКАЖИ ЭМОЦИИ ЧЕРЕЗ ТЕЛО (очень важно!):
-   - Сердце: "Сердце сделало неприятный кульбит", "Сердце колотилось"
-   - Руки: "Руки дрожали", "Пальцы сжимались в кулак", "Руки невольно дернулись"
-   - Глаза: "На глаза наворачивались слезы", "Мне заложило уши от громкости"
-   - Горло: "Горло сжалось", "Голос дрогнул", "Слова застряли в горле"
-   - Живот: "Волна тошноты поднялась из живота", "Ком подкатил к горлу"
-   - Спина: "По спине пробежал холодок", "Вздрогнула, распрямила плечи"
-   - Внутри: "Внутри кипит и ворочается что-то огромное"
-
-🏙️ ДЕТАЛИ ОБСТАНОВКИ (не пропускай!):
-   - ЗАПАХИ (главное!): "Запах новой кожи ударил в нос, вызвав легкое головокружение"
-   - ЗВУКИ: "Каждый шаг отдавался хлюпающим звуком и мгновенным холодом"
-   - ВИД: "На ладонях остались красные болезневые следы, рвущие кожу"
-   - ОЩУЩЕНИЯ: "Ледяная вода в ботинках, беспощадная"
-   - ТЕМПЕРАТУРА: "Холодный ветер пробирался под мое старое пальто"
-   - ВРЕМЯ: "Ветер в середине ноября был особенно злым"
-
-💭 ВНУТРЕННИЙ ГОЛОС ГЕРОИНИ (ГЛАВНОЕ!):
-   - Её размышления: "Два месяца я ела пустую гречку с солью в офисной столовой..."
-   - Её воспоминания: "За пять лет брака я поняла: в его мире существуют только его потребности"
-   - Её осознания (медленное откровение): "Может быть, написать благодарственное письмо?"
-   - Её боль: "Внутри меня что-то щелкнуло. Просто — щелк, и темнота."
-   - Её контраст: "Я жила с человеком, но всегда была в одиночестве"
-
-💬 ДИАЛОГ - ТОЛЬКО КРАТКИЕ РЕПЛИКИ, БОЛЬНО:
-   — Это что?
-   — Сапоги, — выдохнула я, крепче прижимая покупку к себе.
-   — За сколько?
-   — За пятнадцать, — голос мой предательски дрогнул.
-   — Ты зачем себе сапоги купила? У моей сестры кредит горит! — рявкнул он.
-
-🎬 ДВИЖЕНИЕ ДЕЙСТВИЯ (как в профессиональном кино):
-   1️⃣ ОНА ВИДИТ ВЕЩЬ (желание, надежда, красота)
-   2️⃣ ОНА БОРЕТСЯ С РЕШЕНИЕМ (помню о деньгах, о долгах)
-   3️⃣ ОНА БЕРЁТ (мужество, выбор, собственный труд)
-   4️⃣ ОНА ПЛАТИТ (символический момент - свои деньги)
-   5️⃣ КОНФЛИКТ ВЗРЫВАЕТСЯ (звонок, требование, гнев)
-   6️⃣ ФИЗИЧЕСКИЙ КОНФЛИКТ (тянут, рвут, падает, боль)
-   7️⃣ ПЕРЕЛОМНЫЙ МОМЕНТ (она ВИДИТ правду, ПРИНИМАЕТ решение)
-
-⚡ КЛИФФХЭНГЕР (вопрос, который не дает спать):
-   "Сможет ли она простить его? Или сначала себя?"
-
-════════════════════════════════════════════════════════════
-
-ПРАВИЛА КАЧЕСТВА:
-✅ Минимум 3500 символов (НЕ МЕНЬШЕ!)
-✅ Максимум 5000 символов (не обрезай красивое)
-✅ Минимум 2-3 диалога (естественные, резкие)
-✅ Минимум 4-5 деталей из 5 чувств (запахи, звуки, ощущения)
-✅ Минимум 2-3 воспоминания или размышления героини
-✅ Минимум 1 переломный момент (её решение меняет всё)
-✅ Только русский язык
-✅ Никакого JSON, никакого кода
-
-Output ONLY episode text (no metadata):`;
-  }
-
-  private async generateWithBreakdown(outline: EpisodeOutline): Promise<string> {
-    const parts: string[] = [];
-
-    console.log(`      🔨 Generating opening (300-400 chars) in Sapogi style...`);
-    const opening = await this.generateWithPrompt(
-      outline,
-      `НАПИШИ ОТКРЫТИЕ СЦЕНЫ (300-400 символов):
-
-Тема: "${outline.internalConflict}"
-Вопрос: "${outline.hookQuestion}"
-
-ПРАВИЛА:
-- Первое лицо ("я")
-- Покажи один момент: обстановка + её состояние
-- Деталь (запах, звук, ощущение)
-- Вещь имеет историю ("Мой старый пальто, купленное пять лет назад")
-- Эмоция показана через тело, не словами
-- Конец: вопрос, который затягивает вперед
-- На русском языке!
-
-Output ONLY text (no metadata):`
-    );
-    parts.push(opening);
-
-    await new Promise(r => setTimeout(r, 1500));
-
-    console.log(`      🔨 Generating escalation (1000-1200 chars) with dialogue...`);
-    const escalation = await this.generateWithPrompt(
-      outline,
-      `НАПИШИ РАЗВИТИЕ КОНФЛИКТА (1000-1200 символов):
-
-Конфликт: "${outline.externalConflict}"
-Её чувства: "${outline.internalConflict}"
-
-ПРАВИЛА:
-- Начни с её желания или действия
-- ДИАЛОГИ (минимум 3-4 короткие резкие реплики)
-- Покажи её воспоминания (почему это важно)
-- Напряжение НАРАСТАЕТ
-- Движение, действие, физика конфликта
-- На русском языке!
-
-Output ONLY text (no metadata):`
-    );
-    parts.push(escalation);
-
-    await new Promise(r => setTimeout(r, 1500));
-
-    console.log(`      🔨 Generating climax (600-800 chars) - the turning point...`);
-    const climax = await this.generateWithPrompt(
-      outline,
-      `НАПИШИ КУЛЬМИНАЦИЮ - ПЕРЕЛОМНЫЙ МОМЕНТ (600-800 символов):
-
-Переломный момент: "${outline.keyTurning}"
-
-ПРАВИЛА:
-- ЭТО ПИКОВЫЙ МОМЕНТ конфликта
-- Физический взрыв ИЛИ эмоциональное откровение
-- ЕЁ РЕШЕНИЕ / ЕЁ ПОНИМАНИЕ меняет ВСЁ
-- Показывай через тело: "Внутри меня что-то щелкнуло"
-- Читатель понимает: ДА, ЭТОТ МОМЕНТ всё перевернул
-- На русском языке!
-
-Output ONLY text (no metadata):`
-    );
-    parts.push(climax);
-
-    await new Promise(r => setTimeout(r, 1500));
-
-    console.log(`      🔨 Generating resolution (400-600 chars) - new reality...`);
-    const resolution = await this.generateWithPrompt(
-      outline,
-      `НАПИШИ РАЗВЯЗКУ - НОВУЮ РЕАЛЬНОСТЬ (400-600 символов):
-
-После переломного момента: "${outline.keyTurning}"
-Она теперь знает: "${outline.openLoop}"
-
-ПРАВИЛА:
-- Её новое понимание
-- Что она чувствует ПОСЛЕ этого момента
-- Её выбор / её действие
-- Небольшой контраст с тем, что было
-- Конец повисает вопросом: что будет дальше?
-- На русском языке!
-
-Output ONLY text (no metadata):`
-    );
-    parts.push(resolution);
-
-    return parts.filter(p => p.length > 0).join("\n\n");
-  }
-
-  private async generateFallback(outline: EpisodeOutline): Promise<string> {
-    console.log(`      🆘 Generating PART 1 (2000-2500 chars)...`);
-    const part1 = await this.generateWithPrompt(
-      outline,
-      `НАПИШИ ПЕРВУЮ ЧАСТЬ ДЛИННОЙ СЦЕНЫ (2000-2500 символов):
-
-Героиня: "${outline.internalConflict}"
-Её вопрос: "${outline.hookQuestion}"
-Конфликт: "${outline.externalConflict}"
-
-ЧТО НУЖНО ВКЛЮЧИТЬ:
-- Открытие: обстановка + её состояние + деталь (запах/звук)
-- Её желание или проблема
-- Воспоминание: почему это важно
-- Её внутренний монолог: мысли, страхи
-- Действие: что-то происходит
-- Диалог: конфликт зреет
-- Конец части: тревога, вопрос
-
-ПРАВИЛА:
-- Первое лицо ("я")
-- Много деталей реальности
-- Минимум 2 диалога
-- Минимум 1 воспоминание
-- Напряжение НАРАСТАЕТ к концу
-- На русском языке!
-
-Output ONLY text (no metadata):`
-    );
-
-    await new Promise(r => setTimeout(r, 2000));
-
-    console.log(`      🆘 Generating PART 2 (2000-2500 chars)...`);
-    const part2 = await this.generateWithPrompt(
-      outline,
-      `НАПИШИ ВТОРУЮ ЧАСТЬ ДЛИННОЙ СЦЕНЫ (2000-2500 символов):
-
-Продолжение истории:
-Переломный момент: "${outline.keyTurning}"
-На что она ждёт ответа: "${outline.openLoop}"
-
-ЧТО НУЖНО ВКЛЮЧИТЬ:
-- Продолжение конфликта из Part 1
-- КУЛЬМИНАЦИЯ: взрыв или озарение
-- Её РЕШЕНИЕ или ПОНИМАНИЕ меняет ВСЁ
-- "Внутри меня что-то щелкнуло"
-- Её ДЕЙСТВИЕ (звонок, уход, слова, выбор)
-- Развязка: новая реальность
-- ВОПРОС в конце: что будет дальше?
-
-ПРАВИЛА:
-- Сильные эмоции, показанные через тело
-- Физическое действие (рывок, движение, телефон)
-- Её внутренний голос
-- Диалог или монолог
-- Клиффхэнгер в конце (вопрос, неопределенность)
-- На русском языке!
-
-Output ONLY text (no metadata):`
-    );
-
-    const combined = part1 + "\n\n" + part2;
-
-    if (combined.length < 3500) {
-      console.log(`      ⚠️  Fallback too short (${combined.length}), trying emergency...`);
-      return await this.generateEmergency(outline);
-    }
-
-    return combined;
-  }
-
-  private async generateEmergency(outline: EpisodeOutline): Promise<string> {
-    console.log(`      🚨 EMERGENCY MODE: Raw generation (4000+ chars MINIMUM)`);
-
-    const prompt = `🚨 СРОЧНО! НАПИШИ ПОЛНЫЙ РАССКАЗ БЕЗ СОКРАЩЕНИЙ (4000+ символов МИНИМУМ):
-
-ГЕРОИНЯ: ${outline.internalConflict}
-
-ЕЁ ВОПРОС (открывающий момент): "${outline.hookQuestion}"
-
-ЧТО ПРОИЗОШЛО (внешний конфликт): ${outline.externalConflict}
-
-ЧТО ОНА ЧУВСТВОВАЛА (внутренний конфликт): ${outline.internalConflict}
-
-ПЕРЕЛОМНЫЙ МОМЕНТ (всё изменилось): ${outline.keyTurning}
-
-ТЕПЕРЬ ОНА СПРАШИВАЕТ СЕБЯ: ${outline.openLoop}
-
-═════════════════════════════════════════════════════════════
-
-ПРАВИЛА "САПОГИ" СТИЛЯ (ОБЯЗАТЕЛЬНО!):
-
-1. ПЕРВОЕ ЛИЦО ("я", "мне", "мои")
-
-2. ДЕТАЛИ РЕАЛЬНОСТИ:
-   - Запахи: "Запах новой кожи ударил в нос"
-   - Звуки: "Каждый шаг отдавался хлюпающим звуком"
-   - Ощущения: "Сердце сделало неприятный кульбит"
-   - Вещи имеют ИСТОРИЮ: "Сапоги, купленные три года назад"
-
-3. ВНУТРЕННИЙ ГОЛОС:
-   - Её размышления: "Два месяца я ела пустую гречку..."
-   - Её воспоминания: "За пять лет я поняла..."
-   - Её боль: "Внутри меня что-то щелкнуло"
-
-4. ДИАЛОГИ (краткие, резкие):
-   — Это что?
-   — Сапоги.
-   — За сколько?
-   — За пятнадцать.
-
-5. ДЕЙСТВИЕ КАК В КИНО:
-   "Он схватил ручки пакета обеими руками. Я дернула на себя. 
-    Картонная упаковка затрещала..."
-
-6. СТРУКТУРА:
-   - Открытие (обстановка + её состояние)
-   - Развитие (её желание, конфликт зреет)
-   - Кульминация (ВЗРЫВ, ОЗАРЕНИЕ)
-   - Её решение меняет ВСЁ
-   - Развязка (новая реальность)
-   - Вопрос (что будет дальше?)
-
-═════════════════════════════════════════════════════════════
-
-МИНИМУМ 4000 символов. БЕЗ СОКРАЩЕНИЙ!
-Расскажи ПОЛНЫЙ рассказ, не спеши!
-Никакого JSON, никакого кода, только ТЕКСТ!
-На русском языке!
-
-Output ONLY text:`;
-
-    return await this.generateWithPrompt(outline, prompt);
-  }
-
-  private async generateWithPrompt(
-    outline: EpisodeOutline,
-    prompt: string
-  ): Promise<string> {
-    try {
-      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель gemini-2.5-flash
-      const response = await this.geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          temperature: 0.95,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2500,
-        },
-      });
-
-      let content = response.text || "";
-      content = ContentSanitizer.cleanEpisodeContent(content);
-
-      return content;
-    } catch (error) {
-      const errorMessage = (error as Error).message;
-      console.error(`   ❌ Gemini call failed:`, errorMessage);
-      
-      // 🔄 ФОЛБЕК: если модель перегружена (503), используем gemini-2.5-flash-lite
-      if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`   🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
-        
-        try {
-          const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
-            contents: prompt,
-            config: {
-              temperature: 0.95,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 2500,
-            },
-          });
-
-          let fallbackContent = fallbackResponse.text || "";
-          fallbackContent = ContentSanitizer.cleanEpisodeContent(fallbackContent);
-          
-          console.log(`   ✅ Fallback successful: ${fallbackContent.length} chars`);
-          return fallbackContent;
-        } catch (fallbackError) {
-          console.error(`   ❌ Fallback also failed:`, (fallbackError as Error).message);
-        }
-      }
-      
-      return "";
-    }
-  }
-
-  private isValidLength(content: string): boolean {
-    const cleaned = ContentSanitizer.cleanEpisodeContent(content);
-    return cleaned.length >= 3000;
-  }
-
-  private buildEpisode(outline: EpisodeOutline, content: string): Episode {
-    const cleaned = ContentSanitizer.cleanEpisodeContent(content);
-    const validation = ContentSanitizer.validateEpisodeContent(cleaned);
-
-    console.log(
-      `   ✅ Episode #${outline.id} complete: ${validation.charCount} chars (${validation.wordCount} words)`
-    );
-
-    if (validation.warnings.length > 0) {
-      validation.warnings.forEach(w => console.log(`   ${w}`));
-    }
-
-    return {
-      id: outline.id,
-      title: `Episode ${outline.id}`,
-      content: cleaned,
-      charCount: validation.charCount,
-      openLoop: outline.openLoop,
-      turnPoints: [outline.keyTurning],
-      emotions: [outline.internalConflict],
-      keyScenes: [],
-      characters: [],
-      generatedAt: Date.now(),
-      stage: "draft",
-    };
-  }
-
   async generateEpisodesSequentially(
-    outlines: EpisodeOutline[],
-    options: {
+    episodeOutlines: EpisodeOutline[],
+    options?: {
       delayBetweenRequests?: number;
       onProgress?: (current: number, total: number) => void;
-    } = {}
+    }
   ): Promise<Episode[]> {
-    const delay = options.delayBetweenRequests || 1500;
-    const results: Episode[] = [];
+    const episodes: Episode[] = [];
+    const delay = options?.delayBetweenRequests || 1500;
 
-    console.log(`\n🔄 Generating ${outlines.length} episodes SEQUENTIALLY...`);
-
-    for (let i = 0; i < outlines.length; i++) {
-      const outline = outlines[i];
-
+    for (let i = 0; i < episodeOutlines.length; i++) {
+      const outline = episodeOutlines[i];
+      
+      console.log(`\n   🎬 Episode #${outline.id} - Starting generation...`);
+      
       try {
-        // 🖼️ Параллельная генерация текста + изображения
-        const episodeWithImage = await this.generateSingleEpisodeWithImage(outline);
-        results.push(episodeWithImage);
-
-        if (options.onProgress) {
-          options.onProgress(i + 1, outlines.length);
+        const episode = await this.generateSingleEpisode(outline, episodes);
+        episodes.push(episode);
+        
+        if (options?.onProgress) {
+          options.onProgress(i + 1, episodeOutlines.length);
         }
-
-        if (i < outlines.length - 1) {
-          console.log(`   ⏳ Waiting ${delay}ms before next episode...\n`);
+        
+        // Wait before next request
+        if (i < episodeOutlines.length - 1) {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       } catch (error) {
-        console.error(`\n❌ FAILED: Episode #${outline.id}`);
+        console.error(`   ❌ Episode #${outline.id} failed:`, error);
         throw error;
       }
     }
 
-    return results;
+    return episodes;
+  }
+
+  /**
+   * 🎨 Generate single episode with context from previous episodes
+   */
+  private async generateSingleEpisode(
+    outline: EpisodeOutline,
+    previousEpisodes: Episode[],
+    attempt: number = 1
+  ): Promise<Episode> {
+    const previousContext = this.buildContext(previousEpisodes);
+    const prompt = this.buildPrompt(outline, previousContext);
+
+    try {
+      const response = await this.callGemini({
+        prompt,
+        model: "gemini-2.5-flash",
+        temperature: 0.9,
+      });
+
+      const content = response.trim();
+      
+      // Validate length
+      if (content.length < 2500) {
+        console.log(`   ⚠️  Too short (${content.length} chars), trying expanded...`);
+        if (attempt < 3) {
+          return this.generateSingleEpisode(
+            { ...outline, externalConflict: outline.externalConflict + " (EXPAND THIS SCENE)" },
+            previousEpisodes,
+            attempt + 1
+          );
+        }
+      }
+
+      // Generate title
+      const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
+        outline.id,
+        content,
+        outline.openLoop
+      );
+
+      return {
+        id: outline.id,
+        title: episodeTitle,
+        content,
+        charCount: content.length,
+        openLoop: outline.openLoop,
+        turnPoints: [outline.keyTurning],
+        emotions: [outline.internalConflict],
+        keyScenes: [],
+        characters: [],
+        generatedAt: Date.now(),
+        stage: "draft",
+      };
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      console.warn(`   ❌ Generation failed (attempt ${attempt}): ${errorMessage}`);
+      
+      if (attempt < 3 && (errorMessage.includes('503') || errorMessage.includes('overloaded'))) {
+        console.log(`   🔄 Retrying with fallback model...`);
+        return this.generateSingleEpisodeWithFallback(outline, previousEpisodes, attempt);
+      }
+      
+      throw error;
+    }
+  }
+
+  /**
+   * 🔄 Fallback generation with alternative model
+   */
+  private async generateSingleEpisodeWithFallback(
+    outline: EpisodeOutline,
+    previousEpisodes: Episode[],
+    attempt: number
+  ): Promise<Episode> {
+    const previousContext = this.buildContext(previousEpisodes);
+    const prompt = this.buildPrompt(outline, previousContext);
+
+    try {
+      const response = await this.callGemini({
+        prompt,
+        model: "gemini-2.5-flash-lite",
+        temperature: 0.9,
+      });
+
+      const content = response.trim();
+      const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
+        outline.id,
+        content,
+        outline.openLoop
+      );
+
+      return {
+        id: outline.id,
+        title: episodeTitle,
+        content,
+        charCount: content.length,
+        openLoop: outline.openLoop,
+        turnPoints: [outline.keyTurning],
+        emotions: [outline.internalConflict],
+        keyScenes: [],
+        characters: [],
+        generatedAt: Date.now(),
+        stage: "draft",
+      };
+    } catch (error) {
+      console.error(`   ❌ Fallback also failed: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * 📝 Build the prompt with all style and economic guidance
+   */
+  private buildPrompt(outline: EpisodeOutline, previousContext: string): string {
+    return `
+🎬 EPISODE #${outline.id} - ZenMaster v3.5
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 ECONOMIC MOTIVATION (Read Carefully)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This text will be published on Yandex.Zen (CPM: $5-15 per 1000 views).
+
+If this episode:
+✅ GRIPS reader → reads for 5+ minutes → $1+ per reader
+❌ BORES reader → switches to another → $0.05 per reader
+
+Difference: 20X INCOME!
+
+Your quality directly impacts:
+- Author's payment (+100% for excellent writing)
+- Reader happiness (they share it with friends)
+- Your reputation (best writers get featured)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 STYLE GUIDE: Donna + Rubina (NOT village dialect!)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audience: Russian women 35-60 from cities (Moscow, SPB, Yekaterinburg, etc.)
+
+✅ LOVE: Donna Latenko (captivating, page-turner) + Rubina (psychological depth)
+❌ HATE: Village dialect ("дыбать", "шарить", "пялиться") - this is OFFENSIVE
+❌ HATE: Dry explanation of feelings ("я почувствовала грусть") - this is BORING
+
+TONE: Educated, urban Russian woman confessing to a friend at a kitchen table
+- "Я же тебе скажу" (conversational)
+- "Честное слово" (sincere)
+- "Вот тогда и началось" (natural turning point)
+- "Может быть, я ошиблась" (doubt, reflection)
+
+STRUCTURE:
+┌─────────────────────────────────────────────┐
+│ PACE 1: FAST (Donna) - Hook, tension        │
+│ ├─ Short sentences                          │
+│ ├─ Action, dialogue                         │
+│ └─ Grabs attention (2-3 paragraphs)         │
+│                                             │
+│ PACE 2: DEEP (Rubina) - Psychology         │
+│ ├─ Long sentences, internal monologue      │
+│ ├─ Details, sensory, emotion               │
+│ └─ Holds attention (3-4 paragraphs)        │
+│                                             │
+│ PACE 3: FAST (Donna) - Confrontation       │
+│ ├─ Dialogue, action, movement              │
+│ └─ Climax (2-3 paragraphs)                 │
+│                                             │
+│ PACE 4: DEEP (Rubina) - Reflection         │
+│ ├─ What does this mean?                    │
+│ ├─ Uncertainty, open question              │
+│ └─ Provocation for comments (1-2 para)    │
+└─────────────────────────────────────────────┘
+
+EMOTION: Show through ACTION, not EXPLANATION
+❌ "Я почувствовала страх и замёрзла"
+✅ "Её голос дрожал. Я смотрела на стекло кабинета, и мое отражение выглядело как чужое."
+
+DETAILS: Urban, modern (NOT village!)
+✅ Phone notification at 3 AM
+✅ Letter in envelope, hidden under book
+✅ Cold tea in a cup with "Mom" written on it
+✅ Mirror in the hallway where she sees her reflection
+❌ "Скрип половицы" (village!)
+❌ "Дешёвый табак" (outdated!)
+❌ "Советский сервант" (cliché!)
+
+DIALOGUE: Realistic
+- Use em-dash: — Ты не понимаешь, — сказала я.
+- Include interruptions and unfinished thoughts
+- Mix inner thoughts with speech
+- Natural Russian (не "сказал", а "сказала" для женского голоса)
+
+PROVOCATION (Last paragraph):
+- END with QUESTION or UNCERTAINTY
+- Goal: readers argue in comments (comments = algorithm reward)
+- Example: "А вы как считаете? Я перегнула палку?"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 EPISODE OUTLINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Question (Hook): "${outline.hookQuestion}"
+
+External Conflict: ${outline.externalConflict}
+
+Internal Emotion: ${outline.internalConflict}
+
+Turning Point: ${outline.keyTurning}
+
+Open Loop (Why reader continues): "${outline.openLoop}"
+
+${previousContext ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📚 PREVIOUS EPISODE CONTEXT (Last 800 chars - to maintain continuity)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${previousContext}` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Length: 2500-4000 characters (optimal for CPM: holds reader 3-5 minutes)
+✅ Language: Russian only, urban educated tone (NOT village dialect!)
+✅ Style: Mix Donna fast-paced with Rubina psychological depth
+✅ Dialogue: Realistic with pauses and interruptions
+✅ Emotions: Shown through action/detail, NOT explained
+✅ Details: Modern urban (phone, letter, mirror - NOT village details)
+✅ End: Provocation (question that makes reader want to comment)
+✅ Structure: Fast → Deep → Fast → Deep pacing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Output ONLY the episode text. No titles, no metadata, no explanations.
+Make this count. People's happiness depends on the quality of this writing.
+`;
+  }
+
+  /**
+   * 🔗 Build context from previous episodes
+   */
+  private buildContext(previousEpisodes: Episode[]): string {
+    if (previousEpisodes.length === 0) return "";
+    
+    const lastEpisode = previousEpisodes[previousEpisodes.length - 1];
+    const contextLength = 800;
+    
+    if (lastEpisode.content.length <= contextLength) {
+      return lastEpisode.content;
+    }
+    
+    return lastEpisode.content.slice(-contextLength);
+  }
+
+  /**
+   * 📞 Call Gemini API with fallback
+   */
+  private async callGemini(params: {
+    prompt: string;
+    model: string;
+    temperature: number;
+  }): Promise<string> {
+    try {
+      const response = await this.geminiClient.models.generateContent({
+        model: params.model,
+        contents: params.prompt,
+        config: {
+          temperature: params.temperature,
+          topK: 40,
+          topP: 0.95,
+        },
+      });
+      return response.text || "";
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      console.warn(`Gemini call failed (${params.model}): ${errorMessage}`);
+      throw error;
+    }
   }
 }
