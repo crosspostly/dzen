@@ -53,11 +53,11 @@ jobs:
       
       - run: npm install
       
-      - name: 🏭 ZenMaster v4.0 - Yandex.Dzen Content Factory
+      - name: '🏭 ZenMaster v4.0 - Yandex.Dzen Content Factory'
         run: |
-          COUNT=${{ inputs.count }}
-          CHANNEL=${{ inputs.channel }}
-          IMAGES=${{ inputs.images }}
+          COUNT="${{ inputs.count }}"
+          CHANNEL="${{ inputs.channel }}"
+          IMAGES="${{ inputs.images }}"
           
           echo ""
           echo "════════════════════════════════════════════════════════"
@@ -85,14 +85,14 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
       
-      - name: 📊 Count generated files
+      - name: '📊 Count generated files'
         if: always()
         run: |
           echo ""
           echo "📊 Generation Summary:"
           echo "════════════════════════════════════════════════════════"
           
-          CHANNEL=${{ inputs.channel }}
+          CHANNEL="${{ inputs.channel }}"
           DATE=$(date +%Y-%m-%d)
           OUTPUT_PATH="articles/$CHANNEL/$DATE"
           
@@ -106,7 +106,7 @@ jobs:
           ls -lah "$OUTPUT_PATH" 2>/dev/null || echo "(checking output...)"
           echo ""
       
-      - name: 📦 Prepare artifacts for download
+      - name: '📦 Prepare artifacts for download'
         if: always()
         run: |
           echo "📦 Preparing artifacts for download..."
@@ -118,34 +118,37 @@ jobs:
           cp -r ./articles ./artifacts/ 2>/dev/null || true
           
           # Create summary
-          CHANNEL=${{ inputs.channel }}
+          CHANNEL="${{ inputs.channel }}"
           DATE=$(date +%Y-%m-%d)
           
-          cat > artifacts/DOWNLOAD_SUMMARY.txt << EOF
+          cat > artifacts/DOWNLOAD_SUMMARY.txt << 'EOFMSG'
 🏭 ZenMaster v4.0 - Yandex.Dzen Content Factory Results
 ════════════════════════════════════════════════════════
 
 Run ID:      ${{ github.run_id }}
-Date:        $DATE
-Topic:       $CHANNEL
+Date:        DATE_PLACEHOLDER
+Topic:       CHANNEL_PLACEHOLDER
 
 Configuration:
 - Articles:  ${{ inputs.count }}
-- Topic:     $CHANNEL (Yandex.Dzen)
+- Topic:     CHANNEL_PLACEHOLDER (Yandex.Dzen)
 - Images:    ${{ inputs.images }}
 
 📁 FILES LOCATION:
-articles/$CHANNEL/$DATE/
+articles/CHANNEL_PLACEHOLDER/DATE_PLACEHOLDER/
 ├── article-slug-{timestamp}.txt    ← Copy this to Zen!
 ├── article-slug-{timestamp}.png    ← Download cover images
 └── ...
 
 ════════════════════════════════════════════════════════
-EOF
+EOFMSG
+          
+          sed -i "s|DATE_PLACEHOLDER|$DATE|g" artifacts/DOWNLOAD_SUMMARY.txt
+          sed -i "s|CHANNEL_PLACEHOLDER|$CHANNEL|g" artifacts/DOWNLOAD_SUMMARY.txt
           
           echo "✅ Artifacts prepared"
       
-      - name: 📤 Upload articles to artifacts
+      - name: '📤 Upload articles to artifacts'
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -154,7 +157,7 @@ EOF
           retention-days: 90
           if-no-files-found: warn
       
-      - name: 🔄 Commit and push results
+      - name: '🔄 Commit and push results'
         if: always()
         run: |
           git config --local user.email "zenmaster-bot@github.com"
@@ -169,10 +172,10 @@ EOF
           git commit -m "🏭 Dzen: ${{ inputs.count }} articles (${{ inputs.channel }}) | $IMAGE_COUNT images (run #${{ github.run_id }})" || echo "✅ No changes to commit"
           git push origin HEAD:main || echo "⚠️  Push failed or no changes"
       
-      - name: ✅ Job Summary
+      - name: '✅ Job Summary'
         if: always()
         run: |
-          CHANNEL=${{ inputs.channel }}
+          CHANNEL="${{ inputs.channel }}"
           DATE=$(date +%Y-%m-%d)
           
           echo ""
