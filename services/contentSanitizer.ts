@@ -238,6 +238,96 @@ export class ContentSanitizer {
     return Math.min(count, 5); // Cap at 5
   }
 
+  /**
+   * ✅ v4.9: Enhanced validation with readSuccess/readFailure metrics
+   * Uses QualityValidator for detection-proof authenticity scoring
+   */
+  static validateEpisodeContentWithAuthenticity(content: string): {
+    valid: boolean;
+    charCount: number;
+    wordCount: number;
+    errors: string[];
+    warnings: string[];
+    readSuccess: boolean;
+    readFailure: string[];
+    authenticityScore: number;
+    retryPrompt: string;
+  } {
+    const cleaned = this.cleanEpisodeContent(content);
+    const charCount = cleaned.length;
+    const wordCount = cleaned.split(/\s+/).filter((w) => w.length > 0).length;
+
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (charCount < 2800) {
+      errors.push(`❌ Too short: ${charCount} chars (need 3000+)`);
+    }
+
+    if (charCount > 5000) {
+      warnings.push(`⚠️  Too long: ${charCount} chars (recommended max 4000)`);
+    }
+
+    if (/^\s*#{1,6}\s/m.test(cleaned)) {
+      errors.push("❌ Contains markdown headers (#, ##)");
+    }
+
+    if (/```/.test(cleaned)) {
+      errors.push("❌ Contains code fences (```...```)");
+    }
+
+    if (/\{[\s\S]*?"[^"]+"\s*:\s*[\s\S]*?\}/.test(cleaned)) {
+      errors.push("❌ Contains JSON-like structures");
+    }
+
+    if (/\/\*|\/\//.test(cleaned)) {
+      errors.push("❌ Contains comments (// or /* */)");
+    }
+
+    // 🔥 v4.4: Strict markdown detection
+    if (/\*[^*\s][^*]*[^*\s]\*/.test(cleaned)) {
+      errors.push("❌ Contains markdown italic (*text*)");
+    }
+    if (/\*\*[^*][^*]*[^*]\*\*/.test(cleaned)) {
+      errors.push("❌ Contains markdown bold (**text**)");
+    }
+    if (/_[^_\s][^_]*[^_\s]_/.test(cleaned)) {
+      errors.push("❌ Contains markdown emphasis (_text_)");
+    }
+
+    if (!(/—/.test(cleaned) || /"/.test(cleaned))) {
+      warnings.push("⚠️  No dialogue found (should have at least some dialogue)");
+    }
+
+    const russianLetters = cleaned.match(/[а-яёА-ЯЁ]/g) || [];
+    const latinLetters = cleaned.match(/[a-zA-Z]/g) || [];
+    const denom = russianLetters.length + latinLetters.length || 1;
+    const russianRatio = russianLetters.length / denom;
+
+    if (russianRatio < 0.8) {
+      errors.push(
+        `❌ Not enough Russian text (${(russianRatio * 100).toFixed(0)}% Russian, need 80%+)`
+      );
+    }
+
+    // v4.9: Add QualityValidator integration
+    const { QualityValidator } = require('./qualityValidator');
+    const qualityMetrics = this.calculateQualityMetrics(content);
+    const validation = QualityValidator.validateContent(content, qualityMetrics);
+
+    return {
+      valid: errors.length === 0,
+      charCount,
+      wordCount,
+      errors,
+      warnings,
+      readSuccess: validation.readSuccess,
+      readFailure: validation.readFailure,
+      authenticityScore: validation.authenticityScore,
+      retryPrompt: validation.retryPrompt,
+    };
+  }
+
   static validateEpisodeContent(content: string): {
     valid: boolean;
     charCount: number;
