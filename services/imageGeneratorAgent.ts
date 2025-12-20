@@ -48,9 +48,9 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎯 v4.2 FIXED: Generate ONE cover image from title + lede
+   * 🎯 v4.3 FIXED: Generate ONE cover image from title + lede
    * This is the main entry point for article cover generation
-   * NOW WITH GEMINI API imageConfig FOR 16:9 ASPECT RATIO
+   * NOW WITH STRICT NO-TEXT REQUIREMENTS
    */
   async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🎨 Generating COVER image for article: "${request.title}"`);
@@ -72,7 +72,7 @@ export class ImageGeneratorAgent {
 
     } catch (error) {
       const errorMsg = (error as Error).message;
-      console.warn(`⚠️ Primary generation failed: ${errorMsg}`);
+      console.warn(`⚠️  Primary generation failed: ${errorMsg}`);
 
       // Try fallback if enabled
       if (this.config.enableFallback) {
@@ -86,8 +86,7 @@ export class ImageGeneratorAgent {
 
   /**
    * 📝 Build cover image prompt from article title + lede
-   * v4.2: Removed text-based aspect ratio instructions
-   * AspectRatio is now set via Gemini API imageConfig parameter
+   * v4.3: CRITICAL NO-TEXT requirements for Яндекс.Дзен compliance
    */
   private buildCoverImagePrompt(request: CoverImageRequest): string {
     const { title, ledeText, plotBible } = request;
@@ -106,6 +105,8 @@ export class ImageGeneratorAgent {
     };
 
     const prompt = `
+🔥 CRITICAL: NO TEXT ANYWHERE ON THE IMAGE!
+
 AUTHENTIC mobile phone photo for article cover image.
 Title: "${title}"
 
@@ -127,9 +128,11 @@ REQUIREMENTS:
 - Slight digital noise (like real smartphone camera)
 - Natural colors (NOT oversaturated)
 
-MUST AVOID:
+🚫 MUST AVOID (CRITICAL for Яндекс.Дзен):
+- ANY text, captions, titles, labels, or overlays
+- Watermarks or signatures
+- ANY visible words or symbols
 - Stock photography or glossy look
-- Text, watermarks, or logos
 - Surrealism or strange proportions
 - Western style (no American kitchens)
 - Violence or shocking content
@@ -139,6 +142,7 @@ MUST AVOID:
 
 STYLE: Like a photo from neighbor's WhatsApp - authentic, slightly imperfect, real life.
 RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
+PURE IMAGE: No text, no captions, no overlays - just the scene.
     `.trim();
 
     return prompt;
@@ -172,7 +176,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
 
   /**
    * 🔄 Fallback cover generation with simpler prompt
-   * v4.2: Using Gemini API imageConfig for aspect ratio
+   * v4.3: NO-TEXT requirements
    */
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🔄 Using fallback model for cover: ${this.fallbackModel}`);
@@ -182,10 +186,14 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     const sensoryDetails = request.plotBible?.sensoryPalette?.details || ['warm', 'intimate', 'quiet'];
 
     const simplifiedPrompt = `
+🔥 NO TEXT ON IMAGE - CRITICAL!
+
 Russian woman ${narrator.age || 40} years old in apartment, natural light, realistic photo on smartphone.
-Article: "${request.title}"
 Interior: ${sensoryDetails.slice(0, 3).join(', ')}
 Domestic scene, everyday moment, warm lighting.
+
+⚠️  ABSOLUTELY NO TEXT, CAPTIONS, WATERMARKS, OR OVERLAYS!
+PURE PHOTOGRAPH ONLY.
     `.trim();
 
     try {
@@ -228,7 +236,7 @@ Domestic scene, everyday moment, warm lighting.
 
     } catch (error) {
       const errorMsg = (error as Error).message;
-      console.warn(`⚠️ Primary generation failed: ${errorMsg}`);
+      console.warn(`⚠️  Primary generation failed: ${errorMsg}`);
 
       // Try fallback if enabled
       if (this.config.enableFallback) {
@@ -330,6 +338,7 @@ ${scene.sensoryDetails.map(d => `- ${d}`).join('\n')}
 MUST AVOID:
 ${avoidances.map(a => `- ${a}`).join('\n')}
 
+🔥 CRITICAL: NO TEXT ON IMAGE!
 STYLE: Like a photo from neighbor's WhatsApp - authentic, slightly imperfect, real life.
 RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
 `.trim();
@@ -438,6 +447,7 @@ Russian woman ${request.plotBible.narrator.age} years old in apartment, natural 
 Emotion: ${request.emotion || request.plotBible.narrator.tone}
 Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
 Amateur photo aesthetic, NOT stock photography.
+🔥 NO TEXT ON IMAGE!
     `.trim();
 
     try {
