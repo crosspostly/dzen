@@ -546,10 +546,14 @@ ${'='.repeat(60)}`);
         averageTimePerArticle: totalArticles > 0 ? totalTime / totalArticles : 0
       },
       quality: {
-        averageQualityScore: this.calculateAverageQuality(),
-        averageAiDetectionScore: this.calculateAverageAiDetection(),
-        averageReadTime: this.calculateAverageReadTime(),
-        qualityDistribution: this.calculateQualityDistribution()
+       averageQualityScore: this.calculateAverageQuality(),
+       averageAiDetectionScore: this.calculateAverageAiDetection(),
+       averageReadTime: this.calculateAverageReadTime(),
+       qualityDistribution: this.calculateQualityDistribution(),
+       // 📊 v4.4: Additional quality metrics
+       averageReadabilityScore: this.calculateAverageReadability(),
+       averageDialoguePercentage: this.calculateAverageDialogue(),
+       averageSensoryDensity: this.calculateAverageSensory(),
       },
       performance: {
         articlesPerHour: totalTime > 0 ? (totalArticles / totalTime) * 3600 : 0,
@@ -589,6 +593,9 @@ Generated: ${new Date().toLocaleString()}
 | Avg Quality Score | ${report.quality.averageQualityScore.toFixed(1)}/100 |
 | Avg AI Detection | ${report.quality.averageAiDetectionScore.toFixed(1)}% |
 | Avg Read Time | ${report.quality.averageReadTime.toFixed(1)} min |
+| Avg Readability | ${report.quality.averageReadabilityScore?.toFixed(1) || 'N/A'}/100 |
+| Avg Dialogue | ${report.quality.averageDialoguePercentage?.toFixed(1) || 'N/A'}% |
+| Avg Sensory | ${report.quality.averageSensoryDensity?.toFixed(1) || 'N/A'}/10 |
 
 ## ⚡ Performance
 
@@ -654,6 +661,25 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
     return buckets;
   }
 
+  // 📊 v4.4: New quality metric calculations
+  private calculateAverageReadability(): number {
+    if (this.articles.length === 0) return 0;
+    const sum = this.articles.reduce((s, a) => s + (a.stats.readabilityScore || 0), 0);
+    return sum / this.articles.length;
+  }
+
+  private calculateAverageDialogue(): number {
+    if (this.articles.length === 0) return 0;
+    const sum = this.articles.reduce((s, a) => s + (a.stats.dialoguePercentage || 0), 0);
+    return sum / this.articles.length;
+  }
+
+  private calculateAverageSensory(): number {
+    if (this.articles.length === 0) return 0;
+    const sum = this.articles.reduce((s, a) => s + (a.stats.sensoryDensity || 0), 0);
+    return sum / this.articles.length;
+  }
+
   private updateEstimatedTime(): void {
     // Simple estimation based on progress
     const articlesRemaining = this.progress.articlesTotal - this.progress.articlesCompleted;
@@ -666,19 +692,47 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
   }
 
   private printFinalSummary(): void {
-    const duration = this.progress.completedAt && this.progress.startedAt
-      ? (this.progress.completedAt - this.progress.startedAt) / 1000
-      : 0;
+   const duration = this.progress.completedAt && this.progress.startedAt
+     ? (this.progress.completedAt - this.progress.startedAt) / 1000
+     : 0;
 
-    console.log(`
-${'='.repeat(60)}`);
-    console.log(`🎉 FACTORY COMPLETE`);
-    console.log(`${'='.repeat(60)}`);
-    console.log(`📄 Articles: ${this.progress.articlesCompleted}/${this.progress.articlesTotal}`);
-    console.log(`🗼️  Images: ${this.progress.imagesCompleted}/${this.progress.imagesTotal}`);
-    console.log(`⏱️  Duration: ${(duration / 60).toFixed(1)} minutes`);
-    console.log(`✅ Success rate: ${((this.progress.articlesCompleted / this.progress.articlesTotal) * 100).toFixed(1)}%`);
-    console.log(`📁 Saved to: articles/${this.channelName}/${new Date().toISOString().split('T')[0]}/`);
-    console.log(`${'='.repeat(60)}\n`);
+   // 📊 v4.4: Calculate average quality metrics
+   const avgReadability = this.articles.length > 0
+     ? this.articles.reduce((sum, a) => sum + (a.stats.readabilityScore || 0), 0) / this.articles.length
+     : 0;
+   const avgDialogue = this.articles.length > 0
+     ? this.articles.reduce((sum, a) => sum + (a.stats.dialoguePercentage || 0), 0) / this.articles.length
+     : 0;
+   const avgSensory = this.articles.length > 0
+     ? this.articles.reduce((sum, a) => sum + (a.stats.sensoryDensity || 0), 0) / this.articles.length
+     : 0;
+
+   console.log(`
+  ${'='.repeat(60)}`);
+   console.log(`🎉 FACTORY COMPLETE`);
+   console.log(`${'='.repeat(60)}`);
+   console.log(`📄 Articles: ${this.progress.articlesCompleted}/${this.progress.articlesTotal}`);
+   console.log(`🗼️  Images: ${this.progress.imagesCompleted}/${this.progress.imagesTotal}`);
+   console.log(`⏱️  Duration: ${(duration / 60).toFixed(1)} minutes`);
+   console.log(`✅ Success rate: ${((this.progress.articlesCompleted / this.progress.articlesTotal) * 100).toFixed(1)}%`);
+   console.log(`📁 Saved to: articles/${this.channelName}/${new Date().toISOString().split('T')[0]}/`);
+
+   // 📊 v4.4: Show quality metrics summary
+   console.log(`\n📊 QUALITY METRICS (Average):`);
+   console.log(`   📖 Readability: ${avgReadability.toFixed(1)}/100`);
+   console.log(`   🗣️  Dialogue: ${avgDialogue.toFixed(1)}%`);
+   console.log(`   🌟 Sensory: ${avgSensory.toFixed(1)}/10`);
+
+   // 📋 Show validation issues if any
+   const articlesWithIssues = this.articles.filter(a =>
+     a.metadata.qualityMetrics?.validationIssues?.length > 0
+   );
+   if (articlesWithIssues.length > 0) {
+     console.log(`\n⚠️  ${articlesWithIssues.length} articles have validation issues`);
+     console.log(`   Run: cat articles/${this.channelName}/${new Date().toISOString().split('T')[0]}/REPORT.md`);
+     console.log(`   For detailed quality analysis`);
+   }
+
+   console.log(`${'='.repeat(60)}\n`);
   }
 }

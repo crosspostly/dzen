@@ -116,6 +116,16 @@ export interface ArticleMetadata {
     outline?: string;
     episodes?: string;
   };
+  // 📊 v4.4: Quality metrics
+  qualityMetrics?: {
+    readabilityScore: number;
+    dialoguePercentage: number;
+    sensoryDensity: number;
+    paragraphCount: number;
+    avgParagraphLength: number;
+    validationIssues: string[];
+    validationWarnings: string[];
+  };
 }
 
 export interface ArticleStats {
@@ -126,6 +136,10 @@ export interface ArticleStats {
   burstinessScore?: number; // Sentence length variation
   perplexityScore?: number; // Vocabulary complexity
   uniquenessScore?: number; // Content originality
+  // 📊 v4.4: Additional quality metrics
+  readabilityScore?: number; // 0-100
+  dialoguePercentage?: number; // 0-100
+  sensoryDensity?: number; // Details per 1000 chars
 }
 
 /**
@@ -211,6 +225,10 @@ export interface FactoryReport {
     averageAiDetectionScore: number;
     averageReadTime: number;
     qualityDistribution: QualityBucket[];
+    // 📊 v4.4: Additional quality metrics
+    averageReadabilityScore?: number;
+    averageDialoguePercentage?: number;
+    averageSensoryDensity?: number;
   };
   performance: {
     articlesPerHour: number;
