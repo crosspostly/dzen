@@ -250,59 +250,63 @@ export class ContentFactoryOrchestrator {
 
   /**
    * 📤 Export articles for Zen
-   * ✅ UPDATED v4.0: Each article in its own folder with cover image
+   * ✅ UPDATED v4.0: Save to articles/{YYYY-MM-DD}/ with flat structure
+   * - ONE .txt file (article content)
+   * - ONE .png file (cover image)
+   * - Same filename for both (only extension differs)
    */
-  async exportForZen(outputDir: string = './output'): Promise<string> {
+  async exportForZen(outputDir: string = './articles'): Promise<string> {
     console.log(`\n📤 Exporting ${this.articles.length} articles to: ${outputDir}\n`);
 
-    // Create main output directory
-    fs.mkdirSync(outputDir, { recursive: true });
+    // Create articles/{YYYY-MM-DD}/ directory
+    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const finalDir = path.join(outputDir, dateStr);
+    fs.mkdirSync(finalDir, { recursive: true });
 
     const exportedFiles: string[] = [];
 
-    // Export each article to its own folder
+    // Export each article with FLAT structure (no article-1/, article-2/ folders)
     for (let i = 0; i < this.articles.length; i++) {
       const article = this.articles[i];
-      const articleNum = i + 1;
+      const timestamp = Date.now() + i; // Unique timestamp per article
+      const slug = this.createSlug(article.title); // Convert title to URL-safe slug
       
-      // Create article folder: article-1, article-2, etc
-      const articleDir = path.join(outputDir, `article-${articleNum}`);
-      fs.mkdirSync(articleDir, { recursive: true });
+      // Same filename for both .txt and .png!
+      const filename = `${slug}-${timestamp}`;
+      
+      try {
+        // Save article as TEXT (for copy-paste to Zen)
+        const txtPath = path.join(finalDir, `${filename}.txt`);
+        fs.writeFileSync(txtPath, article.content);
+        exportedFiles.push(txtPath);
+        console.log(`✅ Article ${i + 1}: ${filename}.txt`);
 
-      // Save article as TEXT (for copy-paste to Zen)
-      const textPath = path.join(articleDir, `article-${articleNum}.txt`);
-      fs.writeFileSync(textPath, article.content);
-      exportedFiles.push(textPath);
-
-      // Save article JSON (full metadata)
-      const jsonPath = path.join(articleDir, `article-${articleNum}.json`);
-      fs.writeFileSync(jsonPath, JSON.stringify(article, null, 2));
-      exportedFiles.push(jsonPath);
-
-      // Save COVER image (ONE per article!)
-      if (this.config.includeImages && article.coverImage) {
-        const coverPath = path.join(articleDir, `article-${articleNum}-cover.png`);
-        
-        // Save base64 image
-        const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
-        fs.writeFileSync(coverPath, Buffer.from(base64Data, 'base64'));
-        exportedFiles.push(coverPath);
-      }
-
-      console.log(`✅ Article ${articleNum}: ${textPath}`);
-      if (article.coverImage) {
-        console.log(`   🖼️  Cover: article-${articleNum}-cover.png`);
+        // Save COVER image (ONE per article!)
+        if (article.coverImage) {
+          const pngPath = path.join(finalDir, `${filename}.png`);
+          
+          // Extract base64 from data URL
+          const base64Data = article.coverImage.base64
+            .replace(/^data:image\/\w+;base64,/, '')
+            .replace(/^data:image\/\w+;base64,/, '');
+          
+          fs.writeFileSync(pngPath, Buffer.from(base64Data, 'base64'));
+          exportedFiles.push(pngPath);
+          console.log(`   🖼️  Cover: ${filename}.png`);
+        }
+      } catch (error) {
+        console.error(`❌ Failed to export article ${i + 1}: ${(error as Error).message}`);
       }
     }
 
     // Generate manifest
-    const manifest = this.generateManifest(outputDir, exportedFiles);
-    const manifestPath = path.join(outputDir, 'manifest.json');
+    const manifest = this.generateManifest(finalDir, exportedFiles);
+    const manifestPath = path.join(finalDir, 'manifest.json');
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
     // Generate report
     const report = this.generateReport();
-    const reportPath = path.join(outputDir, 'REPORT.md');
+    const reportPath = path.join(finalDir, 'REPORT.md');
     fs.writeFileSync(reportPath, this.formatReport(report));
 
     console.log(`\n✅ Export complete:`);
@@ -311,7 +315,44 @@ export class ContentFactoryOrchestrator {
     console.log(`   📋 Manifest: ${manifestPath}`);
     console.log(`   📊 Report: ${reportPath}\n`);
 
-    return outputDir;
+    return finalDir;
+  }
+
+  /**
+   * 🔤 Create URL-safe slug from Russian text
+   * Example: "Я всю жизнь боялась одиночества" → "ya-vsyu-zhizn-boyalas-odinochestva"
+   */
+  private createSlug(title: string): string {
+    // Russian to Latin transliteration
+    const transliterationMap: Record<string, string> = {
+      'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
+      'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i',
+      'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+      'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+      'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch',
+      'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '',
+      'э': 'e', 'ю': 'yu', 'я': 'ya',
+      'А': 'a', 'Б': 'b', 'В': 'v', 'Г': 'g', 'Д': 'd',
+      'Е': 'e', 'Ё': 'yo', 'Ж': 'zh', 'З': 'z', 'И': 'i',
+      'Й': 'y', 'К': 'k', 'Л': 'l', 'М': 'm', 'Н': 'n',
+      'О': 'o', 'П': 'p', 'Р': 'r', 'С': 's', 'Т': 't',
+      'У': 'u', 'Ф': 'f', 'Х': 'h', 'Ц': 'ts', 'Ч': 'ch',
+      'Ш': 'sh', 'Щ': 'sch', 'Ъ': '', 'Ы': 'y', 'Ь': '',
+      'Э': 'e', 'Ю': 'yu', 'Я': 'ya',
+    };
+
+    // Transliterate
+    let slug = title.split('').map(char => transliterationMap[char] || char).join('');
+    
+    // Convert to lowercase, remove non-alphanumeric, replace spaces with hyphens
+    slug = slug.toLowerCase();
+    slug = slug.replace(/[^a-z0-9\s-]/g, ''); // Remove special chars
+    slug = slug.replace(/\s+/g, '-'); // Spaces to hyphens
+    slug = slug.replace(/-+/g, '-'); // Collapse multiple hyphens
+    slug = slug.replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    slug = slug.substring(0, 50); // Max 50 chars
+
+    return slug || 'article';
   }
 
   /**
@@ -342,7 +383,7 @@ export class ContentFactoryOrchestrator {
       totalImages: this.articles.filter(a => a.coverImage).length, // ✅ Count cover images
       outputPaths: {
         articles: files.filter(f => f.includes('.txt') || f.includes('.json')),
-        images: files.filter(f => f.includes('-cover.png')),
+        images: files.filter(f => f.includes('.png')),
         report: path.join(outputDir, 'REPORT.md')
       }
     };
