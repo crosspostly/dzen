@@ -31,6 +31,23 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npx tsx cli-test-image.ts --channel=${{ inputs.channel }}
       
+      - name: Commit and push images
+        if: always()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Check if there are any changes
+          if [[ -n $(git status -s articles/) ]]; then
+            echo "📸 Generated images detected, committing..."
+            git add articles/
+            git commit -m "test: Generate test images for ${{ inputs.channel }} channel" || echo "No changes to commit"
+            git push
+            echo "✅ Images pushed to repository!"
+          else
+            echo "⚠️  No new images generated"
+          fi
+      
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
