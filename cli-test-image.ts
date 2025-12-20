@@ -130,11 +130,11 @@ class TestImageGenerator {
         }
         console.log('');
       } else {
-        // Canvas failed - use original
+        // Canvas failed - use original JPEG base64
         console.warn(`   ⚠️  Canvas processing FAILED`);
         console.error(`      Reason: ${processorResult.errorMessage}`);
         console.log(`      Status: ${processorResult.processingStatus}`);
-        console.log(`      Fallback: Using original PNG\n`);
+        console.log(`      Fallback: Using original JPEG (from API)\n`);
         processingStatus = processorResult.processingStatus;
       }
 
@@ -161,7 +161,7 @@ class TestImageGenerator {
       console.log(`║ Total time: ${(totalTime / 1000).toFixed(1)}s`);
       console.log(`║ Theme: ${theme}`);
       console.log(`║ Status: ${processingStatus}`);
-      console.log(`║ Format: ${processingStatus === 'CANVAS_OK' ? 'JPEG' : 'PNG'}`);
+      console.log(`║ Format: JPEG`);
       console.log(`║ Output: ${exportResult.dir}`);
       console.log(`╚${'═'.repeat(60)}╝\n`);
 
@@ -173,7 +173,7 @@ class TestImageGenerator {
   }
 
   /**
-   * Export image to repo
+   * Export image to repo - ALWAYS as JPEG
    */
   private async exportImage(options: {
     theme: string;
@@ -194,22 +194,27 @@ class TestImageGenerator {
     const timestamp = Date.now();
     const filename = `${slug}-${timestamp}`;
 
-    // Save image
+    // 🔥 FIX: ALWAYS save as JPEG, never PNG
+    let imageBuffer: Buffer;
     let imagePath: string;
+
     if (options.processedBuffer) {
-      // JPEG from Canvas processing
-      const jpegPath = path.join(outputDir, `${filename}.jpg`);
-      fs.writeFileSync(jpegPath, options.processedBuffer);
+      // Canvas processed JPEG
+      imageBuffer = options.processedBuffer;
       imagePath = `${filename}.jpg`;
       console.log(`      📄 ${filename}.jpg (CANVAS_OK)`);
     } else {
-      // PNG from API (Canvas failed fallback)
+      // Canvas failed - use original JPEG base64 from API
+      // The API ALWAYS returns JPEG (format: "jpeg" in config)
       const base64Data = options.originalBase64.replace(/^data:image\/\w+;base64,/, '');
-      const pngPath = path.join(outputDir, `${filename}.png`);
-      fs.writeFileSync(pngPath, Buffer.from(base64Data, 'base64'));
-      imagePath = `${filename}.png`;
-      console.log(`      📄 ${filename}.png (CANVAS_FAILED - fallback)`);
+      imageBuffer = Buffer.from(base64Data, 'base64');
+      imagePath = `${filename}.jpg`; // 🔥 ALWAYS .jpg extension
+      console.log(`      📄 ${filename}.jpg (CANVAS_FAILED - fallback JPEG)`);
     }
+
+    // Write the JPEG file
+    const jpegPath = path.join(outputDir, imagePath);
+    fs.writeFileSync(jpegPath, imageBuffer);
 
     // Save metadata
     const metadata = {
@@ -230,7 +235,7 @@ class TestImageGenerator {
         metadata: options.processorResult.metadata,
       },
       image: {
-        format: options.processedBuffer ? 'jpeg' : 'png',
+        format: 'jpeg', // 🔥 ALWAYS JPEG
         filename: imagePath,
       },
       narrator: {
@@ -247,7 +252,7 @@ class TestImageGenerator {
 
     return {
       dir: outputDir,
-      imagePath: path.join(outputDir, imagePath),
+      imagePath: jpegPath,
       metadataPath: metadataPath,
     };
   }
