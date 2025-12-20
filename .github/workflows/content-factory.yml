@@ -11,6 +11,10 @@ on:
         description: 'Project (channel-1, channel-2, etc)'
         required: false
         default: 'channel-1'
+      images:
+        description: 'Generate images?'
+        required: false
+        default: 'true'
 
 permissions:
   contents: write
@@ -34,17 +38,24 @@ jobs:
         run: |
           COUNT=${{ inputs.count }}
           PROJECT=${{ inputs.project }}
+          IMAGES=${{ inputs.images }}
           
           echo "🏭 ========================================"
           echo "🏭 CONTENT FACTORY - BATCH MODE"
           echo "🏭 Articles: $COUNT"
           echo "🏭 Project: $PROJECT"
+          echo "🏭 Images: $IMAGES"
           echo "🏭 ========================================"
           
           for i in $(seq 1 $COUNT); do
             echo ""
             echo "📰 [$i/$COUNT] Generating article #$i..."
-            npx tsx cli.ts generate:v2 --project=$PROJECT --verbose
+            
+            if [ "$IMAGES" = "true" ]; then
+              npx tsx cli.ts generate:v2 --project=$PROJECT --verbose --images
+            else
+              npx tsx cli.ts generate:v2 --project=$PROJECT --verbose
+            fi
             
             if [ $i -lt $COUNT ]; then
               echo "⏳ Waiting 5 seconds before next article..."
