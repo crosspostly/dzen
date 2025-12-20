@@ -1,0 +1,47 @@
+name: Test Image Generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Channel name (e.g., women-35-60)'
+        required: false
+        default: 'women-35-60'
+        type: string
+
+jobs:
+  test-image:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run test image generation
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: npx tsx cli-test-image.ts --channel=${{ inputs.channel }}
+      
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-images
+          path: articles/
+          retention-days: 7
+      
+      - name: Print summary
+        if: always()
+        run: |
+          echo "✅ Test complete!"
+          echo "Check artifacts for:"
+          ls -la articles/${{ inputs.channel }}/ 2>/dev/null || echo "No output yet"
