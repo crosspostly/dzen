@@ -236,7 +236,7 @@ export class ContentSanitizer {
     }
 
     if (/```/.test(cleaned)) {
-      errors.push("❌ Contains code fences (```...```)`);
+      errors.push("❌ Contains code fences (```...```)");
     }
 
     if (/\{[\s\S]*?"[^"]+"\s*:\s*[\s\S]*?\}/.test(cleaned)) {
@@ -244,7 +244,7 @@ export class ContentSanitizer {
     }
 
     if (/\/\*|\/\//.test(cleaned)) {
-      errors.push("❌ Contains comments (// or /* */)`);
+      errors.push("❌ Contains comments (// or /* */)");
     }
 
     // 🔥 v4.4: Strict markdown detection
@@ -290,7 +290,7 @@ export class ContentSanitizer {
     lines.push("📊 CONTENT VALIDATION REPORT:");
     lines.push(`   Characters: ${validation.charCount} (target: 3000-4000)`);
     lines.push(`   Words: ${validation.wordCount}`);
-    lines.push(`   Status: ${validation.valid ? "✅ VALID" : "❌ INVALID"}`;
+    lines.push(`   Status: ${validation.valid ? "✅ VALID" : "❌ INVALID"}`);
 
     lines.push("");
     lines.push("📈 QUALITY METRICS:");
