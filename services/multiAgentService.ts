@@ -1,6 +1,6 @@
 // ============================================================================
 // ZenMaster v2.0 — Multi-Agent Service
-// Orchestrates parallel generation of 12 episodes for 35K+ longform articles
+// Orchestrates dynamic episode generation for 35K+ longform articles
 // ============================================================================
 
 import { GoogleGenAI } from "@google/genai";
@@ -12,34 +12,79 @@ export class MultiAgentService {
   private geminiClient: GoogleGenAI;
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
+  private maxChars: number = 38500;
+  private episodeCount: number = 12;
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, maxChars?: number) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.contextManager = new ContextManager();
-    this.initializeAgents(12);
+    this.maxChars = maxChars || 38500;
+    
+    // Calculate dynamic episode count
+    this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
+    console.log(`📊 Dynamic episode allocation: ${this.episodeCount} episodes for ${this.maxChars} chars`);
+    
+    this.initializeAgents(this.episodeCount);
   }
 
   /**
-   * Main entry point: Generate full 35K longform article
+   * Calculate optimal episode count based on character budget
+   * 
+   * Budget allocation:
+   * - Lede: 750 chars (600-900)
+   * - Finale: 1500 chars (1200-1800)
+   * - Episodes: remaining chars / 3200 (avg episode length)
+   * 
+   * Constraints:
+   * - Minimum: 6 episodes (18K chars for episodes alone)
+   * - Maximum: 15 episodes (48K chars for episodes alone)
+   */
+  private calculateOptimalEpisodeCount(maxChars: number): number {
+    const LEDE_CHARS = 750;
+    const FINALE_CHARS = 1500;
+    const AVG_EPISODE_CHARS = 3200;
+    const MIN_EPISODES = 6;
+    const MAX_EPISODES = 15;
+
+    const remainingChars = maxChars - LEDE_CHARS - FINALE_CHARS;
+    const optimalCount = Math.floor(remainingChars / AVG_EPISODE_CHARS);
+    const episodes = Math.max(MIN_EPISODES, Math.min(MAX_EPISODES, optimalCount));
+
+    console.log(`\n📊 Character Budget Analysis:`);
+    console.log(`   Total: ${maxChars} chars`);
+    console.log(`   Lede: ${LEDE_CHARS} chars`);
+    console.log(`   Finale: ${FINALE_CHARS} chars`);
+    console.log(`   Remaining for episodes: ${remainingChars} chars`);
+    console.log(`   Optimal episodes: ${episodes} (avg ${Math.round(remainingChars / episodes)} chars each)\n`);
+
+    return episodes;
+  }
+
+  /**
+   * Main entry point: Generate full longform article with dynamic episodes
    */
   async generateLongFormArticle(params: {
     theme: string;
     angle: string;
     emotion: string;
     audience: string;
+    maxChars?: number;
     includeImages?: boolean;
   }): Promise<LongFormArticle> {
-    console.log("\n🎬 [ZenMaster v2.0] Starting 35K longform generation...");
+    const maxChars = params.maxChars || this.maxChars;
+    const episodeCount = this.calculateOptimalEpisodeCount(maxChars);
+
+    console.log("\n🎬 [ZenMaster v2.0] Starting dynamic longform generation...");
     console.log(`📌 Theme: "${params.theme}"`);
     console.log(`🎯 Angle: ${params.angle} | Emotion: ${params.emotion}`);
-    console.log(`⏭️  Images: Handled by orchestrator (not here)\n`);
+    console.log(`🎬 Episodes: ${episodeCount} (dynamic based on ${maxChars} chars)\n`);
     
-    // Stage 0: Outline Engineering (INCLUDING plotBible generation!)
-    console.log("📋 Stage 0: Building outline (12 episodes) + plotBible...");
-    const outline = await this.generateOutline(params);
+    // Stage 0: Outline Engineering (dynamic episode count)
+    console.log(`📋 Stage 0: Building outline (${episodeCount} episodes) + plotBible...`);
+    const outline = await this.generateOutline(params, episodeCount);
     
-    // Extract and validate plotBible from outline (generated in Stage 0)
+    // Extract and validate plotBible from outline
     const plotBible = this.extractPlotBible(outline, params);
     console.log("✅ PlotBible ready");
     console.log(`   - Narrator: ${plotBible.narrator.age} y/o ${plotBible.narrator.gender}`);
@@ -47,7 +92,7 @@ export class MultiAgentService {
     console.log(`   - Sensory palette: ${plotBible.sensoryPalette.details.slice(0, 3).join(', ')}...`);
     
     // Stage 1: Sequential Episode Generation
-    console.log("🔄 Stage 1: Generating 12 episodes sequentially...");
+    console.log(`🔄 Stage 1: Generating ${episodeCount} episodes sequentially...`);
     const episodes = await this.generateEpisodesSequentially(outline);
     
     // Generate Lede & Finale
@@ -64,9 +109,6 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
-    // ⚠️  NOTE: Cover image generation moved to contentFactoryOrchestrator
-    // This service generates articles only, orchestrator handles images
-    
     // Assemble article
     const article: LongFormArticle = {
       id: `article_${Date.now()}`,
@@ -76,7 +118,7 @@ export class MultiAgentService {
       lede,
       finale,
       voicePassport,
-      coverImage: undefined, // ⚠️  Will be set by orchestrator
+      coverImage: undefined,
       metadata: {
         totalChars: lede.length + episodes.reduce((sum, ep) => sum + ep.charCount, 0) + finale.length,
         totalReadingTime: this.calculateReadingTime(lede, episodes, finale),
@@ -88,7 +130,9 @@ export class MultiAgentService {
 
     console.log(`\n✅ ARTICLE COMPLETE`);
     console.log(`📊 Metrics:`);
-    console.log(`   - Characters: ${article.metadata.totalChars}`);
+    console.log(`   - Episodes: ${article.metadata.episodeCount}`);
+    console.log(`   - Characters: ${article.metadata.totalChars} (target: ${maxChars})`);
+    console.log(`   - Utilization: ${((article.metadata.totalChars / maxChars) * 100).toFixed(1)}%`);
     console.log(`   - Reading time: ${article.metadata.totalReadingTime} min`);
     console.log(`   - Scenes: ${article.metadata.sceneCount}`);
     console.log(`   - Dialogues: ${article.metadata.dialogueCount}`);
@@ -100,10 +144,8 @@ export class MultiAgentService {
 
   /**
    * 🎭 EXTRACT & VALIDATE plotBible from outline
-   * Creates fallback if Gemini didn't generate it properly
    */
   private extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
-    // Check if plotBible exists and is complete
     if (outline.plotBible && 
         outline.plotBible.narrator && 
         outline.plotBible.sensoryPalette && 
@@ -112,7 +154,6 @@ export class MultiAgentService {
       return outline.plotBible;
     }
 
-    // Fallback: Create minimal plotBible from available data
     console.warn("⚠️  plotBible incomplete from Gemini, using fallback");
     
     const ageMatch = params.audience.match(/(\d+)-(\d+)/);
@@ -154,16 +195,13 @@ export class MultiAgentService {
 
   /**
    * ROBUST: Parse JSON with minimal assumptions
-   * Goal: Extract valid JSON from malformed API responses
    */
   private parseJsonSafely(jsonString: string, context: string = 'JSON'): any {
-    // Step 1: Remove markdown code fences
     let cleaned = jsonString
       .replace(/^```(?:json)?\s*\n?/g, '')
       .replace(/\n?```\s*$/g, '')
       .trim();
 
-    // Step 2: Find JSON boundaries (first { and last })
     const firstBrace = cleaned.indexOf('{');
     const lastBrace = cleaned.lastIndexOf('}');
     
@@ -171,26 +209,19 @@ export class MultiAgentService {
       cleaned = cleaned.substring(firstBrace, lastBrace + 1);
     }
 
-    // Step 3: Try to parse as-is
     try {
       return JSON.parse(cleaned);
     } catch (e) {
-      // Step 4: Fix common issues
       let fixed = cleaned;
-
-      // Remove trailing commas before } or ]
       fixed = fixed.replace(/,\s*([}\]])/g, '$1');
 
-      // Try again
       try {
         return JSON.parse(fixed);
       } catch (e2) {
-        // Step 5: Last resort - try to extract just the first valid object
         try {
           const objMatch = cleaned.match(/\{[\s\S]*\}/);
           if (objMatch) {
             let obj = objMatch[0];
-            // Remove trailing commas
             obj = obj.replace(/,\s*([}\]])/g, '$1');
             return JSON.parse(obj);
           }
@@ -198,7 +229,6 @@ export class MultiAgentService {
           // Nothing worked
         }
 
-        // All attempts failed
         console.error(`\n❌ CRITICAL: Failed to parse ${context}`);
         console.error(`Response length: ${jsonString.length}`);
         console.error(`First 300 chars: ${jsonString.substring(0, 300)}`);
@@ -211,17 +241,33 @@ export class MultiAgentService {
   }
 
   /**
-   * Stage 0: Generate outline structure WITH plotBible
+   * Stage 0: Generate outline structure with dynamic episodes
    */
   private async generateOutline(params: {
     theme: string;
     angle: string;
     emotion: string;
     audience: string;
-  }): Promise<OutlineStructure> {
+  }, episodeCount: number): Promise<OutlineStructure> {
+    const episodeList = Array.from({ length: episodeCount }, (_, i) => ({
+      id: i + 1,
+      title: `Часть ${i + 1}: ...`,
+    }));
+
+    const episodeJson = episodeList.map(ep => `
+    {
+      "id": ${ep.id},
+      "title": "Часть ${ep.id}: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    }`).join(',');
+
     const prompt = `You are a story architect for Yandex.Zen longform articles.
 
-TASK: Build 12-episode structure for a 35K-character serialized narrative.
+TASK: Build ${episodeCount}-episode structure for a 35K-character serialized narrative.
 INCLUDING: Complete plotBible data (narrator, sensoryPalette, character map, thematic core).
 
 INPUT:
@@ -233,9 +279,9 @@ INPUT:
 REQUIREMENTS:
 0. All text fields MUST be in Russian (no English)
 1. Each episode: hook question + external conflict + internal conflict + turning point + open loop
-2. Episodes 1-4: Escalating tension
-3. Episodes 5-8: Deepening conflict
-4. Episodes 9-12: Climax & resolution
+2. Episodes 1-${Math.ceil(episodeCount / 3)}: Escalating tension
+3. Episodes ${Math.ceil(episodeCount / 3) + 1}-${Math.ceil(2 * episodeCount / 3)}: Deepening conflict
+4. Episodes ${Math.ceil(2 * episodeCount / 3) + 1}-${episodeCount}: Climax & resolution
 5. No cheap happy endings, no stereotypes
 6. Generate NARRATOR profile based on audience and theme
 7. Generate SENSORY PALETTE (smells, sounds, textures, light sources) that matches theme
@@ -281,115 +327,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
     "resolutionStyle": "bittersweet, uncertain"
   },
   
-  "episodes": [
-    {
-      "id": 1,
-      "title": "Часть 1: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 2,
-      "title": "Часть 2: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 3,
-      "title": "Часть 3: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 4,
-      "title": "Часть 4: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 5,
-      "title": "Часть 5: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 6,
-      "title": "Часть 6: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 7,
-      "title": "Часть 7: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 8,
-      "title": "Часть 8: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 9,
-      "title": "Часть 9: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 10,
-      "title": "Часть 10: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 11,
-      "title": "Часть 11: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    },
-    {
-      "id": 12,
-      "title": "Часть 12: ...",
-      "hookQuestion": "...",
-      "externalConflict": "...",
-      "internalConflict": "...",
-      "keyTurning": "...",
-      "openLoop": "..."
-    }
+  "episodes": [${episodeJson}
   ],
   
   "externalTensionArc": "...",
