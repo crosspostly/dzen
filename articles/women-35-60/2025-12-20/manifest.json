@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1766230733371,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true
+  },
+  "articleCount": 1,
+  "totalCharacters": 45539,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [
+      "articles/women-35-60/2025-12-20/ya-derzhala-foto-poka-ono-ne-obnazhilo-pozornuyu-p-1766230733370.txt"
+    ],
+    "images": [
+      "articles/women-35-60/2025-12-20/ya-derzhala-foto-poka-ono-ne-obnazhilo-pozornuyu-p-1766230733370.png"
+    ],
+    "report": "articles/women-35-60/2025-12-20/REPORT.md"
+  }
+}
