@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MASTER_THEMES } from './constants';
 import { Article, GenerationState } from './types';
@@ -104,7 +103,7 @@ export default function App() {
         <div className="p-8 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#0b0e14]/95 z-10 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center font-black text-xl">Z</div>
-            <h1 className="text-lg font-black tracking-tighter">ZenMaster <span className="text-orange-500">PRO</span></h1>
+            <h1 className="text-lg font-black tracking-tighter">ZenMaster <span className="text-orange-500">v4.0.2</span></h1>
           </div>
           {analysis && (
             <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded-full border border-orange-500/20">
