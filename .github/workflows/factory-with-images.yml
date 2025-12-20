@@ -1,0 +1,142 @@
+name: 🏭 Content Factory (Articles + Images)
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Number of articles'
+        required: false
+        default: '5'
+        type: choice
+        options:
+          - '1'
+          - '5'
+          - '10'
+          - '25'
+          - '50'
+          - '100'
+      
+      images:
+        description: 'Generate images?'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      
+      quality:
+        description: 'Quality level'
+        required: false
+        default: 'premium'
+        type: choice
+        options:
+          - 'standard'
+          - 'premium'
+
+permissions:
+  contents: write
+
+jobs:
+  factory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - run: npm install
+      
+      - name: 🏭 Content Factory
+        run: |
+          COUNT=${{ inputs.count }}
+          IMAGES=${{ inputs.images }}
+          QUALITY=${{ inputs.quality }}
+          
+          echo "═══════════════════════════════════════════"
+          echo "🏭 CONTENT FACTORY - v4.0"
+          echo "═══════════════════════════════════════════"
+          echo "📊 Articles:  $COUNT"
+          echo "🖼️  Images:    $IMAGES"
+          echo "✨ Quality:   $QUALITY"
+          echo "═══════════════════════════════════════════"
+          
+          # Build command
+          CMD="npm run factory -- --count=$COUNT --quality=$QUALITY"
+          
+          if [ "$IMAGES" = "true" ]; then
+            CMD="$CMD --images"
+            echo "✅ Images ENABLED"
+          else
+            echo "⏭️  Images DISABLED (faster)"
+          fi
+          
+          echo ""
+          echo "🚀 Running: $CMD"
+          echo ""
+          
+          $CMD
+          
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      
+      - name: 📊 Check results
+        run: |
+          echo ""
+          echo "═══════════════════════════════════════════"
+          echo "📊 RESULTS"
+          echo "═══════════════════════════════════════════"
+          
+          if [ -d "output" ]; then
+            echo "✅ Output directory found"
+            
+            ARTICLES=$(find output -name "*.txt" -type f 2>/dev/null | wc -l)
+            IMAGES=$(find output -name "*.png" -type f 2>/dev/null | wc -l)
+            JSON=$(find output -name "*.json" -type f 2>/dev/null | wc -l)
+            
+            echo "📝 Articles: $ARTICLES"
+            echo "🖼️  Images:  $IMAGES"
+            echo "📋 Metadata: $JSON"
+            echo ""
+            echo "📁 Files:"
+            ls -lh output/ 2>/dev/null | head -20
+          else
+            echo "❌ Output directory not found"
+          fi
+      
+      - name: 📤 Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factory-output-${{ github.run_id }}
+          path: output/
+          retention-days: 30
+      
+      - name: 💾 Commit and push
+        run: |
+          git config --local user.email "zenmaster-bot@github.com"
+          git config --local user.name "ZenMaster Bot"
+          
+          # Add generated content
+          git add output/ || true
+          
+          COUNT=${{ inputs.count }}
+          IMAGES=${{ inputs.images }}
+          
+          if [ "$IMAGES" = "true" ]; then
+            SUFFIX="with images"
+          else
+            SUFFIX="without images"
+          fi
+          
+          git commit -m "🏭 Factory: $COUNT articles $SUFFIX" || echo "No changes"
+          git push origin HEAD:main || echo "Push failed (OK if no changes)"
+        
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
