@@ -7,6 +7,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
+import { imageGeneratorAgent } from "./imageGeneratorAgent"; // 🖼️ НОВОЕ
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -28,10 +29,16 @@ export class MultiAgentService {
     angle: string;
     emotion: string;
     audience: string;
+    includeImages?: boolean; // 🖼️ НОВОЕ: флаг генерации картинок
   }): Promise<LongFormArticle> {
     console.log("\n🎬 [ZenMaster v2.0] Starting 35K longform generation...");
     console.log(`📌 Theme: "${params.theme}"`);
-    console.log(`🎯 Angle: ${params.angle} | Emotion: ${params.emotion}\n`);
+    console.log(`🎯 Angle: ${params.angle} | Emotion: ${params.emotion}`);
+    if (params.includeImages) {
+      console.log(`🖼️  Images: ENABLED\n`);
+    } else {
+      console.log(`⏭️  Images: DISABLED\n`);
+    }
     
     // Stage 0: Outline Engineering
     console.log("📋 Stage 0: Building outline (12 episodes)...");
@@ -55,6 +62,26 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
+    // 🖼️ НОВОЕ: Generate cover image if requested
+    let coverImageBuffer: Buffer | undefined;
+    if (params.includeImages) {
+      try {
+        console.log("🖼️  Generating cover image...");
+        coverImageBuffer = await imageGeneratorAgent.generateCoverImage({
+          title,
+          lede,
+          theme: params.theme,
+          emotion: params.emotion,
+        });
+        if (coverImageBuffer) {
+          console.log(`✅ Cover image generated (${coverImageBuffer.length} bytes)`);
+        }
+      } catch (error) {
+        console.error(`❌ Cover image generation failed:`, (error as Error).message);
+        // Continue without image if generation fails
+      }
+    }
+    
     // Assemble article
     const article: LongFormArticle = {
       id: `article_${Date.now()}`,
@@ -64,6 +91,7 @@ export class MultiAgentService {
       lede,
       finale,
       voicePassport,
+      coverImage: coverImageBuffer, // 🖼️ НОВОЕ: добавляем картинку в статью
       metadata: {
         totalChars: lede.length + episodes.reduce((sum, ep) => sum + ep.charCount, 0) + finale.length,
         totalReadingTime: this.calculateReadingTime(lede, episodes, finale),
@@ -78,7 +106,11 @@ export class MultiAgentService {
     console.log(`   - Characters: ${article.metadata.totalChars}`);
     console.log(`   - Reading time: ${article.metadata.totalReadingTime} min`);
     console.log(`   - Scenes: ${article.metadata.sceneCount}`);
-    console.log(`   - Dialogues: ${article.metadata.dialogueCount}\n`);
+    console.log(`   - Dialogues: ${article.metadata.dialogueCount}`);
+    if (coverImageBuffer) {
+      console.log(`   - Cover image: YES (${coverImageBuffer.length} bytes)`);
+    }
+    console.log(``);
     
     return article;
   }
@@ -264,7 +296,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 7. Без слова "история"
 8. Без скучных формул типа "как", "10 способов"
 
-ОТВЕТ: Напиши ТОЛЬКО заголовок (без JSON, без кавычек, без пояснений):`;
+ОТВЕТ: Напиши ТОЛЬКО заголовок (без JSON, без кавычек, без пояснений):`;;
 
     try {
       const response = await this.callGemini({
@@ -539,7 +571,6 @@ Output ONLY the episode text. No titles, no metadata.`;
           throw fallbackError;
         }
       }
-      
       console.error(`Agent #${this.id} failed:`, error);
       throw error;
     }
