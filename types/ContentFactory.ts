@@ -13,6 +13,15 @@ import { GeneratedImage } from './ImageGeneration';
 import { LongFormArticle } from './ContentArchitecture';
 
 /**
+ * Cover image (ONE per article)
+ */
+export interface CoverImage {
+  base64: string; // Data URL or base64
+  size: number; // File size in bytes
+  mimeType?: string; // image/png, image/jpeg, etc.
+}
+
+/**
  * Factory configuration
  */
 export interface ContentFactoryConfig {
@@ -69,15 +78,12 @@ export interface FactoryError {
 export interface Article {
   id: string;
   title: string;
-  content: string;
+  content: string; // Full article text for Zen
   charCount: number;
-  episodes: ArticleEpisode[];
+  episodes?: ArticleEpisode[]; // Optional
   
-  // ✅ CHANGED: Single cover image instead of array
-  coverImage?: GeneratedImage; // ONE cover image from title + lede
-  
-  // @deprecated - remove this, use coverImage
-  images?: GeneratedImage[];
+  // ✅ UPDATED v4.0: Single cover image
+  coverImage?: CoverImage; // ONE cover image from title + lede
   
   metadata: ArticleMetadata;
   stats: ArticleStats;
@@ -95,16 +101,23 @@ export interface ArticleEpisode {
 
 export interface ArticleMetadata {
   theme: string;
-  genre: string;
-  targetAudience: string;
+  angle?: string;
+  emotion?: string;
+  audience?: string;
+  genre?: string;
+  targetAudience?: string;
   generatedAt: number;
-  generationTime: number; // ms
+  generationTime?: number; // ms
   projectId?: string;
   channel?: string;
+  models?: {
+    outline?: string;
+    episodes?: string;
+  };
 }
 
 export interface ArticleStats {
-  wordCount: number;
+  wordCount?: number;
   estimatedReadTime: number; // minutes
   qualityScore: number; // 0-100
   aiDetectionScore: number; // 0-100 (lower is better)
