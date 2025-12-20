@@ -7,11 +7,13 @@ import { GoogleGenAI } from "@google/genai";
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
+import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
+  private phase2Service: Phase2AntiDetectionService;
   private maxChars: number = 29000;
   private episodeCount: number = 12;
 
@@ -20,6 +22,7 @@ export class MultiAgentService {
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.contextManager = new ContextManager();
     this.maxChars = maxChars || 29000;
+    this.phase2Service = new Phase2AntiDetectionService();
     
     // Calculate dynamic episode count
     this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
@@ -109,6 +112,29 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
+    // 🎭 Phase 2: Apply Anti-Detection processing
+    console.log("🎭 Phase 2: Applying anti-detection transformations...");
+    const fullContent = [
+      lede,
+      ...episodes.map(ep => ep.content),
+      finale
+    ].join('\n\n');
+    
+    const phase2Result = await this.phase2Service.processArticle(
+      title,
+      fullContent,
+      {
+        applyPerplexity: true,
+        applyBurstiness: true,
+        applySkazNarrative: true,
+        enableGatekeeper: true,
+        sanitizeImages: false,
+        verbose: true,
+      }
+    );
+    
+    console.log(`✅ Phase 2 complete! Score: ${phase2Result.adversarialScore.overallScore}/100`);
+    
     // Assemble article
     const article: LongFormArticle = {
       id: `article_${Date.now()}`,
@@ -125,7 +151,10 @@ export class MultiAgentService {
         episodeCount: episodes.length,
         sceneCount: this.countScenes(lede, episodes, finale),
         dialogueCount: this.countDialogues(lede, episodes, finale),
-      }
+      },
+      processedContent: phase2Result.processedContent,
+      adversarialScore: phase2Result.adversarialScore,
+      phase2Applied: true
     };
 
     console.log(`\n✅ ARTICLE COMPLETE`);
@@ -136,6 +165,8 @@ export class MultiAgentService {
     console.log(`   - Reading time: ${article.metadata.totalReadingTime} min`);
     console.log(`   - Scenes: ${article.metadata.sceneCount}`);
     console.log(`   - Dialogues: ${article.metadata.dialogueCount}`);
+    console.log(`   - Phase 2 Score: ${article.adversarialScore?.overallScore || 0}/100`);
+    console.log(`   - Anti-Detection: ${article.phase2Applied ? '✅ Applied' : '❌ Not applied'}`);
     console.log(`   - Cover image: Pending (will be generated in orchestrator)`);
     console.log(``);
     

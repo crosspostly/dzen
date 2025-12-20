@@ -144,6 +144,11 @@ export interface LongFormArticle {
     quality: number;          // 0.8
     metadataCleaned: boolean; // true после очистки
   };
+
+  // 🎭 PHASE 2: ANTI-DETECTION DATA
+  processedContent?: string;        // Content after Phase2 processing
+  adversarialScore?: AdversarialScore; // Anti-detection metrics
+  phase2Applied?: boolean;          // Flag indicating Phase2 was applied
 }
 
 // ============================================================================
