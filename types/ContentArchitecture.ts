@@ -99,6 +99,11 @@ export interface LongFormArticle {
   // 🖼️ ИЗОБРАЖЕНИЯ
   hasImages?: boolean;        // Флаг наличия изображений
   totalImages?: number;       // Количество изображений
+  coverImage?: {              // ✅ Added for v4.0 compatibility
+    base64?: string;
+    processedBuffer?: Buffer;
+    format?: string;
+  };
   imageMetadata?: {
     aspectRatio: string;      // "16:9"
     resolution: string;       // "1280x720"

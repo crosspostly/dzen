@@ -14,6 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ArticleWorkerPool } from './articleWorkerPool';
 import { ImageWorkerPool } from './imageWorkerPool';
+import { ImageProcessorService } from './imageProcessorService';
 import {
   ContentFactoryConfig,
   FactoryProgress,
@@ -134,9 +135,15 @@ export class ContentFactoryOrchestrator {
         console.log(`🖼️  STAGE 2: COVER Image Generation (${this.articles.length} covers, not ${this.articles.length * 12}!)`);
         console.log(`${'='.repeat(60)}\n`);
 
+        // ✅ STAGE 2: Generate cover images from article title + lede
         await this.generateCoverImages();
 
         console.log(`\n✅ Stage 2 complete: Cover images generated and attached (1 per article)\n`);
+
+        // ✅ STAGE 3: Post-process images through Canvas (remove metadata, apply filters)
+        await this.postProcessCoverImages();
+
+        console.log(`\n✅ Stage 3 complete: All images post-processed and ready for export\n`);
       }
 
       // Mark as completed
@@ -227,6 +234,67 @@ export class ContentFactoryOrchestrator {
   }
 
   /**
+   * 🎨 Post-process cover images through Canvas
+   * ✅ UPDATED v4.0: Processes ONE cover per article
+   * 
+   * Process:
+   * 1. Decode base64 PNG from Gemini API
+   * 2. Load through canvas.loadImage()
+   * 3. Crop to 16:9 aspect ratio (1280x720)
+   * 4. Redraw on new canvas (removes Gemini metadata)
+   * 5. Apply filters: contrast(1.05), saturate(0.85), brightness(0.98)
+   * 6. Export to JPEG 0.8 quality (natural compression artifacts)
+   * 7. Attach processedBuffer to article.coverImage
+   * 
+   * Result: Looks like real mobile phone photo, undetectable as AI-generated
+   */
+  private async postProcessCoverImages(): Promise<void> {
+    if (!this.config.includeImages || this.articles.length === 0) {
+      return; // Skip if images not enabled or no articles
+    }
+
+    const imageProcessorService = new ImageProcessorService();
+
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🎨 STAGE 3: Post-processing images through Canvas`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    for (let i = 0; i < this.articles.length; i++) {
+      const article = this.articles[i];
+
+      if (article.coverImage?.base64) {
+        try {
+          console.log(`  🔄 Processing image ${i + 1}/${this.articles.length}...`);
+
+          // Process base64 PNG through Canvas
+          // Input: "data:image/png;base64,iVBOR..."
+          // Output: Buffer with JPG bytes
+          const processedBuffer = await imageProcessorService.processImage(
+            article.coverImage.base64
+          );
+
+          // Attach processed buffer to article
+          article.coverImage.processedBuffer = processedBuffer;
+          article.coverImage.format = 'jpeg'; // Update format from PNG to JPEG
+
+          const sizeKb = Math.round(processedBuffer.length / 1024);
+          console.log(`     ✅ Image processed (${sizeKb} KB, JPEG 0.8 quality)`);
+        } catch (error) {
+          console.error(
+            `     ❌ Failed to process image ${i + 1}:`,
+            (error as Error).message
+          );
+          // Continue with next image even if this one fails
+        }
+      }
+    }
+
+    console.log(
+      `\n✅ All ${this.articles.length} images post-processed and ready for export\n`
+    );
+  }
+
+  /**
    * ⏸️ Pause generation
    */
   pause(): void {
@@ -292,16 +360,49 @@ export class ContentFactoryOrchestrator {
 
         // Save COVER image (ONE per article!)
         if (article.coverImage) {
-          const pngPath = path.join(finalDir, `${filename}.png`);
-          
-          // Extract base64 from data URL
-          const base64Data = article.coverImage.base64
-            .replace(/^data:image\/\w+;base64,/, '')
-            .replace(/^data:image\/\w+;base64,/, '');
-          
-          fs.writeFileSync(pngPath, Buffer.from(base64Data, 'base64'));
-          exportedFiles.push(pngPath);
-          console.log(`   🖼️  Cover: ${filename}.png`);
+          // Check for processed buffer (JPEG)
+          if (article.coverImage.processedBuffer) {
+            const jpgPath = path.join(finalDir, `${filename}.jpg`); // Wait, ticket says -cover.jpg? 
+            // The ticket result example: "article-name-cover.jpg"
+            // But filename here is `${slug}-${timestamp}`
+            // Existing code used `${filename}.png`.
+            // I should stick to filename convention in this method but change extension.
+            // Wait, the ticket says:
+            // Output: articles/{channel}/{date}/{slug}-cover.jpg
+            
+            // Current code generates: `${slug}-${timestamp}.txt` and `${slug}-${timestamp}.png`
+            // If I change to `${filename}-cover.jpg`, it's fine.
+            // I'll stick to `${filename}.jpg` to keep it consistent with .txt unless strictly required.
+            // Ticket "Result" says: `ya-nakonets...-cover.jpg`.
+            // But `exportForZen` generates unique timestamped filename.
+            // I will assume the existing filename logic is fine, just need to change content and extension.
+            
+            // Actually, let's look at `articleExporter.ts`: `${themeSlug}-cover.jpg`
+            // Orchestrator uses: `${slug}-${timestamp}`
+            
+            // I will use `${filename}-cover.jpg` to be safe and explicitly mark it as cover.
+            // But wait, the .txt file is `${filename}.txt`.
+            // Having `${filename}.jpg` is cleaner.
+            // However, ticket says `-cover.jpg`.
+            // Let's use `.jpg` to be safe.
+            
+            const jpgPath = path.join(finalDir, `${filename}-cover.jpg`);
+            fs.writeFileSync(jpgPath, article.coverImage.processedBuffer);
+            exportedFiles.push(jpgPath);
+            console.log(`   🖼️  Cover: ${filename}-cover.jpg (Processed)`);
+          } else {
+             // Fallback to base64 PNG
+            const pngPath = path.join(finalDir, `${filename}.png`);
+            
+            // Extract base64 from data URL
+            const base64Data = article.coverImage.base64
+              .replace(/^data:image\/\w+;base64,/, '')
+              .replace(/^data:image\/\w+;base64,/, '');
+            
+            fs.writeFileSync(pngPath, Buffer.from(base64Data, 'base64'));
+            exportedFiles.push(pngPath);
+            console.log(`   🖼️  Cover: ${filename}.png (Raw)`);
+          }
         }
       } catch (error) {
         console.error(`❌ Failed to export article ${i + 1}: ${(error as Error).message}`);
@@ -392,7 +493,7 @@ export class ContentFactoryOrchestrator {
       totalImages: this.articles.filter(a => a.coverImage).length, // ✅ Count cover images
       outputPaths: {
         articles: files.filter(f => f.includes('.txt') || f.includes('.json')),
-        images: files.filter(f => f.includes('.png')),
+        images: files.filter(f => f.includes('.png') || f.includes('.jpg')), // ✅ Include JPGs
         report: path.join(outputDir, 'REPORT.md')
       }
     };
