@@ -1,10 +1,13 @@
 /**
- * 🖼️ Image Worker Pool
+ * 📝 Image Worker Pool
  * Serial generation of COVER images (1 per article, 1 per minute)
  * NOT episode images - just ONE cover per article!
  */
 
 import { Article, CoverImage } from '../types/ContentFactory';
+import { ImageGeneratorAgent } from './imageGeneratorAgent';
+import { PlotBibleBuilder } from './plotBibleBuilder';
+import { CoverImageRequest } from '../types/ImageGeneration';
 
 export class ImageWorkerPool {
   private apiKey?: string;
@@ -12,10 +15,12 @@ export class ImageWorkerPool {
   private isRunning = false;
   private isPaused = false;
   private queue: Array<{article: Article, lede: string}> = [];
+  private imageGeneratorAgent: ImageGeneratorAgent;
 
   constructor(apiKey?: string, imageGenerationRate: number = 1) {
     this.apiKey = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY;
     this.imageGenerationRate = imageGenerationRate;
+    this.imageGeneratorAgent = new ImageGeneratorAgent(this.apiKey);
   }
 
   /**
@@ -23,7 +28,7 @@ export class ImageWorkerPool {
    */
   printProcessingPlan(articleCount: number): void {
     const totalMinutes = Math.ceil(articleCount / this.imageGenerationRate);
-    console.log(`\n🖼️  Image Generation Plan:`);
+    console.log(`\n📼  Image Generation Plan:`);
     console.log(`   - Articles: ${articleCount}`);
     console.log(`   - Rate: ${this.imageGenerationRate}/minute`);
     console.log(`   - Estimated time: ${totalMinutes} minutes (1 cover per article)`);
@@ -34,7 +39,7 @@ export class ImageWorkerPool {
    * Enqueue articles for image generation
    */
   enqueueArticles(articles: Article[], ledes: string[]): void {
-    console.log(`\n🖼️  Queuing ${articles.length} articles for cover image generation...\n`);
+    console.log(`\n📼  Queuing ${articles.length} articles for cover image generation...\n`);
     
     for (let i = 0; i < articles.length; i++) {
       this.queue.push({
@@ -55,7 +60,7 @@ export class ImageWorkerPool {
     const generatedImages: CoverImage[] = [];
     const delayPerImage = (1000 * 60) / this.imageGenerationRate; // ms between images
 
-    console.log(`\n🖼️  Starting cover image generation (${this.imageGenerationRate}/min)...\n`);
+    console.log(`\n📼  Starting cover image generation (${this.imageGenerationRate}/min) with REAL Gemini API...\n`);
 
     for (let i = 0; i < this.queue.length; i++) {
       if (!this.isRunning) break;
@@ -69,13 +74,13 @@ export class ImageWorkerPool {
       const startTime = Date.now();
 
       try {
-        console.log(`  🖼️  Cover ${i + 1}/${this.queue.length}: Generating for "${article.title.substring(0, 40)}..."`);
+        console.log(`  📼  Cover ${i + 1}/${this.queue.length}: Generating for "${article.title.substring(0, 40)}..."`);
 
-        // Generate cover image using stub (in real implementation, would call image API)
+        // 🔥 Generate REAL cover image using ImageGeneratorAgent
         const coverImage = await this.generateCoverImage(article, lede);
 
         generatedImages.push(coverImage);
-        console.log(`     ✅ Generated (${coverImage.size} bytes)`);
+        console.log(`     ✅ Generated (${coverImage.size} bytes, ${coverImage.base64.substring(0, 30)}...)`);
 
         // Rate limiting: wait before next image
         if (i < this.queue.length - 1) {
@@ -88,7 +93,7 @@ export class ImageWorkerPool {
         }
       } catch (error) {
         console.error(`     ❌ Failed: ${(error as Error).message}`);
-        // Continue with next image
+        // Continue with next image (don't abort entire batch)
       }
     }
 
@@ -100,7 +105,7 @@ export class ImageWorkerPool {
    * Attach cover images to articles (1:1 mapping)
    */
   attachCoverImagesToArticles(articles: Article[], coverImages: CoverImage[]): void {
-    console.log(`\n🖼️  Attaching cover images to articles...\n`);
+    console.log(`\n📼  Attaching cover images to articles...\n`);
     
     for (let i = 0; i < Math.min(articles.length, coverImages.length); i++) {
       articles[i].coverImage = coverImages[i];
@@ -109,36 +114,51 @@ export class ImageWorkerPool {
   }
 
   /**
-   * Generate COVER image (stub implementation)
-   * In production, would call image generation API (Gemini Vision, Dall-E, etc.)
+   * 🔥 Generate REAL cover image using ImageGeneratorAgent
+   * Builds PlotBible context and calls Gemini Image API
    */
   private async generateCoverImage(article: Article, lede: string): Promise<CoverImage> {
-    // This is a STUB - in real implementation would call:
-    // - Gemini Image API
-    // - Dall-E API
-    // - Midjourney API
-    // - Local image generation (Stable Diffusion, etc.)
+    try {
+      // Build PlotBible for this article (for image context)
+      const plotBibleBuilder = new PlotBibleBuilder();
+      const plotBible = plotBibleBuilder.build({
+        theme: article.metadata.theme,
+        angle: article.metadata.angle,
+        emotion: article.metadata.emotion,
+        audience: article.metadata.audience,
+      });
 
-    // For now, generate a simple placeholder image using canvas
-    const coverImage = this.generatePlaceholderImage(
-      article.title,
-      article.metadata.emotion
-    );
+      // Build cover image request
+      const coverImageRequest: CoverImageRequest = {
+        title: article.title,
+        ledeText: lede,
+        articleId: article.id,
+        plotBible: plotBible,
+      };
 
-    return {
-      base64: coverImage,
-      size: coverImage.length,
-    };
+      // Generate image using Gemini API
+      const generatedImage = await this.imageGeneratorAgent.generateCoverImage(coverImageRequest);
+
+      // Convert to CoverImage format
+      return {
+        base64: generatedImage.base64,
+        size: generatedImage.fileSize,
+      };
+
+    } catch (error) {
+      const errorMsg = (error as Error).message;
+      console.warn(`  📦 Image generation failed (${errorMsg}), using fallback SVG...`);
+      
+      // Fallback to simple placeholder if API fails
+      return this.generatePlaceholderImage(article.title, article.metadata.emotion);
+    }
   }
 
   /**
-   * Generate placeholder image as base64
-   * TODO: Replace with real image generation API
+   * 🚂 Fallback: Generate placeholder image as base64 SVG
+   * Only used if Gemini API generation fails
    */
-  private generatePlaceholderImage(title: string, emotion: string): string {
-    // For now, return a simple SVG as base64
-    // In production, would generate using image API
-
+  private generatePlaceholderImage(title: string, emotion: string): CoverImage {
     const emotionColors: Record<string, string> = {
       triumph: '#4CAF50',
       guilt: '#FF9800',
@@ -149,6 +169,7 @@ export class ImageWorkerPool {
 
     const bgColor = emotionColors[emotion] || '#9C27B0';
 
+    // Create SVG as fallback
     const svg = `
       <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -171,7 +192,10 @@ export class ImageWorkerPool {
 
     // Convert SVG to base64
     const base64 = Buffer.from(svg).toString('base64');
-    return `data:image/svg+xml;base64,${base64}`;
+    return {
+      base64: `data:image/svg+xml;base64,${base64}`,
+      size: base64.length,
+    };
   }
 
   /**
