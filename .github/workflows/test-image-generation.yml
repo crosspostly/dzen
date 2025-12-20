@@ -49,6 +49,12 @@ jobs:
             echo "📸 Generated images detected, committing..."
             git add articles/
             git commit -m "test: Generate test images for ${{ inputs.channel }} channel" || echo "No changes to commit"
+            
+            # Pull latest changes with rebase
+            echo "🔄 Pulling latest changes..."
+            git pull --rebase origin main || echo "Pull failed, trying force push"
+            
+            # Push to main
             git push origin HEAD:main
             echo "✅ Images pushed to repository!"
           else
