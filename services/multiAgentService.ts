@@ -209,7 +209,7 @@ export class MultiAgentService {
       .replace(/]\s*[^]\]]*$/g, ']') // Remove anything after final ]
       // Clean up quotes and delimiters
       .replace(/,\s*([}\]])/g, '$1')  // Remove trailing commas
-      .replace(/([{,]\s*)'([^']*)'/ g, '$1"$2"') // Single to double quotes
+      .replace(/([{,]\s*)'([^']*)'g, '$1"$2"') // Single to double quotes
       // Collapse whitespace
       .replace(/\n/g, ' ')
       .replace(/\t/g, ' ')
