@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766216065942,
+  "generatedAt": 1766217112374,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -12,12 +12,16 @@
     "enableAntiDetection": true,
     "enablePlotBible": true
   },
-  "articleCount": 0,
-  "totalCharacters": 0,
-  "totalImages": 0,
+  "articleCount": 1,
+  "totalCharacters": 52045,
+  "totalImages": 1,
   "outputPaths": {
-    "articles": [],
-    "images": [],
+    "articles": [
+      "articles/women-35-60/2025-12-20/poteryav-vsyo-ya-obrela-sebya-moya-pustaya-zhizn-n-1766217112373.txt"
+    ],
+    "images": [
+      "articles/women-35-60/2025-12-20/poteryav-vsyo-ya-obrela-sebya-moya-pustaya-zhizn-n-1766217112373.png"
+    ],
     "report": "articles/women-35-60/2025-12-20/REPORT.md"
   }
 }
