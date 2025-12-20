@@ -1,5 +1,5 @@
 /**
- * 🎨 ZenMaster v4.0 - Image Generator Agent
+ * 🎨 ZenMaster v4.1 - Image Generator Agent
  * 
  * Generates authentic mobile phone photos for Zen articles
  * Features:
@@ -7,6 +7,7 @@
  * - PlotBible-consistent image prompts
  * - Fallback on generation failure
  * - Image validation (dimensions, size, format)
+ * - SAFE plotBible handling with defaults
  * 
  * Architecture: Multi-agent system with rate limiting
  */
@@ -47,8 +48,9 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎯 NEW v4.0 SIMPLIFIED: Generate ONE cover image from title + lede
-   * This is the NEW main entry point for article cover generation
+   * 🎯 v4.1 FIXED: Generate ONE cover image from title + lede
+   * This is the main entry point for article cover generation
+   * NOW WITH SAFE plotBible HANDLING
    */
   async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🎨 Generating COVER image for article: "${request.title}"`);
@@ -84,12 +86,23 @@ export class ImageGeneratorAgent {
 
   /**
    * 📝 Build cover image prompt from article title + lede
+   * v4.1: SAFE handling of plotBible with defaults
    */
   private buildCoverImagePrompt(request: CoverImageRequest): string {
     const { title, ledeText, plotBible } = request;
 
     // Extract key visual elements from lede (first paragraph)
     const visualElements = this.extractVisualElements(ledeText);
+
+    // SAFE: Use defaults if plotBible or narrator missing
+    const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
+    const sensoryPalette = plotBible?.sensoryPalette || { 
+      details: ['warm', 'intimate', 'quiet', 'domestic'],
+      smells: [],
+      sounds: [],
+      textures: [],
+      lightSources: ['window light']
+    };
 
     const prompt = `
 AUTHENTIC mobile phone photo for article cover image.
@@ -98,12 +111,12 @@ Title: "${title}"
 Scene from opening paragraph: ${visualElements}
 
 NARRATOR CONTEXT:
-- Age: ${plotBible.narrator.age} years old
-- Gender: ${plotBible.narrator.gender}
-- Tone: ${plotBible.narrator.tone}
+- Age: ${narrator.age || 40} years old
+- Gender: ${narrator.gender === 'male' ? 'Male' : 'Female'}
+- Tone: ${narrator.tone || 'confessional'}
 
 SENSORY PALETTE:
-${plotBible.sensoryPalette.details.slice(0, 5).join(', ')}
+${sensoryPalette.details && sensoryPalette.details.length > 0 ? sensoryPalette.details.slice(0, 5).join(', ') : 'warm, intimate, quiet, domestic'}
 
 REQUIREMENTS:
 - 16:9 aspect ratio, horizontal orientation
@@ -135,6 +148,11 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
    * 🔍 Extract visual elements from lede text (first paragraph)
    */
   private extractVisualElements(ledeText: string): string {
+    // Safe: handle empty or undefined lede
+    if (!ledeText || ledeText.trim().length === 0) {
+      return 'domestic interior scene, everyday moment';
+    }
+
     // Simple extraction: take first 300 chars of lede as visual description
     const maxLength = 300;
     if (ledeText.length <= maxLength) {
@@ -154,15 +172,21 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
 
   /**
    * 🔄 Fallback cover generation with simpler prompt
+   * v4.1: SAFE handling when plotBible missing
    */
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🔄 Using fallback model for cover: ${this.fallbackModel}`);
 
+    // SAFE: Use defaults if plotBible missing
+    const narrator = request.plotBible?.narrator || { age: 40, gender: 'female' };
+    const sensoryDetails = request.plotBible?.sensoryPalette?.details || ['warm', 'intimate', 'quiet'];
+
     const simplifiedPrompt = `
-Russian woman ${request.plotBible.narrator.age} years old in apartment, natural light, realistic photo on smartphone.
+Russian woman ${narrator.age || 40} years old in apartment, natural light, realistic photo on smartphone.
 Article: "${request.title}"
-Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
+Interior: ${sensoryDetails.slice(0, 3).join(', ')}
 16:9 aspect ratio, amateur photo aesthetic, NOT stock photography.
+Domestic scene, everyday moment, warm lighting.
     `.trim();
 
     try {
@@ -484,16 +508,16 @@ Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
     const lower = text.toLowerCase();
 
     // Check for sensory words
-    for (const smell of palette.smells) {
+    for (const smell of palette.smells || []) {
       if (lower.includes(smell.toLowerCase())) score += 2;
     }
-    for (const sound of palette.sounds) {
+    for (const sound of palette.sounds || []) {
       if (lower.includes(sound.toLowerCase())) score += 2;
     }
-    for (const texture of palette.textures) {
+    for (const texture of palette.textures || []) {
       if (lower.includes(texture.toLowerCase())) score += 2;
     }
-    for (const detail of palette.details) {
+    for (const detail of palette.details || []) {
       if (lower.includes(detail.toLowerCase())) score += 1;
     }
 
@@ -508,9 +532,8 @@ Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
 
   private extractWho(text: string, plotBible: PlotBible): string {
     // Default to narrator profile
-    const age = plotBible.narrator.age;
-    const gender = plotBible.narrator.gender === "female" ? "Woman" : 
-                   plotBible.narrator.gender === "male" ? "Man" : "Person";
+    const age = plotBible.narrator?.age || 40;
+    const gender = plotBible.narrator?.gender === "male" ? "Man" : "Woman";
     
     return `${gender} ${Math.floor(age / 10) * 10}s`; // "Woman 40s"
   }
@@ -548,7 +571,7 @@ Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
     const lower = text.toLowerCase();
     
     // Check palette light sources first
-    for (const light of palette.lightSources) {
+    for (const light of palette.lightSources || []) {
       if (lower.includes(light.toLowerCase())) {
         return light;
       }
@@ -579,7 +602,7 @@ Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
     const lower = text.toLowerCase();
 
     // Collect matching sensory details
-    for (const detail of [...palette.details, ...palette.smells, ...palette.textures]) {
+    for (const detail of [...(palette.details || []), ...(palette.smells || []), ...(palette.textures || [])]) {
       if (lower.includes(detail.toLowerCase())) {
         details.push(detail);
       }
