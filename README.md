@@ -674,6 +674,8 @@ Comprehensive documentation covers project architecture, development roadmap, an
 ### 🛠️ Development
 - **[Complete Roadmap](docs/ROADMAP.md)** - v4.0 through v5.0+ timeline
 - **[v4.9 QualityValidator Guide](docs/guides/V4.9_QUALITY_VALIDATOR_GUIDE.md)** - New feature implementation
+- **[Quality Metrics in Prompt](docs/guides/QUALITY_METRICS_IN_PROMPT.md)** - Prompt-led quality targets
+- **[ContentSanitizer Guide](docs/guides/CONTENT_SANITIZER.md)** - Cleaning + validation + metrics
 
 ### 🏗️ Architecture & Cleanup
 - **[Orphaned Services Analysis](docs/architecture/ORPHANED_SERVICES_ANALYSIS.md)** - Deep dive analysis
