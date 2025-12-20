@@ -31,5 +31,6 @@ export interface QualityMetrics {
   hasComplexSentences: boolean;
   sensoryDensity: number; // детали на 1000 символов
   travelSpeed: "slow" | "medium" | "fast";
+  twistCount: number; // v4.5: plot twists
   issues: string[];
 }
