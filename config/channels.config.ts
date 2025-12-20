@@ -58,9 +58,9 @@ export const DZEN_CONFIG: ChannelConfig = {
   modelEpisodes: 'gemini-2.5-flash',
   
   episodeCount: 12,
-  minCharacters: 32000,
-  maxCharacters: 40000,
-  readingTimeMinutes: 8,
+  minCharacters: 26000,
+  maxCharacters: 30000,
+  readingTimeMinutes: 6,
   
   outputDir: './generated/dzen/',
   publishAutomatically: true,
