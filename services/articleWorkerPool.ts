@@ -4,16 +4,19 @@
  */
 
 import { MultiAgentService } from './multiAgentService';
+import { ThemeGeneratorService } from './themeGeneratorService';
 import { Article } from '../types/ContentFactory';
 import { ContentFactoryConfig } from '../types/ContentFactory';
 
 export class ArticleWorkerPool {
   private workers: number;
   private apiKey?: string;
+  private themeGeneratorService: ThemeGeneratorService;
 
   constructor(workerCount: number = 3, apiKey?: string) {
     this.workers = workerCount;
     this.apiKey = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY;
+    this.themeGeneratorService = new ThemeGeneratorService(this.apiKey);
   }
 
   /**
@@ -35,9 +38,12 @@ export class ArticleWorkerPool {
         console.log(`  🎬 Article ${i}/${count} - Generating...`);
         const startTime = Date.now();
 
+        // 🔥 Generate theme dynamically instead of using hardcoded list
+        const theme = await this.themeGeneratorService.generateNewTheme();
+
         // Generate article using MultiAgentService
         const longformArticle = await multiAgentService.generateLongFormArticle({
-          theme: this.getRandomTheme(),
+          theme,
           angle: 'confession',
           emotion: this.getRandomEmotion(),
           audience: 'Women 35-60',
@@ -131,25 +137,6 @@ export class ArticleWorkerPool {
     lines.push(article.finale);
 
     return lines.join('\n');
-  }
-
-  /**
-   * Get random theme for variety
-   */
-  private getRandomTheme(): string {
-    const themes = [
-      'Я всю жизнь боялась одиночества, пока оно не стало моим спасением',
-      'Я терпела это 20 лет, пока одна фраза не изменила всё',
-      'После его слов я не могла молчать больше',
-      'Седая я поняла, что вся моя жизнь была ложью',
-      'Тридцать лет я жила чужой жизнью',
-      'В один момент я потеряла всё и обрела себя',
-      'Я не верила в любовь, пока не встретила её',
-      'Моя мать никогда не прощала ошибок',
-      'Я выбрала карьеру вместо семьи',
-      'Он ушел, но оставил мне жизнь',
-    ];
-    return themes[Math.floor(Math.random() * themes.length)];
   }
 
   /**
