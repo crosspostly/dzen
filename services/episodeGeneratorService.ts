@@ -3,7 +3,7 @@ import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
 /**
- * 🎬 Episode Generator Service v4.0 (DYNAMIC POOL-BASED BUDGETING)
+ * 🎬 Episode Generator Service v4.1 (DYNAMIC POOL-BASED BUDGETING)
  * 
  * Generates episodes with INTELLIGENT CHARACTER BUDGETING:
  * - Total budget: 35000-38500 chars (35K +10%)
@@ -13,6 +13,10 @@ import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
  * - Each episode gets specific char limit in prompt
  * - If episode exceeds limit: account for actual size, adjust next episode budget
  * - NO RETRIES for oversized - just continue with recalculated pool
+ * 
+ * v4.1 CHANGES:
+ * - Increased context to 1200 chars for better continuity
+ * - Added explicit "CONTINUE AFTER" instruction to prevent repetition
  */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
@@ -21,6 +25,7 @@ export class EpisodeGeneratorService {
   private LEDE_BUDGET = 700;
   private FINALE_BUDGET = 1500;
   private MAX_RETRIES = 2; // Only for API failures or too-short content
+  private CONTEXT_LENGTH = 1200; // v4.1: Increased from 800 to 1200 chars
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
@@ -266,7 +271,7 @@ export class EpisodeGeneratorService {
     const maxChars = charLimit;
 
     return `
-🎬 EPISODE #${outline.id} of ${totalEpisodes} - ZenMaster v4.0
+🎬 EPISODE #${outline.id} of ${totalEpisodes} - ZenMaster v4.1
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 ECONOMIC MOTIVATION
@@ -336,10 +341,16 @@ Turning Point: ${outline.keyTurning}
 Open Loop (Why reader continues): "${outline.openLoop}"
 
 ${previousContext ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📚 PREVIOUS EPISODE CONTEXT
+📚 PREVIOUS EPISODE ENDING (CONTEXT)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${previousContext}` : ''}
+${previousContext}
+
+🔥 IMPORTANT: CONTINUE THE STORY AFTER THESE WORDS
+✅ DO NOT repeat or rephrase the context above
+✅ DO NOT start with "и" or "тогда" as if retelling
+✅ START IMMEDIATELY with NEW action, dialogue, or thoughts
+✅ Assume reader just finished the context - move forward!` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 CHARACTER BUDGET GUIDELINE (NOT STRICT LIMIT)
@@ -362,13 +373,13 @@ Make this episode UNFORGETTABLE. Readers' happiness depends on it!
   }
 
   /**
-   * 🔗 Build context from previous episodes
+   * 🔗 Build context from previous episodes (v4.1: Increased to 1200 chars)
    */
   private buildContext(previousEpisodes: Episode[]): string {
     if (previousEpisodes.length === 0) return "";
     
     const lastEpisode = previousEpisodes[previousEpisodes.length - 1];
-    const contextLength = 800;
+    const contextLength = this.CONTEXT_LENGTH; // v4.1: 1200 chars
     
     if (lastEpisode.content.length <= contextLength) {
       return lastEpisode.content;
