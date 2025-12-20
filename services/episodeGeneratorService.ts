@@ -20,6 +20,11 @@ import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
    *
    * v4.2 CHANGES:
    * - Reduced total budget from 38500 to 29000 chars
+   *
+   * v4.5 CHANGES:
+   * - ✅ MOVED platform context to INSTRUCTIONS ONLY
+   * - ✅ Story remains CLEAN (no 4th wall breaks about publishing)
+   * - ✅ Character perspective: pure narrative, not aware of audience
    */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
@@ -437,14 +442,14 @@ Your episode quality directly impacts revenue:
 ✅ HIGH QUALITY (readability 75+, dialogue 36%, twists 2, sensory 4.5)
    → Reader reads ENTIRE episode
    → Reader returns for next episode
-   → Average spend: $1.50+ per reader
-   → 100 readers × $1.50 = $150
+   → Average spend: \$1.50+ per reader
+   → 100 readers × \$1.50 = \$150
 
 ❌ POOR QUALITY (readability 45, dialogue 10%, twists 0, sensory 1.5)
    → Reader reads 30 seconds, then switches
    → Reader doesn't return
-   → Average spend: $0.05 per reader
-   → 100 readers × $0.05 = $5
+   → Average spend: \$0.05 per reader
+   → 100 readers × \$0.05 = \$5
 
 Difference: 30X REVENUE (150/5 = 30)!
 
@@ -454,6 +459,7 @@ Your job: make every word count.
 
   /**
    * 📝 Build the prompt with SPECIFIC CHAR LIMIT
+   * v4.5: ✅ CLEAN STORY (no platform mentions) + CONTEXT IN INSTRUCTIONS
    */
   private buildPrompt(
     outline: EpisodeOutline, 
@@ -471,57 +477,108 @@ Your job: make every word count.
 🎬 EPISODE #${outline.id} of ${totalEpisodes} - ZenMaster v4.5
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 ECONOMIC MOTIVATION
+💼 EDITORIAL CONTEXT (FOR YOU, NOT IN THE STORY)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-This episode is part of 29K character budget spread across ${totalEpisodes} episodes.
-Your episode: Episode ${episodeNum}/${totalEpisodes}
+🎯 THIS IS FOR MEDIA PLATFORM (Yandex.Zen):
+   • Platform: Serialized longform (29K chars total)
+   • Medium: Mobile-first reader (need tight paragraphs)
+   • Monetization: Ad-based (reader engagement = revenue)
+   • Distribution: Algorithm favors emotional engagement & comments
+   • Audience: Russian women 35-60 from cities
 
-If this episode:
-✅ GRIPS reader → reads full episode → \$1+ per reader
-❌ BORES reader → switches to another → \$0.05 per reader
+💰 REVENUE MODEL:
+   • High quality episode → reader stays engaged → \$1.50+ per reader
+   • Poor quality episode → reader bounces → \$0.05 per reader
+   • Difference: 30X income
 
-Difference: 20X INCOME!
+🎬 YOUR ROLE:
+   Create story that is SO GRIPPING reader can't stop scrolling.
+   Write as if narrator is confiding in close friend (authentic voice).
+   Never break character - story remains 100% in narrator's perspective.
+
+⚠️  CRITICAL: Character does NOT know they're writing for publication.
+    • NO meta-commentary ("I posted this online")
+    • NO awareness of audience
+    • NO "people will judge me"
+    • Just: raw, honest memory being recalled
+    • As if confiding to trusted friend at 3 AM
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📚 STYLE GUIDE: Donna + Rubina (NOT village dialect!)
+📚 STYLE GUIDE: Donna Latenko + Rubina Daud (BEST RUSSIAN NARRATIVE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Audience: Russian women 35-60 from cities
+TARGET VOICE: Urban Russian woman (educated, modern, honest)
+NOT: Village dialect, NOT: clichés, NOT: "I feel" (SHOW don't tell)
 
-✅ LOVE: Donna Latenko (captivating, page-turner) + Rubina (psychological depth)
-❌ HATE: Village dialect ("дыбать", "шарить") - OFFENSIVE
-❌ HATE: Dry feelings ("я почувствовала грусть") - BORING
+TONE EXAMPLES:
+✅ "Я же тебе скажу" (conversational, intimate)
+✅ "Вот тогда всё и началось" (turning point)
+✅ "Может быть, я ошиблась. Но не думаю" (doubt + conviction)
+✅ "И главное — я не знала, что это последний раз" (revelation)
 
-TONE: Educated urban woman confessing to friend at kitchen table
-- "Я же тебе скажу" (conversational)
-- "Вот тогда и началось" (turning point)
-- "Может быть, я ошиблась" (doubt)
+❌ AVOID:
+❌ Village words: "дыбать", "шарить", "пялиться", "кумекать" (OFFENSIVE)
+❌ AI clichés: "к сожалению", "как известно", "можно сказать"
+❌ Telling emotions: "я почувствовала грусть" → SHOW: "Голос дрожал"
+❌ Explanations: "я была в депрессии потому что" → SHOW: "Я не вставала три дня"
 
-STRUCTURE:
-┌─────────────────────────────────────────────┐
-│ PACE 1: FAST (Donna) - Hook, tension        │
-│ PACE 2: DEEP (Rubina) - Psychology         │
-│ PACE 3: FAST (Donna) - Confrontation       │
-│ PACE 4: DEEP (Rubina) - Reflection         │
-└─────────────────────────────────────────────┘
+STRUCTURE (alternating pace):
+┌──────────────────────────────────────────┐
+│ PACE 1: FAST (Donna) - Action, dialogue  │
+│ PACE 2: DEEP (Rubina) - Psychology      │
+│ PACE 3: FAST (Donna) - Confrontation    │
+│ PACE 4: DEEP (Rubina) - Reflection      │
+└──────────────────────────────────────────┘
 
-EMOTION: Show through ACTION
-✅ "Её голос дрожал. Я смотрела на стекло кабинета."
-❌ "Я почувствовала страх и замёрзла"
+EXAMPLE - SHOWING EMOTION (not telling):
 
-DETAILS: Urban, modern (NOT village!)
-✅ Phone at 3 AM, letter in envelope, cold tea
-❌ "Скрип половицы", "дешёвый табак"
+✅ GOOD (visual, emotional, immersive):
+"Её голос дрожал. Я смотрела на стекло кабинета.
+ На улице шёл снег. Холодный апрельский снег.
+ Я чувствовала ледяную боль в груди. Письмо было
+ в руке. Бумага пахла старостью."
 
-DIALOGUE: Realistic
-- Em-dash: — Ты не понимаешь, — сказала я.
-- Include interruptions
-- Natural Russian
+→ Reader FEELS the emotion through sensory details.
 
-PROVOCATION (Last paragraph):
-- END with QUESTION
-- Example: "А вы как считаете?"
+❌ BAD (explaining, detached, AI-like):
+"Я почувствовала грусть и страх. Было очень больно и холодно в душе.
+ Я понимала, что произошла трагедия."
+
+→ Reader just reads facts, no immersion.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REAL WORLD DETAILS (urban, modern, contemporary):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ GOOD (modern, urban):
+- Phone notification at 3 AM
+- Letter in sealed envelope (vs email)
+- Cold coffee, hot tea
+- Taxi to the station
+- Lawyer's office, glass building
+- News feed, screenshot
+
+❌ BAD (village, old, clichéd):
+- "Скрип половицы" (creaky floorboards)
+- "Запах дешёвого табака" (cheap tobacco smell)
+- "Деревенская изба" (village hut)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 DIALOGUE (REALISTIC RUSSIAN)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FORMAT:
+— Это ты или он? — спросила я.
+— Я, конечно. Откуда?
+
+PRO TIPS:
+✅ Use em-dash (—) for dialogue start
+✅ Natural interruptions: "— Слушай, я не имею... — Но ты..."
+✅ Pauses: "— Я... не знаю. Может быть, я ошиблась?"
+✅ Short exchanges (3-5 lines max per dialogue block)
+✅ Mix with action: "— Закрой дверь, — сказала она. Я закрыла."
+
 ${retryNote}
 ${this.buildQualityGuidelines(charLimit)}
 
@@ -540,34 +597,41 @@ Turning Point: ${outline.keyTurning}
 Open Loop (Why reader continues): "${outline.openLoop}"
 
 ${previousContext ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📚 PREVIOUS EPISODE ENDING (CONTEXT)
+📚 PREVIOUS EPISODE ENDING (CONTINUE FROM HERE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${previousContext}
 
-🔥 IMPORTANT: CONTINUE THE STORY AFTER THESE WORDS
-✅ DO NOT repeat or rephrase the context above
-✅ DO NOT start with "и" or "тогда" as if retelling
-✅ START IMMEDIATELY with NEW action, dialogue, or thoughts
-✅ Assume reader just finished the context - move forward!` : ''}
+🔥 HOW TO CONTINUE (CRITICAL):
+✅ START IMMEDIATELY with NEW action/dialogue/thought
+✅ DO NOT repeat or rephrase the ending above
+✅ DO NOT start with connector words like "и" or "тогда"
+✅ Assume reader already knows context - MOVE FORWARD
+✅ Continue as if one paragraph ends, next begins naturally` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 CHARACTER BUDGET GUIDELINE (NOT STRICT LIMIT)
+📏 CHARACTER LENGTH GUIDELINE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ℹ️  This episode guideline: ${minChars}-${maxChars} characters (with spaces)
+ℹ️  GUIDELINE: ${minChars}-${maxChars} characters (with spaces)
 
-✅ QUALITY FIRST: If you need 3500 chars for great storytelling, write 3500
-✅ DON'T ARTIFICIALLY EXPAND: If 3000 chars is natural, write 3000
-✅ DON'T ARTIFICIALLY TRIM: If you need 4000 chars, write 4000
+✅ QUALITY FIRST: Prioritize story over hitting exact numbers
+✅ If you need 3500 chars for great storytelling → write 3500
+✅ If story fits perfectly in 3000 chars → write 3000
+✅ Don't artificially expand or trim
 
-The system will adjust remaining episodes based on ACTUAL length.
-Better to have 1 great 4000-char episode than 2 mediocre 2000-char episodes!
+The system adapts remaining episodes based on ACTUAL length.
+ Better to have 1 magnificent 4000-char episode than 2 mediocre 2000-char episodes!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎬 FINAL INSTRUCTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Output ONLY the episode text. No titles, no metadata, no explanations.
-Make this episode UNFORGETTABLE. Readers' happiness depends on it!
+Output ONLY the episode text.
+No titles. No metadata. No explanations.
+
+Make this episode UNFORGETTABLE.
+Readers' experience depends on it.
 `;
   }
 
