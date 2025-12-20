@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766251406211,
+  "generatedAt": 1766253671652,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -13,14 +13,14 @@
     "enablePlotBible": true
   },
   "articleCount": 1,
-  "totalCharacters": 30506,
+  "totalCharacters": 30059,
   "totalImages": 1,
   "outputPaths": {
     "articles": [
-      "articles/women-35-60/2025-12-20/ya-uznala-pravdu-iz-dnevnika-docheri-i-eto-dalo-na-1766251406206.txt"
+      "articles/women-35-60/2025-12-20/ya-zhdala-maminoy-lyubvi-vsyu-zhizn-a-eyo-pravda-o-1766253671648.txt"
     ],
     "images": [
-      "articles/women-35-60/2025-12-20/ya-uznala-pravdu-iz-dnevnika-docheri-i-eto-dalo-na-1766251406206-cover.jpg"
+      "articles/women-35-60/2025-12-20/ya-zhdala-maminoy-lyubvi-vsyu-zhizn-a-eyo-pravda-o-1766253671648-cover.jpg"
     ],
     "report": "articles/women-35-60/2025-12-20/REPORT.md"
   }
