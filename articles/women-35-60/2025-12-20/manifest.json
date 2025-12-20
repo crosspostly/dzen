@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766250498771,
+  "generatedAt": 1766251406211,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -13,14 +13,14 @@
     "enablePlotBible": true
   },
   "articleCount": 1,
-  "totalCharacters": 31165,
+  "totalCharacters": 30506,
   "totalImages": 1,
   "outputPaths": {
     "articles": [
-      "articles/women-35-60/2025-12-20/ya-30-let-zhila-s-etim-pozorom-poka-ne-ponyala-cht-1766250498770.txt"
+      "articles/women-35-60/2025-12-20/ya-uznala-pravdu-iz-dnevnika-docheri-i-eto-dalo-na-1766251406206.txt"
     ],
     "images": [
-      "articles/women-35-60/2025-12-20/ya-30-let-zhila-s-etim-pozorom-poka-ne-ponyala-cht-1766250498770-cover.jpg"
+      "articles/women-35-60/2025-12-20/ya-uznala-pravdu-iz-dnevnika-docheri-i-eto-dalo-na-1766251406206-cover.jpg"
     ],
     "report": "articles/women-35-60/2025-12-20/REPORT.md"
   }
