@@ -1,6 +1,6 @@
 // ============================================================================
 // ZenMaster v2.0 — Multi-Agent Service
-// Orchestrates dynamic episode generation for 35K+ longform articles
+// Orchestrates dynamic episode generation for 29K longform articles
 // ============================================================================
 
 import { GoogleGenAI } from "@google/genai";
@@ -12,14 +12,14 @@ export class MultiAgentService {
   private geminiClient: GoogleGenAI;
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
-  private maxChars: number = 38500;
+  private maxChars: number = 29000;
   private episodeCount: number = 12;
 
   constructor(apiKey?: string, maxChars?: number) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.contextManager = new ContextManager();
-    this.maxChars = maxChars || 38500;
+    this.maxChars = maxChars || 29000;
     
     // Calculate dynamic episode count
     this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
@@ -267,7 +267,7 @@ export class MultiAgentService {
 
     const prompt = `You are a story architect for Yandex.Zen longform articles.
 
-TASK: Build ${episodeCount}-episode structure for a 35K-character serialized narrative.
+TASK: Build ${episodeCount}-episode structure for a 29K-character serialized narrative.
 INCLUDING: Complete plotBible data (narrator, sensoryPalette, character map, thematic core).
 
 INPUT:

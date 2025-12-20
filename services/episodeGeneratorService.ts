@@ -3,25 +3,28 @@ import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
 /**
- * 🎬 Episode Generator Service v4.1 (DYNAMIC POOL-BASED BUDGETING)
- * 
- * Generates episodes with INTELLIGENT CHARACTER BUDGETING:
- * - Total budget: 35000-38500 chars (35K +10%)
- * - Lede: ~700 chars
- * - Finale: ~1500 chars
- * - Remaining divided equally among episodes initially
- * - Each episode gets specific char limit in prompt
- * - If episode exceeds limit: account for actual size, adjust next episode budget
- * - NO RETRIES for oversized - just continue with recalculated pool
- * 
- * v4.1 CHANGES:
- * - Increased context to 1200 chars for better continuity
- * - Added explicit "CONTINUE AFTER" instruction to prevent repetition
- */
+   * 🎬 Episode Generator Service v4.1 (DYNAMIC POOL-BASED BUDGETING)
+   *
+   * Generates episodes with INTELLIGENT CHARACTER BUDGETING:
+   * - Total budget: 29000 chars (29K total)
+   * - Lede: ~700 chars
+   * - Finale: ~1500 chars
+   * - Remaining divided equally among episodes initially
+   * - Each episode gets specific char limit in prompt
+   * - If episode exceeds limit: account for actual size, adjust next episode budget
+   * - NO RETRIES for oversized - just continue with recalculated pool
+   *
+   * v4.1 CHANGES:
+   * - Increased context to 1200 chars for better continuity
+   * - Added explicit "CONTINUE AFTER" instruction to prevent repetition
+   *
+   * v4.2 CHANGES:
+   * - Reduced total budget from 38500 to 29000 chars
+   */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
-  private TOTAL_BUDGET = 38500; // 35000 + 10% (35K + 10% = 38.5K)
+  private TOTAL_BUDGET = 29000; // 29000 chars total budget
   private LEDE_BUDGET = 700;
   private FINALE_BUDGET = 1500;
   private MAX_RETRIES = 2; // Only for API failures or too-short content
@@ -36,7 +39,7 @@ export class EpisodeGeneratorService {
   /**
    * 📊 Calculate budget allocation
    * 
-   * Total: 35000-38500
+   * Total: 29000 chars
    * - Lede: 700
    * - Finale: 1500
    * - Episodes: remaining / episode_count
@@ -471,7 +474,7 @@ Your job: make every word count.
 💰 ECONOMIC MOTIVATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-This episode is part of 35K character budget spread across ${totalEpisodes} episodes.
+This episode is part of 29K character budget spread across ${totalEpisodes} episodes.
 Your episode: Episode ${episodeNum}/${totalEpisodes}
 
 If this episode:
