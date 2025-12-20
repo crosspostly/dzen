@@ -63,9 +63,9 @@ export class ContentFactoryOrchestrator {
     }
 
     console.log(`
-╔${'═'.repeat(58)}╗`);
+╔${"═".repeat(58)}╗`);
     console.log(`║ 🎭 ZenMaster v4.0 - Content Factory`);
-    console.log(`╠${'═'.repeat(58)}╣`);
+    console.log(`╠${"═".repeat(58)}╣`);
     console.log(`║ 📄 Articles:          ${config.articleCount}`);
     console.log(`║ ⚙️  Parallel workers:  ${config.parallelEpisodes}`);
     console.log(`║ 🗼️  Images:            ${config.includeImages ? 'Yes (1/min)' : 'No'}`);
@@ -74,7 +74,7 @@ export class ContentFactoryOrchestrator {
     console.log(`║ 📡 Anti-detection:   ${config.enableAntiDetection ? 'Yes' : 'No'}`);
     console.log(`║ 📖 PlotBible:         ${config.enablePlotBible ? 'Yes' : 'No'}`);
     console.log(`║ 📁 Channel:           ${this.channelName}`);
-    console.log(`╚${'═'.repeat(58)}╝
+    console.log(`╚${"═".repeat(58)}╝
 `);
 
     this.config = config;
@@ -250,7 +250,7 @@ ${'='.repeat(60)}`);
    * ✅ UPDATED v4.1: Uses new ImageProcessResult API
    * 
    * Process:
-   * 1. Decode base64 PNG from Gemini API
+   * 1. Decode base64 JPEG from Gemini API
    * 2. Load through canvas.loadImage()
    * 3. Crop to 16:9 aspect ratio (1280x720)
    * 4. Redraw on new canvas (removes Gemini metadata)
@@ -261,7 +261,7 @@ ${'='.repeat(60)}`);
    * 
    * Canvas failures are handled gracefully:
    * - Log the error
-   * - Keep original PNG
+   * - Keep original JPEG (from API)
    * - Mark article with processingStatus metadata
    * - Continue with next article
    */
@@ -286,8 +286,8 @@ ${'='.repeat(60)}`);
         try {
           console.log(`  🔄 Processing image ${i + 1}/${this.articles.length}...`);
 
-          // Process base64 PNG through Canvas
-          // Input: "data:image/png;base64,iVBOR..."
+          // Process base64 JPEG through Canvas
+          // Input: "data:image/jpeg;base64,/9j/4AAQ..." (from API)
           // Output: ImageProcessResult { buffer, success, format, ... }
           const processorResult = await imageProcessorService.processImage(
             article.coverImage.base64
@@ -303,10 +303,10 @@ ${'='.repeat(60)}`);
             console.log(`     ✅ Canvas OK: ${sizeKb}KB JPEG`);
             successCount++;
           } else {
-            // Canvas failed - keep original PNG
+            // Canvas failed - keep original JPEG (from API)
             console.warn(`     ⚠️  Canvas failed: ${processorResult.errorMessage}`);
             console.log(`        Status: ${processorResult.processingStatus}`);
-            console.log(`        Fallback: Using original PNG`);
+            console.log(`        Fallback: Using original JPEG (from API)`);
             failureCount++;
           }
 
@@ -328,7 +328,7 @@ ${'='.repeat(60)}`);
     }
 
     console.log(`
-✅ Post-processing complete: ${successCount} OK, ${failureCount} used PNG fallback`);
+✅ Post-processing complete: ${successCount} OK, ${failureCount} used JPEG fallback`);
     console.log(`   Ready for export
 `);
   }
@@ -366,7 +366,7 @@ ${'='.repeat(60)}`);
    * 📄 Export articles for Zen
    * ✅ UPDATED v4.0: Save to articles/{channel_name}/{YYYY-MM-DD}/ with flat structure
    * - ONE .txt file (article content)
-   * - ONE .jpg file (processed cover image via Canvas)
+   * - ONE .jpg file (processed cover image via Canvas, or original JPEG if Canvas fails)
    * - Same filename for both (only extension differs)
    */
   async exportForZen(outputDir: string = './articles'): Promise<string> {
@@ -400,22 +400,28 @@ ${'='.repeat(60)}`);
         exportedFiles.push(txtPath);
         console.log(`✅ Article ${i + 1}: ${filename}.txt`);
 
-        // Save COVER image (ONE per article!)
+        // 🔥 FIX: ALWAYS save COVER image as JPEG
         if (article.coverImage) {
-          // Check for processed buffer (JPEG from Canvas post-processing)
+          let jpegBuffer: Buffer | null = null;
+          let source: string;
+
+          // Check for processed buffer (Canvas post-processing)
           if (article.coverImage.processedBuffer) {
-            const jpgPath = path.join(finalDir, `${filename}-cover.jpg`);
-            fs.writeFileSync(jpgPath, article.coverImage.processedBuffer);
-            exportedFiles.push(jpgPath);
-            console.log(`   🗼️  Cover: ${filename}-cover.jpg (Processed JPEG)`);
+            jpegBuffer = article.coverImage.processedBuffer;
+            source = 'Canvas processed';
           } else {
-            // Fallback to base64 PNG if processing failed
-            const pngPath = path.join(finalDir, `${filename}.png`);
+            // Fallback: Use original JPEG from API
+            // The API ALWAYS returns JPEG (format: "jpeg" in imageGeneratorAgent config)
             const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
-            fs.writeFileSync(pngPath, Buffer.from(base64Data, 'base64'));
-            exportedFiles.push(pngPath);
-            console.log(`   🗼️  Cover: ${filename}.png (PNG fallback)`);
+            jpegBuffer = Buffer.from(base64Data, 'base64');
+            source = 'Original API JPEG';
           }
+
+          // 🔥 ALWAYS save as .jpg
+          const jpgPath = path.join(finalDir, `${filename}-cover.jpg`);
+          fs.writeFileSync(jpgPath, jpegBuffer);
+          exportedFiles.push(jpgPath);
+          console.log(`   🗼️  Cover: ${filename}-cover.jpg (${source})`);
         }
       } catch (error) {
         console.error(`❌ Failed to export article ${i + 1}: ${(error as Error).message}`);
@@ -437,8 +443,7 @@ ${'='.repeat(60)}`);
     console.log(`   📄 Articles: ${this.articles.length}`);
     console.log(`   🗼️  Cover images: ${this.articles.filter(a => a.coverImage).length} (1 per article)`);
     console.log(`   📋 Manifest: ${manifestPath}`);
-    console.log(`   📋 Report: ${reportPath}
-`);
+    console.log(`   📋 Report: ${reportPath}\n`);
 
     return finalDir;
   }
@@ -517,7 +522,7 @@ ${'='.repeat(60)}`);
       totalImages: this.articles.filter(a => a.coverImage).length, // ✅ Count cover images
       outputPaths: {
         articles: files.filter(f => f.includes('.txt') || f.includes('.json')),
-        images: files.filter(f => f.includes('.png') || f.includes('.jpg')), // ✅ Include JPGs
+        images: files.filter(f => f.includes('.jpg')), // ✅ Only .jpg files
         report: path.join(outputDir, 'REPORT.md')
       }
     };
@@ -708,9 +713,9 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
      : 0;
 
    console.log(`
-  ${'='.repeat(60)}`);
+  ${"=".repeat(60)}`);
    console.log(`🎉 FACTORY COMPLETE`);
-   console.log(`${'='.repeat(60)}`);
+   console.log(`${"=".repeat(60)}`);
    console.log(`📄 Articles: ${this.progress.articlesCompleted}/${this.progress.articlesTotal}`);
    console.log(`🗼️  Images: ${this.progress.imagesCompleted}/${this.progress.imagesTotal}`);
    console.log(`⏱️  Duration: ${(duration / 60).toFixed(1)} minutes`);
@@ -733,6 +738,6 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
      console.log(`   For detailed quality analysis`);
    }
 
-   console.log(`${'='.repeat(60)}\n`);
+   console.log(`${"=".repeat(60)}\n`);
   }
 }
