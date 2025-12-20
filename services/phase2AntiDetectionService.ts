@@ -1,9 +1,19 @@
-// ============================================================================
-// PHASE 2: AntiDetectionService
-// Главный оркестратор для всех 5 компонентов anti-detection
-// Объединяет: PerplexityController + BurstinessOptimizer + SkazNarrativeEngine +
-//             AdversarialGatekeeper + VisualSanitizationService
-// ============================================================================
+/**
+ * PHASE 2 ANTI-DETECTION SERVICE
+ * 
+ * Status: Future Implementation (v4.5, Dec 22-23, 2025)
+ * Purpose: Anti-detection system to make content appear more human-written
+ * Current Status: Not used in v4.0.2, planned for Phase 2
+ * 
+ * Integration: Will be wired into main pipeline in v4.5
+ * Dependencies: ContentSanitizer, qualityValidator
+ * 
+ * Targets:
+ * - ZeroGPT detection: <15%
+ * - Originality.ai detection: <20%
+ * 
+ * See: ZENMASTER_COMPLETE_ROADMAP.md for details
+ */
 
 import { PerplexityController } from "./perplexityController";
 import { BurstinessOptimizer } from "./burstinessOptimizer";

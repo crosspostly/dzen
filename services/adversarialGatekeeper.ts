@@ -1,8 +1,21 @@
-// ============================================================================
-// PHASE 2: AdversarialGatekeeper
-// Валидирует статью перед публикацией
-// Score 0-100 (≥80 = OK to publish)
-// ============================================================================
+/**
+ * ADVERSARIAL GATEKEEPER
+ * 
+ * Status: Future Implementation (v4.5, Dec 22-23, 2025)
+ * Purpose: Quality gate and detection simulator for anti-detection system
+ * Current Status: Not used in v4.0.2, planned for Phase 2
+ * 
+ * Integration: Works with phase2AntiDetectionService in v4.5
+ * Dependencies: phase2AntiDetectionService
+ * 
+ * Simulates detection tools:
+ * - ZeroGPT
+ * - Originality.ai
+ * - Turnitin
+ * - Copyscape
+ * 
+ * See: ZENMASTER_COMPLETE_ROADMAP.md for details
+ */
 
 import { AdversarialScore } from "../types/ContentArchitecture";
 import { PerplexityController } from "./perplexityController";
