@@ -3,17 +3,20 @@ import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
 /**
- * 🎬 Episode Generator Service v3.5
+ * 🎬 Episode Generator Service v3.6 (FIXED)
  * 
  * Generates individual episodes with:
  * - Economic motivation (higher quality = more reader time = more income)
  * - Donna (fast-paced) + Rubina (psychological depth) style
  * - Urban Russian language (NOT village dialect)
  * - Narrative tension and engagement
+ * - PROPER RETRY LOGIC for short episodes
  */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
+  private MIN_EPISODE_LENGTH = 2500; // Minimum chars
+  private MAX_RETRIES = 3; // Max retry attempts
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
@@ -62,35 +65,62 @@ export class EpisodeGeneratorService {
 
   /**
    * 🎨 Generate single episode with context from previous episodes
+   * WITH PROPER RETRY LOGIC FOR SHORT CONTENT
    */
   private async generateSingleEpisode(
     outline: EpisodeOutline,
     previousEpisodes: Episode[],
-    attempt: number = 1
+    attempt: number = 1,
+    useFallbackModel: boolean = false
   ): Promise<Episode> {
     const previousContext = this.buildContext(previousEpisodes);
-    const prompt = this.buildPrompt(outline, previousContext);
+    const prompt = this.buildPrompt(outline, previousContext, attempt);
+    const model = useFallbackModel ? "gemini-2.5-flash-lite" : "gemini-2.5-flash";
 
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-2.5-flash",
+        model,
         temperature: 0.9,
       });
 
       const content = response.trim();
       
-      // Validate length
-      if (content.length < 2500) {
-        console.log(`   ⚠️  Too short (${content.length} chars), trying expanded...`);
-        if (attempt < 3) {
+      // ✅ PROPER RETRY LOGIC
+      if (content.length < this.MIN_EPISODE_LENGTH) {
+        console.log(`   ⚠️  Too short (${content.length}/${this.MIN_EPISODE_LENGTH} chars), attempt ${attempt}/${this.MAX_RETRIES}`);
+        
+        if (attempt < this.MAX_RETRIES) {
+          // Retry with expanded prompt
+          console.log(`   🔄 Retrying with expanded prompt...`);
           return this.generateSingleEpisode(
-            { ...outline, externalConflict: outline.externalConflict + " (EXPAND THIS SCENE)" },
+            { ...outline, externalConflict: outline.externalConflict + " (EXPAND THIS SCENE SIGNIFICANTLY)" },
             previousEpisodes,
-            attempt + 1
+            attempt + 1,
+            useFallbackModel
+          );
+        } else if (!useFallbackModel) {
+          // Try fallback model before giving up
+          console.log(`   🔄 Retrying with fallback model (gemini-2.5-flash-lite)...`);
+          return this.generateSingleEpisode(
+            outline,
+            previousEpisodes,
+            1, // Reset attempt counter for fallback
+            true // Use fallback
+          );
+        } else {
+          // Fallback model also produced short content - this is critical
+          console.error(`   ❌ CRITICAL: Episode #${outline.id} too short even with fallback model`);
+          console.error(`   📊 Final length: ${content.length} chars (minimum: ${this.MIN_EPISODE_LENGTH})`);
+          throw new Error(
+            `Episode #${outline.id} generation failed: content too short after ${this.MAX_RETRIES} retries and fallback model. ` +
+            `Got ${content.length} chars, need minimum ${this.MIN_EPISODE_LENGTH} chars.`
           );
         }
       }
+
+      // ✅ CONTENT VALIDATION PASSED
+      console.log(`   ✅ Episode ${outline.id}: ${content.length} chars (valid)`);
 
       // Generate title
       const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
@@ -116,9 +146,16 @@ export class EpisodeGeneratorService {
       const errorMessage = (error as Error).message;
       console.warn(`   ❌ Generation failed (attempt ${attempt}): ${errorMessage}`);
       
-      if (attempt < 3 && (errorMessage.includes('503') || errorMessage.includes('overloaded'))) {
-        console.log(`   🔄 Retrying with fallback model...`);
-        return this.generateSingleEpisodeWithFallback(outline, previousEpisodes, attempt);
+      if (attempt < this.MAX_RETRIES && (errorMessage.includes('503') || errorMessage.includes('overloaded'))) {
+        console.log(`   🔄 API overloaded, retrying...`);
+        // Wait longer before retry
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        return this.generateSingleEpisode(
+          outline,
+          previousEpisodes,
+          attempt + 1,
+          useFallbackModel
+        );
       }
       
       throw error;
@@ -126,55 +163,14 @@ export class EpisodeGeneratorService {
   }
 
   /**
-   * 🔄 Fallback generation with alternative model
-   */
-  private async generateSingleEpisodeWithFallback(
-    outline: EpisodeOutline,
-    previousEpisodes: Episode[],
-    attempt: number
-  ): Promise<Episode> {
-    const previousContext = this.buildContext(previousEpisodes);
-    const prompt = this.buildPrompt(outline, previousContext);
-
-    try {
-      const response = await this.callGemini({
-        prompt,
-        model: "gemini-2.5-flash-lite",
-        temperature: 0.9,
-      });
-
-      const content = response.trim();
-      const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
-        outline.id,
-        content,
-        outline.openLoop
-      );
-
-      return {
-        id: outline.id,
-        title: episodeTitle,
-        content,
-        charCount: content.length,
-        openLoop: outline.openLoop,
-        turnPoints: [outline.keyTurning],
-        emotions: [outline.internalConflict],
-        keyScenes: [],
-        characters: [],
-        generatedAt: Date.now(),
-        stage: "draft",
-      };
-    } catch (error) {
-      console.error(`   ❌ Fallback also failed: ${(error as Error).message}`);
-      throw error;
-    }
-  }
-
-  /**
    * 📝 Build the prompt with all style and economic guidance
+   * Enhanced for retries to explicitly ask for expansion
    */
-  private buildPrompt(outline: EpisodeOutline, previousContext: string): string {
+  private buildPrompt(outline: EpisodeOutline, previousContext: string, attempt: number = 1): string {
+    const retryNote = attempt > 1 ? `\n⚠️  RETRY ATTEMPT #${attempt} - The previous version was too short. WRITE MUCH LONGER AND MORE DETAILED. Expand scenes, add more dialogue, more internal thoughts.\n` : '';
+
     return `
-🎬 EPISODE #${outline.id} - ZenMaster v3.5
+🎬 EPISODE #${outline.id} - ZenMaster v3.6
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 ECONOMIC MOTIVATION (Read Carefully)
@@ -254,7 +250,7 @@ PROVOCATION (Last paragraph):
 - END with QUESTION or UNCERTAINTY
 - Goal: readers argue in comments (comments = algorithm reward)
 - Example: "А вы как считаете? Я перегнула палку?"
-
+${retryNote}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📖 EPISODE OUTLINE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -279,7 +275,7 @@ ${previousContext}` : ''}
 📋 REQUIREMENTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✅ Length: 2500-4000 characters (optimal for CPM: holds reader 3-5 minutes)
+✅ Length: MINIMUM 2500 characters (optimal for CPM: holds reader 3-5 minutes)
 ✅ Language: Russian only, urban educated tone (NOT village dialect!)
 ✅ Style: Mix Donna fast-paced with Rubina psychological depth
 ✅ Dialogue: Realistic with pauses and interruptions
@@ -292,6 +288,7 @@ ${previousContext}` : ''}
 
 Output ONLY the episode text. No titles, no metadata, no explanations.
 Make this count. People's happiness depends on the quality of this writing.
+REMEMBER: Minimum 2500 characters! More is better! (This is for CPM income)
 `;
   }
 
