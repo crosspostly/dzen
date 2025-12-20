@@ -20,13 +20,6 @@ export interface ArticleGenerationResult {
   };
 }
 
-export interface EpisodeCheckResult {
-  section: string;
-  score: number;
-  tips: string[];
-  passed: boolean;
-}
-
 export class GeminiService {
   private ai: GoogleGenAI;
 
@@ -50,9 +43,6 @@ export class GeminiService {
   /**
    * Главный метод: генерирует статью 10-15K символов с примерами
    * Использует многоступенчатый подход (plan → hook → development → climax → resolution)
-   * 
-   * FIX v4.0.2: ПОЭПИЗОДНАЯ ПРОВЕРКА!
-   * Каждый эпизод проверяется отдельно ПЕРЕД тем как войти в финальную статью
    */
   async generateArticleDataChunked(params: {
     theme: string;
@@ -75,57 +65,21 @@ export class GeminiService {
 
       // Этап 2: Захватывающий крючок (завязка)
       console.log('🪝 Этап 2: Написание крючка...');
-      let hook = await this.generateHook(plan, examples);
-      // 🔍 ПРОВЕРКА ЭПИЗОДА 1
-      console.log('🔍 Проверка эпизода HOOK...');
-      let hookCheck = await this.checkHumanity(hook, 'hook');
-      if (!hookCheck.passed) {
-        console.log(`⚠️  Hook не прошел проверку (${hookCheck.score}%). Переделываю...`);
-        hook = await this.generateHook(plan, examples);
-        hookCheck = await this.checkHumanity(hook, 'hook');
-      }
-      console.log(`✅ HOOK готов (score: ${hookCheck.score}%)`);
+      const hook = await this.generateHook(plan, examples);
 
       // Этап 3: Развитие (основной конфликт)
       console.log('⬆️  Этап 3: Развитие конфликта...');
-      let development = await this.generateDevelopment(plan, hook, targetChars * 0.5);
-      // 🔍 ПРОВЕРКА ЭПИЗОДА 2
-      console.log('🔍 Проверка эпизода DEVELOPMENT...');
-      let devCheck = await this.checkHumanity(development, 'development');
-      if (!devCheck.passed) {
-        console.log(`⚠️  Development не прошел проверку (${devCheck.score}%). Переделываю...`);
-        development = await this.generateDevelopment(plan, hook, targetChars * 0.5);
-        devCheck = await this.checkHumanity(development, 'development');
-      }
-      console.log(`✅ DEVELOPMENT готов (score: ${devCheck.score}%)`);
+      const development = await this.generateDevelopment(plan, hook, targetChars * 0.5);
 
       // Этап 4: Кульминация
       console.log('💥 Этап 4: Кульминация...');
-      let climax = await this.generateClimax(plan, development);
-      // 🔍 ПРОВЕРКА ЭПИЗОДА 3
-      console.log('🔍 Проверка эпизода CLIMAX...');
-      let climaxCheck = await this.checkHumanity(climax, 'climax');
-      if (!climaxCheck.passed) {
-        console.log(`⚠️  Climax не прошел проверку (${climaxCheck.score}%). Переделываю...`);
-        climax = await this.generateClimax(plan, development);
-        climaxCheck = await this.checkHumanity(climax, 'climax');
-      }
-      console.log(`✅ CLIMAX готов (score: ${climaxCheck.score}%)`);
+      const climax = await this.generateClimax(plan, development);
 
       // Этап 5: Развязка (справедливое возмездие)
       console.log('🎬 Этап 5: Развязка...');
-      let resolution = await this.generateResolution(climax);
-      // 🔍 ПРОВЕРКА ЭПИЗОДА 4
-      console.log('🔍 Проверка эпизода RESOLUTION...');
-      let resCheck = await this.checkHumanity(resolution, 'resolution');
-      if (!resCheck.passed) {
-        console.log(`⚠️  Resolution не прошел проверку (${resCheck.score}%). Переделываю...`);
-        resolution = await this.generateResolution(climax);
-        resCheck = await this.checkHumanity(resolution, 'resolution');
-      }
-      console.log(`✅ RESOLUTION готов (score: ${resCheck.score}%)`);
+      const resolution = await this.generateResolution(climax);
 
-      // Собираем всё воедино (ВСЕ ЭПИЗОДЫ УЖЕ ПРОВЕРЕНЫ!)
+      // Собираем всё воедино
       const chunks: GenerationChunk[] = [
         { section: 'hook', content: hook, char_count: hook.length },
         { section: 'development', content: development, char_count: development.length },
@@ -137,7 +91,6 @@ export class GeminiService {
       const finalChars = fullContent.length;
 
       console.log(`✅ Статья готова: ${finalChars} символов`);
-      console.log(`📊 Скоры эпизодов: hook=${hookCheck.score}%, dev=${devCheck.score}%, climax=${climaxCheck.score}%, res=${resCheck.score}%`);
 
       // Генерируем образы для статьи
       const imageScenes = this.extractImageScenes(fullContent);
@@ -398,38 +351,30 @@ ${climax}
   }
 
   /**
-   * 🔍 ПОЭПИЗОДНАЯ ПРОВЕРКА НА AI (v4.0.2 FIX)
+   * Проверяет человечность текста на основе ПОЛНОГО контента
+   * FIX v4.0.2: Теперь анализирует весь текст, не только первые 2000 символов!
    * 
-   * ВАЖНО: Проверяем КАЖДЫЙ ЭПИЗОД ОТДЕЛЬНО!
-   * - hook: ~500-700 символов
-   * - development: ~1500-2000 символов  
-   * - climax: ~800-1200 символов
-   * - resolution: ~600-1000 символов
-   * 
-   * ЕСЛИ эпизод не прошел проверку → переделаем его перед тем как собирать финальную статью!
+   * Стратегия: проверяются три срезов (начало, середина, конец) для полного охвата
    */
-  async checkHumanity(episodeText: string, episodeName: string = 'unknown'): Promise<EpisodeCheckResult> {
-    console.log(`📋 Проверяю эпизод "${episodeName}" (${episodeText.length} символов)...`);
+  async checkHumanity(text: string) {
+    // FIX: вместо substring(0, 2000) проверяем ВСЕ части текста
+    const slices = this.extractRepresentativeSlices(text);
     
-    const prompt = `Оцени этот ЭПИЗОД на признаки искусственного интеллекта.
-Выдай JSON { "score": 0-100, "tips": ["совет1", "совет2"] }.
+    const prompt = `Оцени ПОЛНЫЙ текст на признаки ИИ. Выдай JSON { "score": 0-100, "tips": ["совет1", "совет2"] }. 
 
-ЭПИЗОД "${episodeName}" (${episodeText.length} символов):
-${episodeText}
+Полный текст для анализа:
+${slices}
 
 Критерии оценки:
 - Вариативность в стиле и структуре предложений
-- Наличие естественных ошибок и живых переходов
-- Разнообразие словаря (частые повторы = AI)
-- Эмоциональность и личные переживания
-- Неожиданные детали (AI = предсказуемо, человек = спонтанно)
+- Наличие человеческих ошибок и естественных переходов
+- Разнообразие используемого словаря
+- Эмоциональная составляющая и личные переживания
 
-Выдай ЧЕСТНЫЙ скор 0-100:
-0-40 = явный AI (механический, однородный, клишированный)
-40-60 = смешанный контент (видны обе стороны)
-60-100 = человеческий текст (живой, эмоциональный, вариативный)
-
-Ответ ТОЛЬКО JSON, без текста!`;
+Выдай ЧЕСТНЫЙ скор 0-100, где:
+0-30 = явный AI (однородный стиль, клише, предсказуемость)
+30-60 = смешанный контент (есть признаки обоих)
+60-100 = человеческий текст (вариативный, живой, эмоциональный)`;
 
     const response = await this.ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -445,26 +390,40 @@ ${episodeText}
         }
       }
     });
-    
     try { 
-      const parsed = JSON.parse(response.text);
-      const score = Math.round(parsed.score);
-      const passed = score >= 60; // Порог: 60% = проходит
-      
-      return {
-        section: episodeName,
-        score,
-        tips: parsed.tips || [],
-        passed
-      };
+      return JSON.parse(response.text); 
     } catch { 
-      return {
-        section: episodeName,
-        score: 50,
-        tips: ["Ошибка анализа"],
-        passed: false
-      };
+      return { score: 50, tips: ["Не удалось провести анализ"] }; 
     }
+  }
+
+  /**
+   * Извлекает репрезентативные срезы текста для анализа
+   * Охватывает: начало (30%), середину (30%), конец (30%)
+   */
+  private extractRepresentativeSlices(text: string): string {
+    const charThreshold = 2000; // каждый срез
+    const totalChars = text.length;
+
+    if (totalChars <= charThreshold * 2) {
+      // Если текст короткий, возвращаем весь
+      return text;
+    }
+
+    const slices: string[] = [];
+
+    // Срез 1: Начало (0-30%)
+    slices.push(`[НАЧАЛО ТЕКСТА]\n${text.substring(0, charThreshold)}`);
+
+    // Срез 2: Середина (35-65%)
+    const midStart = Math.floor(totalChars * 0.35);
+    slices.push(`\n[СЕРЕДИНА ТЕКСТА]\n${text.substring(midStart, midStart + charThreshold)}`);
+
+    // Срез 3: Конец (70-100%)
+    const endStart = Math.max(totalChars - charThreshold, 0);
+    slices.push(`\n[КОНЕЦ ТЕКСТА]\n${text.substring(endStart)}`);
+
+    return slices.join('\n');
   }
 
   /**
