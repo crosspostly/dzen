@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766240127573,
+  "generatedAt": 1766247250374,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -13,14 +13,14 @@
     "enablePlotBible": true
   },
   "articleCount": 1,
-  "totalCharacters": 40262,
+  "totalCharacters": 38374,
   "totalImages": 1,
   "outputPaths": {
     "articles": [
-      "articles/women-35-60/2025-12-20/ya-sluchayno-otkryla-korobku-i-styd-za-proshloe-pe-1766240127572.txt"
+      "articles/women-35-60/2025-12-20/muchitelnyy-styd-20-let-davil-na-menya-i-teper-ya--1766247250373.txt"
     ],
     "images": [
-      "articles/women-35-60/2025-12-20/ya-sluchayno-otkryla-korobku-i-styd-za-proshloe-pe-1766240127572.png"
+      "articles/women-35-60/2025-12-20/muchitelnyy-styd-20-let-davil-na-menya-i-teper-ya--1766247250373.png"
     ],
     "report": "articles/women-35-60/2025-12-20/REPORT.md"
   }
