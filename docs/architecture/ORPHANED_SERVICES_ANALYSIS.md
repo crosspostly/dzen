@@ -122,7 +122,7 @@ Add this comment at top of file:
  * Current Status: Not used in v4.0.2, planned for Phase 2
  * 
  * Integration: Will be wired into main pipeline in v4.5
- * @see ZENMASTER_COMPLETE_ROADMAP.md
+ * @see docs/ROADMAP.md
  */
 ```
 
@@ -228,7 +228,7 @@ Add this comment at top of file:
  * Current Status: Not used in v4.0.2, planned for Phase 2
  * 
  * Integration: Works with phase2AntiDetectionService in v4.5
- * @see ZENMASTER_COMPLETE_ROADMAP.md
+ * @see docs/ROADMAP.md
  */
 ```
 
@@ -335,7 +335,7 @@ Add this comment at top of file:
  * 
  * Integration: Will be wired into auto-publish pipeline in v5.0+
  * Dependencies: Playwright library, Zen account access
- * @see ZENMASTER_COMPLETE_ROADMAP.md
+ * @see docs/ROADMAP.md
  */
 ```
 

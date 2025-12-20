@@ -36,7 +36,7 @@ Clean up code repository by:
  * - ZeroGPT detection: <15%
  * - Originality.ai detection: <20%
  * 
- * See: ZENMASTER_COMPLETE_ROADMAP.md for details
+ * See: docs/ROADMAP.md for details
  */
 
 export const phase2AntiDetectionService = {
@@ -65,7 +65,7 @@ export const phase2AntiDetectionService = {
  * - Turnitin
  * - Copyscape
  * 
- * See: ZENMASTER_COMPLETE_ROADMAP.md for details
+ * See: docs/ROADMAP.md for details
  */
 
 export const adversarialGatekeeper = {
@@ -96,7 +96,7 @@ export const adversarialGatekeeper = {
  * - Status tracking
  * - Error handling
  * 
- * See: ZENMASTER_COMPLETE_ROADMAP.md for details
+ * See: docs/ROADMAP.md for details
  */
 
 export const playwrightService = {

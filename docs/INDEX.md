@@ -7,6 +7,8 @@ Welcome to the comprehensive ZenMaster documentation suite. This index provides 
 - **[📋 Full Documentation Index](./DOCUMENTATION_INDEX.md)** - Complete navigation and detailed summaries
 - **[🚀 Development Roadmap](./ROADMAP.md)** - Full v4.0 through v5.0+ timeline
 - **[⚡ v4.9 QualityValidator Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md)** - Implementation details
+- **[🎯 Quality Metrics in Prompt](./guides/QUALITY_METRICS_IN_PROMPT.md)** - How prompt-led quality works
+- **[🧼 ContentSanitizer Guide](./guides/CONTENT_SANITIZER.md)** - Cleaning + validation + metrics
 - **[🧹 Service Cleanup Guide](./guides/SERVICE_CLEANUP.md)** - Step-by-step cleanup plan
 
 ---
@@ -65,6 +67,8 @@ docs/
 ├── IMAGE_ARCHITECTURE.md                ← Existing image system docs
 ├── guides/
 │   ├── V4.9_QUALITY_VALIDATOR_GUIDE.md  ← v4.9 implementation
+│   ├── QUALITY_METRICS_IN_PROMPT.md     ← Prompt-led quality targets
+│   ├── CONTENT_SANITIZER.md             ← Cleaning + validation + metrics
 │   └── SERVICE_CLEANUP.md               ← Cleanup action plan
 └── architecture/
     ├── ORPHANED_SERVICES_ANALYSIS.md    ← Detailed service analysis
