@@ -48,9 +48,9 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎯 v4.1 FIXED: Generate ONE cover image from title + lede
+   * 🎯 v4.2 FIXED: Generate ONE cover image from title + lede
    * This is the main entry point for article cover generation
-   * NOW WITH SAFE plotBible HANDLING
+   * NOW WITH GEMINI API imageConfig FOR 16:9 ASPECT RATIO
    */
   async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🎨 Generating COVER image for article: "${request.title}"`);
@@ -86,8 +86,8 @@ export class ImageGeneratorAgent {
 
   /**
    * 📝 Build cover image prompt from article title + lede
-   * v4.1: SAFE handling of plotBible with defaults
-   * v4.2: FORCE 16:9 LANDSCAPE ASPECT RATIO
+   * v4.2: Removed text-based aspect ratio instructions
+   * AspectRatio is now set via Gemini API imageConfig parameter
    */
   private buildCoverImagePrompt(request: CoverImageRequest): string {
     const { title, ledeText, plotBible } = request;
@@ -106,8 +106,6 @@ export class ImageGeneratorAgent {
     };
 
     const prompt = `
-🎯 CRITICAL: ASPECT RATIO = 16:9 LANDSCAPE (WIDTH > HEIGHT) - NOT SQUARE!
-
 AUTHENTIC mobile phone photo for article cover image.
 Title: "${title}"
 
@@ -121,16 +119,7 @@ NARRATOR CONTEXT:
 SENSORY PALETTE:
 ${sensoryPalette.details && sensoryPalette.details.length > 0 ? sensoryPalette.details.slice(0, 5).join(', ') : 'warm, intimate, quiet, domestic'}
 
-⚠️ MANDATORY COMPOSITION RULES:
-- WIDTH MUST BE GREATER THAN HEIGHT
-- Landscape orientation ONLY
-- 16:9 aspect ratio (like 1920x1080 or 1280x720)
-- Horizontal frame, wide view
-- NEVER square, NEVER portrait, NEVER vertical
-- Wide framing with depth from left to right
-
 REQUIREMENTS:
-- 16:9 landscape aspect ratio (width > height)
 - Natural lighting ONLY (window light, desk lamp, shadows)
 - Domestic realism (Russian interior, everyday life)
 - Amateur framing (NOT professional composition)
@@ -139,7 +128,6 @@ REQUIREMENTS:
 - Natural colors (NOT oversaturated)
 
 MUST AVOID:
-- Square or portrait orientation
 - Stock photography or glossy look
 - Text, watermarks, or logos
 - Surrealism or strange proportions
@@ -150,7 +138,7 @@ MUST AVOID:
 - Fancy interior design
 
 STYLE: Like a photo from neighbor's WhatsApp - authentic, slightly imperfect, real life.
-RESULT: Wide landscape photo, 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
+RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     `.trim();
 
     return prompt;
@@ -184,8 +172,7 @@ RESULT: Wide landscape photo, 4K detail but amateur aesthetic, like real home ph
 
   /**
    * 🔄 Fallback cover generation with simpler prompt
-   * v4.1: SAFE handling when plotBible missing
-   * v4.2: FORCE 16:9 LANDSCAPE
+   * v4.2: Using Gemini API imageConfig for aspect ratio
    */
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🔄 Using fallback model for cover: ${this.fallbackModel}`);
@@ -195,16 +182,9 @@ RESULT: Wide landscape photo, 4K detail but amateur aesthetic, like real home ph
     const sensoryDetails = request.plotBible?.sensoryPalette?.details || ['warm', 'intimate', 'quiet'];
 
     const simplifiedPrompt = `
-🎯 CRITICAL: 16:9 LANDSCAPE ONLY! Width > Height. NO SQUARES!
-
 Russian woman ${narrator.age || 40} years old in apartment, natural light, realistic photo on smartphone.
 Article: "${request.title}"
 Interior: ${sensoryDetails.slice(0, 3).join(', ')}
-
-⚠️ ASPECT RATIO: 16:9 landscape (wide, NOT square)
-Frame horizontally, show wide view of room
-NEVER make it square or portrait!
-
 Domestic scene, everyday moment, warm lighting.
     `.trim();
 
@@ -315,7 +295,6 @@ Domestic scene, everyday moment, warm lighting.
     const style = "AUTHENTIC mobile phone photo, taken on mid-range smartphone (iPhone 2018-2020 or Samsung A-series)";
     
     const requirements = [
-      "16:9 aspect ratio, horizontal orientation",
       `Natural lighting: ${lighting}`,
       `Domestic realism: ${plotBible.sensoryPalette.details.join(', ')}`,
       "Amateur framing (not professional composition)",
@@ -368,6 +347,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
 
   /**
    * 🤖 Generate image with specified model
+   * v4.2: Using Gemini API imageConfig for aspect ratio control
    */
   private async generateWithModel(
     model: string,
@@ -387,6 +367,10 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 1024,
+        // 🔥 ASPECT RATIO CONTROL - Using Gemini API imageConfig
+        imageConfig: {
+          aspectRatio: "16:9" // Landscape format
+        } as any
       }
     });
 
@@ -453,7 +437,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
 Russian woman ${request.plotBible.narrator.age} years old in apartment, natural light, realistic photo on smartphone.
 Emotion: ${request.emotion || request.plotBible.narrator.tone}
 Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
-16:9 aspect ratio, amateur photo aesthetic, NOT stock photography.
+Amateur photo aesthetic, NOT stock photography.
     `.trim();
 
     try {
