@@ -7,7 +7,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
-import { imageGeneratorAgent } from "./imageGeneratorAgent"; // 🖼️ НОВОЕ
+import { imageGeneratorAgent } from "./imageGeneratorAgent";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -29,7 +29,7 @@ export class MultiAgentService {
     angle: string;
     emotion: string;
     audience: string;
-    includeImages?: boolean; // 🖼️ НОВОЕ: флаг генерации картинок
+    includeImages?: boolean;
   }): Promise<LongFormArticle> {
     console.log("\n🎬 [ZenMaster v2.0] Starting 35K longform generation...");
     console.log(`📌 Theme: "${params.theme}"`);
@@ -62,14 +62,14 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
-    // 🖼️ НОВОЕ: Generate cover image if requested
+    // 🖼️ Generate cover image if requested
     let coverImageBuffer: Buffer | undefined;
     if (params.includeImages) {
       try {
         console.log("🖼️  Generating cover image...");
         coverImageBuffer = await imageGeneratorAgent.generateCoverImage({
           title,
-          lede,
+          ledeText: lede,
           theme: params.theme,
           emotion: params.emotion,
         });
@@ -78,7 +78,6 @@ export class MultiAgentService {
         }
       } catch (error) {
         console.error(`❌ Cover image generation failed:`, (error as Error).message);
-        // Continue without image if generation fails
       }
     }
     
@@ -91,7 +90,7 @@ export class MultiAgentService {
       lede,
       finale,
       voicePassport,
-      coverImage: coverImageBuffer, // 🖼️ НОВОЕ: добавляем картинку в статью
+      coverImage: coverImageBuffer,
       metadata: {
         totalChars: lede.length + episodes.reduce((sum, ep) => sum + ep.charCount, 0) + finale.length,
         totalReadingTime: this.calculateReadingTime(lede, episodes, finale),
@@ -116,10 +115,41 @@ export class MultiAgentService {
   }
 
   /**
-   * Strip markdown code blocks from JSON responses
+   * IMPROVED: Strip markdown code blocks and handle malformed JSON
+   * Fixes issues with truncated or badly formatted API responses
    */
   private stripMarkdownJson(text: string): string {
-    let cleaned = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    // Step 1: Remove markdown code block markers
+    let cleaned = text
+      .replace(/^```(?:json)?\s*\n?/g, '') // Remove opening ```json
+      .replace(/\n?```\s*$/g, '')           // Remove closing ```
+      .trim();
+
+    // Step 2: Find the actual JSON object boundaries
+    // Look for the first { and last }
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    
+    if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
+      throw new Error('No valid JSON object found in response');
+    }
+
+    // Extract only the JSON part
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+
+    // Step 3: Fix common issues with malformed JSON
+    // Remove control characters and fix broken unicode
+    cleaned = cleaned
+      .replace(/[\x00-\x1F\x7F]/g, ' ') // Remove control characters
+      .replace(/,\s*}/g, '}')           // Remove trailing commas before }
+      .replace(/,\s*]/g, ']')           // Remove trailing commas before ]
+      .replace(/'/g, '"')               // Replace single quotes with double quotes
+      .replace(/\\\//g, '/')           // Fix escaped slashes
+      .replace(/([^\\])"([^"]*):([^"]*?)"([^"]*)/g, '$1"$2": $3"$4') // Fix malformed key-value pairs
+      .replace(/\n/g, ' ')              // Replace newlines with spaces
+      .replace(/\s+/g, ' ')             // Collapse multiple spaces
+      .trim();
+
     return cleaned;
   }
 
@@ -166,7 +196,6 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
       "keyTurning": "...",
       "openLoop": "..."
     }
-    // ... 11 more episodes
   ],
   "externalTensionArc": "...",
   "internalEmotionArc": "...",
@@ -182,16 +211,18 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 
     try {
       const cleanedJson = this.stripMarkdownJson(response);
-      return JSON.parse(cleanedJson) as OutlineStructure;
+      const parsed = JSON.parse(cleanedJson);
+      return parsed as OutlineStructure;
     } catch (e) {
       console.error("Outline parse failed:", e);
-      throw new Error("Failed to generate outline");
+      console.error("Raw response length:", response.length);
+      console.error("First 500 chars:", response.substring(0, 500));
+      throw new Error(`Failed to parse outline: ${(e as Error).message}`);
     }
   }
 
   /**
    * Stage 1: Sequential episode generation
-   * Each episode = one API request, waiting between requests to avoid overload
    */
   private async generateEpisodesSequentially(outline: OutlineStructure): Promise<Episode[]> {
     const episodeGenerator = new EpisodeGeneratorService(
@@ -273,30 +304,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 ФОРМУЛА ХОРОШЕГО ЗАГОЛОВКА:
 [ЭМОЦИЯ] + [Я/МЫ] + [ДЕЙСТВИЕ] + [ИНТРИГА]
 
-✅ ОТЛИЧНЫЕ ПРИМЕРЫ:
-- "Я терпела это 20 лет, пока одна фраза не изменила всё"
-- "После его слов я не могла молчать больше"
-- "Седая я поняла, что вся моя жизнь была ложью"
-- "Тридцать лет я жила чужой жизнью"
-- "В один момент я потеряла всё и обрела себя"
-
-❌ ПЛОХИЕ ПРИМЕРЫ (избегать!):
-- "10 способов улучшить отношения" (лайфхак-тон, не подходит)
-- "Как жить счастливо?" (обобщённо, скучно)
-- "История одной женщины" (неинформативно)
-- "Женщина и её проблемы" (размыто)
-
-ТРЕБОВАНИЯ:
-1. ТОЛЬКО РУССКИЙ язык
-2. 55-90 символов
-3. Начинается с Я/Мы (первое лицо)
-4. Содержит глагол действия (сказала, потеряла, узнала, услышала и т.д.)
-5. Обещает неожиданный twist/откровение
-6. Без кавычек, без восклицательных знаков в конце
-7. Без слова "история"
-8. Без скучных формул типа "как", "10 способов"
-
-ОТВЕТ: Напиши ТОЛЬКО заголовок (без JSON, без кавычек, без пояснений):`;;
+ОТВЕТ: Напиши ТОЛЬКО заголовок (без JSON, без кавычек, без пояснений)`;
 
     try {
       const response = await this.callGemini({
@@ -307,8 +315,8 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 
       let title = response
         ?.trim()
-        .replace(/^\s*["'`]+/, "")
-        .replace(/["'`]+\s*$/, "")
+        .replace(/^\s*["'\'`]+/, "")
+        .replace(/["'\'`]+\s*$/, "")
         .replace(/\.$/, "")
         .replace(/\s+/g, " ")
         .substring(0, 100);
@@ -339,7 +347,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 
 Respond as JSON:
 {
-  "apologyPattern": "How author justifies (e.g., 'I know it sounds...')",
+  "apologyPattern": "How author justifies (e.g, 'I know it sounds...')",
   "doubtPattern": "How they express uncertainty",
   "memoryTrigger": "How they recall the past",
   "characterSketch": "How they describe people in 1-2 lines",
@@ -375,8 +383,6 @@ Respond as JSON:
 
   /**
    * Helper: Call Gemini API with fallback
-   * Primary: gemini-2.5-flash
-   * Fallback: gemini-2.5-flash-lite
    */
   private async callGemini(params: {
     prompt: string;
@@ -384,7 +390,6 @@ Respond as JSON:
     temperature: number;
   }): Promise<string> {
     try {
-      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
       const response = await this.geminiClient.models.generateContent({
         model: params.model,
         contents: params.prompt,
@@ -399,13 +404,12 @@ Respond as JSON:
       const errorMessage = (error as Error).message;
       console.warn(`Gemini call failed (${params.model}): ${errorMessage}`);
       
-      // 🔄 ФОЛБЕК: если модель перегружена
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
         console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
         
         try {
           const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-2.5-flash-lite",
             contents: params.prompt,
             config: {
               temperature: params.temperature,
@@ -534,7 +538,6 @@ Output ONLY the episode text. No titles, no metadata.`;
     temperature: number;
   }): Promise<string> {
     try {
-      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
       const response = await this.geminiClient.models.generateContent({
         model: "gemini-2.5-flash",
         contents: params.prompt,
@@ -549,13 +552,12 @@ Output ONLY the episode text. No titles, no metadata.`;
       const errorMessage = (error as Error).message;
       console.warn(`Agent #${this.id} primary model failed: ${errorMessage}`);
       
-      // 🔄 ФОЛБЕК: если модель перегружена
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
         console.log(`Agent #${this.id} trying fallback to gemini-2.5-flash-lite...`);
         
         try {
           const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-2.5-flash-lite",
             contents: params.prompt,
             config: {
               temperature: params.temperature,
