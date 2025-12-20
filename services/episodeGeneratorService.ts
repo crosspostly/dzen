@@ -3,19 +3,20 @@ import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
 /**
- * 🎬 Episode Generator Service v3.6 (FIXED)
+ * 🎬 Episode Generator Service v3.7 (LENGTH FIX)
  * 
  * Generates individual episodes with:
  * - Economic motivation (higher quality = more reader time = more income)
  * - Donna (fast-paced) + Rubina (psychological depth) style
  * - Urban Russian language (NOT village dialect)
  * - Narrative tension and engagement
- * - PROPER RETRY LOGIC for short episodes
+ * - STRICT LENGTH VALIDATION (max 2500 chars per episode)
  */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
-  private MIN_EPISODE_LENGTH = 2500; // Minimum chars
+  private MAX_EPISODE_LENGTH = 2500; // Maximum chars per episode
+  private MIN_EPISODE_LENGTH = 1500; // Minimum chars per episode (too short = retry)
   private MAX_RETRIES = 3; // Max retry attempts
 
   constructor(apiKey?: string) {
@@ -65,7 +66,7 @@ export class EpisodeGeneratorService {
 
   /**
    * 🎨 Generate single episode with context from previous episodes
-   * WITH PROPER RETRY LOGIC FOR SHORT CONTENT
+   * WITH PROPER RETRY LOGIC AND STRICT LENGTH VALIDATION
    */
   private async generateSingleEpisode(
     outline: EpisodeOutline,
@@ -84,9 +85,11 @@ export class EpisodeGeneratorService {
         temperature: 0.9,
       });
 
-      const content = response.trim();
+      let content = response.trim();
       
-      // ✅ PROPER RETRY LOGIC
+      // ✅ STRICT LENGTH VALIDATION
+      
+      // Check if TOO SHORT
       if (content.length < this.MIN_EPISODE_LENGTH) {
         console.log(`   ⚠️  Too short (${content.length}/${this.MIN_EPISODE_LENGTH} chars), attempt ${attempt}/${this.MAX_RETRIES}`);
         
@@ -117,6 +120,13 @@ export class EpisodeGeneratorService {
             `Got ${content.length} chars, need minimum ${this.MIN_EPISODE_LENGTH} chars.`
           );
         }
+      }
+      
+      // Check if TOO LONG - trim to max length
+      if (content.length > this.MAX_EPISODE_LENGTH) {
+        console.log(`   ⚠️  Too long (${content.length}/${this.MAX_EPISODE_LENGTH} chars), trimming to limit...`);
+        content = this.trimToLength(content, this.MAX_EPISODE_LENGTH);
+        console.log(`   ✅ Trimmed to: ${content.length} chars`);
       }
 
       // ✅ CONTENT VALIDATION PASSED
@@ -163,6 +173,30 @@ export class EpisodeGeneratorService {
   }
 
   /**
+   * ✂️ Trim text to maximum length while preserving sentence structure
+   */
+  private trimToLength(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text;
+    
+    // Trim to max length
+    let trimmed = text.substring(0, maxLength);
+    
+    // Find last sentence end (. ! ?)
+    const lastPeriod = Math.max(
+      trimmed.lastIndexOf('.'),
+      trimmed.lastIndexOf('!'),
+      trimmed.lastIndexOf('?')
+    );
+    
+    if (lastPeriod > maxLength * 0.9) {
+      // Use last complete sentence if it's close to the end
+      trimmed = trimmed.substring(0, lastPeriod + 1);
+    }
+    
+    return trimmed.trim();
+  }
+
+  /**
    * 📝 Build the prompt with all style and economic guidance
    * Enhanced for retries to explicitly ask for expansion
    */
@@ -170,7 +204,7 @@ export class EpisodeGeneratorService {
     const retryNote = attempt > 1 ? `\n⚠️  RETRY ATTEMPT #${attempt} - The previous version was too short. WRITE MUCH LONGER AND MORE DETAILED. Expand scenes, add more dialogue, more internal thoughts.\n` : '';
 
     return `
-🎬 EPISODE #${outline.id} - ZenMaster v3.6
+🎬 EPISODE #${outline.id} - ZenMaster v3.7
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 ECONOMIC MOTIVATION (Read Carefully)
@@ -179,7 +213,7 @@ export class EpisodeGeneratorService {
 This text will be published on Yandex.Zen (CPM: $5-15 per 1000 views).
 
 If this episode:
-✅ GRIPS reader → reads for 5+ minutes → $1+ per reader
+✅ GRIPS reader → reads for 3-5 minutes → $1+ per reader
 ❌ BORES reader → switches to another → $0.05 per reader
 
 Difference: 20X INCOME!
@@ -272,10 +306,11 @@ ${previousContext ? `\n━━━━━━━━━━━━━━━━━━━
 ${previousContext}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 REQUIREMENTS
+📋 STRICT REQUIREMENTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✅ Length: MINIMUM 2500 characters (optimal for CPM: holds reader 3-5 minutes)
+✅ Length: MAXIMUM 2500 characters (optimal for reader engagement: 3-5 min read time)
+✅ Minimum: 1500 characters (if less, will be rejected and regenerated)
 ✅ Language: Russian only, urban educated tone (NOT village dialect!)
 ✅ Style: Mix Donna fast-paced with Rubina psychological depth
 ✅ Dialogue: Realistic with pauses and interruptions
@@ -284,11 +319,15 @@ ${previousContext}` : ''}
 ✅ End: Provocation (question that makes reader want to comment)
 ✅ Structure: Fast → Deep → Fast → Deep pacing
 
+⚠️  IMPORTANT: Do NOT exceed 2500 characters!
+If your text is longer, system will trim it.
+Better to write 1500-2500 chars of high quality than 5000 chars of padding.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Output ONLY the episode text. No titles, no metadata, no explanations.
 Make this count. People's happiness depends on the quality of this writing.
-REMEMBER: Minimum 2500 characters! More is better! (This is for CPM income)
+REMEMBER: 1500-2500 characters is IDEAL. Do not exceed 2500!
 `;
   }
 
