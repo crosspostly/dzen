@@ -76,7 +76,7 @@ export class MultiAgentService {
     const episodeCount = this.calculateOptimalEpisodeCount(maxChars);
 
     console.log("\n🎬 [ZenMaster v2.0] Starting dynamic longform generation...");
-    console.log(`📌 Theme: "${params.theme}"`);
+    console.log(`📏 Theme: "${params.theme}"`);
     console.log(`🎯 Angle: ${params.angle} | Emotion: ${params.emotion}`);
     console.log(`🎬 Episodes: ${episodeCount} (dynamic based on ${maxChars} chars)\n`);
     
@@ -101,11 +101,11 @@ export class MultiAgentService {
     const finale = await this.generateFinale(outline, episodes);
     
     // Generate Voice Passport
-    console.log("🎤 Generating voice passport (7 author habits)...");
+    console.log("🎬 Generating voice passport (7 author habits)...");
     const voicePassport = await this.generateVoicePassport(params.audience);
     
     // Generate Title
-    console.log("📰 Generating title (55-90 chars)...");
+    console.log("🗰 Generating title (55-90 chars)...");
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
@@ -265,7 +265,7 @@ export class MultiAgentService {
       "openLoop": "..."
     }`).join(',');
 
-    const prompt = `You are a story architect for Yandex.Zen longform articles.
+    const prompt = `You are a story architect for serialized longform articles on media platforms.
 
 TASK: Build ${episodeCount}-episode structure for a 29K-character serialized narrative.
 INCLUDING: Complete plotBible data (narrator, sensoryPalette, character map, thematic core).
@@ -332,7 +332,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   
   "externalTensionArc": "...",
   "internalEmotionArc": "...",
-  "forbiddenClichés": []
+  "forbiddenCliches": []
 }
 \`\`\``;
 
@@ -365,20 +365,36 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   }
 
   /**
-   * Generate opening (lede): 600-900 chars
+   * ✅ v4.5: Generate opening (lede): 600-900 chars
+   * CLEAN STORY: No platform mentions
+   * CONTEXT: Platform details in instructions only
    */
   async generateLede(outline: OutlineStructure): Promise<string> {
     const firstEpisode = outline.episodes[0];
     
-    const prompt = `Напиши вводную часть (LEDE) для статьи Яндекс.Дзен: 600-900 символов, ТОЛЬКО РУССКИЙ язык.
+    const prompt = `📄 EDITORIAL CONTEXT (FOR YOU, NOT IN THE STORY):
+This is opening for serialized story on media platform (600-900 chars).
+Tone: Like neighbor confiding in friend at kitchen table.
+Goal: Hook reader immediately - they will scroll down if gripped.
 
-Требования:
-- Начни с ПАРАДОКСА или ИНТРИГИ (не с объяснений)
-- Крючок: "${firstEpisode.hookQuestion}"
-- Тон: личный, исповедальный, как разговор на кухне
-- В конце: подтолкни читать дальше
+⚠️  CRITICAL: Story character does NOT know about platform/audience.
+No meta-commentary like "I decided to share this" or "people will judge me".
+Just raw confession as if talking to trusted friend.
 
-ОТВЕТ: только текст вводной, без заголовков и метаданных.`;
+🎯 TASK: Write LEDE (opening) - 600-900 RUSSIAN characters:
+
+Hook: "${firstEpisode.hookQuestion}"
+Theme: "${outline.theme}"
+Emotion: ${outline.emotion}
+
+REQUIREMENTS:
+- Start with PARADOX or INTRIGUE (not explanation)
+- Pull reader in immediately
+- End with something that makes reader WANT to scroll
+- NO "I decided to post this" or "I'm sharing because"
+- Just: "That night when...", "I still remember...", "The worst part..."
+
+OUTPUT: Only the text. No title, no metadata.`;
 
     return await this.callGemini({
       prompt,
@@ -388,22 +404,35 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   }
 
   /**
-   * Generate closing (finale): 1200-1800 chars
+   * ✅ v4.5: Generate closing (finale): 1200-1800 chars
+   * CLEAN STORY: No platform mentions
+   * CONTEXT: Platform goals in instructions only
    */
   async generateFinale(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
-    const prompt = `Напиши финал (FINALE) для статьи Яндекс.Дзен: 1200-1800 символов, ТОЛЬКО РУССКИЙ язык.
+    const prompt = `📄 EDITORIAL CONTEXT (FOR YOU, NOT IN THE STORY):
+This is finale for serialized story (1200-1800 chars).
+Goal: Reader should finish with complex emotions (not clear happy ending).
+Strategy: End with question to readers (encourages comments).
 
-Требования:
-- Разреши внешний конфликт (справедливость / триумф / горькая правда)
-- Оставь эмоциональный след (без приторного хэппи-энда)
-- Заверши честным вопросом к читателям (без наставлений)
+⚠️  CRITICAL: Character doesn't know this will be published or discussed.
+No meta-commentary. Just the ending of their memory/story.
 
-Тема: "${outline.theme}"
-Главная эмоция: ${outline.emotion}
+🎯 TASK: Write FINALE - 1200-1800 RUSSIAN characters:
 
-Примеры вопросов: "Вы бы смогли так поступить?" "А вы верите в прощение?"
+Theme: "${outline.theme}"
+Emotion arc: ${outline.emotion}
+Audience: Educated women (35-60, urban, thoughtful)
 
-ОТВЕТ: только текст финала, без заголовков и метаданных.`;
+REQUIREMENTS:
+- Resolve EXTERNAL conflict (what actually happened)
+- Leave EMOTIONAL echo (no neat closure)
+- End with HONEST QUESTION (not instruction/sermon)
+- Example questions:
+  ✅ "А вы бы поверили?"
+  ✅ "Ну а правила ли я?"
+  ✅ "Как вы думаете — это есть холодность или правда?"
+
+OUTPUT: Only the text. No title, no metadata.`;
 
     return await this.callGemini({
       prompt,
@@ -413,22 +442,37 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   }
 
   /**
-   * Generate article title: 55-90 chars (Russian only)
+   * ✅ v4.5: Generate article title: 55-90 chars (Russian only)
+   * CONTEXT: Platform optimization in instructions
+   * STORY: Title is standalone, doesn't mention platform
    */
   private async generateTitle(outline: OutlineStructure, lede: string): Promise<string> {
-    const prompt = `Ты редактор Яндекс.Дзен. Создай ОДИН привлекательный заголовок (55-90 символов, РУССКИЙ ЯЗЫК ТОЛЬКО).
+    const prompt = `📄 EDITORIAL CONTEXT (FOR YOU, NOT IN THE STORY):
+Creating title for serialized story on media platform.
+Algorithm favors: Emotional words + Personal perspective + Intrigue.
 
-КОНТЕКСТ:
-- Тема: "${outline.theme}"
-- Начало статьи: ${lede.substring(0, 200)}...
-- Жанр: Исповедь
-- Эмоция: ${outline.emotion}
-- Аудитория: Женщины 35-60 лет
+OBJECTIVE: Title should make reader CLICK and READ (55-90 Russian characters).
 
-ФОРМУЛА ХОРОШЕГО ЗАГОЛОВКА:
-[ЭМОЦИЯ] + [Я/МЫ] + [ДЕЙСТВИЕ] + [ИНТРИГА]
+🎯 TASK: Generate ONE compelling title:
 
-ОТВЕТ: Напиши ТОЛЬКО заголовок (без JSON, без кавычек, без пояснений)`;
+CONTEXT:
+- Theme: "${outline.theme}"
+- Emotion: ${outline.emotion}
+- Audience: Educated women 35-60
+- Opening paragraph: ${lede.substring(0, 200)}...
+
+FORMULA THAT WORKS:
+[EMOTION/PERSONAL] + [I/WE/SOMEONE] + [ACTION/TRUTH] + [INTRIGUE]
+
+EXAMPLES (Russian):
+✅ "Я целые годы лгала семье"
+✅ "День, когда все рушится"
+✅ "От это го деня я не знаю что делать"
+✅ "Это чья-то жентва? Нет. Это моя ошибка."
+
+OUTPUT: ONLY the title text (no JSON, no quotes, no explanation).
+Characters: 55-90
+Language: 100% RUSSIAN, no Latin letters or English`;
 
     try {
       const response = await this.callGemini({
@@ -614,7 +658,7 @@ class ContentAgent {
     outline: EpisodeOutline,
     context: any
   ): Promise<Episode> {
-    const prompt = `Write Episode #${outline.id} for serialized Zen longform:
+    const prompt = `Write Episode #${outline.id} for serialized narrative:
 
 - Question: "${outline.hookQuestion}"
 - External conflict: "${outline.externalConflict}"
