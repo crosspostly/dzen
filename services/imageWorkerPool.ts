@@ -116,12 +116,15 @@ export class ImageWorkerPool {
   /**
    * 🔥 Generate REAL cover image using ImageGeneratorAgent
    * Builds PlotBible context and calls Gemini Image API
+   * 
+   * FIXED v4.2: Use PlotBibleBuilder.buildFromTheme() (static method)
+   * NOT plotBibleBuilder.build() (instance method that doesn't exist)
    */
   private async generateCoverImage(article: Article, lede: string): Promise<CoverImage> {
     try {
-      // Build PlotBible for this article (for image context)
-      const plotBibleBuilder = new PlotBibleBuilder();
-      const plotBible = plotBibleBuilder.build({
+      // 🔥 FIXED: Use STATIC method PlotBibleBuilder.buildFromTheme()
+      // NOT instance method plotBibleBuilder.build()
+      const plotBible = PlotBibleBuilder.buildFromTheme({
         theme: article.metadata.theme,
         angle: article.metadata.angle,
         emotion: article.metadata.emotion,
