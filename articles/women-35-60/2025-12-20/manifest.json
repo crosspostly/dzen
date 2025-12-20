@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766247250374,
+  "generatedAt": 1766250498771,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -13,14 +13,14 @@
     "enablePlotBible": true
   },
   "articleCount": 1,
-  "totalCharacters": 38374,
+  "totalCharacters": 31165,
   "totalImages": 1,
   "outputPaths": {
     "articles": [
-      "articles/women-35-60/2025-12-20/muchitelnyy-styd-20-let-davil-na-menya-i-teper-ya--1766247250373.txt"
+      "articles/women-35-60/2025-12-20/ya-30-let-zhila-s-etim-pozorom-poka-ne-ponyala-cht-1766250498770.txt"
     ],
     "images": [
-      "articles/women-35-60/2025-12-20/muchitelnyy-styd-20-let-davil-na-menya-i-teper-ya--1766247250373.png"
+      "articles/women-35-60/2025-12-20/ya-30-let-zhila-s-etim-pozorom-poka-ne-ponyala-cht-1766250498770-cover.jpg"
     ],
     "report": "articles/women-35-60/2025-12-20/REPORT.md"
   }
