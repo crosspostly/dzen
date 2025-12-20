@@ -3,21 +3,23 @@ import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
 /**
- * 🎬 Episode Generator Service v3.7 (LENGTH FIX)
+ * 🎬 Episode Generator Service v3.8 (DYNAMIC BUDGET)
  * 
- * Generates individual episodes with:
- * - Economic motivation (higher quality = more reader time = more income)
- * - Donna (fast-paced) + Rubina (psychological depth) style
- * - Urban Russian language (NOT village dialect)
- * - Narrative tension and engagement
- * - STRICT LENGTH VALIDATION (max 2500 chars per episode)
+ * Generates episodes with STRICT CHARACTER BUDGETING:
+ * - Total budget: 35000-38500 chars (35K +10%)
+ * - Lede: ~700 chars
+ * - Finale: ~1500 chars
+ * - Remaining divided equally among episodes
+ * - Each episode gets specific char limit in prompt
+ * - NO TRIMMING - just strict limits from the start
  */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
-  private MAX_EPISODE_LENGTH = 2500; // Maximum chars per episode
-  private MIN_EPISODE_LENGTH = 1500; // Minimum chars per episode (too short = retry)
-  private MAX_RETRIES = 3; // Max retry attempts
+  private TOTAL_BUDGET = 38500; // 35000 + 10% (35K + 10% = 38.5K)
+  private LEDE_BUDGET = 700;
+  private FINALE_BUDGET = 1500;
+  private MAX_RETRIES = 3;
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
@@ -26,29 +28,73 @@ export class EpisodeGeneratorService {
   }
 
   /**
-   * 🎯 Generate episodes sequentially with improved prompts
+   * 📊 Calculate budget allocation
+   * 
+   * Total: 35000-38500
+   * - Lede: 700
+   * - Finale: 1500
+   * - Episodes: remaining / episode_count
+   */
+  private calculateBudget(episodeCount: number) {
+    const remainingBudget = this.TOTAL_BUDGET - this.LEDE_BUDGET - this.FINALE_BUDGET;
+    const perEpisodeBudget = Math.floor(remainingBudget / episodeCount);
+    
+    return {
+      total: this.TOTAL_BUDGET,
+      lede: this.LEDE_BUDGET,
+      finale: this.FINALE_BUDGET,
+      perEpisode: perEpisodeBudget,
+      episodeCount: episodeCount,
+      remaining: remainingBudget,
+    };
+  }
+
+  /**
+   * 🎯 Generate episodes sequentially with BUDGET TRACKING
    */
   async generateEpisodesSequentially(
     episodeOutlines: EpisodeOutline[],
     options?: {
       delayBetweenRequests?: number;
-      onProgress?: (current: number, total: number) => void;
+      onProgress?: (current: number, total: number, charCount: number) => void;
     }
   ): Promise<Episode[]> {
     const episodes: Episode[] = [];
     const delay = options?.delayBetweenRequests || 1500;
+    
+    // Calculate budget allocation
+    const budget = this.calculateBudget(episodeOutlines.length);
+    console.log(`\n📊 BUDGET ALLOCATION:`);
+    console.log(`   Total budget: ${budget.total} chars`);
+    console.log(`   Episodes: ${budget.episodeCount} × ${budget.perEpisode} chars each`);
+    console.log(`   Lede: ${budget.lede} | Finale: ${budget.finale}`);
+    console.log(`   (Remaining for episodes: ${budget.remaining} chars)\n`);
+    
+    let charCountSoFar = 0;
 
     for (let i = 0; i < episodeOutlines.length; i++) {
       const outline = episodeOutlines[i];
+      const charsRemaining = budget.total - charCountSoFar - budget.finale;
+      const charsForThisEpisode = Math.floor(charsRemaining / (episodeOutlines.length - i));
       
       console.log(`\n   🎬 Episode #${outline.id} - Starting generation...`);
+      console.log(`      Budget: ${charsForThisEpisode} chars (${charsRemaining} remaining for rest)`);
       
       try {
-        const episode = await this.generateSingleEpisode(outline, episodes);
+        const episode = await this.generateSingleEpisode(
+          outline, 
+          episodes,
+          charsForThisEpisode,  // Pass specific budget to this episode
+          i + 1,
+          episodeOutlines.length
+        );
         episodes.push(episode);
+        charCountSoFar += episode.charCount;
+        
+        console.log(`      ✅ Generated: ${episode.charCount} chars (total so far: ${charCountSoFar})`);
         
         if (options?.onProgress) {
-          options.onProgress(i + 1, episodeOutlines.length);
+          options.onProgress(i + 1, episodeOutlines.length, charCountSoFar);
         }
         
         // Wait before next request
@@ -60,22 +106,32 @@ export class EpisodeGeneratorService {
         throw error;
       }
     }
-
+    
+    console.log(`\n✅ All episodes generated! Total chars: ${charCountSoFar}`);
     return episodes;
   }
 
   /**
-   * 🎨 Generate single episode with context from previous episodes
-   * WITH PROPER RETRY LOGIC AND STRICT LENGTH VALIDATION
+   * 🎨 Generate single episode with SPECIFIC CHAR LIMIT
    */
   private async generateSingleEpisode(
     outline: EpisodeOutline,
     previousEpisodes: Episode[],
+    charLimit: number,
+    episodeNum: number,
+    totalEpisodes: number,
     attempt: number = 1,
     useFallbackModel: boolean = false
   ): Promise<Episode> {
     const previousContext = this.buildContext(previousEpisodes);
-    const prompt = this.buildPrompt(outline, previousContext, attempt);
+    const prompt = this.buildPrompt(
+      outline, 
+      previousContext, 
+      charLimit,  // Pass char limit to prompt
+      episodeNum,
+      totalEpisodes,
+      attempt
+    );
     const model = useFallbackModel ? "gemini-2.5-flash-lite" : "gemini-2.5-flash";
 
     try {
@@ -87,50 +143,66 @@ export class EpisodeGeneratorService {
 
       let content = response.trim();
       
-      // ✅ STRICT LENGTH VALIDATION
+      // ✅ STRICT VALIDATION (no trimming!)
       
       // Check if TOO SHORT
-      if (content.length < this.MIN_EPISODE_LENGTH) {
-        console.log(`   ⚠️  Too short (${content.length}/${this.MIN_EPISODE_LENGTH} chars), attempt ${attempt}/${this.MAX_RETRIES}`);
+      if (content.length < charLimit * 0.8) {
+        console.log(`      ⚠️  Too short (${content.length}/${charLimit} chars), attempt ${attempt}/${this.MAX_RETRIES}`);
         
         if (attempt < this.MAX_RETRIES) {
-          // Retry with expanded prompt
-          console.log(`   🔄 Retrying with expanded prompt...`);
+          console.log(`      🔄 Retrying with expanded prompt...`);
           return this.generateSingleEpisode(
             { ...outline, externalConflict: outline.externalConflict + " (EXPAND THIS SCENE SIGNIFICANTLY)" },
             previousEpisodes,
+            charLimit,
+            episodeNum,
+            totalEpisodes,
             attempt + 1,
             useFallbackModel
           );
         } else if (!useFallbackModel) {
-          // Try fallback model before giving up
-          console.log(`   🔄 Retrying with fallback model (gemini-2.5-flash-lite)...`);
+          console.log(`      🔄 Retrying with fallback model...`);
           return this.generateSingleEpisode(
             outline,
             previousEpisodes,
-            1, // Reset attempt counter for fallback
-            true // Use fallback
+            charLimit,
+            episodeNum,
+            totalEpisodes,
+            1,
+            true
           );
         } else {
-          // Fallback model also produced short content - this is critical
-          console.error(`   ❌ CRITICAL: Episode #${outline.id} too short even with fallback model`);
-          console.error(`   📊 Final length: ${content.length} chars (minimum: ${this.MIN_EPISODE_LENGTH})`);
+          console.error(`      ❌ CRITICAL: Episode #${outline.id} too short even with fallback`);
           throw new Error(
-            `Episode #${outline.id} generation failed: content too short after ${this.MAX_RETRIES} retries and fallback model. ` +
-            `Got ${content.length} chars, need minimum ${this.MIN_EPISODE_LENGTH} chars.`
+            `Episode #${outline.id} generation failed: content too short (${content.length}/${charLimit}).`
           );
         }
       }
       
-      // Check if TOO LONG - trim to max length
-      if (content.length > this.MAX_EPISODE_LENGTH) {
-        console.log(`   ⚠️  Too long (${content.length}/${this.MAX_EPISODE_LENGTH} chars), trimming to limit...`);
-        content = this.trimToLength(content, this.MAX_EPISODE_LENGTH);
-        console.log(`   ✅ Trimmed to: ${content.length} chars`);
+      // Check if TOO LONG - REJECT, don't trim!
+      if (content.length > charLimit * 1.1) {
+        console.log(`      ⚠️  Too long (${content.length}/${charLimit} chars), retrying with stricter limit...`);
+        
+        if (attempt < this.MAX_RETRIES) {
+          return this.generateSingleEpisode(
+            { ...outline, externalConflict: outline.externalConflict.substring(0, Math.max(50, outline.externalConflict.length - 50)) },
+            previousEpisodes,
+            charLimit,
+            episodeNum,
+            totalEpisodes,
+            attempt + 1,
+            useFallbackModel
+          );
+        } else {
+          console.error(`      ❌ Episode #${outline.id} exceeds char limit even after retries`);
+          throw new Error(
+            `Episode #${outline.id} generation failed: content too long (${content.length}/${charLimit}). Tried ${this.MAX_RETRIES} retries.`
+          );
+        }
       }
 
-      // ✅ CONTENT VALIDATION PASSED
-      console.log(`   ✅ Episode ${outline.id}: ${content.length} chars (valid)`);
+      // ✅ VALIDATION PASSED
+      console.log(`      ✅ Episode ${outline.id}: ${content.length} chars (within budget of ${charLimit})`);
 
       // Generate title
       const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
@@ -154,15 +226,17 @@ export class EpisodeGeneratorService {
       };
     } catch (error) {
       const errorMessage = (error as Error).message;
-      console.warn(`   ❌ Generation failed (attempt ${attempt}): ${errorMessage}`);
+      console.warn(`      ❌ Generation failed (attempt ${attempt}): ${errorMessage}`);
       
       if (attempt < this.MAX_RETRIES && (errorMessage.includes('503') || errorMessage.includes('overloaded'))) {
-        console.log(`   🔄 API overloaded, retrying...`);
-        // Wait longer before retry
+        console.log(`      🔄 API overloaded, retrying...`);
         await new Promise(resolve => setTimeout(resolve, 5000));
         return this.generateSingleEpisode(
           outline,
           previousEpisodes,
+          charLimit,
+          episodeNum,
+          totalEpisodes,
           attempt + 1,
           useFallbackModel
         );
@@ -173,117 +247,75 @@ export class EpisodeGeneratorService {
   }
 
   /**
-   * ✂️ Trim text to maximum length while preserving sentence structure
+   * 📝 Build the prompt with SPECIFIC CHAR LIMIT
    */
-  private trimToLength(text: string, maxLength: number): string {
-    if (text.length <= maxLength) return text;
-    
-    // Trim to max length
-    let trimmed = text.substring(0, maxLength);
-    
-    // Find last sentence end (. ! ?)
-    const lastPeriod = Math.max(
-      trimmed.lastIndexOf('.'),
-      trimmed.lastIndexOf('!'),
-      trimmed.lastIndexOf('?')
-    );
-    
-    if (lastPeriod > maxLength * 0.9) {
-      // Use last complete sentence if it's close to the end
-      trimmed = trimmed.substring(0, lastPeriod + 1);
-    }
-    
-    return trimmed.trim();
-  }
-
-  /**
-   * 📝 Build the prompt with all style and economic guidance
-   * Enhanced for retries to explicitly ask for expansion
-   */
-  private buildPrompt(outline: EpisodeOutline, previousContext: string, attempt: number = 1): string {
-    const retryNote = attempt > 1 ? `\n⚠️  RETRY ATTEMPT #${attempt} - The previous version was too short. WRITE MUCH LONGER AND MORE DETAILED. Expand scenes, add more dialogue, more internal thoughts.\n` : '';
+  private buildPrompt(
+    outline: EpisodeOutline, 
+    previousContext: string,
+    charLimit: number,
+    episodeNum: number,
+    totalEpisodes: number,
+    attempt: number = 1
+  ): string {
+    const retryNote = attempt > 1 ? `\n⚠️  RETRY ATTEMPT #${attempt}\n` : '';
+    const minChars = Math.floor(charLimit * 0.8);
+    const maxChars = charLimit;
 
     return `
-🎬 EPISODE #${outline.id} - ZenMaster v3.7
+🎬 EPISODE #${outline.id} of ${totalEpisodes} - ZenMaster v3.8
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 ECONOMIC MOTIVATION (Read Carefully)
+💰 ECONOMIC MOTIVATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-This text will be published on Yandex.Zen (CPM: $5-15 per 1000 views).
+This episode is part of 35K character budget spread across ${totalEpisodes} episodes.
+Your episode: Episode ${episodeNum}/${totalEpisodes}
 
 If this episode:
-✅ GRIPS reader → reads for 3-5 minutes → $1+ per reader
+✅ GRIPS reader → reads full episode → $1+ per reader
 ❌ BORES reader → switches to another → $0.05 per reader
 
 Difference: 20X INCOME!
-
-Your quality directly impacts:
-- Author's payment (+100% for excellent writing)
-- Reader happiness (they share it with friends)
-- Your reputation (best writers get featured)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📚 STYLE GUIDE: Donna + Rubina (NOT village dialect!)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Audience: Russian women 35-60 from cities (Moscow, SPB, Yekaterinburg, etc.)
+Audience: Russian women 35-60 from cities
 
 ✅ LOVE: Donna Latenko (captivating, page-turner) + Rubina (psychological depth)
-❌ HATE: Village dialect ("дыбать", "шарить", "пялиться") - this is OFFENSIVE
-❌ HATE: Dry explanation of feelings ("я почувствовала грусть") - this is BORING
+❌ HATE: Village dialect ("дыбать", "шарить") - OFFENSIVE
+❌ HATE: Dry feelings ("я почувствовала грусть") - BORING
 
-TONE: Educated, urban Russian woman confessing to a friend at a kitchen table
+TONE: Educated urban woman confessing to friend at kitchen table
 - "Я же тебе скажу" (conversational)
-- "Честное слово" (sincere)
-- "Вот тогда и началось" (natural turning point)
-- "Может быть, я ошиблась" (doubt, reflection)
+- "Вот тогда и началось" (turning point)
+- "Может быть, я ошиблась" (doubt)
 
 STRUCTURE:
 ┌─────────────────────────────────────────────┐
 │ PACE 1: FAST (Donna) - Hook, tension        │
-│ ├─ Short sentences                          │
-│ ├─ Action, dialogue                         │
-│ └─ Grabs attention (2-3 paragraphs)         │
-│                                             │
 │ PACE 2: DEEP (Rubina) - Psychology         │
-│ ├─ Long sentences, internal monologue      │
-│ ├─ Details, sensory, emotion               │
-│ └─ Holds attention (3-4 paragraphs)        │
-│                                             │
 │ PACE 3: FAST (Donna) - Confrontation       │
-│ ├─ Dialogue, action, movement              │
-│ └─ Climax (2-3 paragraphs)                 │
-│                                             │
 │ PACE 4: DEEP (Rubina) - Reflection         │
-│ ├─ What does this mean?                    │
-│ ├─ Uncertainty, open question              │
-│ └─ Provocation for comments (1-2 para)    │
 └─────────────────────────────────────────────┘
 
-EMOTION: Show through ACTION, not EXPLANATION
+EMOTION: Show through ACTION
+✅ "Её голос дрожал. Я смотрела на стекло кабинета."
 ❌ "Я почувствовала страх и замёрзла"
-✅ "Её голос дрожал. Я смотрела на стекло кабинета, и мое отражение выглядело как чужое."
 
 DETAILS: Urban, modern (NOT village!)
-✅ Phone notification at 3 AM
-✅ Letter in envelope, hidden under book
-✅ Cold tea in a cup with "Mom" written on it
-✅ Mirror in the hallway where she sees her reflection
-❌ "Скрип половицы" (village!)
-❌ "Дешёвый табак" (outdated!)
-❌ "Советский сервант" (cliché!)
+✅ Phone at 3 AM, letter in envelope, cold tea
+❌ "Скрип половицы", "дешёвый табак"
 
 DIALOGUE: Realistic
-- Use em-dash: — Ты не понимаешь, — сказала я.
-- Include interruptions and unfinished thoughts
-- Mix inner thoughts with speech
-- Natural Russian (не "сказал", а "сказала" для женского голоса)
+- Em-dash: — Ты не понимаешь, — сказала я.
+- Include interruptions
+- Natural Russian
 
 PROVOCATION (Last paragraph):
-- END with QUESTION or UNCERTAINTY
-- Goal: readers argue in comments (comments = algorithm reward)
-- Example: "А вы как считаете? Я перегнула палку?"
+- END with QUESTION
+- Example: "А вы как считаете?"
 ${retryNote}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📖 EPISODE OUTLINE
@@ -300,18 +332,25 @@ Turning Point: ${outline.keyTurning}
 Open Loop (Why reader continues): "${outline.openLoop}"
 
 ${previousContext ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📚 PREVIOUS EPISODE CONTEXT (Last 800 chars - to maintain continuity)
+📚 PREVIOUS EPISODE CONTEXT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${previousContext}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 STRICT REQUIREMENTS
+📋 STRICT CHARACTER BUDGET REQUIREMENT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✅ Length: MAXIMUM 2500 characters (optimal for reader engagement: 3-5 min read time)
-✅ Minimum: 1500 characters (if less, will be rejected and regenerated)
-✅ Language: Russian only, urban educated tone (NOT village dialect!)
+🔴 CRITICAL: This episode has a FIXED CHARACTER BUDGET!
+
+✅ Target length: ${minChars}-${maxChars} characters (with spaces)
+✅ MINIMUM: ${minChars} chars (if less, will be REJECTED and regenerated)
+✅ MAXIMUM: ${maxChars} chars (if more, will be REJECTED and regenerated)
+
+⚠️  NO TRIMMING! If you exceed budget, episode fails and regenerates.
+⚠️  Better to write ${minChars}-${maxChars} of high quality than exceed limit!
+
+✅ Length: Russian only, urban educated tone (NOT village dialect!)
 ✅ Style: Mix Donna fast-paced with Rubina psychological depth
 ✅ Dialogue: Realistic with pauses and interruptions
 ✅ Emotions: Shown through action/detail, NOT explained
@@ -319,15 +358,11 @@ ${previousContext}` : ''}
 ✅ End: Provocation (question that makes reader want to comment)
 ✅ Structure: Fast → Deep → Fast → Deep pacing
 
-⚠️  IMPORTANT: Do NOT exceed 2500 characters!
-If your text is longer, system will trim it.
-Better to write 1500-2500 chars of high quality than 5000 chars of padding.
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Output ONLY the episode text. No titles, no metadata, no explanations.
-Make this count. People's happiness depends on the quality of this writing.
-REMEMBER: 1500-2500 characters is IDEAL. Do not exceed 2500!
+REMEMBER: ${minChars}-${maxChars} characters EXACTLY.
+Make this count. People's happiness depends on this!
 `;
   }
 
