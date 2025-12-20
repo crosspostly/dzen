@@ -107,7 +107,10 @@ class TestImageGenerator {
 
       // STEP 5: Canvas post-processing
       console.log(`🎬 STEP 5: Canvas post-processing...`);
-      const processorResult = await this.imageProcessor.processImage(generatedImage.base64);
+      
+      // 🔥 FIX: Convert to proper data URL format before processing
+      const dataUrl = `data:${generatedImage.mimeType};base64,${generatedImage.base64}`;
+      const processorResult = await this.imageProcessor.processImage(dataUrl);
 
       // Check Canvas result
       let finalBuffer: Buffer | undefined;
