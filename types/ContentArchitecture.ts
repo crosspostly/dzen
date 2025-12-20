@@ -56,6 +56,39 @@ export interface OutlineStructure {
     };
   };
   forbiddenClichés: string[];
+  
+  // 🎭 PLOT BIBLE - Generated in Stage 0 by Gemini
+  plotBible?: {
+    narrator: {
+      age: number;
+      gender: "male" | "female";
+      tone: string;
+      voiceHabits: {
+        apologyPattern: string;
+        doubtPattern: string;
+        memoryTrigger: string;
+        angerPattern: string;
+      };
+    };
+    sensoryPalette: {
+      details: string[];
+      smells: string[];
+      sounds: string[];
+      textures: string[];
+      lightSources: string[];
+    };
+    characterMap: {
+      [name: string]: {
+        role: string;
+        arc: string;
+      };
+    };
+    thematicCore: {
+      centralQuestion: string;
+      emotionalArc: string;
+      resolutionStyle: string;
+    };
+  };
 }
 
 export interface VoicePassport {
