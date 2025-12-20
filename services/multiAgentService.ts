@@ -115,18 +115,17 @@ export class MultiAgentService {
   }
 
   /**
-   * IMPROVED: Strip markdown code blocks and handle malformed JSON
-   * Fixes issues with truncated or badly formatted API responses
+   * ULTRA-ROBUST: Parse JSON from API response with multiple fallback strategies
+   * Handles: markdown, unicode errors, truncation, malformed JSON
    */
   private stripMarkdownJson(text: string): string {
-    // Step 1: Remove markdown code block markers
+    // Strategy 1: Basic cleanup - remove markdown and find JSON boundaries
     let cleaned = text
       .replace(/^```(?:json)?\s*\n?/g, '') // Remove opening ```json
       .replace(/\n?```\s*$/g, '')           // Remove closing ```
       .trim();
 
-    // Step 2: Find the actual JSON object boundaries
-    // Look for the first { and last }
+    // Strategy 2: Find actual JSON boundaries (first { and last })
     const firstBrace = cleaned.indexOf('{');
     const lastBrace = cleaned.lastIndexOf('}');
     
@@ -137,20 +136,115 @@ export class MultiAgentService {
     // Extract only the JSON part
     cleaned = cleaned.substring(firstBrace, lastBrace + 1);
 
-    // Step 3: Fix common issues with malformed JSON
-    // Remove control characters and fix broken unicode
+    // Strategy 3: Aggressive cleanup
     cleaned = cleaned
-      .replace(/[\x00-\x1F\x7F]/g, ' ') // Remove control characters
-      .replace(/,\s*}/g, '}')           // Remove trailing commas before }
-      .replace(/,\s*]/g, ']')           // Remove trailing commas before ]
-      .replace(/'/g, '"')               // Replace single quotes with double quotes
-      .replace(/\\\//g, '/')           // Fix escaped slashes
-      .replace(/([^\\])"([^"]*):([^"]*?)"([^"]*)/g, '$1"$2": $3"$4') // Fix malformed key-value pairs
-      .replace(/\n/g, ' ')              // Replace newlines with spaces
-      .replace(/\s+/g, ' ')             // Collapse multiple spaces
+      // Remove all control characters and null bytes
+      .replace(/[\x00-\x1F\x7F]/g, ' ')
+      // Fix common unicode issues
+      .replace(/\\u0([0-7])([0-9a-f]{2})/gi, '\\u000$1$2') // Fix broken unicode
+      // Remove invalid trailing content
+      .replace(/}[^}]*$/g, '}')  // Remove anything after final }
+      .replace(/]\s*[^]\]]*$/g, ']') // Remove anything after final ]
+      // Clean up quotes and delimiters
+      .replace(/,\s*([}\]])/g, '$1')  // Remove trailing commas
+      .replace(/([{,]\s*)'([^']*)'/g, '$1"$2"') // Single to double quotes
+      // Collapse whitespace
+      .replace(/\n/g, ' ')
+      .replace(/\t/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
 
-    return cleaned;
+    // Strategy 4: Try to fix common syntax errors
+    try {
+      // First, try strict parse
+      return cleaned;
+    } catch (e) {
+      // If that fails, try more aggressive fixes
+      cleaned = cleaned
+        .replace(/"([^"]*?)"\s*:\s*"?([^"]*?)"?([,}])/g, '"$1": "$2"$3') // Ensure value quotes
+        .replace(/"/g, '"') // Normalize all quotes
+        .replace(/''/g, '""'); // Double single quotes to double quotes
+      return cleaned;
+    }
+  }
+
+  /**
+   * Attempt to parse JSON with retry and fallback
+   */
+  private parseJsonSafely(jsonString: string, context: string = 'JSON'): any {
+    const attempts = [
+      // Attempt 1: Direct parse
+      () => JSON.parse(jsonString),
+      // Attempt 2: Try to strip and re-parse
+      () => {
+        const stripped = this.stripMarkdownJson(jsonString);
+        return JSON.parse(stripped);
+      },
+      // Attempt 3: Try to extract JSON array if object fails
+      () => {
+        const arrayMatch = jsonString.match(/\[.*\]/s);
+        if (arrayMatch) {
+          return JSON.parse(arrayMatch[0]);
+        }
+        throw new Error('No JSON array found');
+      },
+      // Attempt 4: Try to extract first valid JSON object
+      () => {
+        let braceCount = 0;
+        let bracketCount = 0;
+        let start = -1;
+        
+        for (let i = 0; i < jsonString.length; i++) {
+          const char = jsonString[i];
+          
+          if (char === '{') {
+            if (braceCount === 0 && bracketCount === 0) start = i;
+            braceCount++;
+          } else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0 && bracketCount === 0 && start !== -1) {
+              const obj = jsonString.substring(start, i + 1);
+              return JSON.parse(obj);
+            }
+          } else if (char === '[') {
+            if (braceCount === 0 && bracketCount === 0) start = i;
+            bracketCount++;
+          } else if (char === ']') {
+            bracketCount--;
+            if (bracketCount === 0 && braceCount === 0 && start !== -1) {
+              const arr = jsonString.substring(start, i + 1);
+              return JSON.parse(arr);
+            }
+          }
+        }
+        throw new Error('No complete JSON structure found');
+      },
+    ];
+
+    let lastError: Error | null = null;
+    
+    for (let i = 0; i < attempts.length; i++) {
+      try {
+        const result = attempts[i]();
+        if (i > 0) {
+          console.log(`⚠️  ${context} parsing: Attempt ${i + 1} succeeded`);
+        }
+        return result;
+      } catch (e) {
+        lastError = e as Error;
+        console.warn(`⚠️  ${context} parsing attempt ${i + 1} failed: ${(e as Error).message}`);
+        continue;
+      }
+    }
+
+    // If all attempts fail, provide detailed error info
+    console.error(`\n❌ CRITICAL: Failed to parse ${context}`);
+    console.error(`Response length: ${jsonString.length}`);
+    console.error(`First 300 chars: ${jsonString.substring(0, 300)}`);
+    console.error(`Last 300 chars: ${jsonString.substring(Math.max(0, jsonString.length - 300))}`);
+    console.error(`Last error: ${lastError?.message}\n`);
+    
+    throw new Error(`Failed to parse ${context} after ${attempts.length} attempts: ${lastError?.message}`);
   }
 
   /**
@@ -209,16 +303,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
       temperature: 0.85,
     });
 
-    try {
-      const cleanedJson = this.stripMarkdownJson(response);
-      const parsed = JSON.parse(cleanedJson);
-      return parsed as OutlineStructure;
-    } catch (e) {
-      console.error("Outline parse failed:", e);
-      console.error("Raw response length:", response.length);
-      console.error("First 500 chars:", response.substring(0, 500));
-      throw new Error(`Failed to parse outline: ${(e as Error).message}`);
-    }
+    return this.parseJsonSafely(response, 'Outline') as OutlineStructure;
   }
 
   /**
@@ -315,8 +400,8 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 
       let title = response
         ?.trim()
-        .replace(/^\s*["'\'`]+/, "")
-        .replace(/["'\'`]+\s*$/, "")
+        .replace(/^\s*["'\`]+/, "")
+        .replace(/["'\`]+\s*$/, "")
         .replace(/\.$/, "")
         .replace(/\s+/g, " ")
         .substring(0, 100);
@@ -364,9 +449,9 @@ Respond as JSON:
         model: "gemini-2.5-flash",
         temperature: 0.8,
       });
-      const cleanedJson = this.stripMarkdownJson(response);
-      return JSON.parse(cleanedJson) as VoicePassport;
-    } catch {
+      return this.parseJsonSafely(response, 'VoicePassport') as VoicePassport;
+    } catch (error) {
+      console.warn(`Voice passport parsing failed, using fallback:`, (error as Error).message);
       return {
         apologyPattern: "I know this sounds strange, but...",
         doubtPattern: "But then I realized...",
