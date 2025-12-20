@@ -153,136 +153,61 @@ export class MultiAgentService {
   }
 
   /**
-   * ULTRA-ROBUST: Parse JSON from API response with multiple fallback strategies
-   * Handles: markdown, unicode errors, truncation, malformed JSON
+   * ROBUST: Parse JSON with minimal assumptions
+   * Goal: Extract valid JSON from malformed API responses
    */
-  private stripMarkdownJson(text: string): string {
-    // Strategy 1: Basic cleanup - remove markdown and find JSON boundaries
-    let cleaned = text
-      .replace(/^```(?:json)?\s*\n?/g, '') // Remove opening ```json
-      .replace(/\n?```\s*$/g, '')           // Remove closing ```
+  private parseJsonSafely(jsonString: string, context: string = 'JSON'): any {
+    // Step 1: Remove markdown code fences
+    let cleaned = jsonString
+      .replace(/^```(?:json)?\s*\n?/g, '')
+      .replace(/\n?```\s*$/g, '')
       .trim();
 
-    // Strategy 2: Find actual JSON boundaries (first { and last })
+    // Step 2: Find JSON boundaries (first { and last })
     const firstBrace = cleaned.indexOf('{');
     const lastBrace = cleaned.lastIndexOf('}');
     
-    if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
-      throw new Error('No valid JSON object found in response');
+    if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
     }
 
-    // Extract only the JSON part
-    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-
-    // Strategy 3: Aggressive cleanup
-    cleaned = cleaned
-      // Remove all control characters and null bytes
-      .replace(/[\x00-\x1F\x7F]/g, ' ')
-      // Fix common unicode issues
-      .replace(/\\u0([0-7])([0-9a-f]{2})/gi, '\\u000$1$2') // Fix broken unicode
-      // Remove invalid trailing content
-      .replace(/}[^}]*$/g, '}')  // Remove anything after final }
-      .replace(/]\s*[^]\]]*$/g, ']') // Remove anything after final ]
-      // Clean up quotes and delimiters
-      .replace(/,\s*([}\]])/g, '$1')  // Remove trailing commas
-      .replace(/([{,]\s*)'([^']*)'/g, '$1"$2"') // Single to double quotes
-      // Collapse whitespace
-      .replace(/\n/g, ' ')
-      .replace(/\t/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    // Strategy 4: Try to fix common syntax errors
+    // Step 3: Try to parse as-is
     try {
-      // First, try strict parse
-      return cleaned;
+      return JSON.parse(cleaned);
     } catch (e) {
-      // If that fails, try more aggressive fixes
-      cleaned = cleaned
-        .replace(/"([^"]*?)"\s*:\s*"?([^"]*?)"?([,}])/g, '"$1": "$2"$3') // Ensure value quotes
-        .replace(/"/g, '"') // Normalize all quotes
-        .replace(/''/g, '""'); // Double single quotes to double quotes
-      return cleaned;
-    }
-  }
+      // Step 4: Fix common issues
+      let fixed = cleaned;
 
-  /**
-   * Attempt to parse JSON with retry and fallback
-   */
-  private parseJsonSafely(jsonString: string, context: string = 'JSON'): any {
-    const attempts = [
-      // Attempt 1: Direct parse
-      () => JSON.parse(jsonString),
-      // Attempt 2: Try to strip and re-parse
-      () => {
-        const stripped = this.stripMarkdownJson(jsonString);
-        return JSON.parse(stripped);
-      },
-      // Attempt 3: Try to extract JSON array if object fails
-      () => {
-        const arrayMatch = jsonString.match(/\[.*\]/s);
-        if (arrayMatch) {
-          return JSON.parse(arrayMatch[0]);
-        }
-        throw new Error('No JSON array found');
-      },
-      // Attempt 4: Try to extract first valid JSON object
-      () => {
-        let braceCount = 0;
-        let bracketCount = 0;
-        let start = -1;
-        
-        for (let i = 0; i < jsonString.length; i++) {
-          const char = jsonString[i];
-          
-          if (char === '{') {
-            if (braceCount === 0 && bracketCount === 0) start = i;
-            braceCount++;
-          } else if (char === '}') {
-            braceCount--;
-            if (braceCount === 0 && bracketCount === 0 && start !== -1) {
-              const obj = jsonString.substring(start, i + 1);
-              return JSON.parse(obj);
-            }
-          } else if (char === '[') {
-            if (braceCount === 0 && bracketCount === 0) start = i;
-            bracketCount++;
-          } else if (char === ']') {
-            bracketCount--;
-            if (bracketCount === 0 && braceCount === 0 && start !== -1) {
-              const arr = jsonString.substring(start, i + 1);
-              return JSON.parse(arr);
-            }
-          }
-        }
-        throw new Error('No complete JSON structure found');
-      },
-    ];
+      // Remove trailing commas before } or ]
+      fixed = fixed.replace(/,\s*([}\]])/g, '$1');
 
-    let lastError: Error | null = null;
-    
-    for (let i = 0; i < attempts.length; i++) {
+      // Try again
       try {
-        const result = attempts[i]();
-        if (i > 0) {
-          console.log(`⚠️  ${context} parsing: Attempt ${i + 1} succeeded`);
+        return JSON.parse(fixed);
+      } catch (e2) {
+        // Step 5: Last resort - try to extract just the first valid object
+        try {
+          const objMatch = cleaned.match(/\{[\s\S]*\}/);
+          if (objMatch) {
+            let obj = objMatch[0];
+            // Remove trailing commas
+            obj = obj.replace(/,\s*([}\]])/g, '$1');
+            return JSON.parse(obj);
+          }
+        } catch (e3) {
+          // Nothing worked
         }
-        return result;
-      } catch (e) {
-        lastError = e as Error;
-        console.warn(`⚠️  ${context} parsing attempt ${i + 1} failed: ${(e as Error).message}`);
-        continue;
+
+        // All attempts failed
+        console.error(`\n❌ CRITICAL: Failed to parse ${context}`);
+        console.error(`Response length: ${jsonString.length}`);
+        console.error(`First 300 chars: ${jsonString.substring(0, 300)}`);
+        console.error(`Last 300 chars: ${jsonString.substring(Math.max(0, jsonString.length - 300))}`);
+        console.error(`Last error: ${(e2 as Error).message}\n`);
+        
+        throw new Error(`Failed to parse ${context}: ${(e2 as Error).message}`);
       }
     }
-
-    // If all attempts fail, provide detailed error info
-    console.error(`\n❌ CRITICAL: Failed to parse ${context}`);
-    console.error(`Response length: ${jsonString.length}`);
-    console.error(`First 300 chars: ${jsonString.substring(0, 300)}`);
-    console.error(`Last 300 chars: ${jsonString.substring(Math.max(0, jsonString.length - 300))}`);
-    console.error(`Last error: ${lastError?.message}\n`);
-    
-    throw new Error(`Failed to parse ${context} after ${attempts.length} attempts: ${lastError?.message}`);
   }
 
   /**
@@ -318,6 +243,7 @@ REQUIREMENTS:
 9. Generate THEMATIC CORE (central question, emotional arc, resolution style)
 
 RESPOND WITH ONLY VALID JSON (no markdown, no comments):
+\`\`\`json
 {
   "theme": "${params.theme}",
   "angle": "${params.angle}",
@@ -346,7 +272,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   
   "characterMap": {
     "Narrator": { "role": "protagonist", "arc": "internal realization" },
-    "Mother-in-law": { "role": "catalyst", "arc": "wisdom giver" }
+    "Character2": { "role": "catalyst", "arc": "wisdom giver" }
   },
   
   "thematicCore": {
@@ -364,13 +290,113 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
       "internalConflict": "...",
       "keyTurning": "...",
       "openLoop": "..."
+    },
+    {
+      "id": 2,
+      "title": "Часть 2: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 3,
+      "title": "Часть 3: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 4,
+      "title": "Часть 4: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 5,
+      "title": "Часть 5: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 6,
+      "title": "Часть 6: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 7,
+      "title": "Часть 7: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 8,
+      "title": "Часть 8: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 9,
+      "title": "Часть 9: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 10,
+      "title": "Часть 10: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 11,
+      "title": "Часть 11: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
+    },
+    {
+      "id": 12,
+      "title": "Часть 12: ...",
+      "hookQuestion": "...",
+      "externalConflict": "...",
+      "internalConflict": "...",
+      "keyTurning": "...",
+      "openLoop": "..."
     }
   ],
   
   "externalTensionArc": "...",
   "internalEmotionArc": "...",
   "forbiddenClichés": []
-}`;
+}
+\`\`\``;
 
     const response = await this.callGemini({
       prompt,
@@ -403,12 +429,12 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   /**
    * Generate opening (lede): 600-900 chars
    */
-  private async generateLede(outline: OutlineStructure): Promise<string> {
+  async generateLede(outline: OutlineStructure): Promise<string> {
     const firstEpisode = outline.episodes[0];
     
     const prompt = `Напиши вводную часть (LEDE) для статьи Яндекс.Дзен: 600-900 символов, ТОЛЬКО РУССКИЙ язык.
 
-ТРЕБОВАНИЯ:
+Требования:
 - Начни с ПАРАДОКСА или ИНТРИГИ (не с объяснений)
 - Крючок: "${firstEpisode.hookQuestion}"
 - Тон: личный, исповедальный, как разговор на кухне
@@ -426,10 +452,10 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   /**
    * Generate closing (finale): 1200-1800 chars
    */
-  private async generateFinale(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
+  async generateFinale(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
     const prompt = `Напиши финал (FINALE) для статьи Яндекс.Дзен: 1200-1800 символов, ТОЛЬКО РУССКИЙ язык.
 
-ТРЕБОВАНИЯ:
+Требования:
 - Разреши внешний конфликт (справедливость / триумф / горькая правда)
 - Оставь эмоциональный след (без приторного хэппи-энда)
 - Заверши честным вопросом к читателям (без наставлений)
@@ -506,6 +532,7 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 7 natural, repeating speech habits (NOT stereotypes):
 
 Respond as JSON:
+\`\`\`json
 {
   "apologyPattern": "How author justifies (e.g, 'I know it sounds...')",
   "doubtPattern": "How they express uncertainty",
@@ -516,7 +543,8 @@ Respond as JSON:
   "angerPattern": "How they express anger (not screaming)",
   "paragraphEndings": ["question", "pause", "short_phrase"],
   "examples": ["example1", "example2"]
-}`;
+}
+\`\`\``;
 
     try {
       const response = await this.callGemini({
