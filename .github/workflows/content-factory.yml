@@ -44,6 +44,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - uses: actions/setup-node@v4
         with:
@@ -58,14 +60,14 @@ jobs:
           CHANNEL="${{ inputs.channel }}"
           IMAGES="${{ inputs.images }}"
           
-          echo "====================================================="
+          echo "=====================================================""
           echo "Content Factory - Batch Generation"
-          echo "====================================================="
+          echo "=====================================================""
           echo "Articles:      $COUNT"
           echo "Topic:         $CHANNEL"
           echo "Images:        $IMAGES"
           echo "Output:        articles/$CHANNEL/$(date +%Y-%m-%d)/"
-          echo "====================================================="
+          echo "=====================================================""
           echo ""
           
           CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
@@ -90,10 +92,10 @@ jobs:
           
           echo ""
           echo "Generation Summary:"
-          echo "====================================================="
+          echo "=====================================================""
           echo "Articles generated: $ARTICLE_COUNT"
           echo "Images generated:   $IMAGE_COUNT (JPEG + PNG)"
-          echo "====================================================="
+          echo "=====================================================""
           echo ""
       
       - name: Upload artifacts
@@ -107,14 +109,28 @@ jobs:
       
       - name: Commit and push
         if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --local user.email "zenmaster-bot@github.com"
-          git config --local user.name "ZenMaster Bot"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           
           git add articles/ 2>/dev/null || true
           
           ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
           IMAGE_COUNT=$(find ./articles -name "*.jpg" -o -name "*.png" 2>/dev/null | wc -l)
           
-          git commit -m "Dzen: ${{ inputs.count }} articles (${{ inputs.channel }}) - $IMAGE_COUNT images (run ${{ github.run_id }})" || echo "No changes"
-          git push origin HEAD:main || echo "Push failed"
+          if [[ $ARTICLE_COUNT -gt 0 ]]; then
+            echo "📖 $ARTICLE_COUNT articles generated, committing..."
+            git commit -m "Dzen: ${{ inputs.count }} articles (${{ inputs.channel }}) - $IMAGE_COUNT images (run ${{ github.run_id }})" || echo "No changes to commit"
+            
+            # Pull latest changes with rebase
+            echo "🔄 Pulling latest changes..."
+            git pull --rebase origin main || echo "Pull failed"
+            
+            # Push to main
+            git push origin HEAD:main
+            echo "✅ Articles pushed to repository!"
+          else
+            echo "⚠️  No articles generated"
+          fi
