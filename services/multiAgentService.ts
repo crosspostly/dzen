@@ -146,10 +146,17 @@ export class MultiAgentService {
    * 🎭 EXTRACT & VALIDATE plotBible from outline
    */
   private extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
+    // Check if ALL required fields exist in plotBible
     if (outline.plotBible && 
         outline.plotBible.narrator && 
+        outline.plotBible.narrator.age &&
+        outline.plotBible.narrator.gender &&
+        outline.plotBible.narrator.tone &&
         outline.plotBible.sensoryPalette && 
-        outline.plotBible.thematicCore) {
+        outline.plotBible.sensoryPalette.details &&
+        outline.plotBible.sensoryPalette.details.length > 0 &&
+        outline.plotBible.thematicCore &&
+        outline.plotBible.thematicCore.centralQuestion) {
       console.log("✅ Using plotBible from Gemini generation");
       return outline.plotBible;
     }
@@ -241,7 +248,8 @@ export class MultiAgentService {
   }
 
   /**
-   * Stage 0: Generate outline structure with dynamic episodes
+   * 🔧 v4.5 FIX: Generate outline structure with MANDATORY plotBible
+   * Make all fields required in prompt to force Gemini to generate them
    */
   private async generateOutline(params: {
     theme: string;
@@ -265,30 +273,29 @@ export class MultiAgentService {
       "openLoop": "..."
     }`).join(',');
 
-    const prompt = `You are a story architect for serialized longform articles on media platforms.
+    const prompt = `🎭 STORY ARCHITECT - GENERATE COMPLETE OUTLINE WITH PLOTBIBLE
 
-TASK: Build ${episodeCount}-episode structure for a 29K-character serialized narrative.
-INCLUDING: Complete plotBible data (narrator, sensoryPalette, character map, thematic core).
+TASK: Create ${episodeCount}-episode narrative structure (29K chars total).
+MUSTGENERATE: EVERY field must be filled.
 
 INPUT:
 - Theme: "${params.theme}"
-- Angle: ${params.angle} (confession/scandal/observer)
-- Emotion: ${params.emotion} (guilt/shame/triumph/anger/relief)
+- Angle: ${params.angle}
+- Emotion: ${params.emotion}
 - Audience: ${params.audience}
 
-REQUIREMENTS:
-0. All text fields MUST be in Russian (no English)
-1. Each episode: hook question + external conflict + internal conflict + turning point + open loop
-2. Episodes 1-${Math.ceil(episodeCount / 3)}: Escalating tension
-3. Episodes ${Math.ceil(episodeCount / 3) + 1}-${Math.ceil(2 * episodeCount / 3)}: Deepening conflict
-4. Episodes ${Math.ceil(2 * episodeCount / 3) + 1}-${episodeCount}: Climax & resolution
-5. No cheap happy endings, no stereotypes
-6. Generate NARRATOR profile based on audience and theme
-7. Generate SENSORY PALETTE (smells, sounds, textures, light sources) that matches theme
-8. Generate CHARACTER MAP from narrative
-9. Generate THEMATIC CORE (central question, emotional arc, resolution style)
+🔧 CRITICAL REQUIREMENT:
+Gemini, you MUST generate COMPLETE plotBible with:
+1. narrator (age, gender, tone, voiceHabits with ALL 4 patterns)
+2. sensoryPalette (details [5+ items], smells [3+], sounds [3+], textures [3+], lightSources [3+])
+3. characterMap (Narrator + 2-3 other characters)
+4. thematicCore (centralQuestion, emotionalArc, resolutionStyle)
 
-RESPOND WITH ONLY VALID JSON (no markdown, no comments):
+❌ DO NOT skip or leave empty fields!
+❌ ALL text in RUSSIAN ONLY
+❌ Each field must be specific to this theme
+
+RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
 \`\`\`json
 {
   "theme": "${params.theme}",
@@ -297,42 +304,52 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   "audience": "${params.audience}",
   
   "narrator": {
-    "age": 45,
-    "gender": "female",
-    "tone": "confessional",
+    "age": [NUMBER 25-70],
+    "gender": "female" or "male",
+    "tone": "[confessional/bitter/ironic/desperate]",
     "voiceHabits": {
-      "apologyPattern": "...",
-      "doubtPattern": "...",
-      "memoryTrigger": "...",
-      "angerPattern": "..."
+      "apologyPattern": "[specific Russian phrase]",
+      "doubtPattern": "[specific Russian phrase]",
+      "memoryTrigger": "[specific Russian phrase]",
+      "angerPattern": "[specific Russian phrase]"
     }
   },
   
   "sensoryPalette": {
-    "details": ["domestic", "intimate", "complex"],
-    "smells": ["coffee", "old books", "fabric"],
-    "sounds": ["silence", "breathing", "clock ticking"],
-    "textures": ["soft", "worn", "familiar"],
-    "lightSources": ["window light", "lamp", "dawn"]
+    "details": ["detail1", "detail2", "detail3", "detail4", "detail5"],
+    "smells": ["smell1", "smell2", "smell3"],
+    "sounds": ["sound1", "sound2", "sound3"],
+    "textures": ["texture1", "texture2", "texture3"],
+    "lightSources": ["light1", "light2", "light3"]
   },
   
   "characterMap": {
-    "Narrator": { "role": "protagonist", "arc": "internal realization" },
-    "Character2": { "role": "catalyst", "arc": "wisdom giver" }
+    "Narrator": {
+      "role": "protagonist",
+      "arc": "[internal journey]"
+    },
+    "[Character2]": {
+      "role": "[catalyst/antagonist/witness]",
+      "arc": "[their arc]"
+    },
+    "[Character3]": {
+      "role": "[role]",
+      "arc": "[arc]"
+    }
   },
   
   "thematicCore": {
-    "centralQuestion": "...",
+    "centralQuestion": "[The core emotional question]",
     "emotionalArc": "${params.emotion}",
-    "resolutionStyle": "bittersweet, uncertain"
+    "resolutionStyle": "[bittersweet/uncertain/realistic/cathartic]"
   },
   
   "episodes": [${episodeJson}
   ],
   
-  "externalTensionArc": "...",
-  "internalEmotionArc": "...",
-  "forbiddenCliches": []
+  "externalTensionArc": "[What actually happens in the story]",
+  "internalEmotionArc": "[What shifts internally for narrator]",
+  "forbiddenCliches": ["[avoid these", "cheap tropes", "predictable endings"]
 }
 \`\`\``;
 
