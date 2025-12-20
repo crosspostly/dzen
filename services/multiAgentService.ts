@@ -8,6 +8,7 @@ import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePasspo
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { imageGeneratorAgent } from "./imageGeneratorAgent";
+import { PlotBible } from "../types/PlotBible";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -62,6 +63,15 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
+    // 🎭 BUILD PLOT BIBLE from all the data we have
+    const plotBible = this.buildPlotBible({
+      theme: params.theme,
+      outline,
+      voicePassport,
+      emotion: params.emotion,
+      audience: params.audience,
+    });
+    
     // 🖼️ Generate cover image if requested
     let coverImageBuffer: Buffer | undefined;
     if (params.includeImages) {
@@ -72,6 +82,7 @@ export class MultiAgentService {
           ledeText: lede,
           theme: params.theme,
           emotion: params.emotion,
+          plotBible, // ✅ NOW WE PASS plotBible!
         });
         if (coverImageBuffer) {
           console.log(`✅ Cover image generated (${coverImageBuffer.length} bytes)`);
@@ -115,6 +126,107 @@ export class MultiAgentService {
   }
 
   /**
+   * 🎭 BUILD PLOT BIBLE from all available data
+   * This is used for image generation and other purposes
+   */
+  private buildPlotBible(params: {
+    theme: string;
+    outline: OutlineStructure;
+    voicePassport: VoicePassport;
+    emotion: string;
+    audience: string;
+  }): PlotBible {
+    const { theme, outline, voicePassport, emotion, audience } = params;
+
+    // Extract narrator age from audience (e.g., "Women 35-60" -> age 45)
+    const ageMatch = audience.match(/(\d+)-(\d+)/);
+    const age = ageMatch ? Math.round((parseInt(ageMatch[1]) + parseInt(ageMatch[2])) / 2) : 40;
+
+    return {
+      narrator: {
+        age,
+        gender: audience.toLowerCase().includes('woman') || audience.toLowerCase().includes('women') ? 'female' : 'male',
+        tone: voicePassport.humorStyle || 'confessional',
+        voiceHabits: {
+          apologyPattern: voicePassport.apologyPattern,
+          doubtPattern: voicePassport.doubtPattern,
+          memoryTrigger: voicePassport.memoryTrigger,
+          angerPattern: voicePassport.angerPattern,
+        }
+      },
+      sensoryPalette: {
+        details: [
+          // Extract from theme
+          ...this.extractSensoryDetails(theme),
+          // Add emotional context
+          emotion === 'relief' ? 'light, hopeful' : emotion === 'guilt' ? 'heavy, burdened' : 'complex, layered',
+        ],
+        smells: ['coffee', 'old books', 'fabric', 'home'], // Domestic Russian home sensory palette
+        sounds: ['silence', 'breathing', 'clock ticking', 'distant traffic'], // Intimate sounds
+        textures: ['soft', 'worn', 'familiar', 'cool'], // Tactile sensations
+        lightSources: ['window light', 'lamp', 'dawn', 'dusk'], // Typical Russian home lighting
+      },
+      characterMap: this.buildCharacterMap(outline),
+      thematicCore: {
+        centralQuestion: outline.episodes[0].hookQuestion,
+        emotionalArc: emotion,
+        resolution: 'uncertain, bittersweet', // Russian confessional style
+      }
+    };
+  }
+
+  /**
+   * Extract sensory details from theme text
+   */
+  private extractSensoryDetails(theme: string): string[] {
+    const details: string[] = [];
+    
+    const sensoryKeywords: Record<string, string[]> = {
+      family: ['intimate', 'familiar', 'generational'],
+      home: ['domestic', 'cozy', 'worn'],
+      love: ['tender', 'vulnerable', 'intimate'],
+      conflict: ['tense', 'electric', 'sharp'],
+      confession: ['personal', 'raw', 'honest'],
+      women: ['powerful', 'complex', 'strong'],
+    };
+
+    const themeLower = theme.toLowerCase();
+    for (const [keyword, sensories] of Object.entries(sensoryKeywords)) {
+      if (themeLower.includes(keyword)) {
+        details.push(...sensories);
+      }
+    }
+
+    // If no keywords matched, use generic domestic palette
+    if (details.length === 0) {
+      details.push('domestic', 'intimate', 'complex');
+    }
+
+    return [...new Set(details)].slice(0, 5); // Remove duplicates, limit to 5
+  }
+
+  /**
+   * Build character map from outline
+   */
+  private buildCharacterMap(outline: OutlineStructure): Record<string, any> {
+    const map: Record<string, any> = {};
+
+    // Extract characters from characterMap if it exists
+    if (outline.characterMap) {
+      return outline.characterMap;
+    }
+
+    // Otherwise, create basic map with narrator
+    map['Narrator'] = {
+      role: 'protagonist',
+      arc: 'internal realization',
+      relationshipToTheme: 'central',
+    };
+
+    return map;
+  }
+
+  /**
    * ULTRA-ROBUST: Parse JSON from API response with multiple fallback strategies
    * Handles: markdown, unicode errors, truncation, malformed JSON
    */
@@ -147,7 +259,7 @@ export class MultiAgentService {
       .replace(/]\s*[^]\]]*$/g, ']') // Remove anything after final ]
       // Clean up quotes and delimiters
       .replace(/,\s*([}\]])/g, '$1')  // Remove trailing commas
-      .replace(/([{,]\s*)'([^']*)'/g, '$1"$2"') // Single to double quotes
+      .replace(/([{,]\s*)'([^']*)'/ g, '$1"$2"') // Single to double quotes
       // Collapse whitespace
       .replace(/\n/g, ' ')
       .replace(/\t/g, ' ')
