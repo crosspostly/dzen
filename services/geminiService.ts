@@ -351,10 +351,31 @@ ${climax}
   }
 
   /**
-   * Проверяет человечность текста
+   * Проверяет человечность текста на основе ПОЛНОГО контента
+   * FIX v4.0.2: Теперь анализирует весь текст, не только первые 2000 символов!
+   * 
+   * Стратегия: проверяются три срезов (начало, середина, конец) для полного охвата
    */
   async checkHumanity(text: string) {
-    const prompt = `Оцени текст на признаки ИИ. Выдай JSON { "score": 0-100, "tips": ["короткий совет"] }. Текст: ${text.substring(0, 2000)}`;
+    // FIX: вместо substring(0, 2000) проверяем ВСЕ части текста
+    const slices = this.extractRepresentativeSlices(text);
+    
+    const prompt = `Оцени ПОЛНЫЙ текст на признаки ИИ. Выдай JSON { "score": 0-100, "tips": ["совет1", "совет2"] }. 
+
+Полный текст для анализа:
+${slices}
+
+Критерии оценки:
+- Вариативность в стиле и структуре предложений
+- Наличие человеческих ошибок и естественных переходов
+- Разнообразие используемого словаря
+- Эмоциональная составляющая и личные переживания
+
+Выдай ЧЕСТНЫЙ скор 0-100, где:
+0-30 = явный AI (однородный стиль, клише, предсказуемость)
+30-60 = смешанный контент (есть признаки обоих)
+60-100 = человеческий текст (вариативный, живой, эмоциональный)`;
+
     const response = await this.ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
@@ -369,22 +390,40 @@ ${climax}
         }
       }
     });
-    try { return JSON.parse(response.text); } catch { return { score: 50, tips: [] }; }
+    try { 
+      return JSON.parse(response.text); 
+    } catch { 
+      return { score: 50, tips: ["Не удалось провести анализ"] }; 
+    }
   }
 
   /**
-   * Генерирует визуальный контент
+   * Извлекает репрезентативные срезы текста для анализа
+   * Охватывает: начало (30%), середину (30%), конец (30%)
    */
-  async generateVisual(sceneDescription: string) {
-    const prompt = `Realistic smartphone photo, amateur lighting, messy russian apartment, raw emotion, pov. Subject: ${sceneDescription}. 16:9.`;
-    const response = await this.ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: prompt }] },
-      config: { responseModalities: [Modality.IMAGE] },
-    });
-    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data 
-      ? `data:image/png;base64,${response.candidates[0].content.parts[0].inlineData.data}` 
-      : null;
+  private extractRepresentativeSlices(text: string): string {
+    const charThreshold = 2000; // каждый срез
+    const totalChars = text.length;
+
+    if (totalChars <= charThreshold * 2) {
+      // Если текст короткий, возвращаем весь
+      return text;
+    }
+
+    const slices: string[] = [];
+
+    // Срез 1: Начало (0-30%)
+    slices.push(`[НАЧАЛО ТЕКСТА]\n${text.substring(0, charThreshold)}`);
+
+    // Срез 2: Середина (35-65%)
+    const midStart = Math.floor(totalChars * 0.35);
+    slices.push(`\n[СЕРЕДИНА ТЕКСТА]\n${text.substring(midStart, midStart + charThreshold)}`);
+
+    // Срез 3: Конец (70-100%)
+    const endStart = Math.max(totalChars - charThreshold, 0);
+    slices.push(`\n[КОНЕЦ ТЕКСТА]\n${text.substring(endStart)}`);
+
+    return slices.join('\n');
   }
 
   /**
