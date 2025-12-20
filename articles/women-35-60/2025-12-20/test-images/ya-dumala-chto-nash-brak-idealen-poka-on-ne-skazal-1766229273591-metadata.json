@@ -1,0 +1,59 @@
+{
+  "theme": "Я думала, что наш брак идеален, пока он не сказал это.",
+  "timestamp": 1766229273591,
+  "processingStatus": "CANVAS_OK",
+  "canvas": {
+    "success": true,
+    "status": "CANVAS_OK",
+    "error": null,
+    "format": "png",
+    "originalSize": 1442052,
+    "processedSize": 74978,
+    "dimensions": {
+      "width": 1280,
+      "height": 720
+    },
+    "metadata": {
+      "aspectRatio": 1.7777777777777777,
+      "cropApplied": true,
+      "filterApplied": false
+    }
+  },
+  "image": {
+    "format": "jpeg",
+    "filename": "ya-dumala-chto-nash-brak-idealen-poka-on-ne-skazal-1766229273591.jpg"
+  },
+  "narrator": {
+    "age": 48,
+    "gender": "female",
+    "tone": "confessional"
+  },
+  "sensoryPalette": {
+    "details": [
+      "domestic",
+      "intimate",
+      "complex"
+    ],
+    "smells": [
+      "coffee",
+      "old books",
+      "home"
+    ],
+    "sounds": [
+      "silence",
+      "breathing",
+      "clock"
+    ],
+    "textures": [
+      "soft",
+      "worn",
+      "familiar"
+    ],
+    "lightSources": [
+      "window",
+      "lamp",
+      "dawn"
+    ]
+  },
+  "lede": "Мы, люди, такие удивительные существа: строим империи, годами вкладываемся в мечты, отношения, карьеру. И при этом напрочь забываем о невероятной силе, что всегда с нами – о наших словах. Просто набор..."
+}
