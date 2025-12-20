@@ -85,7 +85,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     outputFormat: "zen",
     timeoutPerArticle: 180000, // 3 min timeout
     enableAntiDetection: false,
-    enablePlotBible: false
+    enablePlotBible: false,
   }
 };
 

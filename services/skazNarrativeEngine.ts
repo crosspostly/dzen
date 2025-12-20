@@ -36,7 +36,7 @@ export class SkazNarrativeEngine {
   ];
 
   // Список частых клише, которые нужно избегать
-  private clichés: string[] = [
+  private cliches: string[] = [
     "к сожалению", "как известно", "однако", "тем не менее",
     "в целом", "можно сказать", "в общем", "следует отметить",
     "стоит упомянуть", "необходимо подчеркнуть", "в заключение",
@@ -207,7 +207,7 @@ export class SkazNarrativeEngine {
   private removeCliches(text: string): string {
     let result = text;
 
-    for (const cliche of this.clichés) {
+    for (const cliche of this.cliches) {
       const pattern = new RegExp(`\\b${cliche}\\b`, "gi");
       if (pattern.test(result)) {
         // Просто удаляем, переструктурируя предложение
