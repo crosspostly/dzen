@@ -41,9 +41,15 @@ export class MultiAgentService {
       console.log(`⏭️  Images: DISABLED\n`);
     }
     
-    // Stage 0: Outline Engineering
-    console.log("📋 Stage 0: Building outline (12 episodes)...");
+    // Stage 0: Outline Engineering (INCLUDING plotBible generation!)
+    console.log("📋 Stage 0: Building outline (12 episodes) + plotBible...");
     const outline = await this.generateOutline(params);
+    
+    // Extract plotBible from outline (generated in Stage 0)
+    const plotBible = outline.plotBible as PlotBible;
+    console.log("✅ PlotBible created in outline stage");
+    console.log(`   - Narrator: ${plotBible.narrator.age} y/o ${plotBible.narrator.gender}`);
+    console.log(`   - Sensory palette: ${plotBible.sensoryPalette.details.slice(0, 3).join(', ')}...`);
     
     // Stage 1: Sequential Episode Generation
     console.log("🔄 Stage 1: Generating 12 episodes sequentially...");
@@ -63,26 +69,17 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
-    // 🎭 BUILD PLOT BIBLE from all the data we have
-    const plotBible = this.buildPlotBible({
-      theme: params.theme,
-      outline,
-      voicePassport,
-      emotion: params.emotion,
-      audience: params.audience,
-    });
-    
     // 🖼️ Generate cover image if requested
     let coverImageBuffer: Buffer | undefined;
     if (params.includeImages) {
       try {
-        console.log("🖼️  Generating cover image...");
+        console.log("🖼️  Generating cover image with plotBible from outline...");
         coverImageBuffer = await imageGeneratorAgent.generateCoverImage({
           title,
           ledeText: lede,
           theme: params.theme,
           emotion: params.emotion,
-          plotBible, // ✅ NOW WE PASS plotBible!
+          plotBible, // ✅ FROM OUTLINE GENERATION!
         });
         if (coverImageBuffer) {
           console.log(`✅ Cover image generated (${coverImageBuffer.length} bytes)`);
@@ -123,107 +120,6 @@ export class MultiAgentService {
     console.log(``);
     
     return article;
-  }
-
-  /**
-   * 🎭 BUILD PLOT BIBLE from all available data
-   * This is used for image generation and other purposes
-   */
-  private buildPlotBible(params: {
-    theme: string;
-    outline: OutlineStructure;
-    voicePassport: VoicePassport;
-    emotion: string;
-    audience: string;
-  }): PlotBible {
-    const { theme, outline, voicePassport, emotion, audience } = params;
-
-    // Extract narrator age from audience (e.g., "Women 35-60" -> age 45)
-    const ageMatch = audience.match(/(\d+)-(\d+)/);
-    const age = ageMatch ? Math.round((parseInt(ageMatch[1]) + parseInt(ageMatch[2])) / 2) : 40;
-
-    return {
-      narrator: {
-        age,
-        gender: audience.toLowerCase().includes('woman') || audience.toLowerCase().includes('women') ? 'female' : 'male',
-        tone: voicePassport.humorStyle || 'confessional',
-        voiceHabits: {
-          apologyPattern: voicePassport.apologyPattern,
-          doubtPattern: voicePassport.doubtPattern,
-          memoryTrigger: voicePassport.memoryTrigger,
-          angerPattern: voicePassport.angerPattern,
-        }
-      },
-      sensoryPalette: {
-        details: [
-          // Extract from theme
-          ...this.extractSensoryDetails(theme),
-          // Add emotional context
-          emotion === 'relief' ? 'light, hopeful' : emotion === 'guilt' ? 'heavy, burdened' : 'complex, layered',
-        ],
-        smells: ['coffee', 'old books', 'fabric', 'home'], // Domestic Russian home sensory palette
-        sounds: ['silence', 'breathing', 'clock ticking', 'distant traffic'], // Intimate sounds
-        textures: ['soft', 'worn', 'familiar', 'cool'], // Tactile sensations
-        lightSources: ['window light', 'lamp', 'dawn', 'dusk'], // Typical Russian home lighting
-      },
-      characterMap: this.buildCharacterMap(outline),
-      thematicCore: {
-        centralQuestion: outline.episodes[0].hookQuestion,
-        emotionalArc: emotion,
-        resolution: 'uncertain, bittersweet', // Russian confessional style
-      }
-    };
-  }
-
-  /**
-   * Extract sensory details from theme text
-   */
-  private extractSensoryDetails(theme: string): string[] {
-    const details: string[] = [];
-    
-    const sensoryKeywords: Record<string, string[]> = {
-      family: ['intimate', 'familiar', 'generational'],
-      home: ['domestic', 'cozy', 'worn'],
-      love: ['tender', 'vulnerable', 'intimate'],
-      conflict: ['tense', 'electric', 'sharp'],
-      confession: ['personal', 'raw', 'honest'],
-      women: ['powerful', 'complex', 'strong'],
-    };
-
-    const themeLower = theme.toLowerCase();
-    for (const [keyword, sensories] of Object.entries(sensoryKeywords)) {
-      if (themeLower.includes(keyword)) {
-        details.push(...sensories);
-      }
-    }
-
-    // If no keywords matched, use generic domestic palette
-    if (details.length === 0) {
-      details.push('domestic', 'intimate', 'complex');
-    }
-
-    return [...new Set(details)].slice(0, 5); // Remove duplicates, limit to 5
-  }
-
-  /**
-   * Build character map from outline
-   */
-  private buildCharacterMap(outline: OutlineStructure): Record<string, any> {
-    const map: Record<string, any> = {};
-
-    // Extract characters from characterMap if it exists
-    if (outline.characterMap) {
-      return outline.characterMap;
-    }
-
-    // Otherwise, create basic map with narrator
-    map['Narrator'] = {
-      role: 'protagonist',
-      arc: 'internal realization',
-      relationshipToTheme: 'central',
-    };
-
-    return map;
   }
 
   /**
@@ -360,7 +256,7 @@ export class MultiAgentService {
   }
 
   /**
-   * Stage 0: Generate outline structure
+   * Stage 0: Generate outline structure WITH plotBible
    */
   private async generateOutline(params: {
     theme: string;
@@ -371,11 +267,12 @@ export class MultiAgentService {
     const prompt = `You are a story architect for Yandex.Zen longform articles.
 
 TASK: Build 12-episode structure for a 35K-character serialized narrative.
+INCLUDING: Complete plotBible data (narrator, sensoryPalette, character map, thematic core).
 
 INPUT:
 - Theme: "${params.theme}"
 - Angle: ${params.angle} (confession/scandal/observer)
-- Emotion: ${params.emotion} (guilt/shame/triumph/anger)
+- Emotion: ${params.emotion} (guilt/shame/triumph/anger/relief)
 - Audience: ${params.audience}
 
 REQUIREMENTS:
@@ -385,6 +282,10 @@ REQUIREMENTS:
 3. Episodes 5-8: Deepening conflict
 4. Episodes 9-12: Climax & resolution
 5. No cheap happy endings, no stereotypes
+6. Generate NARRATOR profile based on audience and theme
+7. Generate SENSORY PALETTE (smells, sounds, textures, light sources) that matches theme
+8. Generate CHARACTER MAP from narrative
+9. Generate THEMATIC CORE (central question, emotional arc, resolution style)
 
 RESPOND WITH ONLY VALID JSON (no markdown, no comments):
 {
@@ -392,6 +293,38 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
   "angle": "${params.angle}",
   "emotion": "${params.emotion}",
   "audience": "${params.audience}",
+  
+  "narrator": {
+    "age": 45,
+    "gender": "female",
+    "tone": "confessional",
+    "voiceHabits": {
+      "apologyPattern": "...",
+      "doubtPattern": "...",
+      "memoryTrigger": "...",
+      "angerPattern": "..."
+    }
+  },
+  
+  "sensoryPalette": {
+    "details": ["domestic", "intimate", "complex"],
+    "smells": ["coffee", "old books", "fabric"],
+    "sounds": ["silence", "breathing", "clock ticking"],
+    "textures": ["soft", "worn", "familiar"],
+    "lightSources": ["window light", "lamp", "dawn"]
+  },
+  
+  "characterMap": {
+    "Narrator": { "role": "protagonist", "arc": "internal realization" },
+    "Mother-in-law": { "role": "catalyst", "arc": "wisdom giver" }
+  },
+  
+  "thematicCore": {
+    "centralQuestion": "...",
+    "emotionalArc": "${params.emotion}",
+    "resolutionStyle": "bittersweet, uncertain"
+  },
+  
   "episodes": [
     {
       "id": 1,
@@ -403,9 +336,9 @@ RESPOND WITH ONLY VALID JSON (no markdown, no comments):
       "openLoop": "..."
     }
   ],
+  
   "externalTensionArc": "...",
   "internalEmotionArc": "...",
-  "characterMap": { "Name": { "role": "protagonist", "arc": "..." } },
   "forbiddenClichés": []
 }`;
 
