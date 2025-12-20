@@ -179,6 +179,9 @@ export class ContentSanitizer {
     const sensoryMatches = cleaned.match(sensoryWords) || [];
     const sensoryDensity = (sensoryMatches.length / (cleaned.length / 1000)) * 10;
 
+    // Plot twist count (v4.5)
+    const twistCount = this.calculateTwistCount(cleaned);
+
     // Calculate overall readability score
     let readabilityScore = 100;
     if (avgParagraphLength > 350) readabilityScore -= 15;
@@ -205,8 +208,34 @@ export class ContentSanitizer {
       hasComplexSentences,
       sensoryDensity: Math.round(sensoryDensity * 10) / 10,
       travelSpeed,
+      twistCount,
       issues,
     };
+  }
+
+  /**
+   * 🔍 Calculate plot twist count (v4.5)
+   */
+  private static calculateTwistCount(content: string): number {
+    const patterns = [
+      /но вот тогда/gi,
+      /оказывается/gi,
+      /оказалось/gi,
+      /я ошиблась/gi,
+      /я ошибался/gi,
+      /думала[,]? что.*?но/gi,
+      /думал[,]? что.*?но/gi,
+      /была уверена.*?но/gi,
+      /был уверен.*?но/gi,
+    ];
+    
+    let count = 0;
+    patterns.forEach(p => {
+      const matches = content.match(p);
+      count += matches ? matches.length : 0;
+    });
+    
+    return Math.min(count, 5); // Cap at 5
   }
 
   static validateEpisodeContent(content: string): {
@@ -299,6 +328,7 @@ export class ContentSanitizer {
     lines.push(`   Avg sentence: ${metrics.avgSentenceLength} words (target < 15)`);
     lines.push(`   Dialogue: ${metrics.dialoguePercentage}% (target 30-40%)`);
     lines.push(`   Sensory density: ${metrics.sensoryDensity}/10`);
+    lines.push(`   Plot twists: ${metrics.twistCount} (target 2+)`);
     lines.push(`   Reading speed: ${metrics.travelSpeed}`);
 
     lines.push("");
