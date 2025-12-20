@@ -1,15 +1,6 @@
 name: Merge All Files to Markdown
 
 on:
-  push:
-    branches: [main, feature/**]
-    paths:
-      - 'docs/**'
-      - 'src/**'
-      - 'config/**'
-      - 'services/**'
-      - '*.md'
-      - '.github/workflows/merge-to-markdown.yml'
   workflow_dispatch:
 
 permissions:
