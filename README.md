@@ -1,197 +1,235 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🏭 ZenMaster v4.0 — Content Factory
 
-# ZenMaster v2.0 — AI Article Generator for Yandex.Zen
+**AI система генерации статей с изображениями для Yandex.Zen**
 
-Automated generation of 35-40K character longform articles with multi-agent AI orchestration.
-
-**Status**: Phase 2 ready (PR #3) → Phase 1 integration in progress
+Версия: v4.0 (Simplified)  
+Статус: ✅ Готово к продакшену
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Быстрый старт
 
-### 1. Install Dependencies
+### Установка
 ```bash
 npm install
 ```
 
-### 2. Set Up GitHub Secrets (CRITICAL!)
-
-**Without these, articles will NOT be generated!**
-
-#### Repository Secrets
-Go to: `Settings → Secrets and variables → Repository secrets`
-
-Add:
-```
-GEMINI_API_KEY = (your Gemini API key from https://ai.google.dev/)
+### Переменные окружения
+```env
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-#### Repository Variables
-Go to: `Settings → Variables → Repository variables`
+### Основные команды
 
-Add:
-```
-DEFAULT_ANGLE = confession
-DEFAULT_EMOTION = triumph
-DEFAULT_AUDIENCE = Women 35-60
-GEMINI_MODEL_OUTLINE = gemini-2.5-flash
-GEMINI_MODEL_EPISODES = gemini-2.5-flash
+**Генерация статей:**
+```bash
+# Быстрый тест (1 статья)
+npm run factory -- --count=1 --preset=quick-test
+
+# 5 статей с изображениями
+npm run factory -- --count=5 --images --quality=premium
+
+# Массовая генерация (100 статей)
+npm run factory -- --count=100 --images --preset=large-batch
 ```
 
-### 3. Run Locally
+---
+
+## 📊 Параметры CLI
+
+| Параметр | Описание | Значения |
+|----------|----------|----------|
+| `--count` | Количество статей | 1, 5, 10, 25, 50, 100 |
+| `--preset` | Готовые настройки | quick-test, small-batch, large-batch |
+| `--images` | Генерировать изображения | true/false |
+| `--quality` | Уровень качества | standard, premium |
+| `--output` | Папка вывода | путь (по умолчанию ./output) |
+| `--verbose` | Подробный вывод | true/false |
+
+### Готовые пресеты
 
 ```bash
-# Generate article (Phase 1)
-GEMINI_API_KEY=sk-... npx ts-node cli.ts generate:v2 \
-  --theme="Я терпела это 20 лет" \
-  --angle="confession" \
-  --emotion="triumph"
+# Быстрый тест
+--count=1 --images=false --quality=standard
 
-# Process with anti-detection (Phase 2)
-npx ts-node cli.ts phase2 \
-  --content=article.txt \
-  --title="Article Title"
+# Небольшая пачка
+--count=5 --images=true --quality=premium
 
-# Show Phase 2 info
-npx ts-node cli.ts phase2-info
-```
-
-### 4. Run Workflow
-
-Go to: `Actions → ZenMaster v2.0 - Generate Every 3 Hours → Run workflow`
-
-Workflow runs automatically at:
-- 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 UTC
-
-Each run generates a 35K+ article → saves to `generated/articles/`
-
----
-
-## 📊 Pipeline
-
-```
-Stage 0: Outline (Gemini 2.5 Flash)
-    ↓
-Stage 1: Parallel Draft (12× Gemini 2.5 Flash)
-    ↓
-Stage 2: Anti-Detection Processing (Phase 2) ✨
-    ├── Perplexity boost
-    ├── Burstiness optimization
-    ├── Skaz narrative transformation
-    └── AI detection validation
-    ↓
-Stage 3: Humanization (Phase 3) — Coming
-    ↓
-Stage 4: Quality Control (Phase 4) — Coming
-    ↓
-🎉 READY TO PUBLISH
+# Массовая генерация  
+--count=100 --images=true --quality=standard
 ```
 
 ---
 
-## 📈 Results (with Phase 2)
+## 🏗️ Архитектура
 
-| Metric | Before | After |
-|--------|--------|-------|
-| ZeroGPT Detection | >70% ❌ | <15% ✅ |
-| Originality.ai | >80% ❌ | <20% ✅ |
-| Publication Success | 20% ❌ | 90% ✅ |
-
----
-
-## 📁 Project Structure
-
+### Основные сервисы
 ```
-.
-├── services/
-│   ├── multiAgentService.ts          # Phase 1: Article generation
-│   ├── perplexityController.ts       # Phase 2: Text entropy
-│   ├── burstinessOptimizer.ts        # Phase 2: Sentence variation
-│   ├── skazNarrativeEngine.ts        # Phase 2: Russian style transformation
-│   ├── adversarialGatekeeper.ts      # Phase 2: Validation (0-100 score)
-│   ├── visualSanitizationService.ts  # Phase 2: Image processing
-│   └── phase2AntiDetectionService.ts # Phase 2: Orchestrator
-├── types/
-│   └── ContentArchitecture.ts        # Type definitions
-├── .github/workflows/
-│   └── generate-every-3-hours.yml    # Automation
-├── cli.ts                             # CLI commands
-├── package.json
-└── README.md
+services/
+├── contentFactoryOrchestrator.ts  # Главный оркестратор
+├── articleWorkerPool.ts          # Параллельная генерация статей
+├── imageWorkerPool.ts            # Генерация обложек (1/мин)
+├── imageGeneratorAgent.ts        # AI генерация изображений
+├── imageQueueManager.ts          # Управление очередью
+├── plotBibleBuilder.ts           # Narrative DNA для консистентности
+└── contentFactoryConfig.ts       # Конфигурации пресетов
+```
+
+### Типы данных
+```
+types/
+├── ContentFactory.ts     # Основные типы фабрики
+├── PlotBible.ts         # Narrative consistency
+└── ImageGeneration.ts   # Генерация изображений
 ```
 
 ---
 
-## 🔧 Commands
+## 🎨 Генерация изображений
 
-### Phase 1: Generate Articles
+### Что генерируется
+- **1 обложка на статью** (вместо 12 изображений)
+- Обложка создаётся из заголовка + первого параграфа
+- Стиль: аутентичная мобильная фотография (2018-2020)
+- Формат: 16:9 (1920x1080), PNG
+
+### Rate Limiting
+- **1 изображение в минуту** (ограничение Gemini API)
+- Автоматическая очередь с прогрессом
+- Fallback на резервную модель при перегрузке
+
+---
+
+## 📈 Производительность
+
+### Время генерации
+| Статей | Время (статьи) | Время (обложки) | Общее время |
+|--------|----------------|-----------------|-------------|
+| 1 | ~5 мин | 1 мин | ~6 мин |
+| 5 | ~5 мин (параллельно) | 5 мин | ~10 мин |
+| 100 | ~20 мин (параллельно) | 100 мин | ~2 часа |
+
+### Оптимизации
+- Параллельная генерация статей (3 одновременно)
+- Последовательная генерация обложек (1/мин)
+- Ранний старт генерации обложек
+- Автоматическая очистка памяти
+
+---
+
+## 📂 Структура вывода
+
+```
+output/
+├── article-1/
+│   ├── article-1.txt     # Текст для копирования в Zen
+│   ├── article-1.json    # Полные метаданные
+│   └── article-1-cover.png # Обложка
+├── article-2/
+│   └── ...
+├── manifest.json
+└── REPORT.md
+```
+
+### Преимущества новой структуры
+- ✅ Каждая статья в отдельной папке
+- ✅ `.txt` файл для прямой копипасты
+- ✅ Одна обложка вместо 12 файлов
+- ✅ 92% экономия места на диске
+
+---
+
+## 🎯 Качество и консистентность
+
+### PlotBible System
+Narrative DNA для поддержания стиля:
+- Голос рассказчика (пол, возраст, тон)
+- Сенсорная палитра (запахи, звуки, детали)
+- Временная шкала (настоящее, флэшбеки)
+- Запрещённые темы (безопасность)
+
+### Улучшения качества
+- **Burstiness** — разнообразная длина предложений
+- **Perplexity** — менее предсказуемая лексика  
+- **Skaz Narrative** — русская стилистика
+- **CTA Provocation** — триггеры вовлечения
+- **Urban Vocabulary** — только городская лексика
+
+### Целевые метрики
+- **AI Detection**: <10%
+- **Quality Score**: >85/100
+- **Время чтения**: 15-20 минут
+- **Success Rate**: >95%
+
+---
+
+## 🔧 Troubleshooting
+
+### Ошибка "GEMINI_API_KEY not found"
 ```bash
-npx ts-node cli.ts generate:v2 \
-  --theme="Your theme" \
-  --angle="confession|scandal|observer" \
-  --emotion="triumph|guilt|shame|liberation"
+export GEMINI_API_KEY=your_key_here
 ```
 
-### Phase 2: Anti-Detection Processing
+### Превышение rate limit
+- Автоматическая очередь с ожиданием
+- Дождитесь завершения или используйте `--images=false`
+
+### Высокое использование памяти
+- Worker pools автоматически очищают завершённые задачи
+- Уменьшите `--count` для снижения нагрузки
+
+### Медленная генерация
 ```bash
-# Single article
-npx ts-node cli.ts phase2 --content=article.txt --title="Title"
+# Быстрый режим без изображений
+npm run factory -- --count=10 --images=false
 
-# With images
-npx ts-node cli.ts phase2 --content=article.txt --images=img1.jpg,img2.png
-
-# Info
-npx ts-node cli.ts phase2-info
+# Используйте пресеты оптимизации скорости
+npm run factory -- --preset=fast-mode
 ```
 
 ---
 
-## ✅ Checklist Before Going Live
+## 📚 Документация
 
-- [ ] GEMINI_API_KEY added to Secrets
-- [ ] Repository Variables added (5 variables)
-- [ ] PR #3 merged to main
-- [ ] Workflow tested manually (Actions → Run workflow)
-- [ ] Article generated successfully in `generated/articles/`
-- [ ] Gatekeeper score ≥80 for Phase 2 output
+### Основные файлы
+- `ZENMASTER_V4_SIMPLIFIED_SUMMARY.md` — Подробная техническая спецификация
+- `cli.ts` — Полная документация CLI (880 строк)
+- `types/` — TypeScript типы и интерфейсы
+- `services/` — Исходный код всех сервисов
 
----
+### Скрипты
+```bash
+# Тестирование
+npm run test
 
-## 📚 Documentation
+# Валидация конфигурации  
+npm run validate
 
-- `ZENMASTER_STATUS.md` — Current project status
-- `PHASE_2_ANTI_DETECTION.md` — Phase 2 technical details
-- `PHASE_2_README.md` — Phase 2 quick start
-- `DEPLOYMENT_CHECKLIST.md` — Full deployment checklist
+# Список проектов
+npm run list-projects
 
----
-
-## 🐛 Troubleshooting
-
-### Workflow fails with "GEMINI_API_KEY not found"
-→ Add the key to `Settings → Secrets`
-
-### Workflow fails with "TypeScript compilation failed"
-→ Run `npm install` locally and check types
-
-### Article not created in `generated/articles/`
-→ Check workflow logs in Actions tab
+# Полная проверка
+npm run test:full
+```
 
 ---
 
-## 🎯 Next Steps
+## 🚀 Roadmap
 
-1. ✅ Phase 1: Article generation
-2. ✅ Phase 2: Anti-detection processing (PR #3)
-3. ⏳ Phase 3: Humanization (6-level voice editing)
-4. ⏳ Phase 4: Quality control & validation
-5. ⏳ Auto-publish to Yandex.Zen
+- ✅ v4.0: Content Factory (1-100 статей)
+- ✅ v4.0: Обложки (1 на статью вместо 12)
+- ⏳ v4.1: Пакетная публикация в Zen
+- ⏳ v4.2: A/B тестирование заголовков
+- ⏳ v4.3: Автоматическая оптимизация SEO
 
 ---
 
-**Status**: 🟡 Ready for Phase 1-2 integration  
-**Target**: Articles generated every 3 hours  
-**Goal**: 90%+ publication success rate
+## 🎉 Статус проекта
+
+**Версия**: v4.0 SIMPLIFIED  
+**Готовность**: ✅ Production Ready  
+**Дата**: Декабрь 2025  
+**Экономия времени**: 92% на генерации изображений!
+
+**Разработано**: ZenMaster Team  
+**Лицензия**: Proprietary - All Rights Reserved

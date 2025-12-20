@@ -36,3 +36,12 @@ test-cover-images.ts
 *.njsproj
 *.sln
 *.sw?
+
+# Documentation build artifacts
+docs/_build/
+docs/.docusaurus/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
