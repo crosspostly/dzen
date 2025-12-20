@@ -1,0 +1,120 @@
+name: Content Factory - Batch Articles (Dzen)
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Number of articles (1, 5, 10, 25, 50, 100)'
+        required: true
+        default: '1'
+        type: choice
+        options:
+          - '1'
+          - '5'
+          - '10'
+          - '25'
+          - '50'
+          - '100'
+      channel:
+        description: 'Channel topic'
+        required: true
+        default: 'women-35-60'
+        type: choice
+        options:
+          - 'women-35-60'
+          - 'young-moms'
+          - 'men-25-40'
+          - 'teens'
+      images:
+        description: 'Generate cover images?'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  factory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - run: npm install
+      
+      - name: Generate articles
+        run: |
+          COUNT="${{ inputs.count }}"
+          CHANNEL="${{ inputs.channel }}"
+          IMAGES="${{ inputs.images }}"
+          
+          echo "====================================================="
+          echo "Content Factory - Batch Generation"
+          echo "====================================================="
+          echo "Articles:      $COUNT"
+          echo "Topic:         $CHANNEL"
+          echo "Images:        $IMAGES"
+          echo "Output:        articles/$CHANNEL/$(date +%Y-%m-%d)/"
+          echo "====================================================="
+          echo ""
+          
+          CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
+          
+          if [ "$IMAGES" = "true" ]; then
+            CMD="$CMD --images"
+          fi
+          
+          echo "Running: $CMD"
+          echo ""
+          
+          eval "$CMD"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      
+      - name: Count results
+        if: always()
+        run: |
+          ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
+          IMAGE_COUNT=$(find ./articles -name "*.png" 2>/dev/null | wc -l)
+          
+          echo ""
+          echo "Generation Summary:"
+          echo "====================================================="
+          echo "Articles generated: $ARTICLE_COUNT"
+          echo "Images generated:   $IMAGE_COUNT"
+          echo "====================================================="
+          echo ""
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: articles-${{ inputs.channel }}-${{ github.run_id }}
+          path: articles/
+          retention-days: 90
+          if-no-files-found: warn
+      
+      - name: Commit and push
+        if: always()
+        run: |
+          git config --local user.email "zenmaster-bot@github.com"
+          git config --local user.name "ZenMaster Bot"
+          
+          git add articles/ 2>/dev/null || true
+          
+          ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
+          IMAGE_COUNT=$(find ./articles -name "*.png" 2>/dev/null | wc -l)
+          
+          git commit -m "Dzen: ${{ inputs.count }} articles (${{ inputs.channel }}) - $IMAGE_COUNT images (run ${{ github.run_id }})" || echo "No changes"
+          git push origin HEAD:main || echo "Push failed"
