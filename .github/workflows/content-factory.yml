@@ -1,11 +1,16 @@
 name: Content Factory - Batch Articles (Dzen)
 
 on:
+  # 🚀 AUTOMATIC: Every 3 hours
+  schedule:
+    - cron: '0 0,3,6,9,12,15,18,21 * * *'
+  
+  # 📍 MANUAL: Run workflow button
   workflow_dispatch:
     inputs:
       count:
         description: 'Number of articles (1, 5, 10, 25, 50, 100)'
-        required: true
+        required: false
         default: '1'
         type: choice
         options:
@@ -17,7 +22,7 @@ on:
           - '100'
       channel:
         description: 'Channel topic/folder (all for Yandex.Dzen)'
-        required: true
+        required: false
         default: 'women-35-60'
         type: choice
         options:
@@ -54,9 +59,10 @@ jobs:
       
       - name: 🏭 ZenMaster v4.0 - Yandex.Dzen Content Factory
         run: |
-          COUNT=${{ inputs.count }}
-          CHANNEL=${{ inputs.channel }}
-          IMAGES=${{ inputs.images }}
+          # Use inputs if manual, otherwise use defaults
+          COUNT=${{'$'}}{{ inputs.count || '1' }}
+          CHANNEL=${{'$'}}{{ inputs.channel || 'women-35-60' }}
+          IMAGES=${{'$'}}{{ inputs.images || 'true' }}
           
           echo ""
           echo "════════════════════════════════════════════════════════"
@@ -91,7 +97,7 @@ jobs:
           echo "📊 Generation Summary:"
           echo "════════════════════════════════════════════════════════"
           
-          CHANNEL=${{ inputs.channel }}
+          CHANNEL=${{'$'}}{{ inputs.channel || 'women-35-60' }}
           DATE=$(date +%Y-%m-%d)
           OUTPUT_PATH="articles/$CHANNEL/$DATE"
           
@@ -117,7 +123,7 @@ jobs:
           cp -r ./articles ./artifacts/ 2>/dev/null || true
           
           # Create summary
-          CHANNEL=${{ inputs.channel }}
+          CHANNEL=${{'$'}}{{ inputs.channel || 'women-35-60' }}
           DATE=$(date +%Y-%m-%d)
           
           cat > artifacts/DOWNLOAD_SUMMARY.txt << EOF
@@ -127,11 +133,12 @@ jobs:
 Run ID:      ${{ github.run_id }}
 Date:        $DATE
 Topic:       $CHANNEL
+Trigger:     ${{ github.event_name }}
 
 Configuration:
-- Articles:  ${{ inputs.count }}
+- Articles:  ${{'$'}}{{ inputs.count || '1' }}
 - Topic:     $CHANNEL (Yandex.Dzen)
-- Images:    ${{ inputs.images }}
+- Images:    ${{'$'}}{{ inputs.images || 'true' }}
 
 📁 FILES LOCATION:
 articles/$CHANNEL/$DATE/
@@ -148,7 +155,7 @@ EOF
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: articles-${{ inputs.channel }}-${{ github.run_id }}
+          name: articles-${{ inputs.channel || 'women-35-60' }}-${{ github.run_id }}
           path: articles/
           retention-days: 90
           if-no-files-found: warn
@@ -165,13 +172,13 @@ EOF
           ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
           IMAGE_COUNT=$(find ./articles -name "*.png" 2>/dev/null | wc -l)
           
-          git commit -m "🏭 Dzen: ${{ inputs.count }} articles (${{ inputs.channel }}) | $IMAGE_COUNT images (run #${{ github.run_id }})" || echo "✅ No changes to commit"
+          git commit -m "🏭 Dzen: ${{ inputs.count || '1' }} articles (${{ inputs.channel || 'women-35-60' }}) | $IMAGE_COUNT images (run #${{ github.run_id }})" || echo "✅ No changes to commit"
           git push origin HEAD:main || echo "⚠️  Push failed or no changes"
       
       - name: ✅ Job Summary
         if: always()
         run: |
-          CHANNEL=${{ inputs.channel }}
+          CHANNEL=${{'$'}}{{ inputs.channel || 'women-35-60' }}
           DATE=$(date +%Y-%m-%d)
           
           echo ""
