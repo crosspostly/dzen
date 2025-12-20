@@ -159,6 +159,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       const dzenChannel = getArg('dzen-channel');
       const theme = getArg('theme');
       const verbose = getFlag('verbose');
+      const includeImages = getFlag('images');
 
       console.log(`\n${LOG.ROCKET} ============================================`);
       console.log(`${LOG.ROCKET} ZenMaster v2.0 - Multi-Agent Generation`);
@@ -195,7 +196,11 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
         console.log(`   💫 Emotion: ${generationParams.emotion}`);
         console.log(`   👥 Audience: ${generationParams.audience}`);
         console.log(`   🤖 Models: ${generationParams.modelOutline} (outline), ${generationParams.modelEpisodes} (episodes)`);
-        console.log(`   📁 Output: ${generationParams.outputDir}\n`);
+        console.log(`   📁 Output: ${generationParams.outputDir}`);
+        if (includeImages) {
+          console.log(`   🖼️  Images: ENABLED`);
+        }
+        console.log(`\n`);
 
       } else {
         // Using Project Configuration with AI-Generated Theme
@@ -228,7 +233,11 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
         console.log(`   💫 Emotion: ${generationParams.emotion}`);
         console.log(`   👥 Audience: ${generationParams.audience}`);
         console.log(`   🤖 Models: ${generationParams.modelOutline} (outline), ${generationParams.modelEpisodes} (episodes)`);
-        console.log(`   📁 Output: ${generationParams.outputDir}\n`);
+        console.log(`   📁 Output: ${generationParams.outputDir}`);
+        if (includeImages) {
+          console.log(`   🖼️  Images: ENABLED`);
+        }
+        console.log(`\n`);
       }
 
       // Initialize Multi-Agent Service
@@ -245,6 +254,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
         angle: generationParams.angle,
         emotion: generationParams.emotion,
         audience: generationParams.audience,
+        includeImages: includeImages,
       });
 
       const totalTime = Date.now() - startTime;
@@ -263,6 +273,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
           modelEpisodes: generationParams.modelEpisodes,
           channelConfig: dzenChannel || projectId,
           generatedAt: new Date().toISOString(),
+          includeImages: includeImages,
         },
       };
 
@@ -288,6 +299,9 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`   📄 Episodes: ${article.metadata.episodeCount}`);
       console.log(`   🎬 Scenes: ${article.metadata.sceneCount}`);
       console.log(`   💬 Dialogues: ${article.metadata.dialogueCount}`);
+      if (includeImages) {
+        console.log(`   🖼️  Cover image: GENERATED`);
+      }
       console.log(``);
       console.log(`${LOG.TIMER} Time:`);
       console.log(`   - Total: ${formatTime(totalTime)}`);
@@ -295,9 +309,9 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
 
       console.log(`${LOG.SAVE} ============================================`);
       console.log(`${LOG.SAVE} Article exported to three formats:`);
-      console.log(`${LOG.SAVE}   📋 JSON: ${path.basename(exportResult.jsonPath || '')}`);
-      console.log(`${LOG.SAVE}   📄 TXT:  ${path.basename(exportResult.textPath || '')}`);
-      console.log(`${LOG.SAVE}   🌐 HTML: ${path.basename(exportResult.htmlPath || '')}`);
+      console.log(`${LOG.SAVE}   📋 JSON: ${path.basename(exportResult.jsonPath || '')}`);  
+      console.log(`${LOG.SAVE}   📄 TXT:  ${path.basename(exportResult.textPath || '')}`);  
+      console.log(`${LOG.SAVE}   🌐 HTML: ${path.basename(exportResult.htmlPath || '')}`);  
       console.log(`${LOG.SAVE} Directory: ${exportResult.directoryPath}`);
       console.log(`${LOG.SAVE} ============================================`);
       console.log(``);
@@ -837,12 +851,14 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`  --dzen-channel=ID   - ID канала Дзена (women-35-60, young-moms, etc)`);
       console.log(`  --theme=TEXT        - Описание темы`);
       console.log(`  --verbose           - Подробная информация`);
+      console.log(`  --images            - Генерировать изображения (для generate:v2)`);
       console.log(`  Legacy options (deprecated): --angle, --emotion, --audience, --model-*`);
       console.log(``);
       console.log(`📝 Examples:`);
       console.log(`  # Using Dzen Channel Configuration (RECOMMENDED)`);
       console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=women-35-60`);
       console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=young-moms --theme="Custom theme"`);
+      console.log(`  npx ts-node cli.ts generate:v2 --dzen-channel=women-35-60 --images`);
       console.log(`  npx ts-node cli.ts generate:all-dzen`);
       console.log(`  npx ts-node cli.ts list-dzen-channels`);
       console.log(``);
