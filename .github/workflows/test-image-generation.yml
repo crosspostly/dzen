@@ -9,6 +9,9 @@ on:
         default: 'women-35-60'
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   test-image:
     runs-on: ubuntu-latest
@@ -16,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -33,16 +38,18 @@ jobs:
       
       - name: Commit and push images
         if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           
           # Check if there are any changes
           if [[ -n $(git status -s articles/) ]]; then
             echo "📸 Generated images detected, committing..."
             git add articles/
             git commit -m "test: Generate test images for ${{ inputs.channel }} channel" || echo "No changes to commit"
-            git push
+            git push origin HEAD:main
             echo "✅ Images pushed to repository!"
           else
             echo "⚠️  No new images generated"
