@@ -1,5 +1,5 @@
 /**
- * 🏭 ZenMaster v4.0 - Content Factory Orchestrator
+ * 🎭 ZenMaster v4.0 - Content Factory Orchestrator
  * 
  * Main orchestrator for mass content generation (1-100 articles)
  * Features:
@@ -62,18 +62,20 @@ export class ContentFactoryOrchestrator {
       this.channelName = channelName;
     }
 
-    console.log(`\n╔${'═'.repeat(58)}╗`);
-    console.log(`║ 🏭 ZenMaster v4.0 - Content Factory`);
+    console.log(`
+╔${'═'.repeat(58)}╗`);
+    console.log(`║ 🎭 ZenMaster v4.0 - Content Factory`);
     console.log(`╠${'═'.repeat(58)}╣`);
     console.log(`║ 📄 Articles:          ${config.articleCount}`);
     console.log(`║ ⚙️  Parallel workers:  ${config.parallelEpisodes}`);
-    console.log(`║ 🖼️  Images:            ${config.includeImages ? 'Yes (1/min)' : 'No'}`);
+    console.log(`║ 🗼️  Images:            ${config.includeImages ? 'Yes (1/min)' : 'No'}`);
     console.log(`║ 🎯 Quality level:     ${config.qualityLevel}`);
-    console.log(`║ 📤 Output format:     ${config.outputFormat}`);
-    console.log(`║ 🛡️  Anti-detection:   ${config.enableAntiDetection ? 'Yes' : 'No'}`);
+    console.log(`║ 📄 Output format:     ${config.outputFormat}`);
+    console.log(`║ 📡 Anti-detection:   ${config.enableAntiDetection ? 'Yes' : 'No'}`);
     console.log(`║ 📖 PlotBible:         ${config.enablePlotBible ? 'Yes' : 'No'}`);
     console.log(`║ 📁 Channel:           ${this.channelName}`);
-    console.log(`╚${'═'.repeat(58)}╝\n`);
+    console.log(`╚${'═'.repeat(58)}╝
+`);
 
     this.config = config;
 
@@ -106,7 +108,8 @@ export class ContentFactoryOrchestrator {
     this.progress.state = "running";
     this.progress.startedAt = Date.now();
 
-    console.log(`✅ Factory initialized and ready to start\n`);
+    console.log(`✅ Factory initialized and ready to start
+`);
   }
 
   /**
@@ -121,29 +124,36 @@ export class ContentFactoryOrchestrator {
 
     try {
       // Stage 1: Generate articles (parallel)
-      console.log(`\n${'='.repeat(60)}`);
+      console.log(`
+${'='.repeat(60)}`);
       console.log(`📝 STAGE 1: Article Generation (${this.config.articleCount} articles)`);
       console.log(`${'='.repeat(60)}\n`);
 
       this.articles = await this.generateArticles();
 
-      console.log(`\n✅ Stage 1 complete: ${this.articles.length} articles generated\n`);
+      console.log(`
+✅ Stage 1 complete: ${this.articles.length} articles generated
+`);
 
       // Stage 2: Generate COVER images (serial, 1 per article!)
       if (this.config.includeImages && this.articles.length > 0) {
-        console.log(`\n${'='.repeat(60)}`);
-        console.log(`🖼️  STAGE 2: COVER Image Generation (${this.articles.length} covers, not ${this.articles.length * 12}!)`);
+        console.log(`
+${'='.repeat(60)}`);
+        console.log(`🗼️  STAGE 2: COVER Image Generation (${this.articles.length} covers, not ${this.articles.length * 12}!)`);
         console.log(`${'='.repeat(60)}\n`);
 
         // ✅ STAGE 2: Generate cover images from article title + lede
         await this.generateCoverImages();
 
-        console.log(`\n✅ Stage 2 complete: Cover images generated and attached (1 per article)\n`);
+        console.log(`
+✅ Stage 2 complete: Cover images generated and attached (1 per article)\n`);
 
         // ✅ STAGE 3: Post-process images through Canvas (remove metadata, apply filters)
         await this.postProcessCoverImages();
 
-        console.log(`\n✅ Stage 3 complete: All images post-processed and ready for export\n`);
+        console.log(`
+✅ Stage 3 complete: All images post-processed and ready for export
+`);
       }
 
       // Mark as completed
@@ -167,7 +177,9 @@ export class ContentFactoryOrchestrator {
       this.errors.push(factoryError);
       this.progress.errors.push(factoryError);
 
-      console.error(`\n❌ Factory failed: ${(error as Error).message}\n`);
+      console.error(`
+❌ Factory failed: ${(error as Error).message}
+`);
       throw error;
     }
   }
@@ -208,7 +220,7 @@ export class ContentFactoryOrchestrator {
   }
 
   /**
-   * 🖼️ Generate COVER images using image worker pool
+   * 🗼️ Generate COVER images using image worker pool
    * ✅ UPDATED v4.0: Generates ONE cover per article (not 12!)
    */
   private async generateCoverImages(): Promise<void> {
@@ -234,19 +246,24 @@ export class ContentFactoryOrchestrator {
   }
 
   /**
-   * 🎨 Post-process cover images through Canvas
-   * ✅ UPDATED v4.0: Processes ONE cover per article
+   * 🎬 Post-process cover images through Canvas
+   * ✅ UPDATED v4.1: Uses new ImageProcessResult API
    * 
    * Process:
    * 1. Decode base64 PNG from Gemini API
    * 2. Load through canvas.loadImage()
    * 3. Crop to 16:9 aspect ratio (1280x720)
    * 4. Redraw on new canvas (removes Gemini metadata)
-   * 5. Apply filters: contrast(1.05), saturate(0.85), brightness(0.98)
-   * 6. Export to JPEG 0.8 quality (natural compression artifacts)
-   * 7. Attach processedBuffer to article.coverImage
+   * 5. Export to JPEG 0.8 quality (natural compression artifacts)
+   * 6. Attach processedBuffer to article.coverImage
    * 
    * Result: Looks like real mobile phone photo, undetectable as AI-generated
+   * 
+   * Canvas failures are handled gracefully:
+   * - Log the error
+   * - Keep original PNG
+   * - Mark article with processingStatus metadata
+   * - Continue with next article
    */
   private async postProcessCoverImages(): Promise<void> {
     if (!this.config.includeImages || this.articles.length === 0) {
@@ -254,9 +271,12 @@ export class ContentFactoryOrchestrator {
     }
 
     const imageProcessorService = new ImageProcessorService();
+    let successCount = 0;
+    let failureCount = 0;
 
-    console.log(`\n${'='.repeat(60)}`);
-    console.log(`🎨 STAGE 3: Post-processing images through Canvas`);
+    console.log(`
+${'='.repeat(60)}`);
+    console.log(`🎬 STAGE 3: Post-processing images through Canvas`);
     console.log(`${'='.repeat(60)}\n`);
 
     for (let i = 0; i < this.articles.length; i++) {
@@ -268,30 +288,49 @@ export class ContentFactoryOrchestrator {
 
           // Process base64 PNG through Canvas
           // Input: "data:image/png;base64,iVBOR..."
-          // Output: Buffer with JPG bytes
-          const processedBuffer = await imageProcessorService.processImage(
+          // Output: ImageProcessResult { buffer, success, format, ... }
+          const processorResult = await imageProcessorService.processImage(
             article.coverImage.base64
           );
 
-          // Attach processed buffer to article
-          article.coverImage.processedBuffer = processedBuffer;
-          article.coverImage.format = 'jpeg'; // Update format from PNG to JPEG
+          // Handle result
+          if (processorResult.success && processorResult.buffer) {
+            // Canvas succeeded - attach JPEG buffer
+            article.coverImage.processedBuffer = processorResult.buffer;
+            article.coverImage.format = 'jpeg';
+            
+            const sizeKb = Math.round(processorResult.buffer.length / 1024);
+            console.log(`     ✅ Canvas OK: ${sizeKb}KB JPEG`);
+            successCount++;
+          } else {
+            // Canvas failed - keep original PNG
+            console.warn(`     ⚠️  Canvas failed: ${processorResult.errorMessage}`);
+            console.log(`        Status: ${processorResult.processingStatus}`);
+            console.log(`        Fallback: Using original PNG`);
+            failureCount++;
+          }
 
-          const sizeKb = Math.round(processedBuffer.length / 1024);
-          console.log(`     ✅ Image processed (${sizeKb} KB, JPEG 0.8 quality)`);
+          // Always attach metadata about processing status
+          if (!article.metadata) {
+            article.metadata = { generatedAt: Date.now() };
+          }
+          article.metadata.imageProcessingStatus = processorResult.processingStatus;
+          article.metadata.imageProcessingError = processorResult.errorMessage;
+
         } catch (error) {
           console.error(
-            `     ❌ Failed to process image ${i + 1}:`,
-            (error as Error).message
+            `     ❌ Unexpected error: ${(error as Error).message}`
           );
-          // Continue with next image even if this one fails
+          failureCount++;
+          // Continue with next image
         }
       }
     }
 
-    console.log(
-      `\n✅ All ${this.articles.length} images post-processed and ready for export\n`
-    );
+    console.log(`
+✅ Post-processing complete: ${successCount} OK, ${failureCount} used PNG fallback`);
+    console.log(`   Ready for export
+`);
   }
 
   /**
@@ -324,21 +363,24 @@ export class ContentFactoryOrchestrator {
   }
 
   /**
-   * 📤 Export articles for Zen
+   * 📄 Export articles for Zen
    * ✅ UPDATED v4.0: Save to articles/{channel_name}/{YYYY-MM-DD}/ with flat structure
    * - ONE .txt file (article content)
    * - ONE .jpg file (processed cover image via Canvas)
    * - Same filename for both (only extension differs)
    */
   async exportForZen(outputDir: string = './articles'): Promise<string> {
-    console.log(`\n📤 Exporting ${this.articles.length} articles\n`);
+    console.log(`
+📄 Exporting ${this.articles.length} articles
+`);
 
     // Create articles/{channel_name}/{YYYY-MM-DD}/ directory
     const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const finalDir = path.join(outputDir, this.channelName, dateStr);
     fs.mkdirSync(finalDir, { recursive: true });
 
-    console.log(`📁 Output folder: ${finalDir}\n`);
+    console.log(`📁 Output folder: ${finalDir}
+`);
 
     const exportedFiles: string[] = [];
 
@@ -365,14 +407,14 @@ export class ContentFactoryOrchestrator {
             const jpgPath = path.join(finalDir, `${filename}-cover.jpg`);
             fs.writeFileSync(jpgPath, article.coverImage.processedBuffer);
             exportedFiles.push(jpgPath);
-            console.log(`   🖼️  Cover: ${filename}-cover.jpg (Processed JPEG)`);
+            console.log(`   🗼️  Cover: ${filename}-cover.jpg (Processed JPEG)`);
           } else {
             // Fallback to base64 PNG if processing failed
             const pngPath = path.join(finalDir, `${filename}.png`);
             const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
             fs.writeFileSync(pngPath, Buffer.from(base64Data, 'base64'));
             exportedFiles.push(pngPath);
-            console.log(`   🖼️  Cover: ${filename}.png (Raw PNG fallback)`);
+            console.log(`   🗼️  Cover: ${filename}.png (PNG fallback)`);
           }
         }
       } catch (error) {
@@ -390,17 +432,19 @@ export class ContentFactoryOrchestrator {
     const reportPath = path.join(finalDir, 'REPORT.md');
     fs.writeFileSync(reportPath, this.formatReport(report));
 
-    console.log(`\n✅ Export complete:`);
+    console.log(`
+✅ Export complete:`);
     console.log(`   📄 Articles: ${this.articles.length}`);
-    console.log(`   🖼️  Cover images: ${this.articles.filter(a => a.coverImage).length} (1 per article)`);
+    console.log(`   🗼️  Cover images: ${this.articles.filter(a => a.coverImage).length} (1 per article)`);
     console.log(`   📋 Manifest: ${manifestPath}`);
-    console.log(`   📊 Report: ${reportPath}\n`);
+    console.log(`   📋 Report: ${reportPath}
+`);
 
     return finalDir;
   }
 
   /**
-   * 🔤 Create URL-safe slug from Russian text
+   * 📄 Create URL-safe slug from Russian text
    * Example: "Я всю жизнь боялась одиночества" → "ya-vsyu-zhizn-boyalas-odinochestva"
    */
   private createSlug(title: string): string {
@@ -440,12 +484,21 @@ export class ContentFactoryOrchestrator {
    * 📄 Convert article to Markdown
    */
   private convertToMarkdown(article: Article): string {
-    let md = `# ${article.title}\n\n`;
-    md += `**Generated:** ${new Date(article.metadata.generatedAt).toLocaleString()}\n`;
-    md += `**Theme:** ${article.metadata.theme}\n`;
-    md += `**Characters:** ${article.charCount.toLocaleString()}\n`;
-    md += `**Read time:** ${article.stats.estimatedReadTime} min\n\n`;
-    md += `---\n\n`;
+    let md = `# ${article.title}
+
+`;
+    md += `**Generated:** ${new Date(article.metadata.generatedAt).toLocaleString()}
+`;
+    md += `**Theme:** ${article.metadata.theme}
+`;
+    md += `**Characters:** ${article.charCount.toLocaleString()}
+`;
+    md += `**Read time:** ${article.stats.estimatedReadTime} min
+
+`;
+    md += `---
+
+`;
     md += article.content;
     return md;
   }
@@ -471,7 +524,7 @@ export class ContentFactoryOrchestrator {
   }
 
   /**
-   * 📊 Generate report
+   * 📋 Generate report
    * ✅ UPDATED v4.0: Count cover images (not episode images)
    */
   private generateReport(): FactoryReport {
@@ -509,15 +562,15 @@ export class ContentFactoryOrchestrator {
   }
 
   /**
-   * 📊 Format report as Markdown
+   * 📋 Format report as Markdown
    */
   private formatReport(report: FactoryReport): string {
     return `
-# 🏭 ZenMaster v4.0 - Factory Report
+# 🎭 ZenMaster v4.0 - Factory Report
 
 Generated: ${new Date().toLocaleString()}
 
-## 📊 Summary
+## 📋 Summary
 
 | Metric | Value |
 |--------|-------|
@@ -558,7 +611,7 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
   }
 
   /**
-   * 📈 Calculate metrics
+   * 📋 Calculate metrics
    */
   private calculateAverageQuality(): number {
     if (this.articles.length === 0) return 0;
@@ -617,11 +670,12 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
       ? (this.progress.completedAt - this.progress.startedAt) / 1000
       : 0;
 
-    console.log(`\n${'='.repeat(60)}`);
+    console.log(`
+${'='.repeat(60)}`);
     console.log(`🎉 FACTORY COMPLETE`);
     console.log(`${'='.repeat(60)}`);
     console.log(`📄 Articles: ${this.progress.articlesCompleted}/${this.progress.articlesTotal}`);
-    console.log(`🖼️  Images: ${this.progress.imagesCompleted}/${this.progress.imagesTotal}`);
+    console.log(`🗼️  Images: ${this.progress.imagesCompleted}/${this.progress.imagesTotal}`);
     console.log(`⏱️  Duration: ${(duration / 60).toFixed(1)} minutes`);
     console.log(`✅ Success rate: ${((this.progress.articlesCompleted / this.progress.articlesTotal) * 100).toFixed(1)}%`);
     console.log(`📁 Saved to: articles/${this.channelName}/${new Date().toISOString().split('T')[0]}/`);
