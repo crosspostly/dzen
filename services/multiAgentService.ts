@@ -7,7 +7,6 @@ import { GoogleGenAI } from "@google/genai";
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
-import { imageGeneratorAgent } from "./imageGeneratorAgent";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -34,11 +33,7 @@ export class MultiAgentService {
     console.log("\n🎬 [ZenMaster v2.0] Starting 35K longform generation...");
     console.log(`📌 Theme: "${params.theme}"`);
     console.log(`🎯 Angle: ${params.angle} | Emotion: ${params.emotion}`);
-    if (params.includeImages) {
-      console.log(`🖼️  Images: ENABLED\n`);
-    } else {
-      console.log(`⏭️  Images: DISABLED\n`);
-    }
+    console.log(`⏭️  Images: Handled by orchestrator (not here)\n`);
     
     // Stage 0: Outline Engineering (INCLUDING plotBible generation!)
     console.log("📋 Stage 0: Building outline (12 episodes) + plotBible...");
@@ -69,25 +64,8 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
-    // 🖼️ Generate cover image if requested
-    let coverImageBuffer: Buffer | undefined;
-    if (params.includeImages) {
-      try {
-        console.log("🖼️  Generating cover image with plotBible from outline...");
-        coverImageBuffer = await imageGeneratorAgent.generateCoverImage({
-          title,
-          ledeText: lede,
-          theme: params.theme,
-          emotion: params.emotion,
-          plotBible, // ✅ GUARANTEED TO EXIST!
-        });
-        if (coverImageBuffer) {
-          console.log(`✅ Cover image generated (${coverImageBuffer.length} bytes)`);
-        }
-      } catch (error) {
-        console.error(`❌ Cover image generation failed:`, (error as Error).message);
-      }
-    }
+    // ⚠️  NOTE: Cover image generation moved to contentFactoryOrchestrator
+    // This service generates articles only, orchestrator handles images
     
     // Assemble article
     const article: LongFormArticle = {
@@ -98,7 +76,7 @@ export class MultiAgentService {
       lede,
       finale,
       voicePassport,
-      coverImage: coverImageBuffer,
+      coverImage: undefined, // ⚠️  Will be set by orchestrator
       metadata: {
         totalChars: lede.length + episodes.reduce((sum, ep) => sum + ep.charCount, 0) + finale.length,
         totalReadingTime: this.calculateReadingTime(lede, episodes, finale),
@@ -114,9 +92,7 @@ export class MultiAgentService {
     console.log(`   - Reading time: ${article.metadata.totalReadingTime} min`);
     console.log(`   - Scenes: ${article.metadata.sceneCount}`);
     console.log(`   - Dialogues: ${article.metadata.dialogueCount}`);
-    if (coverImageBuffer) {
-      console.log(`   - Cover image: YES (${coverImageBuffer.length} bytes)`);
-    }
+    console.log(`   - Cover image: Pending (will be generated in orchestrator)`);
     console.log(``);
     
     return article;
