@@ -3,15 +3,16 @@ import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
 /**
- * 🎬 Episode Generator Service v3.8 (DYNAMIC BUDGET)
+ * 🎬 Episode Generator Service v4.0 (DYNAMIC POOL-BASED BUDGETING)
  * 
- * Generates episodes with STRICT CHARACTER BUDGETING:
+ * Generates episodes with INTELLIGENT CHARACTER BUDGETING:
  * - Total budget: 35000-38500 chars (35K +10%)
  * - Lede: ~700 chars
  * - Finale: ~1500 chars
- * - Remaining divided equally among episodes
+ * - Remaining divided equally among episodes initially
  * - Each episode gets specific char limit in prompt
- * - NO TRIMMING - just strict limits from the start
+ * - If episode exceeds limit: account for actual size, adjust next episode budget
+ * - NO RETRIES for oversized - just continue with recalculated pool
  */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
@@ -19,7 +20,7 @@ export class EpisodeGeneratorService {
   private TOTAL_BUDGET = 38500; // 35000 + 10% (35K + 10% = 38.5K)
   private LEDE_BUDGET = 700;
   private FINALE_BUDGET = 1500;
-  private MAX_RETRIES = 3;
+  private MAX_RETRIES = 2; // Only for API failures or too-short content
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
@@ -50,7 +51,10 @@ export class EpisodeGeneratorService {
   }
 
   /**
-   * 🎯 Generate episodes sequentially with BUDGET TRACKING
+   * 🎯 Generate episodes sequentially with DYNAMIC POOL TRACKING
+   * 
+   * Key change: If episode exceeds budget, we accept it and adjust
+   * remaining pool for next episodes instead of retrying!
    */
   async generateEpisodesSequentially(
     episodeOutlines: EpisodeOutline[],
@@ -71,14 +75,15 @@ export class EpisodeGeneratorService {
     console.log(`   (Remaining for episodes: ${budget.remaining} chars)\n`);
     
     let charCountSoFar = 0;
+    let remainingPool = budget.remaining;
 
     for (let i = 0; i < episodeOutlines.length; i++) {
       const outline = episodeOutlines[i];
-      const charsRemaining = budget.total - charCountSoFar - budget.finale;
-      const charsForThisEpisode = Math.floor(charsRemaining / (episodeOutlines.length - i));
+      const episodesLeft = episodeOutlines.length - i;
+      const charsForThisEpisode = Math.floor(remainingPool / episodesLeft);
       
       console.log(`\n   🎬 Episode #${outline.id} - Starting generation...`);
-      console.log(`      Budget: ${charsForThisEpisode} chars (${charsRemaining} remaining for rest)`);
+      console.log(`      Budget: ${charsForThisEpisode} chars (${remainingPool} remaining for rest)`);
       
       try {
         const episode = await this.generateSingleEpisode(
@@ -89,9 +94,19 @@ export class EpisodeGeneratorService {
           episodeOutlines.length
         );
         episodes.push(episode);
+        
+        // UPDATE POOL: subtract actual chars from remaining pool
+        remainingPool -= episode.charCount;
         charCountSoFar += episode.charCount;
         
-        console.log(`      ✅ Generated: ${episode.charCount} chars (total so far: ${charCountSoFar})`);
+        // Warn if significantly over budget
+        if (episode.charCount > charsForThisEpisode * 1.1) {
+          console.log(`      ⚠️  Over budget: ${episode.charCount}/${charsForThisEpisode} chars`);
+          console.log(`      📉 Pool adjusted: remaining ${remainingPool} chars for ${episodesLeft - 1} episodes`);
+        } else {
+          console.log(`      ✅ Generated: ${episode.charCount} chars (on budget)`);
+        }
+        console.log(`      📊 Total so far: ${charCountSoFar}/${budget.total}`);
         
         if (options?.onProgress) {
           options.onProgress(i + 1, episodeOutlines.length, charCountSoFar);
@@ -107,12 +122,16 @@ export class EpisodeGeneratorService {
       }
     }
     
-    console.log(`\n✅ All episodes generated! Total chars: ${charCountSoFar}`);
+    const utilization = ((charCountSoFar / budget.total) * 100).toFixed(1);
+    console.log(`\n✅ All episodes generated!`);
+    console.log(`   Total chars: ${charCountSoFar}/${budget.total} (${utilization}% utilization)`);
     return episodes;
   }
 
   /**
    * 🎨 Generate single episode with SPECIFIC CHAR LIMIT
+   * 
+   * NO RETRY on oversized! Just generate once, accept, move on.
    */
   private async generateSingleEpisode(
     outline: EpisodeOutline,
@@ -143,16 +162,17 @@ export class EpisodeGeneratorService {
 
       let content = response.trim();
       
-      // ✅ STRICT VALIDATION (no trimming!)
+      // ✅ VALIDATION: Only check for TOO SHORT
+      // If too long: we ACCEPT it and let pool management handle it
       
       // Check if TOO SHORT
-      if (content.length < charLimit * 0.8) {
+      if (content.length < charLimit * 0.7) {
         console.log(`      ⚠️  Too short (${content.length}/${charLimit} chars), attempt ${attempt}/${this.MAX_RETRIES}`);
         
         if (attempt < this.MAX_RETRIES) {
           console.log(`      🔄 Retrying with expanded prompt...`);
           return this.generateSingleEpisode(
-            { ...outline, externalConflict: outline.externalConflict + " (EXPAND THIS SCENE SIGNIFICANTLY)" },
+            { ...outline, externalConflict: outline.externalConflict + " (EXPAND SIGNIFICANTLY)" },
             previousEpisodes,
             charLimit,
             episodeNum,
@@ -172,37 +192,21 @@ export class EpisodeGeneratorService {
             true
           );
         } else {
-          console.error(`      ❌ CRITICAL: Episode #${outline.id} too short even with fallback`);
+          console.error(`      ❌ CRITICAL: Episode #${outline.id} too short`);
           throw new Error(
-            `Episode #${outline.id} generation failed: content too short (${content.length}/${charLimit}).`
+            `Episode #${outline.id} too short (${content.length}/${charLimit}). Tried ${this.MAX_RETRIES} retries.`
           );
         }
       }
       
-      // Check if TOO LONG - REJECT, don't trim!
+      // ✅ ACCEPT ANY LENGTH >= 70% of budget
+      // If too long: just use it, pool adjusts for next episodes
       if (content.length > charLimit * 1.1) {
-        console.log(`      ⚠️  Too long (${content.length}/${charLimit} chars), retrying with stricter limit...`);
-        
-        if (attempt < this.MAX_RETRIES) {
-          return this.generateSingleEpisode(
-            { ...outline, externalConflict: outline.externalConflict.substring(0, Math.max(50, outline.externalConflict.length - 50)) },
-            previousEpisodes,
-            charLimit,
-            episodeNum,
-            totalEpisodes,
-            attempt + 1,
-            useFallbackModel
-          );
-        } else {
-          console.error(`      ❌ Episode #${outline.id} exceeds char limit even after retries`);
-          throw new Error(
-            `Episode #${outline.id} generation failed: content too long (${content.length}/${charLimit}). Tried ${this.MAX_RETRIES} retries.`
-          );
-        }
+        console.log(`      ℹ️  Episode length: ${content.length}/${charLimit} (${((content.length/charLimit)*100).toFixed(0)}%)`);
+        console.log(`      ℹ️  Accepting oversized - pool will adjust for remaining episodes`);
+      } else {
+        console.log(`      ✅ Episode ${episodeNum}: ${content.length} chars (within budget)`);
       }
-
-      // ✅ VALIDATION PASSED
-      console.log(`      ✅ Episode ${outline.id}: ${content.length} chars (within budget of ${charLimit})`);
 
       // Generate title
       const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
@@ -229,7 +233,7 @@ export class EpisodeGeneratorService {
       console.warn(`      ❌ Generation failed (attempt ${attempt}): ${errorMessage}`);
       
       if (attempt < this.MAX_RETRIES && (errorMessage.includes('503') || errorMessage.includes('overloaded'))) {
-        console.log(`      🔄 API overloaded, retrying...`);
+        console.log(`      🔄 API overloaded, retrying in 5s...`);
         await new Promise(resolve => setTimeout(resolve, 5000));
         return this.generateSingleEpisode(
           outline,
@@ -258,11 +262,11 @@ export class EpisodeGeneratorService {
     attempt: number = 1
   ): string {
     const retryNote = attempt > 1 ? `\n⚠️  RETRY ATTEMPT #${attempt}\n` : '';
-    const minChars = Math.floor(charLimit * 0.8);
+    const minChars = Math.floor(charLimit * 0.7);
     const maxChars = charLimit;
 
     return `
-🎬 EPISODE #${outline.id} of ${totalEpisodes} - ZenMaster v3.8
+🎬 EPISODE #${outline.id} of ${totalEpisodes} - ZenMaster v4.0
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💰 ECONOMIC MOTIVATION
@@ -272,8 +276,8 @@ This episode is part of 35K character budget spread across ${totalEpisodes} epis
 Your episode: Episode ${episodeNum}/${totalEpisodes}
 
 If this episode:
-✅ GRIPS reader → reads full episode → $1+ per reader
-❌ BORES reader → switches to another → $0.05 per reader
+✅ GRIPS reader → reads full episode → \$1+ per reader
+❌ BORES reader → switches to another → \$0.05 per reader
 
 Difference: 20X INCOME!
 
@@ -338,31 +342,22 @@ ${previousContext ? `\n━━━━━━━━━━━━━━━━━━━
 ${previousContext}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 STRICT CHARACTER BUDGET REQUIREMENT
+📋 CHARACTER BUDGET GUIDELINE (NOT STRICT LIMIT)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔴 CRITICAL: This episode has a FIXED CHARACTER BUDGET!
+ℹ️  This episode guideline: ${minChars}-${maxChars} characters (with spaces)
 
-✅ Target length: ${minChars}-${maxChars} characters (with spaces)
-✅ MINIMUM: ${minChars} chars (if less, will be REJECTED and regenerated)
-✅ MAXIMUM: ${maxChars} chars (if more, will be REJECTED and regenerated)
+✅ QUALITY FIRST: If you need 3500 chars for great storytelling, write 3500
+✅ DON'T ARTIFICIALLY EXPAND: If 3000 chars is natural, write 3000
+✅ DON'T ARTIFICIALLY TRIM: If you need 4000 chars, write 4000
 
-⚠️  NO TRIMMING! If you exceed budget, episode fails and regenerates.
-⚠️  Better to write ${minChars}-${maxChars} of high quality than exceed limit!
-
-✅ Length: Russian only, urban educated tone (NOT village dialect!)
-✅ Style: Mix Donna fast-paced with Rubina psychological depth
-✅ Dialogue: Realistic with pauses and interruptions
-✅ Emotions: Shown through action/detail, NOT explained
-✅ Details: Modern urban (phone, letter, mirror - NOT village details)
-✅ End: Provocation (question that makes reader want to comment)
-✅ Structure: Fast → Deep → Fast → Deep pacing
+The system will adjust remaining episodes based on ACTUAL length.
+Better to have 1 great 4000-char episode than 2 mediocre 2000-char episodes!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Output ONLY the episode text. No titles, no metadata, no explanations.
-REMEMBER: ${minChars}-${maxChars} characters EXACTLY.
-Make this count. People's happiness depends on this!
+Make this episode UNFORGETTABLE. Readers' happiness depends on it!
 `;
   }
 
