@@ -17,13 +17,14 @@ on:
           - '100'
       channel:
         description: 'Channel name (for folder: articles/{channel}/{date}/)'
-        required: false
-        default: 'channel-1'
+        required: true
+        default: 'women-35-60'
         type: choice
         options:
-          - 'channel-1'
           - 'women-35-60'
           - 'young-moms'
+          - 'men-25-40'
+          - 'teens'
       preset:
         description: 'Preset configuration'
         required: false
@@ -210,5 +211,5 @@ EOF
           echo "   article-slug-{timestamp}.txt"
           echo "   article-slug-{timestamp}.png"
           echo ""
-          echo "════════════════════════════════════════════════════════════"
+          echo "═══════════════════════════════════════════════════════════"
           echo ""
