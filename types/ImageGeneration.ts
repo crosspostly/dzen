@@ -12,10 +12,16 @@ import { PlotBible } from './PlotBible';
  * Cover image is generated from article title + first paragraph (lede)
  */
 export interface CoverImageRequest {
-  articleId: string;
+  // Required fields (core identity)
   title: string;
-  ledeText: string; // First paragraph of the article
-  plotBible: PlotBible;
+  lede: string; // First paragraph of the article
+  
+  // Optional fields (contextual data)
+  articleId?: string;
+  ledeText?: string; // Alias for lede (for compatibility)
+  theme?: string;
+  emotion?: string;
+  plotBible?: Partial<PlotBible> | PlotBible;
 }
 
 /**

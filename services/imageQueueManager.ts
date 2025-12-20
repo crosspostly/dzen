@@ -131,7 +131,7 @@ export class ImageQueueManager {
       percentage,
       estimatedTimeRemaining: Math.ceil(estimatedTimeRemaining),
       currentlyProcessing: currentlyProcessing 
-        ? `Episode ${currentlyProcessing.request.episodeId}` 
+        ? `Article ${currentlyProcessing.request.articleId || 'cover'}` 
         : null,
       lastProcessedAt: this.lastProcessedAt,
       errors: this.errors

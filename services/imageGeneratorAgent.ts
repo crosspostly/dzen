@@ -589,3 +589,9 @@ Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
     return details.slice(0, 5);
   }
 }
+
+// ============================================================================
+// 🔧 SINGLETON EXPORT: Create and export default instance
+// ============================================================================
+
+export const imageGeneratorAgent = new ImageGeneratorAgent();

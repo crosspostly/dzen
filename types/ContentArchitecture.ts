@@ -3,6 +3,8 @@
 // 35K+ Longform Article Structure (9-12 episodes)
 // ============================================================================
 
+import { GeneratedImage } from './ImageGeneration';
+
 export interface Episode {
   id: number;                  // 1-12
   title: string;              // "Эпизод 1: ..."
@@ -99,6 +101,7 @@ export interface LongFormArticle {
   // 🖼️ ИЗОБРАЖЕНИЯ
   hasImages?: boolean;        // Флаг наличия изображений
   totalImages?: number;       // Количество изображений
+  coverImage?: GeneratedImage; // 🎯 Новое: ОДНА обложка вместо массива изображений
   imageMetadata?: {
     aspectRatio: string;      // "16:9"
     resolution: string;       // "1280x720"
