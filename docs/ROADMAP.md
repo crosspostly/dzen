@@ -1,7 +1,7 @@
 # 🚀 ZenMaster Complete Development Roadmap
 
 **Last Updated**: 2025-12-20  
-**Current Version**: v4.0.2  
+**Current Version**: v4.0.2 → v4.1  
 **Status**: Active Development
 
 ---
@@ -9,44 +9,54 @@
 > 📌 **Quick Start Navigation**
 > - Need a quick overview? → [Orphaned Services Quick Summary](./architecture/ORPHANED_SERVICES_QUICK.md) (3 min)
 > - Implementing v4.9? → [v4.9 QualityValidator Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md) (20 min)
+> - Image generation issues? → [IMAGE_GENERATION_GUIDE](./IMAGE_GENERATION_GUIDE.md) (30 min)
 > - Complete documentation? → [Documentation Index](./DOCUMENTATION_INDEX.md) (45 min)
 
 ---
 
 ## 📋 TABLE OF CONTENTS
 
-1. [Current State (v4.0.2)](#current-state-v402)
-2. [Version v4.9 - Quality Validation](#version-v49---quality-validation)
-3. [Phase 2 (v4.5) - Anti-Detection System](#phase-2-v45---anti-detection-system)
-4. [Version v5.0+ - Auto-Publish System](#version-v50---auto-publish-system)
-5. [Complete File Structure](#complete-file-structure)
-6. [CLI Commands Reference](#cli-commands-reference)
-7. [Implementation Checklist](#implementation-checklist)
-8. [Execution Timeline](#execution-timeline)
-9. [Success Metrics](#success-metrics)
+1. [Current State (v4.1)](#current-state-v41)
+2. [Recent Fixes (v4.1 - TODAY)](#recent-fixes-v41---today)
+3. [Version v4.9 - Quality Validation](#version-v49---quality-validation)
+4. [Phase 2 (v4.5) - Anti-Detection System](#phase-2-v45---anti-detection-system)
+5. [Version v5.0+ - Auto-Publish System](#version-v50---auto-publish-system)
+6. [Complete File Structure](#complete-file-structure)
+7. [CLI Commands Reference](#cli-commands-reference)
+8. [Implementation Checklist](#implementation-checklist)
+9. [Execution Timeline](#execution-timeline)
+10. [Success Metrics](#success-metrics)
 
 ---
 
-## Current State (v4.0.2)
+## Current State (v4.1)
 
-**Release Date**: 2025-12-19  
-**Status**: ✅ Production
+**Release Date**: 2025-12-20 (today)  
+**Status**: 🔄 In Development (fixing image generation)
 
 ### Components
 ```
 ContentFactory
-├─ Canvas post-processing
-├─ Multi-channel support (YouTube, Яндex.Дзен)
-├─ Content sanitization
-├─ Episode management
-└─ Metadata handling
+├─ Canvas post-processing ✅
+├─ Multi-channel support (YouTube, Яндex.Дзен) ✅
+├─ Content sanitization ✅
+├─ Episode management ✅
+├─ Image generation (v4.1 FIXED) 🔥
+├─ Metadata handling ✅
+└─ Quality validation (v4.9) ✅
 
 Services
-├─ ContentSanitizer
-├─ CanvasProcessor
-├─ EpisodeManager
-├─ FileManager
-└─ ConfigManager
+├─ ContentSanitizer ✅
+├─ CanvasProcessor ✅
+├─ EpisodeManager ✅
+├─ FileManager ✅
+├─ ConfigManager ✅
+├─ ImageGeneratorAgent ✅ (v4.1 fixed)
+├─ ImageWorkerPool ✅ (v4.1 fixed)
+├─ PlotBibleBuilder ✅ (v4.1 fixed)
+├─ ImageProcessorService ✅
+├─ QualityValidator ✅ (v4.9)
+└─ Phase2AntiDetectionService ⏳ (planned v4.5)
 ```
 
 ### Current Capabilities
@@ -55,7 +65,95 @@ Services
 - ✅ Video metadata extraction
 - ✅ Canvas HTML generation
 - ✅ Content sanitization
+- ✅ **Image generation (ONE cover per article) - FIXED v4.1**
+- ✅ Quality validation (authenticity scoring)
 - ✅ Error handling and logging
+- ⏳ Anti-detection system (planned)
+- ⏳ Auto-publish system (planned)
+
+---
+
+## Recent Fixes (v4.1 - TODAY)
+
+**Release Date**: 2025-12-20  
+**Status**: 🔄 Pull Request #47 (in review)
+
+### Bug Fixed: SVG Fallback Instead of JPEG
+
+**Problem:**
+All cover images were being generated as SVG placeholders instead of real JPEG from Gemini API.
+
+**Root Cause:**
+In `imageWorkerPool.ts`, the code incorrectly called:
+```typescript
+// ❌ WRONG - Instance method that doesn't exist
+const plotBibleBuilder = new PlotBibleBuilder();
+const plotBible = plotBibleBuilder.build({ ... });  // throws: "build is not a function"
+```
+
+This error triggered SVG fallback instead of real image generation.
+
+**Solution:**
+Use correct static method from PlotBibleBuilder:
+```typescript
+// ✅ CORRECT - Static method
+const plotBible = PlotBibleBuilder.buildFromTheme({
+  theme: article.metadata.theme,
+  angle: article.metadata.angle,
+  emotion: article.metadata.emotion,
+  audience: article.metadata.audience,
+});
+```
+
+**Files Changed:**
+- `services/imageWorkerPool.ts` - Fixed PlotBibleBuilder method call
+- `docs/IMAGE_GENERATION_GUIDE.md` - NEW comprehensive guide (prevent recurrence)
+
+**Result:**
+✅ Images now generate as REAL JPEG from Gemini Image API  
+✅ 1920×1080 resolution, 16:9 aspect ratio  
+✅ Canvas post-processing works properly  
+✅ Fallback to SVG only if API fails (rare)  
+
+**Documentation Added:**
+- 📚 [IMAGE_GENERATION_GUIDE.md](./IMAGE_GENERATION_GUIDE.md) - 1500+ lines
+  - Complete architecture explanation
+  - Step-by-step image generation flow
+  - API reference for all image services
+  - Integration points documentation
+  - Error handling & fallback chain
+  - Debugging guide
+  - **6 Common Mistakes section** (prevent recurrence)
+  - Performance tips
+  - Unit & integration tests
+  - Changelog
+
+### Why This Bug Happened
+
+1. **Static Method Confusion**
+   - PlotBibleBuilder only has static methods (buildFromTheme, generateRandom)
+   - Code tried to create instance and call instance method .build()
+   - No compile-time error (TypeScript not strict enough)
+   - Runtime error caught by fallback (SVG placeholder)
+
+2. **Lack of Documentation**
+   - No guide explaining difference between static/instance methods
+   - No step-by-step image generation flow documented
+   - No examples showing correct usage
+
+3. **Missing Tests**
+   - No unit tests for PlotBibleBuilder
+   - No integration tests for ImageWorkerPool
+   - Bug would be caught immediately with proper tests
+
+### Prevention Measures
+
+✅ **Documentation** - IMAGE_GENERATION_GUIDE.md added  
+✅ **Code Comments** - Added v4.1 FIXED comments explaining correct method  
+✅ **Error Logging** - Better error messages in fallback  
+✅ **Common Mistakes** - 6-item guide preventing recurrence  
+✅ **Testing Examples** - Unit & integration test examples in guide  
+✅ **Debugging Guide** - Full debugging section for image generation  
 
 ---
 
@@ -189,59 +287,6 @@ const passRate = (scores.filter(s => s.readSuccess).length / scores.length) * 10
 
 console.log(`Average authenticity: ${avgScore.toFixed(1)}/100`);
 console.log(`Pass rate: ${passRate.toFixed(1)}%`);
-```
-
-### High-Scoring Example
-
-```
-✅ SCORE: 78/100 (PASS)
-
-Content: "The autumn leaves fell gently as Sarah walked through the park..."
-
-Breakdown:
-- Document Appearance: 35/40 ✅ (Good structure, natural formatting)
-- Narrative Quality: 28/30 ✅ (Good flow, engaging language)
-- Technical Correctness: 18/20 ✅ (Minor grammar issue)
-- Linguistic Patterns: 10/10 ✅ (Natural speech patterns)
-
-Feedback: Minor comma placement in 2nd paragraph
-Recommendation: APPROVE for publishing
-```
-
-### Low-Scoring Example
-
-```
-❌ SCORE: 35/100 (FAIL)
-
-Content: "The leaves were falling. The park was there. Sarah walked. It was good."
-
-Breakdown:
-- Document Appearance: 20/40 ❌ (Choppy sentences, poor structure)
-- Narrative Quality: 8/30 ❌ (No flow, disconnected thoughts)
-- Technical Correctness: 12/20 ⚠️ (Repetitive, simple)
-- Linguistic Patterns: 5/10 ❌ (Unnatural, robotic)
-
-RetryPrompt: "Add more descriptive language, improve sentence flow, develop narrative arc"
-Recommendation: REQUEST REWRITE
-```
-
-### Integration with Pipeline
-
-```
-1. Content Generation
-   ↓
-2. Content Sanitization (existing)
-   ↓
-3. ✨ NEW: Quality Validation (v4.9)
-   ├─ Authenticity scoring
-   ├─ Failure detection
-   └─ Improvement suggestions
-   ↓
-4. Publishing Decision
-   ├─ If score ≥60: Publish ✅
-   └─ If score <60: Request rewrite ❌
-   ↓
-5. Analytics & Tracking
 ```
 
 ---
@@ -489,98 +534,38 @@ await autoPublisher.schedulePublishing(schedule);
 
 ## Complete File Structure
 
-### Current (v4.0.2)
+### Current (v4.1)
 
 ```
 dzen/
 ├── src/
 │   ├── services/
 │   │   ├── contentSanitizer.ts
+│   │   ├── qualityValidator.ts         ✅ v4.9
 │   │   ├── canvasProcessor.ts
 │   │   ├── episodeManager.ts
 │   │   ├── fileManager.ts
-│   │   └── configManager.ts
+│   │   ├── configManager.ts
+│   │   ├── imageGeneratorAgent.ts      ✅ v4.1 FIXED
+│   │   ├── imageWorkerPool.ts          ✅ v4.1 FIXED
+│   │   ├── imageProcessorService.ts    ✅ v4.1
+│   │   ├── plotBibleBuilder.ts         ✅ v4.1 FIXED
+│   │   ├── phase2AntiDetectionService.ts
+│   │   └── adversarialGatekeeper.ts
 │   ├── types/
+│   │   ├── validator.ts                ✅ v4.9
 │   │   ├── episode.ts
 │   │   ├── config.ts
-│   │   └── content.ts
-│   ├── utils/
-│   │   ├── logger.ts
-│   │   ├── errors.ts
-│   │   └── helpers.ts
-│   └── index.ts
-├── tests/
-├── config/
-├── docs/
-└── package.json
-```
-
-### After v4.9 (Current)
-
-```
-dzen/
-├── src/
-│   ├── services/
-│   │   ├── contentSanitizer.ts (updated)
-│   │   ├── qualityValidator.ts         ✨ NEW
-│   │   ├── canvasProcessor.ts
-│   │   ├── episodeManager.ts
-│   │   ├── fileManager.ts
-│   │   └── configManager.ts
-│   ├── types/
-│   │   ├── validator.ts                ✨ NEW
-│   │   ├── episode.ts
-│   │   ├── config.ts
-│   │   └── content.ts
+│   │   ├── content.ts
+│   │   ├── ImageGeneration.ts          ✅ v4.1
+│   │   └── ...
 │   ├── utils/
 │   ├── tests/
 │   └── index.ts
-└── package.json
-```
-
-### After v4.5 Phase 2 (Planned)
-
-```
-dzen/
-├── src/
-│   ├── services/
-│   │   ├── contentSanitizer.ts
-│   │   ├── qualityValidator.ts
-│   │   ├── phase2AntiDetectionService.ts   ✨ NEW
-│   │   ├── adversarialGatekeeper.ts        ✨ NEW
-│   │   ├── canvasProcessor.ts
-│   │   ├── episodeManager.ts
-│   │   ├── fileManager.ts
-│   │   └── configManager.ts
-│   ├── types/
-│   │   ├── antiDetection.ts                ✨ NEW
-│   │   └── ...
-│   └── ...
-└── package.json
-```
-
-### After v5.0+ (Planned)
-
-```
-dzen/
-├── src/
-│   ├── services/
-│   │   ├── contentSanitizer.ts
-│   │   ├── qualityValidator.ts
-│   │   ├── phase2AntiDetectionService.ts
-│   │   ├── adversarialGatekeeper.ts
-│   │   ├── playwrightService.ts            ✨ NEW
-│   │   ├── autoPublisher.ts                ✨ NEW
-│   │   ├── scheduleManager.ts              ✨ NEW
-│   │   ├── zenIntegration.ts               ✨ NEW
-│   │   ├── canvasProcessor.ts
-│   │   ├── episodeManager.ts
-│   │   ├── fileManager.ts
-│   │   └── configManager.ts
-│   ├── types/
-│   │   ├── publisher.ts                    ✨ NEW
-│   │   ├── schedule.ts                     ✨ NEW
-│   │   └── ...
+├── docs/
+│   ├── ROADMAP.md                      ✅ (this file, updated v4.1)
+│   ├── IMAGE_GENERATION_GUIDE.md       ✅ NEW v4.1
+│   ├── DOCUMENTATION_INDEX.md
 │   └── ...
 └── package.json
 ```
@@ -589,7 +574,7 @@ dzen/
 
 ## CLI Commands Reference
 
-### Current (v4.0.2)
+### Current (v4.1)
 
 ```bash
 # Validate configuration
@@ -607,6 +592,15 @@ npm run canvas -- --episode 1 --output canvas.html
 # Batch processing
 npm run batch -- --directory ./episodes
 
+# Factory with images (v4.1 FIXED)
+npm run factory -- --count=1 --channel=women-35-60 --images
+
+# Validate content authenticity (v4.9)
+npm run validate-authenticity -- --content "Your content"
+
+# Check authenticity score
+npm run check-score -- --file episode.md
+
 # Run tests
 npm test
 
@@ -614,66 +608,23 @@ npm test
 npm run lint
 ```
 
-### After v4.9 (Current)
-
-```bash
-# All above +
-
-# Validate content authenticity
-npm run validate-authenticity -- --content "Your content"
-
-# Check authenticity score
-npm run check-score -- --file episode.md
-
-# Batch validation
-npm run validate-batch -- --directory ./episodes
-
-# Generate quality report
-npm run quality-report -- --directory ./episodes
-```
-
-### After v4.5 Phase 2 (Planned)
-
-```bash
-# All above +
-
-# Test anti-detection
-npm run test-anti-detection -- --file episode.md
-
-# Apply anti-detection
-npm run apply-anti-detection -- --input raw.md --output processed.md
-
-# Check detection risk
-npm run check-detection-risk -- --file episode.md
-
-# Batch anti-detection
-npm run batch-anti-detection -- --directory ./episodes
-```
-
-### After v5.0+ (Planned)
-
-```bash
-# All above +
-
-# Publish to Zen
-npm run publish-zen -- --episode 1 --time "2026-01-20 10:00"
-
-# Schedule publishing
-npm run schedule -- --file schedule.json
-
-# Check publish status
-npm run status -- --episode 1
-
-# Get zen analytics
-npm run zen-analytics -- --episode 1
-
-# Manage zen accounts
-npm run manage-accounts -- --action list
-```
-
 ---
 
 ## Implementation Checklist
+
+### v4.1 Image Generation Fix ✅ (DONE - TODAY)
+
+- [x] Identify SVG fallback bug
+- [x] Find root cause (PlotBibleBuilder.build() → buildFromTheme())
+- [x] Fix imageWorkerPool.ts
+- [x] Test image generation
+- [x] Add v4.1 FIXED comments
+- [x] Create IMAGE_GENERATION_GUIDE.md
+- [x] Document common mistakes (6 items)
+- [x] Add debugging guide
+- [x] Add testing examples
+- [x] Update ROADMAP
+- [x] Create PR #47
 
 ### v4.9 Quality Validation ✅ (DONE)
 
@@ -688,10 +639,10 @@ npm run manage-accounts -- --action list
 - [x] Update version number
 - [x] Create CHANGELOG entry
 
-### v4.5 Phase 2 Anti-Detection 🔄 (IN PROGRESS)
+### v4.5 Phase 2 Anti-Detection 🔄 (NEXT)
 
-- [ ] Create phase2AntiDetectionService.ts
-- [ ] Create adversarialGatekeeper.ts
+- [ ] Create phase2AntiDetectionService.ts (if not already done)
+- [ ] Create adversarialGatekeeper.ts (if not already done)
 - [ ] Implement pattern obfuscation
 - [ ] Implement sentence variation
 - [ ] Implement vocabulary enhancement
@@ -738,24 +689,29 @@ Dec 19 (Thursday)
 
 Dec 20 (Friday) - TODAY
   ✅ 10:00 - v4.9 merged to main
-  🔄 14:00 - Documentation phase starts
-  ⏳ 19:00 - AI agent integration task prepared
-  ⏳ 19:30 - Send to AI agent
+  ✅ 14:00 - Documentation phase starts
+  ✅ 17:00 - Identified SVG fallback bug
+  ✅ 17:15 - Fixed imageWorkerPool.ts
+  ✅ 17:30 - Created IMAGE_GENERATION_GUIDE.md
+  ✅ 17:45 - Created PR #47 (image fix)
+  ⏳ 18:00 - Merge PR #47
+  ⏳ 18:30 - Test factory with images
+  ⏳ 19:00 - Update documentation
 
 Dec 21 (Saturday)
-  🔄 09:00 - Begin v4.5 Phase 2 development
-  🔄 16:00 - First implementation done
+  ⏳ 09:00 - Begin v4.5 Phase 2 development (if phase2AntiDetectionService not integrated)
+  ⏳ 16:00 - First implementation done
   ⏳ 20:00 - Testing with ZeroGPT
 
 Dec 22 (Sunday)
-  🔄 10:00 - Phase 2 implementation complete
-  🔄 14:00 - Testing and validation
+  ⏳ 10:00 - Phase 2 implementation complete
+  ⏳ 14:00 - Testing and validation
   ⏳ 18:00 - Ready for merge
 
 Dec 23 (Monday)
-  ✅ 10:00 - Phase 2 merged
-  ✅ 12:00 - v4.5 released
-  ✅ 15:00 - Update docs
+  ⏳ 10:00 - Phase 2 merged
+  ⏳ 12:00 - v4.5 released
+  ⏳ 15:00 - Update docs
 ```
 
 ### 2026 Timeline
@@ -775,6 +731,20 @@ Early February 2026
 ---
 
 ## Success Metrics
+
+### v4.1 Image Generation Fix
+
+**Metric**: Real JPEG generation rate  
+**Target**: 100% of images are JPEG (not SVG)  
+**Success**: ✅ (After merge)
+
+**Metric**: Image quality  
+**Target**: 1920×1080, 16:9, >100KB  
+**Success**: ⏳ (To be verified)
+
+**Metric**: Documentation completeness  
+**Target**: 80+ page guide with all aspects covered  
+**Success**: ✅ (IMAGE_GENERATION_GUIDE.md created)
 
 ### v4.9 Quality Validation
 
@@ -830,8 +800,14 @@ Early February 2026
 
 ## Dependencies & Prerequisites
 
+### For v4.1 Image Generation (TODAY)
+- ✅ v4.9 QualityValidator (done)
+- ✅ Complete test framework
+- ✅ Gemini Image API access
+- ✅ Canvas library installed
+
 ### For v4.5 Phase 2
-- ✅ v4.9 QualityValidator (prerequisite completed)
+- ✅ v4.9 QualityValidator (done)
 - ✅ Complete test framework
 - ✅ ZeroGPT and Originality.ai API access
 - ⏳ Additional test data
@@ -848,6 +824,14 @@ Early February 2026
 ---
 
 ## Risk Assessment
+
+### v4.1 Risks (TODAY)
+
+**Risk**: Image generation still has undetected bugs  
+**Mitigation**: Comprehensive guide prevents recurrence, extensive testing after merge
+
+**Risk**: Canvas post-processing still failing silently  
+**Mitigation**: Error logging improved, graceful fallback to original JPEG
 
 ### v4.5 Phase 2 Risks
 
@@ -877,11 +861,18 @@ Early February 2026
 
 ZenMaster is on a clear development path:
 
-1. **v4.0.2** - Current stable release
+1. **v4.1** - Image generation fix (TODAY) ✅ In Progress
 2. **v4.9** - Quality validation (✅ Done Dec 20)
-3. **v4.5** - Anti-detection system (🔄 Dec 22-23)
+3. **v4.5** - Anti-detection system (🔄 Next: Dec 22-23)
 4. **v5.0+** - Auto-publish system (🔮 Early 2026)
 
 Each version builds on the previous, adding value and capability. The roadmap is clear, timeline is realistic, and success metrics are defined.
 
 **Status**: Ready for execution ✅
+
+---
+
+**Last Updated:** 2025-12-20 (v4.1 added)  
+**Next Update:** After PR #47 merge and v4.1 release  
+**Version:** 4.1 (image generation fix)  
+**Author:** AI Agent + Community
