@@ -7,7 +7,7 @@
  * 1. Theme
  * 2. Outline + plotBible
  * 3. Cover image
- * 4. Canvas processing
+ * 4. Canvas processing (STRICT error handling)
  * 5. Export
  * 
  * Usage:
@@ -107,32 +107,48 @@ class TestImageGenerator {
 
       // STEP 5: Canvas post-processing
       console.log(`🎬 STEP 5: Canvas post-processing...`);
-      const startProcessTime = Date.now();
-      
-      let processedBuffer: Buffer | undefined;
-      try {
-        processedBuffer = await this.imageProcessor.processImage(generatedImage.base64);
-        const processTime = Date.now() - startProcessTime;
-        console.log(`   ✅ Image processed in ${processTime}ms`);
-        console.log(`      - Output format: JPEG`);
-        console.log(`      - Output size: ${Math.round(processedBuffer.length / 1024)}KB`);
-        console.log(`      - Quality: 0.8 (with natural artifacts)\n`);
-      } catch (processError) {
-        console.warn(`   ⚠️  Canvas processing failed: ${(processError as Error).message}`);
-        console.log(`   ℹ️  Using original PNG instead\n`);
-        // Use original base64 without processing
+      const processorResult = await this.imageProcessor.processImage(generatedImage.base64);
+
+      // Check Canvas result
+      let finalBuffer: Buffer | undefined;
+      let processingStatus: string;
+
+      if (processorResult.success && processorResult.buffer) {
+        // Canvas worked!
+        finalBuffer = processorResult.buffer;
+        processingStatus = 'CANVAS_OK';
+        console.log(`   ✅ Canvas processing SUCCESS`);
+        console.log(`      - Format: JPEG`);
+        console.log(`      - Size: ${Math.round(processorResult.buffer.length / 1024)}KB`);
+        console.log(`      - Dimensions: ${processorResult.width}x${processorResult.height}px`);
+        console.log(`      - Aspect ratio: ${processorResult.metadata.aspectRatio?.toFixed(2)}`);
+        if (processorResult.metadata.cropApplied) {
+          console.log(`      - Crop applied: YES`);
+        }
+        console.log('');
+      } else {
+        // Canvas failed - use original
+        console.warn(`   ⚠️  Canvas processing FAILED`);
+        console.error(`      Reason: ${processorResult.errorMessage}`);
+        console.log(`      Status: ${processorResult.processingStatus}`);
+        console.log(`      Fallback: Using original PNG\n`);
+        processingStatus = processorResult.processingStatus;
       }
 
       // STEP 6: Export to repo
       console.log(`💾 STEP 6: Export to repository...`);
-      const outputDir = await this.exportImage({
+      const exportResult = await this.exportImage({
         theme,
-        processedBuffer,
+        processedBuffer: finalBuffer,
         originalBase64: generatedImage.base64,
         plotBible,
         lede,
+        processingStatus,
+        processorResult,
       });
-      console.log(`   ✅ Exported to: ${outputDir}\n`);
+      console.log(`   ✅ Exported to: ${exportResult.dir}`);
+      console.log(`      - Image: ${exportResult.imagePath}`);
+      console.log(`      - Metadata: ${exportResult.metadataPath}\n`);
 
       // SUMMARY
       const totalTime = Date.now() - startTime;
@@ -141,8 +157,9 @@ class TestImageGenerator {
       console.log(`╠${'═'.repeat(60)}╣`);
       console.log(`║ Total time: ${(totalTime / 1000).toFixed(1)}s`);
       console.log(`║ Theme: ${theme}`);
-      console.log(`║ Image: ${processedBuffer ? 'JPEG (processed)' : 'PNG (original)'}`);
-      console.log(`║ Output: ${outputDir}`);
+      console.log(`║ Status: ${processingStatus}`);
+      console.log(`║ Format: ${processingStatus === 'CANVAS_OK' ? 'JPEG' : 'PNG'}`);
+      console.log(`║ Output: ${exportResult.dir}`);
       console.log(`╚${'═'.repeat(60)}╝\n`);
 
     } catch (error) {
@@ -161,7 +178,9 @@ class TestImageGenerator {
     originalBase64: string;
     plotBible: any;
     lede: string;
-  }): Promise<string> {
+    processingStatus: string;
+    processorResult: any;
+  }): Promise<{ dir: string; imagePath: string; metadataPath: string }> {
     // Create directory
     const dateStr = new Date().toISOString().split('T')[0];
     const outputDir = path.join('./articles', this.channelName, dateStr, 'test-images');
@@ -173,23 +192,44 @@ class TestImageGenerator {
     const filename = `${slug}-${timestamp}`;
 
     // Save image
+    let imagePath: string;
     if (options.processedBuffer) {
       // JPEG from Canvas processing
       const jpegPath = path.join(outputDir, `${filename}.jpg`);
       fs.writeFileSync(jpegPath, options.processedBuffer);
-      console.log(`      📄 ${filename}.jpg (${Math.round(options.processedBuffer.length / 1024)}KB)`);
+      imagePath = `${filename}.jpg`;
+      console.log(`      📄 ${filename}.jpg (CANVAS_OK)`);
     } else {
-      // PNG from API
+      // PNG from API (Canvas failed fallback)
       const base64Data = options.originalBase64.replace(/^data:image\/\w+;base64,/, '');
       const pngPath = path.join(outputDir, `${filename}.png`);
       fs.writeFileSync(pngPath, Buffer.from(base64Data, 'base64'));
-      console.log(`      📄 ${filename}.png (original)`);
+      imagePath = `${filename}.png`;
+      console.log(`      📄 ${filename}.png (CANVAS_FAILED - fallback)`);
     }
 
     // Save metadata
     const metadata = {
       theme: options.theme,
       timestamp,
+      processingStatus: options.processingStatus,
+      canvas: {
+        success: options.processorResult.success,
+        status: options.processorResult.processingStatus,
+        error: options.processorResult.errorMessage,
+        format: options.processorResult.format,
+        originalSize: options.processorResult.originalSize,
+        processedSize: options.processorResult.processedSize,
+        dimensions: {
+          width: options.processorResult.width,
+          height: options.processorResult.height,
+        },
+        metadata: options.processorResult.metadata,
+      },
+      image: {
+        format: options.processedBuffer ? 'jpeg' : 'png',
+        filename: imagePath,
+      },
       narrator: {
         age: options.plotBible.narrator.age,
         gender: options.plotBible.narrator.gender,
@@ -200,9 +240,13 @@ class TestImageGenerator {
     };
     const metadataPath = path.join(outputDir, `${filename}-metadata.json`);
     fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
-    console.log(`      📋 ${filename}-metadata.json`);
+    console.log(`      📋 ${filename}-metadata.json (${options.processingStatus})`);
 
-    return outputDir;
+    return {
+      dir: outputDir,
+      imagePath: path.join(outputDir, imagePath),
+      metadataPath: metadataPath,
+    };
   }
 
   /**
