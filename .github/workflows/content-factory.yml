@@ -1,7 +1,6 @@
 name: Content Factory - Batch Articles (Dzen)
 
 on:
-  # 🎮 MANUAL ONLY: Run workflow button in Actions
   workflow_dispatch:
     inputs:
       count:
@@ -53,44 +52,43 @@ jobs:
       
       - run: npm install
       
-      - name: '🏭 ZenMaster v4.0 - Yandex.Dzen Content Factory'
+      - name: ZenMaster v4.0 - Yandex.Dzen Content Factory
         run: |
           COUNT="${{ inputs.count }}"
           CHANNEL="${{ inputs.channel }}"
           IMAGES="${{ inputs.images }}"
           
           echo ""
-          echo "════════════════════════════════════════════════════════"
-          echo "🏭 ZenMaster v4.0 - Yandex.Dzen Content Factory"
-          echo "════════════════════════════════════════════════════════"
-          echo "📄 Articles:      $COUNT"
-          echo "🎯 Topic:         $CHANNEL"
-          echo "🖼️  Images:        $IMAGES"
-          echo "📁 Output:        articles/$CHANNEL/$(date +%Y-%m-%d)/"
-          echo "════════════════════════════════════════════════════════"
+          echo "===================================================="
+          echo "ZenMaster v4.0 - Yandex.Dzen Content Factory"
+          echo "===================================================="
+          echo "Articles:      $COUNT"
+          echo "Topic:         $CHANNEL"
+          echo "Images:        $IMAGES"
+          echo "Output:        articles/$CHANNEL/$(date +%Y-%m-%d)/"
+          echo "===================================================="
           echo ""
           
-          # Build command with --channel parameter
           CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
           
           if [ "$IMAGES" = "true" ]; then
             CMD="$CMD --images"
           fi
           
-          echo "🚀 Running: $CMD"
+          echo "Running: $CMD"
           echo ""
           
-          $CMD
+          eval "$CMD"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
       
-      - name: '📊 Count generated files'
+      - name: Count generated files
         if: always()
         run: |
           echo ""
-          echo "📊 Generation Summary:"
-          echo "════════════════════════════════════════════════════════"
+          echo "Generation Summary:"
+          echo "===================================================="
           
           CHANNEL="${{ inputs.channel }}"
           DATE=$(date +%Y-%m-%d)
@@ -99,56 +97,52 @@ jobs:
           ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
           IMAGE_COUNT=$(find ./articles -name "*.png" 2>/dev/null | wc -l)
           
-          echo "✅ Articles generated: $ARTICLE_COUNT"
-          echo "✅ Images generated:   $IMAGE_COUNT"
+          echo "Articles generated: $ARTICLE_COUNT"
+          echo "Images generated:   $IMAGE_COUNT"
           echo ""
-          echo "📁 Output directory: $OUTPUT_PATH"
+          echo "Output directory: $OUTPUT_PATH"
           ls -lah "$OUTPUT_PATH" 2>/dev/null || echo "(checking output...)"
           echo ""
       
-      - name: '📦 Prepare artifacts for download'
+      - name: Prepare artifacts for download
         if: always()
         run: |
-          echo "📦 Preparing artifacts for download..."
+          echo "Preparing artifacts for download..."
           
-          # Create artifact directory
           mkdir -p artifacts
-          
-          # Copy articles folder
           cp -r ./articles ./artifacts/ 2>/dev/null || true
           
-          # Create summary
           CHANNEL="${{ inputs.channel }}"
           DATE=$(date +%Y-%m-%d)
+          RUN_ID="${{ github.run_id }}"
+          COUNT="${{ inputs.count }}"
+          IMAGES="${{ inputs.images }}"
           
-          cat > artifacts/DOWNLOAD_SUMMARY.txt << 'EOFMSG'
-🏭 ZenMaster v4.0 - Yandex.Dzen Content Factory Results
-════════════════════════════════════════════════════════
+          cat > artifacts/DOWNLOAD_SUMMARY.txt <<EOF
+ZenMaster v4.0 - Yandex.Dzen Content Factory Results
+====================================================
 
-Run ID:      ${{ github.run_id }}
-Date:        DATE_PLACEHOLDER
-Topic:       CHANNEL_PLACEHOLDER
+Run ID:      $RUN_ID
+Date:        $DATE
+Topic:       $CHANNEL
 
 Configuration:
-- Articles:  ${{ inputs.count }}
-- Topic:     CHANNEL_PLACEHOLDER (Yandex.Dzen)
-- Images:    ${{ inputs.images }}
+- Articles:  $COUNT
+- Topic:     $CHANNEL (Yandex.Dzen)
+- Images:    $IMAGES
 
-📁 FILES LOCATION:
-articles/CHANNEL_PLACEHOLDER/DATE_PLACEHOLDER/
-├── article-slug-{timestamp}.txt    ← Copy this to Zen!
-├── article-slug-{timestamp}.png    ← Download cover images
+FILES LOCATION:
+articles/$CHANNEL/$DATE/
+├── article-slug-{timestamp}.txt    (Copy this to Zen!)
+├── article-slug-{timestamp}.png    (Download cover images)
 └── ...
 
-════════════════════════════════════════════════════════
-EOFMSG
+====================================================
+EOF
           
-          sed -i "s|DATE_PLACEHOLDER|$DATE|g" artifacts/DOWNLOAD_SUMMARY.txt
-          sed -i "s|CHANNEL_PLACEHOLDER|$CHANNEL|g" artifacts/DOWNLOAD_SUMMARY.txt
-          
-          echo "✅ Artifacts prepared"
+          echo "Artifacts prepared"
       
-      - name: '📤 Upload articles to artifacts'
+      - name: Upload articles to artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -157,41 +151,40 @@ EOFMSG
           retention-days: 90
           if-no-files-found: warn
       
-      - name: '🔄 Commit and push results'
+      - name: Commit and push results
         if: always()
         run: |
           git config --local user.email "zenmaster-bot@github.com"
           git config --local user.name "ZenMaster Bot"
           
-          # Add articles
           git add articles/ 2>/dev/null || true
           
           ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
           IMAGE_COUNT=$(find ./articles -name "*.png" 2>/dev/null | wc -l)
           
-          git commit -m "🏭 Dzen: ${{ inputs.count }} articles (${{ inputs.channel }}) | $IMAGE_COUNT images (run #${{ github.run_id }})" || echo "✅ No changes to commit"
-          git push origin HEAD:main || echo "⚠️  Push failed or no changes"
+          git commit -m "Dzen: ${{ inputs.count }} articles (${{ inputs.channel }}) | $IMAGE_COUNT images (run #${{ github.run_id }})" || echo "No changes to commit"
+          git push origin HEAD:main || echo "Push failed or no changes"
       
-      - name: '✅ Job Summary'
+      - name: Job Summary
         if: always()
         run: |
           CHANNEL="${{ inputs.channel }}"
           DATE=$(date +%Y-%m-%d)
           
           echo ""
-          echo "═══════════════════════════════════════════════════════════════"
-          echo "✅ FACTORY JOB COMPLETE"
-          echo "═══════════════════════════════════════════════════════════════"
+          echo "========================================================="
+          echo "FACTORY JOB COMPLETE"
+          echo "========================================================="
           echo ""
-          echo "📥 Download artifacts:"
-          echo "   Actions → Run #${{ github.run_id }} → Artifacts"
+          echo "Download artifacts:"
+          echo "   Actions -> Run #${{ github.run_id }} -> Artifacts"
           echo ""
-          echo "📁 Files saved to:"
+          echo "Files saved to:"
           echo "   articles/$CHANNEL/$DATE/"
           echo ""
-          echo "📄 File format:"
+          echo "File format:"
           echo "   article-slug-{timestamp}.txt     (copy to Dzen)"
           echo "   article-slug-{timestamp}.png     (cover image)"
           echo ""
-          echo "═══════════════════════════════════════════════════════════════"
+          echo "========================================================="
           echo ""
