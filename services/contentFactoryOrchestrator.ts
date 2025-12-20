@@ -33,6 +33,7 @@ export class ContentFactoryOrchestrator {
   private articles: Article[] = [];
   private errors: FactoryError[] = [];
   private apiKey?: string;
+  private channelName: string = 'channel-1'; // 🆕 Channel name for folder structure
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey;
@@ -54,10 +55,15 @@ export class ContentFactoryOrchestrator {
   /**
    * 🎬 Initialize factory with configuration
    */
-  async initialize(config: ContentFactoryConfig): Promise<void> {
-    console.log(`\n╔════════════════════════════════════════════════════════════`);
+  async initialize(config: ContentFactoryConfig, channelName?: string): Promise<void> {
+    // 🆕 Set channel name
+    if (channelName) {
+      this.channelName = channelName;
+    }
+
+    console.log(`\n╔${'═'.repeat(58)}╗`);
     console.log(`║ 🏭 ZenMaster v4.0 - Content Factory`);
-    console.log(`╠════════════════════════════════════════════════════════════`);
+    console.log(`╠${'═'.repeat(58)}╣`);
     console.log(`║ 📄 Articles:          ${config.articleCount}`);
     console.log(`║ ⚙️  Parallel workers:  ${config.parallelEpisodes}`);
     console.log(`║ 🖼️  Images:            ${config.includeImages ? 'Yes (1/min)' : 'No'}`);
@@ -65,7 +71,8 @@ export class ContentFactoryOrchestrator {
     console.log(`║ 📤 Output format:     ${config.outputFormat}`);
     console.log(`║ 🛡️  Anti-detection:   ${config.enableAntiDetection ? 'Yes' : 'No'}`);
     console.log(`║ 📖 PlotBible:         ${config.enablePlotBible ? 'Yes' : 'No'}`);
-    console.log(`╚════════════════════════════════════════════════════════════\n`);
+    console.log(`║ 📁 Channel:           ${this.channelName}`);
+    console.log(`╚${'═'.repeat(58)}╝\n`);
 
     this.config = config;
 
@@ -250,18 +257,20 @@ export class ContentFactoryOrchestrator {
 
   /**
    * 📤 Export articles for Zen
-   * ✅ UPDATED v4.0: Save to articles/{YYYY-MM-DD}/ with flat structure
+   * ✅ UPDATED v4.0: Save to articles/{channel_name}/{YYYY-MM-DD}/ with flat structure
    * - ONE .txt file (article content)
    * - ONE .png file (cover image)
    * - Same filename for both (only extension differs)
    */
   async exportForZen(outputDir: string = './articles'): Promise<string> {
-    console.log(`\n📤 Exporting ${this.articles.length} articles to: ${outputDir}\n`);
+    console.log(`\n📤 Exporting ${this.articles.length} articles\n`);
 
-    // Create articles/{YYYY-MM-DD}/ directory
+    // Create articles/{channel_name}/{YYYY-MM-DD}/ directory
     const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const finalDir = path.join(outputDir, dateStr);
+    const finalDir = path.join(outputDir, this.channelName, dateStr);
     fs.mkdirSync(finalDir, { recursive: true });
+
+    console.log(`📁 Output folder: ${finalDir}\n`);
 
     const exportedFiles: string[] = [];
 
@@ -543,6 +552,7 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
     console.log(`🖼️  Images: ${this.progress.imagesCompleted}/${this.progress.imagesTotal}`);
     console.log(`⏱️  Duration: ${(duration / 60).toFixed(1)} minutes`);
     console.log(`✅ Success rate: ${((this.progress.articlesCompleted / this.progress.articlesTotal) * 100).toFixed(1)}%`);
+    console.log(`📁 Saved to: articles/${this.channelName}/${new Date().toISOString().split('T')[0]}/`);
     console.log(`${'='.repeat(60)}\n`);
   }
 }
