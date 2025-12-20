@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766217112374,
+  "generatedAt": 1766218404743,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -13,14 +13,14 @@
     "enablePlotBible": true
   },
   "articleCount": 1,
-  "totalCharacters": 52045,
+  "totalCharacters": 52754,
   "totalImages": 1,
   "outputPaths": {
     "articles": [
-      "articles/women-35-60/2025-12-20/poteryav-vsyo-ya-obrela-sebya-moya-pustaya-zhizn-n-1766217112373.txt"
+      "articles/women-35-60/2025-12-20/ya-nakonets-to-priznalas-sebe-chto-vse-eti-gody-zh-1766218404742.txt"
     ],
     "images": [
-      "articles/women-35-60/2025-12-20/poteryav-vsyo-ya-obrela-sebya-moya-pustaya-zhizn-n-1766217112373.png"
+      "articles/women-35-60/2025-12-20/ya-nakonets-to-priznalas-sebe-chto-vse-eti-gody-zh-1766218404742.png"
     ],
     "report": "articles/women-35-60/2025-12-20/REPORT.md"
   }
