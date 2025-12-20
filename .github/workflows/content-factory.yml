@@ -6,7 +6,7 @@ on:
       count:
         description: 'Number of articles to generate'
         required: false
-        default: '10'
+        default: '1'
       project:
         description: 'Project (channel-1, channel-2, etc)'
         required: false
