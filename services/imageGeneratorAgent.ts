@@ -87,6 +87,7 @@ export class ImageGeneratorAgent {
   /**
    * 📝 Build cover image prompt from article title + lede
    * v4.1: SAFE handling of plotBible with defaults
+   * v4.2: FORCE 16:9 LANDSCAPE ASPECT RATIO
    */
   private buildCoverImagePrompt(request: CoverImageRequest): string {
     const { title, ledeText, plotBible } = request;
@@ -105,6 +106,8 @@ export class ImageGeneratorAgent {
     };
 
     const prompt = `
+🎯 CRITICAL: ASPECT RATIO = 16:9 LANDSCAPE (WIDTH > HEIGHT) - NOT SQUARE!
+
 AUTHENTIC mobile phone photo for article cover image.
 Title: "${title}"
 
@@ -118,8 +121,16 @@ NARRATOR CONTEXT:
 SENSORY PALETTE:
 ${sensoryPalette.details && sensoryPalette.details.length > 0 ? sensoryPalette.details.slice(0, 5).join(', ') : 'warm, intimate, quiet, domestic'}
 
+⚠️ MANDATORY COMPOSITION RULES:
+- WIDTH MUST BE GREATER THAN HEIGHT
+- Landscape orientation ONLY
+- 16:9 aspect ratio (like 1920x1080 or 1280x720)
+- Horizontal frame, wide view
+- NEVER square, NEVER portrait, NEVER vertical
+- Wide framing with depth from left to right
+
 REQUIREMENTS:
-- 16:9 aspect ratio, horizontal orientation
+- 16:9 landscape aspect ratio (width > height)
 - Natural lighting ONLY (window light, desk lamp, shadows)
 - Domestic realism (Russian interior, everyday life)
 - Amateur framing (NOT professional composition)
@@ -128,6 +139,7 @@ REQUIREMENTS:
 - Natural colors (NOT oversaturated)
 
 MUST AVOID:
+- Square or portrait orientation
 - Stock photography or glossy look
 - Text, watermarks, or logos
 - Surrealism or strange proportions
@@ -138,7 +150,7 @@ MUST AVOID:
 - Fancy interior design
 
 STYLE: Like a photo from neighbor's WhatsApp - authentic, slightly imperfect, real life.
-RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
+RESULT: Wide landscape photo, 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     `.trim();
 
     return prompt;
@@ -173,6 +185,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   /**
    * 🔄 Fallback cover generation with simpler prompt
    * v4.1: SAFE handling when plotBible missing
+   * v4.2: FORCE 16:9 LANDSCAPE
    */
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🔄 Using fallback model for cover: ${this.fallbackModel}`);
@@ -182,10 +195,16 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     const sensoryDetails = request.plotBible?.sensoryPalette?.details || ['warm', 'intimate', 'quiet'];
 
     const simplifiedPrompt = `
+🎯 CRITICAL: 16:9 LANDSCAPE ONLY! Width > Height. NO SQUARES!
+
 Russian woman ${narrator.age || 40} years old in apartment, natural light, realistic photo on smartphone.
 Article: "${request.title}"
 Interior: ${sensoryDetails.slice(0, 3).join(', ')}
-16:9 aspect ratio, amateur photo aesthetic, NOT stock photography.
+
+⚠️ ASPECT RATIO: 16:9 landscape (wide, NOT square)
+Frame horizontally, show wide view of room
+NEVER make it square or portrait!
+
 Domestic scene, everyday moment, warm lighting.
     `.trim();
 
