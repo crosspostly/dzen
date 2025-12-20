@@ -29,7 +29,7 @@ export class ArticleExporter {
     jsonPath?: string;
     textPath?: string;
     htmlPath?: string;
-    imagePaths?: string[];     // 🖼️ НОВОЕ: пути к изображениям
+    imagePath?: string;        // ✅ NOW imagePath (single string)
     directoryPath: string;
   }> {
     const dateDir = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
@@ -52,35 +52,35 @@ export class ArticleExporter {
       jsonPath?: string;
       textPath?: string;
       htmlPath?: string;
-      imagePaths?: string[];     // 🖼️ НОВОЕ: пути к изображениям
+      imagePath?: string;        // ✅ NOW imagePath (single string)
       directoryPath: string;
     } = { directoryPath: articleDir };
 
-    // 🖼️ Сохраняем изображения для эпизодов
-    const imagePaths: string[] = [];
-    if (options.includeImages && article.episodes.some(ep => ep.imageBuffer)) {
-      console.log(`${LOG.IMAGE} Saving episode images...`);
-      
-      for (const episode of article.episodes) {
-        if (episode.imageBuffer) {
-          try {
-            const imageFileName = `${themeSlug}_episode_${episode.id}.jpg`;
-            const imagePath = path.join(articleDir, imageFileName);
-            
-            fs.writeFileSync(imagePath, episode.imageBuffer, 'binary');
-            imagePaths.push(imagePath);
-            
-            // Обновляем путь в эпизоде
-            episode.imagePath = imagePath;
-            
-            console.log(`${LOG.SUCCESS} Image saved: ${imageFileName} (${Math.round(episode.imageBuffer.length / 1024)} KB)`);
-          } catch (error) {
-            console.error(`❌ Failed to save image for episode ${episode.id}:`, (error as Error).message);
-          }
-        }
+    // 🖼️ Сохраняем обложку статьи (processedBuffer от Canvas post-processing)
+    let imagePath: string | undefined;
+    if (options.includeImages && article.coverImage?.processedBuffer) {
+      console.log(`${LOG.IMAGE} Saving cover image...`);
+
+      try {
+        // article.coverImage.processedBuffer содержит JPG буфер после Canvas обработки
+        const imageFileName = `${themeSlug}-cover.jpg`;
+        imagePath = path.join(articleDir, imageFileName);
+
+        // Сохранить обработанный буфер как JPG файл
+        fs.writeFileSync(imagePath, article.coverImage.processedBuffer, 'binary');
+
+        const sizeKb = Math.round(article.coverImage.processedBuffer.length / 1024);
+        console.log(
+          `${LOG.SUCCESS} Cover image saved: ${imageFileName} (${sizeKb} KB)`
+        );
+      } catch (error) {
+        console.error(
+          `❌ Failed to save cover image:`,
+          (error as Error).message
+        );
       }
-      
-      result.imagePaths = imagePaths;
+
+      result.imagePath = imagePath;
     }
 
     if (options.includeJson) {

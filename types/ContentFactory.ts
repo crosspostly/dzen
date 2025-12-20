@@ -19,6 +19,8 @@ export interface CoverImage {
   base64: string; // Data URL or base64
   size: number; // File size in bytes
   mimeType?: string; // image/png, image/jpeg, etc.
+  processedBuffer?: Buffer; // ✅ Processed JPG buffer
+  format?: 'png' | 'jpeg'; // Image format
 }
 
 /**
