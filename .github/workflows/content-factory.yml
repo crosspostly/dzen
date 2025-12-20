@@ -86,13 +86,13 @@ jobs:
         if: always()
         run: |
           ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
-          IMAGE_COUNT=$(find ./articles -name "*.png" 2>/dev/null | wc -l)
+          IMAGE_COUNT=$(find ./articles -name "*.jpg" -o -name "*.png" 2>/dev/null | wc -l)
           
           echo ""
           echo "Generation Summary:"
           echo "====================================================="
           echo "Articles generated: $ARTICLE_COUNT"
-          echo "Images generated:   $IMAGE_COUNT"
+          echo "Images generated:   $IMAGE_COUNT (JPEG + PNG)"
           echo "====================================================="
           echo ""
       
@@ -114,7 +114,7 @@ jobs:
           git add articles/ 2>/dev/null || true
           
           ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
-          IMAGE_COUNT=$(find ./articles -name "*.png" 2>/dev/null | wc -l)
+          IMAGE_COUNT=$(find ./articles -name "*.jpg" -o -name "*.png" 2>/dev/null | wc -l)
           
           git commit -m "Dzen: ${{ inputs.count }} articles (${{ inputs.channel }}) - $IMAGE_COUNT images (run ${{ github.run_id }})" || echo "No changes"
           git push origin HEAD:main || echo "Push failed"
