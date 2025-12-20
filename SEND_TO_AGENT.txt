@@ -1,0 +1,76 @@
+🤖 ОТПРАВИТЬ AI AGENT'У:
+========================
+
+1️⃣  СКОПИРОВАТЬ ВЕСЬ ТЕКСТ ИЗ ЭТОГО ФАЙЛА:
+    TASK_FOR_AI_AGENT.md
+
+2️⃣  ВСТАВИТЬ В ПРОМПТ:
+    "@assistant здесь вся документация которую нужно внедрить"
+
+3️⃣  ДОБАВИТЬ К ПРОМПТУ:
+    "Пожалуйста выполни все задачи из TASK_FOR_AI_AGENT.md:
+    - Создай структуру docs/
+    - Переместишь все файлы в правильные места
+    - Создашь master index
+    - Обновишь README.md
+    - Создашь кросс-ссылки между документами
+    - Обновишь CHANGELOG.md
+    - Создашь git commit
+    
+    Используй GitHub MCP tools для:
+    - Создания файлов
+    - Обновления README.md
+    - Коммита изменений"
+
+4️⃣  ПРИКРЕПИТЬ ЭТИ ФАЙЛЫ К ЗАПРОСУ:
+    ✅ ZENMASTER_COMPLETE_ROADMAP.md
+    ✅ V4.9_QUALITY_VALIDATOR_QUICK_GUIDE.md
+    ✅ dzen_orphaned_services_detailed_analysis.md
+    ✅ dzen_services_quick_summary.md
+    ✅ ACTION_PLAN_orphaned_services.md
+    ✅ DOCUMENTATION_SUMMARY.md
+
+5️⃣  ДОБАВИТЬ КОНТЕКСТ:
+    "Репо: crosspostly/dzen
+     У нас только что вышла PR #42 с v4.9 QualityValidator
+     Нужно организовать все документацию которую я создал"
+
+========================
+
+ПОЛНЫЙ ПРОМПТ МОЖНО КОПИРОВАТЬ ОТСЮДА:
+
+---BEGIN---
+
+@assistant выполни все задачи из TASK_FOR_AI_AGENT.md для репозитория crosspostly/dzen:
+
+1. Создай структуру папок:
+   - docs/guides/
+   - docs/architecture/
+   - docs/roadmap/
+
+2. Создай или обновись эти файлы в docs/:
+   - ROADMAP.md (из ZENMASTER_COMPLETE_ROADMAP.md)
+   - DOCUMENTATION_INDEX.md (из DOCUMENTATION_SUMMARY.md)
+   - guides/V4.9_QUALITY_VALIDATOR_GUIDE.md
+   - guides/SERVICE_CLEANUP.md (из ACTION_PLAN_orphaned_services.md)
+   - architecture/ORPHANED_SERVICES_ANALYSIS.md
+   - architecture/ORPHANED_SERVICES_QUICK.md
+   - INDEX.md (новый, master index)
+
+3. Обновись README.md - добавь секцию с документацией (см. TASK_FOR_AI_AGENT.md)
+
+4. Создай или обновись CHANGELOG.md с информацией о v4.9
+
+5. Добавь кросс-ссылки между документами (примеры в TASK_FOR_AI_AGENT.md)
+
+6. Создай git commit:
+   git add docs/ README.md CHANGELOG.md
+   git commit -m "docs: integrate comprehensive documentation and roadmap"
+
+Используй GitHub MCP tools для всех операций с файлами и git.
+
+---END---
+
+========================
+
+ВСЕ ФАЙЛЫ УЖЕ ГОТОВЫ И НАХОДЯТСЯ В ТЕКУЩЕЙ ДИРЕКТОРИИ!
