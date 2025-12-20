@@ -8,7 +8,6 @@ import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePasspo
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { imageGeneratorAgent } from "./imageGeneratorAgent";
-import { PlotBible } from "../types/PlotBible";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -45,10 +44,11 @@ export class MultiAgentService {
     console.log("📋 Stage 0: Building outline (12 episodes) + plotBible...");
     const outline = await this.generateOutline(params);
     
-    // Extract plotBible from outline (generated in Stage 0)
-    const plotBible = outline.plotBible as PlotBible;
-    console.log("✅ PlotBible created in outline stage");
+    // Extract and validate plotBible from outline (generated in Stage 0)
+    const plotBible = this.extractPlotBible(outline, params);
+    console.log("✅ PlotBible ready");
     console.log(`   - Narrator: ${plotBible.narrator.age} y/o ${plotBible.narrator.gender}`);
+    console.log(`   - Tone: ${plotBible.narrator.tone}`);
     console.log(`   - Sensory palette: ${plotBible.sensoryPalette.details.slice(0, 3).join(', ')}...`);
     
     // Stage 1: Sequential Episode Generation
@@ -79,7 +79,7 @@ export class MultiAgentService {
           ledeText: lede,
           theme: params.theme,
           emotion: params.emotion,
-          plotBible, // ✅ FROM OUTLINE GENERATION!
+          plotBible, // ✅ GUARANTEED TO EXIST!
         });
         if (coverImageBuffer) {
           console.log(`✅ Cover image generated (${coverImageBuffer.length} bytes)`);
@@ -120,6 +120,60 @@ export class MultiAgentService {
     console.log(``);
     
     return article;
+  }
+
+  /**
+   * 🎭 EXTRACT & VALIDATE plotBible from outline
+   * Creates fallback if Gemini didn't generate it properly
+   */
+  private extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
+    // Check if plotBible exists and is complete
+    if (outline.plotBible && 
+        outline.plotBible.narrator && 
+        outline.plotBible.sensoryPalette && 
+        outline.plotBible.thematicCore) {
+      console.log("✅ Using plotBible from Gemini generation");
+      return outline.plotBible;
+    }
+
+    // Fallback: Create minimal plotBible from available data
+    console.warn("⚠️  plotBible incomplete from Gemini, using fallback");
+    
+    const ageMatch = params.audience.match(/(\d+)-(\d+)/);
+    const age = ageMatch ? Math.round((parseInt(ageMatch[1]) + parseInt(ageMatch[2])) / 2) : 45;
+    const gender = params.audience.toLowerCase().includes('woman') || params.audience.toLowerCase().includes('women') ? 'female' : 'male';
+
+    return {
+      narrator: outline.plotBible?.narrator || {
+        age,
+        gender: gender as "male" | "female",
+        tone: "confessional",
+        voiceHabits: {
+          apologyPattern: "I know it sounds strange, but...",
+          doubtPattern: "But then I realized...",
+          memoryTrigger: "I remember when...",
+          angerPattern: "And inside me clicked something",
+        },
+      },
+      sensoryPalette: outline.plotBible?.sensoryPalette || {
+        details: ["domestic", "intimate", "complex"],
+        smells: ["coffee", "old books", "home"],
+        sounds: ["silence", "breathing", "clock"],
+        textures: ["soft", "worn", "familiar"],
+        lightSources: ["window", "lamp", "dawn"],
+      },
+      characterMap: outline.characterMap || {
+        Narrator: {
+          role: "protagonist",
+          arc: "internal realization",
+        },
+      },
+      thematicCore: outline.plotBible?.thematicCore || {
+        centralQuestion: outline.externalTensionArc || "What if I had chosen differently?",
+        emotionalArc: params.emotion,
+        resolutionStyle: "bittersweet, uncertain",
+      },
+    };
   }
 
   /**
