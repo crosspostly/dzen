@@ -327,7 +327,7 @@ export class ContentFactoryOrchestrator {
    * 📤 Export articles for Zen
    * ✅ UPDATED v4.0: Save to articles/{channel_name}/{YYYY-MM-DD}/ with flat structure
    * - ONE .txt file (article content)
-   * - ONE .png file (cover image)
+   * - ONE .jpg file (processed cover image via Canvas)
    * - Same filename for both (only extension differs)
    */
   async exportForZen(outputDir: string = './articles'): Promise<string> {
@@ -348,7 +348,7 @@ export class ContentFactoryOrchestrator {
       const timestamp = Date.now() + i; // Unique timestamp per article
       const slug = this.createSlug(article.title); // Convert title to URL-safe slug
       
-      // Same filename for both .txt and .png!
+      // Same filename for both .txt and .jpg!
       const filename = `${slug}-${timestamp}`;
       
       try {
@@ -360,48 +360,19 @@ export class ContentFactoryOrchestrator {
 
         // Save COVER image (ONE per article!)
         if (article.coverImage) {
-          // Check for processed buffer (JPEG)
+          // Check for processed buffer (JPEG from Canvas post-processing)
           if (article.coverImage.processedBuffer) {
-            const jpgPath = path.join(finalDir, `${filename}.jpg`); // Wait, ticket says -cover.jpg? 
-            // The ticket result example: "article-name-cover.jpg"
-            // But filename here is `${slug}-${timestamp}`
-            // Existing code used `${filename}.png`.
-            // I should stick to filename convention in this method but change extension.
-            // Wait, the ticket says:
-            // Output: articles/{channel}/{date}/{slug}-cover.jpg
-            
-            // Current code generates: `${slug}-${timestamp}.txt` and `${slug}-${timestamp}.png`
-            // If I change to `${filename}-cover.jpg`, it's fine.
-            // I'll stick to `${filename}.jpg` to keep it consistent with .txt unless strictly required.
-            // Ticket "Result" says: `ya-nakonets...-cover.jpg`.
-            // But `exportForZen` generates unique timestamped filename.
-            // I will assume the existing filename logic is fine, just need to change content and extension.
-            
-            // Actually, let's look at `articleExporter.ts`: `${themeSlug}-cover.jpg`
-            // Orchestrator uses: `${slug}-${timestamp}`
-            
-            // I will use `${filename}-cover.jpg` to be safe and explicitly mark it as cover.
-            // But wait, the .txt file is `${filename}.txt`.
-            // Having `${filename}.jpg` is cleaner.
-            // However, ticket says `-cover.jpg`.
-            // Let's use `.jpg` to be safe.
-            
             const jpgPath = path.join(finalDir, `${filename}-cover.jpg`);
             fs.writeFileSync(jpgPath, article.coverImage.processedBuffer);
             exportedFiles.push(jpgPath);
-            console.log(`   🖼️  Cover: ${filename}-cover.jpg (Processed)`);
+            console.log(`   🖼️  Cover: ${filename}-cover.jpg (Processed JPEG)`);
           } else {
-             // Fallback to base64 PNG
+            // Fallback to base64 PNG if processing failed
             const pngPath = path.join(finalDir, `${filename}.png`);
-            
-            // Extract base64 from data URL
-            const base64Data = article.coverImage.base64
-              .replace(/^data:image\/\w+;base64,/, '')
-              .replace(/^data:image\/\w+;base64,/, '');
-            
+            const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
             fs.writeFileSync(pngPath, Buffer.from(base64Data, 'base64'));
             exportedFiles.push(pngPath);
-            console.log(`   🖼️  Cover: ${filename}.png (Raw)`);
+            console.log(`   🖼️  Cover: ${filename}.png (Raw PNG fallback)`);
           }
         }
       } catch (error) {
