@@ -665,14 +665,29 @@ npm run factory -- --count=5 --preset=quick-test --quality=standard
 
 ## 📚 Документация
 
-### Основные файлы
-- `README.md` — Этот файл (полная документация)
-- `ZENMASTER_V4_SIMPLIFIED_SUMMARY.md` — Подробная техническая спецификация v4.0
-- `cli.ts` — Полная документация CLI (880 строк)
-- `types/` — TypeScript типы и интерфейсы
-- `services/` — Исходный код всех сервисов
+Comprehensive documentation covers project architecture, development roadmap, and implementation guides:
 
-### Скрипты
+### 🚀 Quick Start
+- **[Documentation Index](docs/INDEX.md)** - Navigation and overview
+- **[Quick Summary: Orphaned Services](docs/architecture/ORPHANED_SERVICES_QUICK.md)** - 3 min read
+
+### 🛠️ Development
+- **[Complete Roadmap](docs/ROADMAP.md)** - v4.0 through v5.0+ timeline
+- **[v4.9 QualityValidator Guide](docs/guides/V4.9_QUALITY_VALIDATOR_GUIDE.md)** - New feature implementation
+
+### 🏗️ Architecture & Cleanup
+- **[Orphaned Services Analysis](docs/architecture/ORPHANED_SERVICES_ANALYSIS.md)** - Deep dive analysis
+- **[Service Cleanup Action Plan](docs/guides/SERVICE_CLEANUP.md)** - Implementation steps
+
+### 📊 Version Timeline
+- ✅ v4.0.2 - Production (current)
+- ✨ v4.9 - QualityValidator (just added, PR #42)
+- 🔄 v4.5 - Phase 2 Anti-Detection (Dec 22-23)
+- 🔮 v5.0+ - Auto-publish (Early 2026)
+
+See [documentation index](docs/INDEX.md) for complete list and detailed guides.
+
+### 🔧 Scripts
 ```bash
 # Тестирование
 npm run test
@@ -691,26 +706,40 @@ npm run test:full
 
 ## 🚀 Roadmap
 
+### Current & Upcoming Versions
+- ✅ **v4.0.2**: Content Factory, Canvas Post-Processing (Production)
+- ✨ **v4.9**: QualityValidator authenticity scoring (Just Added - Dec 20)
+- 🔄 **v4.5**: Phase 2 Anti-Detection System (Dec 22-23, 2025)
+- 🔮 **v4.6-v4.8**: Performance improvements & optimization
+- 🌟 **v5.0+**: Auto-publish with Playwright integration (Early 2026)
+
+### Historical Milestones
 - ✅ v4.0: Content Factory (1-100 статей)
 - ✅ v4.0: Обложки (1 на статью вместо 12)
-- ✅ v4.0.2: Canvas Post-Processing + Documentation
-- ⏳ v4.1: Пакетная публикация в Zen API
-- ⏳ v4.2: A/B тестирование заголовков
-- ⏳ v4.3: Автоматическая оптимизация SEO
-- ⏳ v5.0: Видео контент (YouTube)
+
+*See [Complete Roadmap](docs/ROADMAP.md) for detailed timeline and implementation plans*
 
 ---
 
 ## 🎉 Статус проекта
 
-**Версия**: v4.0.2 SIMPLIFIED + CANVAS POST-PROCESSING  
+**Версия**: v4.0.2 + v4.9 QualityValidator  
 **Готовность**: ✅ Production Ready  
 **Дата**: Декабрь 2025  
+**Последнее обновление**: v4.9 QualityValidator (Dec 20, 2025)  
 **Экономия времени**: 92% на генерации изображений!  
-**Качество**: ✅ Проходит все проверки модерации  
+**Качество**: ✅ Проходит все проверки модерации + v4.9 authenticity scoring  
 
 **Разработано**: ZenMaster Team  
 **Лицензия**: Proprietary - All Rights Reserved
+
+---
+
+## 🔄 Последние изменения
+
+- **v4.9** (Dec 20, 2025): Добавлена система аутентичности контента
+- **v4.0.2**: Canvas Post-Processing + документация
+- **v4.0**: Content Factory система (1-100 статей)
 
 ---
 

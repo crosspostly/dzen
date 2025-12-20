@@ -6,6 +6,13 @@
 
 ---
 
+> 📌 **Quick Start Navigation**
+> - Need a quick overview? → [Orphaned Services Quick Summary](./architecture/ORPHANED_SERVICES_QUICK.md) (3 min)
+> - Implementing v4.9? → [v4.9 QualityValidator Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md) (20 min)
+> - Complete documentation? → [Documentation Index](./DOCUMENTATION_INDEX.md) (45 min)
+
+---
+
 ## 📋 TABLE OF CONTENTS
 
 1. [Current State (v4.0.2)](#current-state-v402)

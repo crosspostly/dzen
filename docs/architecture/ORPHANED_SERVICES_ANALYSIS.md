@@ -6,6 +6,12 @@
 
 ---
 
+> 🔗 **Quick version?** See [Quick Summary](./ORPHANED_SERVICES_QUICK.md) (3 min read)
+> 🔗 **Need implementation?** See [Action Plan](../guides/SERVICE_CLEANUP.md) (step-by-step)
+> 🔗 **Full roadmap?** See [Complete Roadmap](../ROADMAP.md) (30 min read)
+
+---
+
 ## 📋 EXECUTIVE SUMMARY
 
 ### What Are "Orphaned" Services?
