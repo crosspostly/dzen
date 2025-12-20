@@ -1,9 +1,22 @@
 /**
- * Playwright Service - Публикация на Яндекс.Дзен через Playwright
- * Основные решения:
- * 1. Cookies для авторизации (дефакто стандарт, так как ОФИЦИАЛЬНОГО API НЕТ)
- * 2. Оприделение терминос cookies и обновление
- * 3. Нанесение форматирования (жирный, разделители, выделение) через клики кнопок
+ * PLAYWRIGHT AUTO-PUBLISHING SERVICE
+ * 
+ * Status: Future Implementation (v5.0+, Early 2026)
+ * Purpose: Browser automation for auto-publishing to Яндex.Дзен
+ * Current Status: Not used in v4.0.2, planned for v5.0+
+ * 
+ * Integration: Will be wired into auto-publish pipeline in v5.0+
+ * Dependencies: Playwright library (npm install playwright)
+ * Prerequisites: Zen account with API access
+ * 
+ * Features:
+ * - Automated login
+ * - Form filling
+ * - Content publishing
+ * - Status tracking
+ * - Error handling
+ * 
+ * See: ZENMASTER_COMPLETE_ROADMAP.md for details
  */
 
 import { Browser, Page, BrowserContext } from 'playwright';
