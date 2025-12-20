@@ -16,6 +16,16 @@ dist-ssr
 # generated/
 # articles/
 
+# ZenMaster v4.0 Factory Output
+output/
+*.png
+*.jpg
+*.jpeg
+
+# Test files
+test-v4-modules.ts
+test-cover-images.ts
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

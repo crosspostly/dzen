@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "generate": "node --import tsx cli.ts generate",
     "generate:v2": "node --import tsx cli.ts generate:v2",
+    "factory": "node --import tsx cli.ts factory",
     "generate:all-dzen": "node --import tsx cli.ts generate:all-dzen",
     "list-dzen-channels": "node --import tsx cli.ts list-dzen-channels",
     "validate-dzen-config": "node --import tsx cli.ts validate-dzen-config",
@@ -24,7 +25,7 @@
     "natural": "^6.11.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "tsx": "^4.7.0",
+    "tsx": "^4.21.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

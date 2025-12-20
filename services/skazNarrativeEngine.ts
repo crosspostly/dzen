@@ -13,15 +13,17 @@ export class SkazNarrativeEngine {
     "да вот", "да что", "ну да", "ну и", "и то", "но вот"
   ];
 
-  // Диалектные и нестандартные слова
+  // 🔄 ZenMaster v4.0: URBAN words only (NO village dialect!)
+  // ❌ REMOVED: "дыбать", "шарить", "пялиться" - these are OFFENSIVE village dialect
+  // ✅ KEEP: educated urban Russian vocabulary
   private dialectalWords: Map<string, string[]> = new Map([
-    ["искать", ["дыбать", "шарить", "крутить", "ловить"]],
-    ["смотреть", ["глядеть", "пялиться", "разглядывать", "присматриваться"]],
-    ["идти", ["шляться", "брести", "пробираться", "слоняться"]],
-    ["говорить", ["балагурить", "пустить красну речь", "заговорить зубами", "трещать"]],
-    ["плохо", ["нехорошо", "скверно", "гадко", "паршиво"]],
-    ["очень", ["ужас как", "страшно", "мощно", "жутко"]],
-    ["интересно", ["забавно", "занятно", "затейливо", "занимательно"]],
+    ["искать", ["разыскивать", "выискивать", "отыскивать"]],
+    ["смотреть", ["глядеть", "разглядывать", "присматриваться", "вглядываться"]],
+    ["идти", ["брести", "пробираться", "направляться", "двигаться"]],
+    ["говорить", ["произносить", "высказывать", "излагать"]],
+    ["плохо", ["нехорошо", "скверно", "неприятно"]],
+    ["очень", ["страшно", "крайне", "весьма", "исключительно"]],
+    ["интересно", ["любопытно", "занятно", "примечательно", "увлекательно"]],
   ]);
 
   // Стандартные конструкции, которые нужно переделать (синтаксическое нарушение)
@@ -323,5 +325,189 @@ export class SkazNarrativeEngine {
   public meetsSkazThreshold(text: string, minScore: number = 70): boolean {
     const metrics = this.analyzeSkazMetrics(text);
     return metrics.score >= minScore;
+  }
+
+  /**
+   * 🎯 ZenMaster v4.0: Advanced transformations for higher quality
+   * Combines: Burstiness + Perplexity + CTA Provocation
+   */
+  public applyAdvancedTransformations(text: string): string {
+    let result = text;
+
+    // 1. Apply Skaz transformations (base layer)
+    result = this.applySkazTransformations(result);
+
+    // 2. Apply Burstiness (vary sentence length)
+    result = this.applyBurstiness(result);
+
+    // 3. Apply Perplexity (replace standard words with less common ones)
+    result = this.applyPerplexity(result);
+
+    // 4. Add CTA provocation at the end
+    result = this.addCtaProvocation(result);
+
+    return result;
+  }
+
+  /**
+   * 📊 Apply Burstiness: Vary sentence length for more natural flow
+   * AI tends to write uniform-length sentences, humans don't
+   */
+  private applyBurstiness(text: string): string {
+    const sentences = text.split(/([.!?])/);
+    const result: string[] = [];
+
+    for (let i = 0; i < sentences.length; i += 2) {
+      let sentence = sentences[i].trim();
+
+      if (sentence.length > 0) {
+        // Randomly split long sentences or combine short ones
+        if (sentence.length > 150 && Math.random() < 0.3) {
+          // Split long sentence
+          const midpoint = sentence.length / 2;
+          const splitIndex = sentence.indexOf(" ", midpoint);
+          if (splitIndex > 0) {
+            const firstPart = sentence.substring(0, splitIndex);
+            const secondPart = sentence.substring(splitIndex + 1);
+            result.push(firstPart, ".", " ", secondPart);
+            continue;
+          }
+        }
+      }
+
+      result.push(sentence);
+      if (i + 1 < sentences.length) {
+        result.push(sentences[i + 1]);
+      }
+    }
+
+    return result.join("");
+  }
+
+  /**
+   * 🎭 Apply Perplexity: Replace common words with less predictable alternatives
+   * Makes text less "AI-like" by using unexpected but correct vocabulary
+   */
+  private applyPerplexity(text: string): string {
+    let result = text;
+
+    // Replacement map: common word → less common alternative
+    const perplexityReplacements: Map<string, string[]> = new Map([
+      ["сказал", ["произнёс", "проговорил", "вымолвил", "изрёк"]],
+      ["ответил", ["отозвался", "парировал", "возразил"]],
+      ["подумал", ["размышлял", "раздумывал", "помыслил"]],
+      ["увидел", ["приметил", "заметил", "углядел", "узрел"]],
+      ["понял", ["осознал", "уразумел", "постиг", "уяснил"]],
+      ["хотел", ["жаждал", "стремился", "намеревался", "желал"]],
+      ["быстро", ["стремительно", "проворно", "мигом", "скоро"]],
+      ["медленно", ["неспешно", "размеренно", "неторопливо"]],
+      ["красиво", ["прекрасно", "живописно", "изящно"]],
+      ["плохо", ["скверно", "дурно", "нехорошо", "неважно"]]
+    ]);
+
+    // Replace 20-30% of occurrences
+    for (const [common, alternatives] of perplexityReplacements.entries()) {
+      const pattern = new RegExp(`\\b${common}\\b`, "gi");
+      const matches = text.match(pattern);
+
+      if (matches && matches.length > 0) {
+        let replaced = 0;
+        const replaceCount = Math.floor(matches.length * (0.2 + Math.random() * 0.1));
+
+        result = result.replace(pattern, (match) => {
+          if (replaced < replaceCount) {
+            replaced++;
+            return this.selectRandomElement(alternatives);
+          }
+          return match;
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * 💬 Add CTA (Call-To-Action) provocation at the end
+   * Goal: Make readers want to comment (comments = algorithm reward)
+   */
+  private addCtaProvocation(text: string): string {
+    // Check if text already has a provocative question
+    const hasQuestion = /\?[^?]*$/.test(text);
+    if (hasQuestion) {
+      return text; // Already has provocation
+    }
+
+    const provocations = [
+      "А вы как считаете? Я перегнула палку?",
+      "Скажите честно — я была права или нет?",
+      "Что бы вы сделали на моём месте?",
+      "Может, я ошибаюсь, и надо было поступить иначе?",
+      "Ваше мнение — кто здесь прав, а кто виноват?",
+      "Как думаете, есть ли у этой истории счастливый конец?",
+      "Правильно ли я поступила? Или стоило промолчать?",
+      "А что бы сказали вы в такой ситуации?",
+      "Интересно, как бы вы отреагировали?"
+    ];
+
+    const chosen = this.selectRandomElement(provocations);
+    
+    // Add with proper spacing
+    return text.trim() + "\n\n" + chosen;
+  }
+
+  /**
+   * 🧹 Remove village dialect stupidity (safety check)
+   * In case any offensive words slipped through
+   */
+  private removeDialectalStupidity(text: string): string {
+    const badWords = /\b(дыбать|шарить|пялиться|кумекать|балагурить)\b/gi;
+    const replacements: {[key: string]: string} = {
+      "дыбать": "искать",
+      "шарить": "искать",
+      "пялиться": "смотреть",
+      "кумекать": "думать",
+      "балагурить": "говорить"
+    };
+
+    return text.replace(badWords, (match) => {
+      return replacements[match.toLowerCase()] || match;
+    });
+  }
+
+  /**
+   * 🎯 Inject particles more naturally (20-30% instead of 40%)
+   * v4.0 improvement: less aggressive particle injection
+   */
+  private injectParticlesNaturally(text: string): string {
+    const sentences = text.split(/([.!?])/);
+    const result: string[] = [];
+
+    for (let i = 0; i < sentences.length; i += 2) {
+      let sentence = sentences[i];
+      
+      // Inject particles in 25% of sentences (reduced from 40%)
+      if (Math.random() < 0.25 && sentence.trim().length > 0) {
+        const particle = this.selectRandomElement(this.particles);
+        
+        // Choose insertion point
+        const insertionType = Math.random();
+        if (insertionType < 0.5) {
+          sentence = particle + " " + sentence;
+        } else if (insertionType < 0.7 && sentence.length > 20) {
+          const words = sentence.split(/\s+/);
+          const midpoint = Math.floor(words.length / 2);
+          words.splice(midpoint, 0, particle);
+          sentence = words.join(" ");
+        }
+      }
+
+      result.push(sentence);
+      if (i + 1 < sentences.length) {
+        result.push(sentences[i + 1]);
+      }
+    }
+
+    return result.join("");
   }
 }
