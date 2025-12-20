@@ -12,15 +12,8 @@ dist
 dist-ssr
 *.local
 
-# Generated articles - now committed via GitHub Actions workflow
-# generated/
-# articles/
-
 # ZenMaster v4.0 Factory Output
 output/
-*.png
-*.jpg
-*.jpeg
 
 # Test files
 test-v4-modules.ts
