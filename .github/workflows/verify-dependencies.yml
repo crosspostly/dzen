@@ -1,0 +1,61 @@
+name: 🔧 Verify Dependencies & Test Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    name: Verify Dependencies Installation
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 🚀 Install dependencies (clean install)
+        run: |
+          npm ci
+          echo "✅ Dependencies installed successfully"
+          npm ls @google/generative-ai
+
+      - name: ✅ Verify correct packages installed
+        run: |
+          # Check that @google/generative-ai is installed
+          if npm ls @google/generative-ai > /dev/null 2>&1; then
+            echo "✅ @google/generative-ai found"
+          else
+            echo "❌ @google/generative-ai NOT found"
+            exit 1
+          fi
+          
+          # Check that @google/genai is NOT installed
+          if npm ls @google/genai > /dev/null 2>&1; then
+            echo "❌ ERROR: @google/genai should NOT be installed"
+            exit 1
+          else
+            echo "✅ @google/genai correctly NOT installed"
+          fi
+
+      - name: 🔍 TypeScript check
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+      - name: ✅ Summary
+        run: |
+          echo "========================================"
+          echo "✅ DEPENDENCY VERIFICATION PASSED"
+          echo "========================================"
+          echo ""
+          echo "Installed packages:"
+          npm ls --depth=0
