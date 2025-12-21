@@ -259,9 +259,21 @@ export class AntiDetectionEngine {
   }
 
   /**
-   * Analyze current text metrics (before processing)
+   * 📊 Публичный метод для анализа метрик (используется в тестах)
+   * Используется в тестах и для диагностики
    */
-  async analyzeMetrics(text: string): Promise<{
+  public async analyzeMetrics(text: string): Promise<{
+    perplexity: PerplexityMetrics;
+    burstiness: BurstinessMetrics;
+  }> {
+    return this.analyzeText(text);
+  }
+
+  /**
+   * 🔒 Приватный метод анализа текста (внутренний)
+   * Анализирует и возвращает текущие метрики
+   */
+  private async analyzeText(text: string): Promise<{
     perplexity: PerplexityMetrics;
     burstiness: BurstinessMetrics;
   }> {
@@ -273,6 +285,17 @@ export class AntiDetectionEngine {
       perplexity: this.metrics.perplexity,
       burstiness: this.metrics.burstiness,
     };
+  }
+
+  /**
+   * Analyze current text metrics (before processing)
+   * @deprecated - Use analyzeText() instead
+   */
+  async analyzeMetrics(text: string): Promise<{
+    perplexity: PerplexityMetrics;
+    burstiness: BurstinessMetrics;
+  }> {
+    return this.analyzeText(text);
   }
 }
 
