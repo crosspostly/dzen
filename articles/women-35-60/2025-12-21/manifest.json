@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1766307662278,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true
+  },
+  "articleCount": 1,
+  "totalCharacters": 24759,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [
+      "articles/women-35-60/2025-12-21/moya-glavnaya-pravda-v-55-muzh-byl-chuzhim-i-ya-vp-1766307662275.txt"
+    ],
+    "images": [
+      "articles/women-35-60/2025-12-21/moya-glavnaya-pravda-v-55-muzh-byl-chuzhim-i-ya-vp-1766307662275-cover.jpg"
+    ],
+    "report": "articles/women-35-60/2025-12-21/REPORT.md"
+  }
+}
