@@ -46,6 +46,16 @@ export class PerplexityController {
    */
   public analyzePerplexity(text: string): PerplexityMetrics {
     const words = this.tokenize(text).filter(w => w.length > 2);
+    
+    // Handle empty text case
+    if (words.length === 0) {
+      return {
+        score: 1.0, // Minimum perplexity for empty text
+        wordFrequency: new Map(),
+        rarityRatio: 0,
+      };
+    }
+    
     const wordFrequency = new Map<string, number>();
     
     // Подсчитываем частоту слов
@@ -58,15 +68,17 @@ export class PerplexityController {
     const totalWords = words.length;
     const uniqueWords = wordFrequency.size;
     const rareWords = Array.from(wordFrequency.values()).filter(count => count <= 2).length;
-    const rarityRatio = rareWords / uniqueWords;
+    const rarityRatio = uniqueWords > 0 ? rareWords / uniqueWords : 0;
 
-    // Вычисляем перплексити (упрощенное вычисление)
-    // Основано на разнообразии слов и редкости использования
-    const diversityScore = uniqueWords / totalWords; // 0-1
+    // Вычисляем перплексити (разнообразие слов э 0-1 + редкость * 3.4)
+    const diversityScore = totalWords > 0 ? uniqueWords / totalWords : 0; // 0-1
     const perplexityScore = 1.0 + (rarityRatio * 3.4) + (diversityScore * 1.5);
 
+    // Ensure we have reasonable baseline for typical Russian text
+    const baselinePerplexity = Math.max(1.5, Math.min(5.0, perplexityScore));
+    
     return {
-      score: Math.min(5.0, perplexityScore),
+      score: baselinePerplexity,
       wordFrequency,
       rarityRatio,
     };
