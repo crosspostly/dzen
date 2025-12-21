@@ -19,7 +19,7 @@
     "test:full": "npm run test && npm run validate && npm run list-projects"
   },
   "dependencies": {
-    "@google/genai": "^1.33.0",
+    "@google/generative-ai": "^0.17.0",
     "canvas": "^3.2.0",
     "gcp-metadata": "^5.3.0",
     "natural": "^6.11.0",
