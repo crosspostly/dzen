@@ -366,21 +366,18 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   ): Promise<GeneratedImage> {
     const startTime = Date.now();
 
-    const response = await this.geminiClient.models.generateContent({
+    const generativeModel = this.geminiClient.getGenerativeModel({ 
       model: model,
-      contents: { 
-        parts: [{ text: prompt }] 
-      },
-      config: {
+      generationConfig: {
         temperature: 0.85,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 1024,
-        // 🔥 ASPECT RATIO CONTROL - Using Gemini API
-        imageConfig: {
-          aspectRatio: "16:9" // Landscape format
-        } as any
-      }
+      },
+    });
+    
+    const response = await generativeModel.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
     // Extract image from response

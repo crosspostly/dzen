@@ -68,18 +68,17 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
 `;
 
     try {
-      const response = await this.ai.models.generateContent({
+      const model = this.ai.getGenerativeModel({ 
         model: 'gemini-2.5-flash-image',
-        contents: { 
-          parts: [{ text: finalPrompt }] 
-        },
-        config: {
-          responseModalities: [Modality.IMAGE],
-          temperature: 0.85,  // Slightly lower for consistency
+        generationConfig: {
+          temperature: 0.85,
           topK: 40,
           topP: 0.95,
           maxOutputTokens: 1024,
-        }
+        },
+      });
+      const response = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: finalPrompt }] }],
       });
 
       // Extract image from response
