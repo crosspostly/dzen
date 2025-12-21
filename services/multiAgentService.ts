@@ -1,6 +1,7 @@
 // ============================================================================
 // ZenMaster v2.0 — Multi-Agent Service
-// Orchestrates dynamic episode generation for 29K longform articles
+// 🔴 CHARACTER LIMIT: 19,000 chars (FIXED)
+// See CHAR_LIMIT_CONFIG.md for details
 // ============================================================================
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -15,14 +16,16 @@ export class MultiAgentService {
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
   private phase2Service: Phase2AntiDetectionService;
-  private maxChars: number = 29000;
+  // 🔴 CHARACTER LIMIT: 19,000 (FIXED - see CHAR_LIMIT_CONFIG.md)
+  private maxChars: number = 19000;
   private episodeCount: number = 12;
 
   constructor(apiKey?: string, maxChars?: number) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
     this.contextManager = new ContextManager();
-    this.maxChars = maxChars || 29000;
+    // 🔴 Use 19000 by default, override only for testing
+    this.maxChars = maxChars || 19000;
     this.phase2Service = new Phase2AntiDetectionService();
     
     // Calculate dynamic episode count
@@ -35,19 +38,22 @@ export class MultiAgentService {
   /**
    * Calculate optimal episode count based on character budget
    * 
+   * 🔴 CHARACTER LIMIT IS 19,000 (FIXED)
+   * 
    * Budget allocation:
    * - Lede: 750 chars (600-900)
    * - Finale: 1500 chars (1200-1800)
-   * - Episodes: remaining chars / 3200 (avg episode length)
+   * - Episodes: remaining chars / 1333 (avg episode length for 19K budget)
    * 
    * Constraints:
-   * - Minimum: 6 episodes (18K chars for episodes alone)
-   * - Maximum: 15 episodes (48K chars for episodes alone)
+   * - Minimum: 6 episodes
+   * - Maximum: 15 episodes
    */
   public calculateOptimalEpisodeCount(maxChars: number): number {
     const LEDE_CHARS = 750;
     const FINALE_CHARS = 1500;
-    const AVG_EPISODE_CHARS = 3200;
+    // For 19,000 char limit: (19000 - 750 - 1500) / 12 = 1354 chars per episode
+    const AVG_EPISODE_CHARS = Math.floor((maxChars - LEDE_CHARS - FINALE_CHARS) / 12);
     const MIN_EPISODES = 6;
     const MAX_EPISODES = 15;
 
@@ -56,7 +62,7 @@ export class MultiAgentService {
     const episodes = Math.max(MIN_EPISODES, Math.min(MAX_EPISODES, optimalCount));
 
     console.log(`\n📊 Character Budget Analysis:`);
-    console.log(`   Total: ${maxChars} chars`);
+    console.log(`   Total: ${maxChars} chars (🔴 FIXED - see CHAR_LIMIT_CONFIG.md)`);
     console.log(`   Lede: ${LEDE_CHARS} chars`);
     console.log(`   Finale: ${FINALE_CHARS} chars`);
     console.log(`   Remaining for episodes: ${remainingChars} chars`);
@@ -67,6 +73,7 @@ export class MultiAgentService {
 
   /**
    * Main entry point: Generate full longform article with dynamic episodes
+   * 🔴 USES 19,000 CHARACTER LIMIT
    */
   async generateLongFormArticle(params: {
     theme: string;
@@ -75,14 +82,17 @@ export class MultiAgentService {
     audience: string;
     maxChars?: number;
     includeImages?: boolean;
+    charLimit?: number; // 🔴 Alternative parameter name
   }): Promise<LongFormArticle> {
-    const maxChars = params.maxChars || this.maxChars;
+    // Accept both maxChars and charLimit parameters
+    const maxChars = params.maxChars || params.charLimit || this.maxChars;
     const episodeCount = this.calculateOptimalEpisodeCount(maxChars);
 
     console.log("\n🎬 [ZenMaster v2.0] Starting dynamic longform generation...");
     console.log(`📏 Theme: "${params.theme}"`);
     console.log(`🎯 Angle: ${params.angle} | Emotion: ${params.emotion}`);
-    console.log(`🎬 Episodes: ${episodeCount} (dynamic based on ${maxChars} chars)\n`);
+    console.log(`🎬 Episodes: ${episodeCount} (dynamic based on ${maxChars} chars)`);
+    console.log(`🔴 CHARACTER LIMIT: ${maxChars} (FIXED - see CHAR_LIMIT_CONFIG.md)\n`);
     
     // Stage 0: Outline Engineering (dynamic episode count)
     console.log(`📋 Stage 0: Building outline (${episodeCount} episodes) + plotBible...`);
@@ -152,6 +162,7 @@ export class MultiAgentService {
         episodeCount: episodes.length,
         sceneCount: this.countScenes(lede, episodes, finale),
         dialogueCount: this.countDialogues(lede, episodes, finale),
+        charLimit: maxChars, // 🔴 DOCUMENT LIMIT USED
       },
       processedContent: phase2Result.processedContent,
       adversarialScore: phase2Result.adversarialScore,
@@ -161,7 +172,7 @@ export class MultiAgentService {
     console.log(`\n✅ ARTICLE COMPLETE`);
     console.log(`📊 Metrics:`);
     console.log(`   - Episodes: ${article.metadata.episodeCount}`);
-    console.log(`   - Characters: ${article.metadata.totalChars} (target: ${maxChars})`);
+    console.log(`   - Characters: ${article.metadata.totalChars}/${maxChars} (target)`);
     console.log(`   - Utilization: ${((article.metadata.totalChars / maxChars) * 100).toFixed(1)}%`);
     console.log(`   - Reading time: ${article.metadata.totalReadingTime} min`);
     console.log(`   - Scenes: ${article.metadata.sceneCount}`);
@@ -169,7 +180,7 @@ export class MultiAgentService {
     console.log(`   - Phase 2 Score: ${article.adversarialScore?.overallScore || 0}/100`);
     console.log(`   - Anti-Detection: ${article.phase2Applied ? '✅ Applied' : '❌ Not applied'}`);
     console.log(`   - Cover image: Pending (will be generated in orchestrator)`);
-    console.log(``);
+    console.log(``)
     
     return article;
   }
@@ -335,7 +346,7 @@ export class MultiAgentService {
 
     const prompt = `🎭 STORY ARCHITECT - GENERATE COMPLETE OUTLINE WITH PLOTBIBLE
 
-TASK: Create ${episodeCount}-episode narrative structure (29K chars total).
+TASK: Create ${episodeCount}-episode narrative structure (19,000 chars total).
 MUSTGENERATE: EVERY field must be filled.
 
 INPUT:
