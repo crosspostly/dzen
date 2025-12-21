@@ -4,7 +4,7 @@
  * Uses Gemini API to create variations that ensure every run generates different themes
  */
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import https from "https";
 
 const LOG = {
@@ -17,7 +17,7 @@ const LOG = {
 };
 
 export class ThemeGeneratorService {
-  private geminiClient: GoogleGenAI;
+  private geminiClient: GoogleGenerativeAI;
   private csvUrl = "https://raw.githubusercontent.com/crosspostly/dzen/main/top_articles_formatted.csv";
   private cachedThemes: string[] = [];
   private lastFetchTime: number = 0;
@@ -25,7 +25,7 @@ export class ThemeGeneratorService {
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenAI({ apiKey: key });
+    this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
   }
 
   /**
@@ -129,39 +129,22 @@ Generate ONE NEW UNIQUE theme/hook that:
 6. NEVER seen in the examples above
 7. NEVER generic like "10 ways to...", "How to...", "Tips for..."
 
-RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
-
+RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;n
       console.log(`${LOG.BRAIN} Generating new theme with Gemini...`);
 
       let response;
       try {
         // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
-        response = await this.geminiClient.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: prompt,
-          config: {
-            temperature: 0.95,
-            topK: 40,
-            topP: 0.95,
-          },
-        });
+        response = await this.geminiClient.generateContent(prompt);
       } catch (error) {
         const errorMessage = (error as Error).message;
         console.warn(`${LOG.WARN} Primary model failed (${errorMessage}), trying fallback...`);
         
         // 🔄 ФОЛБЕК: если модель перегружена
         if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-          console.log(`${LOG.LOADING} Trying fallback to gemini-2.5-flash-exp-02-05...`);
+          console.log(`${LOG.LOADING} Trying fallback model...`);
           
-          response = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
-            contents: prompt,
-            config: {
-              temperature: 0.95,
-              topK: 40,
-              topP: 0.95,
-            },
-          });
+          response = await this.geminiClient.generateContent(prompt);
           
           console.log(`${LOG.SUCCESS} Fallback successful`);
         } else {
@@ -169,7 +152,7 @@ RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
         }
       }
 
-      const theme = (response.text || "").trim();
+      const theme = (response.response.text() || "").trim();
 
       if (!theme || theme.length < 10) {
         throw new Error("Generated theme too short");
