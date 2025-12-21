@@ -765,10 +765,10 @@ Readers' experience depends on it.
     temperature: number;
   }): Promise<string> {
     try {
-      const response = await this.geminiClient?.models.generateContent({
-        model: params.model,
-        contents: params.prompt,
-        config: {
+      const model = this.geminiClient!.getGenerativeModel({ model: params.model });
+      const response = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: params.prompt }] }],
+        generationConfig: {
           temperature: params.temperature,
           topK: 40,
           topP: 0.95,

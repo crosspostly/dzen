@@ -65,10 +65,10 @@ export class EpisodeTitleGenerator {
 
     try {
       // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
-      const response = await this.geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
+      const model = this.geminiClient!.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const response = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
           temperature: 0.85,
           topK: 40,
           topP: 0.95,
@@ -107,10 +107,10 @@ export class EpisodeTitleGenerator {
         console.log(`Trying fallback to gemini-2.5-flash-exp-02-05...`);
         
         try {
-          const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
-            contents: prompt,
-            config: {
+          const fallbackModel = this.geminiClient!.getGenerativeModel({ model: "gemini-2.5-flash-exp-02-05" });
+          const fallbackResponse = await fallbackModel.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
               temperature: 0.85,
               topK: 40,
               topP: 0.95,
