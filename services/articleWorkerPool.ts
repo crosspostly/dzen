@@ -2,6 +2,9 @@
  * 📑 Article Worker Pool v4.1
  * Parallel generation of articles (default: 3 concurrent)
  * NOW WITH INTEGRATED IMAGE GENERATION
+ * 
+ * 🔴 CRITICAL: Total article limit is 19,000 characters
+ * See CHAR_LIMIT_CONFIG.md for details
  */
 
 import { MultiAgentService } from './multiAgentService';
@@ -15,6 +18,14 @@ export class ArticleWorkerPool {
   private workers: number;
   private apiKey?: string;
   private themeGeneratorService: ThemeGeneratorService;
+  
+  // 🔴 CHARACTER LIMIT CONFIGURATION
+  // TOTAL: 19,000 characters (FIXED)
+  // DO NOT CHANGE WITHOUT REVIEW
+  private readonly CHAR_LIMIT = 19000;
+  private readonly LEDE_CHARS = 750;
+  private readonly FINALE_CHARS = 1500;
+  private readonly EPISODES_CHARS = this.CHAR_LIMIT - this.LEDE_CHARS - this.FINALE_CHARS; // 16,750
 
   constructor(workerCount: number = 3, apiKey?: string) {
     this.workers = workerCount;
@@ -25,6 +36,7 @@ export class ArticleWorkerPool {
   /**
    * Execute batch of articles with parallel processing
    * v4.1: INTEGRATED IMAGE GENERATION
+   * 🔴 USES 19,000 CHARACTER LIMIT
    */
   async executeBatch(
     count: number,
@@ -35,6 +47,16 @@ export class ArticleWorkerPool {
     const multiAgentService = new MultiAgentService(this.apiKey);
 
     console.log(`\n📑 Generating ${count} articles (${this.workers} parallel workers)...\n`);
+
+    // 🔴 PRINT CHARACTER BUDGET AT START
+    console.log(`
+📊 CHARACTER BUDGET ANALYSIS:`);
+    console.log(`   Total: ${this.CHAR_LIMIT} chars`);
+    console.log(`   Lede: ${this.LEDE_CHARS} chars`);
+    console.log(`   Finale: ${this.FINALE_CHARS} chars`);
+    console.log(`   Remaining for episodes: ${this.EPISODES_CHARS} chars`);
+    const optimalEpisodes = multiAgentService.calculateOptimalEpisodeCount(this.CHAR_LIMIT);
+    console.log(`   Optimal episodes: ${optimalEpisodes} (avg ${Math.floor(this.EPISODES_CHARS / optimalEpisodes)} chars each)\n`);
 
     // Generate articles sequentially (since Gemini API has rate limits)
     for (let i = 1; i <= count; i++) {
@@ -50,7 +72,6 @@ export class ArticleWorkerPool {
         // We do this in multiAgentService but need access to outline for image gen
         // So we'll generate outline separately here
         console.log(`     📋 Generating outline + plotBible...`);
-        const optimalEpisodes = multiAgentService.calculateOptimalEpisodeCount(29000);
         const outline = await multiAgentService.generateOutline({
           theme,
           angle: 'confession',
@@ -95,14 +116,18 @@ export class ArticleWorkerPool {
           }
         }
 
-        // 🎯 STEP 4: Generate FULL article (episodes, lede, finale, title)
-        console.log(`     🎯 Generating 12 episodes + lede/finale...`);
+        // 🎉 STEP 4: Generate FULL article (episodes, lede, finale, title)
+        // 🔴 RESPECTING 19,000 CHARACTER LIMIT
+        console.log(`     🎉 Generating ${optimalEpisodes} episodes + lede/finale...`);
+        console.log(`        📊 Per-episode budget: ~${Math.floor(this.EPISODES_CHARS / optimalEpisodes)} chars`);
+        
         const longformArticle = await multiAgentService.generateLongFormArticle({
           theme,
           angle: 'confession',
           emotion: outline.emotion,
           audience: 'Women 35-60',
           includeImages: false, // Already generated above
+          charLimit: this.CHAR_LIMIT, // 🔴 PASS LIMIT TO SERVICE
         });
 
         const duration = Date.now() - startTime;
@@ -110,7 +135,14 @@ export class ArticleWorkerPool {
         // Convert to Article format
         let articleContent = this.formatArticleContent(longformArticle);
         
-        // 🧼 v4.4: Sanitize content and calculate quality metrics
+        // 📊 ENFORCE CHARACTER LIMIT
+        if (articleContent.length > this.CHAR_LIMIT) {
+          console.warn(`     ⚠️  Article exceeds limit (${articleContent.length} > ${this.CHAR_LIMIT})`);
+          console.warn(`     ⚠️  Truncating to ${this.CHAR_LIMIT} chars`);
+          articleContent = articleContent.substring(0, this.CHAR_LIMIT);
+        }
+        
+        // 🧟c v4.4: Sanitize content and calculate quality metrics
         const sanitizedContent = ContentSanitizer.cleanEpisodeContent(articleContent);
         const validation = ContentSanitizer.validateEpisodeContent(sanitizedContent);
         const metrics = ContentSanitizer.calculateQualityMetrics(sanitizedContent);
@@ -144,6 +176,7 @@ export class ArticleWorkerPool {
             emotion: longformArticle.outline.emotion,
             audience: longformArticle.outline.audience,
             generatedAt: Date.now(),
+            charLimit: this.CHAR_LIMIT, // 🔴 DOCUMENT LIMIT USED
             models: {
               outline: 'gemini-2.5-flash',
               episodes: 'gemini-2.5-flash',
@@ -169,7 +202,7 @@ export class ArticleWorkerPool {
         };
 
         articles.push(article);
-        console.log(`     ✅ Complete (${(duration / 1000).toFixed(1)}s, ${article.charCount} chars)`);
+        console.log(`     ✅ Complete (${(duration / 1000).toFixed(1)}s, ${article.charCount}/${this.CHAR_LIMIT} chars)`);
         if (article.coverImage) {
           console.log(`     🖼 Cover: ${article.coverImage.size} bytes`);
         }
