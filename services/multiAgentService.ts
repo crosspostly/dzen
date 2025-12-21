@@ -12,27 +12,56 @@ import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
 import { DEFAULT_TIMELINE, FORBIDDEN_THEMES } from "../constants";
 
 export class MultiAgentService {
-  private geminiClient: GoogleGenerativeAI;
+  private geminiClient: GoogleGenerativeAI | null = null;
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
   private phase2Service: Phase2AntiDetectionService;
   // 🔴 CHARACTER LIMIT: 19,000 (FIXED - see CHAR_LIMIT_CONFIG.md)
   private maxChars: number = 19000;
   private episodeCount: number = 12;
+  private apiKey: string = '';
+  private initializationError: Error | null = null;
 
   constructor(apiKey?: string, maxChars?: number) {
-    const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
-    this.contextManager = new ContextManager();
-    // 🔴 Use 19000 by default, override only for testing
-    this.maxChars = maxChars || 19000;
-    this.phase2Service = new Phase2AntiDetectionService();
-    
-    // Calculate dynamic episode count
-    this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
-    console.log(`📊 Dynamic episode allocation: ${this.episodeCount} episodes for ${this.maxChars} chars`);
-    
-    this.initializeAgents(this.episodeCount);
+    try {
+      const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+      
+      if (!key) {
+        throw new Error('❌ CRITICAL: No Gemini API key provided. Set GEMINI_API_KEY or API_KEY environment variable.');
+      }
+      
+      this.apiKey = key;
+      this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
+      this.contextManager = new ContextManager();
+      // 🔴 Use 19000 by default, override only for testing
+      this.maxChars = maxChars || 19000;
+      this.phase2Service = new Phase2AntiDetectionService();
+      
+      // Calculate dynamic episode count
+      this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
+      console.log(`📊 Dynamic episode allocation: ${this.episodeCount} episodes for ${this.maxChars} chars`);
+      
+      this.initializeAgents(this.episodeCount);
+    } catch (error) {
+      this.initializationError = error as Error;
+      console.error(`\n❌ FATAL: MultiAgentService initialization failed:`);
+      console.error(`   Error: ${(error as Error).message}`);
+      console.error(`   Type: ${(error as Error).constructor.name}`);
+      console.error(`   Stack: ${(error as Error).stack}\n`);
+      throw error;
+    }
+  }
+
+  /**
+   * 🆘 Diagnostic method to check initialization status
+   */
+  public checkHealth(): { healthy: boolean; client: boolean; apiKey: boolean; error?: string } {
+    return {
+      healthy: !this.initializationError && this.geminiClient !== null,
+      client: this.geminiClient !== null,
+      apiKey: !!this.apiKey,
+      error: this.initializationError?.message,
+    };
   }
 
   /**
@@ -84,6 +113,11 @@ export class MultiAgentService {
     includeImages?: boolean;
     charLimit?: number; // 🔴 Alternative parameter name
   }): Promise<LongFormArticle> {
+    // Verify initialization
+    if (!this.geminiClient) {
+      throw new Error(`❌ CRITICAL: Gemini client not initialized. Error: ${this.initializationError?.message}`);
+    }
+
     // Accept both maxChars and charLimit parameters
     const maxChars = params.maxChars || params.charLimit || this.maxChars;
     const episodeCount = this.calculateOptimalEpisodeCount(maxChars);
@@ -180,7 +214,7 @@ export class MultiAgentService {
     console.log(`   - Phase 2 Score: ${article.adversarialScore?.overallScore || 0}/100`);
     console.log(`   - Anti-Detection: ${article.phase2Applied ? '✅ Applied' : '❌ Not applied'}`);
     console.log(`   - Cover image: Pending (will be generated in orchestrator)`);
-    console.log(``)
+    console.log(``);
     
     return article;
   }
@@ -328,6 +362,11 @@ export class MultiAgentService {
     emotion: string;
     audience: string;
   }, episodeCount: number): Promise<OutlineStructure> {
+    // Verify client is initialized
+    if (!this.geminiClient) {
+      throw new Error(`❌ CRITICAL: Gemini client not initialized when calling generateOutline. ${this.initializationError?.message}`);
+    }
+
     const episodeList = Array.from({ length: episodeCount }, (_, i) => ({
       id: i + 1,
       title: `Часть ${i + 1}: ...`,
@@ -424,13 +463,17 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
 }
 \`\`\``;
 
-    const response = await this.callGemini({
-      prompt,
-      model: "gemini-2.5-flash",
-      temperature: 0.85,
-    });
-
-    return this.parseJsonSafely(response, 'Outline') as OutlineStructure;
+    try {
+      const response = await this.callGemini({
+        prompt,
+        model: "gemini-2.5-flash",
+        temperature: 0.85,
+      });
+      return this.parseJsonSafely(response, 'Outline') as OutlineStructure;
+    } catch (error) {
+      console.error(`\n❌ ERROR in generateOutline: ${(error as Error).message}`);
+      throw error;
+    }
   }
 
   /**
@@ -640,13 +683,18 @@ Respond as JSON:
   }
 
   /**
-   * Helper: Call Gemini API with fallback
+   * Helper: Call Gemini API with fallback and diagnostics
    */
   private async callGemini(params: {
     prompt: string;
     model: string;
     temperature: number;
   }): Promise<string> {
+    // Verify client exists before calling
+    if (!this.geminiClient) {
+      throw new Error(`❌ FATAL: Gemini client is null. Initialization error: ${this.initializationError?.message}`);
+    }
+
     try {
       const model = this.geminiClient.getGenerativeModel({ model: params.model });
       const response = await model.generateContent({
@@ -666,6 +714,10 @@ Respond as JSON:
         console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
         
         try {
+          if (!this.geminiClient) {
+            throw new Error(`❌ Gemini client is null during fallback`);
+          }
+          
           const fallbackModel = this.geminiClient.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
           const fallbackResponse = await fallbackModel.generateContent({
             contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
@@ -692,6 +744,10 @@ Respond as JSON:
    * Helper: Initialize agents
    */
   private initializeAgents(count: number) {
+    if (!this.geminiClient) {
+      console.error(`❌ Cannot initialize agents: Gemini client is null`);
+      return;
+    }
     for (let i = 0; i < count; i++) {
       this.agents.push(new ContentAgent(this.geminiClient, i));
     }
