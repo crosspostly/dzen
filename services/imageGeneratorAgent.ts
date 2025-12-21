@@ -37,7 +37,7 @@ export class ImageGeneratorAgent {
     this.config = {
       aspectRatio: "16:9",
       quality: "high",
-      format: "jpeg",  // ← CHANGED from png to jpeg
+      format: "jpg",  // ← CHANGED from png to jpeg
       maxRetries: 2,
       retryDelay: 3000,
       rateLimit: 1,
@@ -274,9 +274,9 @@ PURE PHOTOGRAPH ONLY.
     const who = this.extractWho(bestParagraph, plotBible);
     const what = this.extractWhat(bestParagraph);
     const where = this.extractWhere(bestParagraph, plotBible);
-    const lighting = this.extractLighting(bestParagraph, plotBible);
+    const lighting = this.extractLighting(bestParagraph, plotBible.sensoryPalette);
     const mood = this.extractMood(bestParagraph);
-    const sensoryDetails = this.extractSensoryDetails(bestParagraph, plotBible);
+    const sensoryDetails = this.extractSensoryDetails(bestParagraph, plotBible.sensoryPalette);
 
     return {
       who,
@@ -408,7 +408,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data,
-      mimeType: "image/jpeg",  // ← ALWAYS JPEG for covers
+      mimeType: "image/jpg",  // ← ALWAYS JPEG for covers
       width: 1920, // 16:9 standard
       height: 1080,
       fileSize: Math.ceil(base64Data.length * 0.75), // Approximate size
@@ -489,7 +489,7 @@ Amateur photo aesthetic, NOT stock photography.
     }
 
     // Check format
-    const formatOk = image.mimeType === "image/jpeg" || image.mimeType === "image/jpg";
+    const formatOk = image.mimeType === "image/jpg";
     if (!formatOk) {
       errors.push(`Invalid format: ${image.mimeType}`);
     }

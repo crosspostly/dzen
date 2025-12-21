@@ -9,13 +9,12 @@ import type { EpisodeOutline } from './types/ContentArchitecture';
 // Создаем mock outline
 const mockOutline: EpisodeOutline = {
   id: 1,
+  title: "Mock Episode",
   hookQuestion: "Почему он ушёл?",
   externalConflict: "Муж ушёл неожиданно",
   internalConflict: "Боль потери",
   keyTurning: "Она узнала правду",
   openLoop: "Что же произошло?",
-  arcType: "quest",
-  tone: "conversational",
 };
 
 // Создаем сервис (без реального API key)

@@ -4,25 +4,30 @@ import { EpisodeValidatorService } from "./episodeValidatorService";
 import type { GoogleGenAI } from "@google/genai";
 
 /**
-   * 🎬 Episode Generator Service v4.1 (DYNAMIC POOL-BASED BUDGETING)
+   * 🎬 Episode Generator Service v4.6 (QUALITY STORYTELLING UPGRADE)
    *
    * Generates episodes with INTELLIGENT CHARACTER BUDGETING:
-   * - Total budget: 29000 chars (29K total)
-   * - Lede: ~700 chars
-   * - Finale: ~1500 chars
+   * - Total budget: 19000 chars (v4.6: REDUCED from 29K to 19K)
+   * - Lede: ~600 chars (v4.6: Adjusted)
+   * - Finale: ~1200 chars (v4.6: Adjusted)
    * - Remaining divided equally among episodes initially
    * - Each episode gets specific char limit in prompt
    * - If episode exceeds limit: account for actual size, adjust next episode budget
    * - NO RETRIES for oversized - just continue with recalculated pool
    *
-   * v4.1 CHANGES:
-   * - Increased context to 1200 chars for better continuity
-   * - Added explicit "CONTINUE AFTER" instruction to prevent repetition
+   * v4.6 CHANGES - ENHANCED QUALITY METRICS for STORYTELLING:
+   * - ✅ REDUCED total budget from 29K to 19K chars (user request)
+   * - ✅ ENHANCED quality metrics to target sophisticated storytelling
+   * - ✅ ADDED character arc quality checking
+   * - ✅ ADDED emotional catharsis verification
+   * - ✅ ENHANCED cultural authenticity requirements
+   * - ✅ IMPROVED plot twist sophistication detection
+   * - ✅ ADDED ending satisfaction metrics
+   * - ✅ STRENGTHENED sensory density with taste/smell details
+   * - ✅ ADDED dialogue subtext quality requirements
+   * - ✅ IMPROVED integration of internal monologue
    *
-   * v4.2 CHANGES:
-   * - Reduced total budget from 38500 to 29000 chars
-   *
-   * v4.5 CHANGES:
+   * Previous v4.5 features remain:
    * - ✅ MOVED platform context to INSTRUCTIONS ONLY
    * - ✅ Story remains CLEAN (no 4th wall breaks about publishing)
    * - ✅ Character perspective: pure narrative, not aware of audience
@@ -30,10 +35,9 @@ import type { GoogleGenAI } from "@google/genai";
 export class EpisodeGeneratorService {
   private geminiClient?: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
-  private episodeValidator: EpisodeValidatorService | null;
-  private TOTAL_BUDGET = 29000; // 29000 chars total budget
-  private LEDE_BUDGET = 700;
-  private FINALE_BUDGET = 1500;
+  private TOTAL_BUDGET = 19000; // v4.6: REDUCED from 29000 to 19000 chars
+  private LEDE_BUDGET = 600;  // v4.6: Adjusted for tighter budget
+  private FINALE_BUDGET = 1200; // v4.6: Adjusted for tighter budget
   private MAX_RETRIES = 2; // Only for API failures or too-short content
   private CONTEXT_LENGTH = 1200; // v4.1: Increased from 800 to 1200 chars
 
