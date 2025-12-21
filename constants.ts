@@ -27,3 +27,18 @@ export const RUBRICS: RubricData[] = [
     entities: ["быт", "эмоции", "реализм"]
   }
 ];
+
+// v4.5: PlotBible Defaults
+export const DEFAULT_TIMELINE = {
+  present: "2025 год, декабрь, квартира в городе",
+  flashbacks: []
+};
+
+export const FORBIDDEN_THEMES = [
+  "убийство",
+  "полиция",
+  "наркотики",
+  "сексуальное насилие",
+  "детская смерть",
+  "терроризм"
+];

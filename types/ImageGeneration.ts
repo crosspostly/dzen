@@ -36,7 +36,7 @@ export interface ImageGenerationRequest {
 export interface GeneratedImage {
   id: string;
   base64: string;
-  mimeType: "image/png" | "image/jpg";
+  mimeType: "image/jpg";
   width: number;
   height: number;
   fileSize: number;

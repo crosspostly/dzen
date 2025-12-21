@@ -8,6 +8,7 @@ import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePasspo
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
+import { DEFAULT_TIMELINE, FORBIDDEN_THEMES } from "../constants";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -43,7 +44,7 @@ export class MultiAgentService {
    * - Minimum: 6 episodes (18K chars for episodes alone)
    * - Maximum: 15 episodes (48K chars for episodes alone)
    */
-  private calculateOptimalEpisodeCount(maxChars: number): number {
+  public calculateOptimalEpisodeCount(maxChars: number): number {
     const LEDE_CHARS = 750;
     const FINALE_CHARS = 1500;
     const AVG_EPISODE_CHARS = 3200;
@@ -176,7 +177,7 @@ export class MultiAgentService {
   /**
    * 🎭 EXTRACT & VALIDATE plotBible from outline
    */
-  private extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
+  public extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
     // Check if ALL required fields exist in plotBible
     if (outline.plotBible && 
         outline.plotBible.narrator && 
@@ -198,18 +199,55 @@ export class MultiAgentService {
     const age = ageMatch ? Math.round((parseInt(ageMatch[1]) + parseInt(ageMatch[2])) / 2) : 45;
     const gender = params.audience.toLowerCase().includes('woman') || params.audience.toLowerCase().includes('women') ? 'female' : 'male';
 
-    return {
-      narrator: outline.plotBible?.narrator || {
-        age,
-        gender: gender as "male" | "female",
-        tone: "confessional",
-        voiceHabits: {
-          apologyPattern: "I know it sounds strange, but...",
-          doubtPattern: "But then I realized...",
-          memoryTrigger: "I remember when...",
-          angerPattern: "And inside me clicked something",
-        },
+    const narrator = outline.plotBible?.narrator || {
+      age,
+      gender: gender as "male" | "female",
+      tone: "confessional",
+      voiceHabits: {
+        apologyPattern: "I know it sounds strange, but...",
+        doubtPattern: "But then I realized...",
+        memoryTrigger: "I remember when...",
+        angerPattern: "And inside me clicked something",
       },
+    };
+
+    // Construct valid PlotBible
+    const timeline = { ...DEFAULT_TIMELINE };
+    const forbiddenThemes = [...FORBIDDEN_THEMES];
+
+    // Map characterMap to protagonist/antagonist if possible, or use defaults
+    const charMap = outline.characterMap || {};
+    const narratorChar = charMap['Narrator'] || { role: 'protagonist', arc: 'internal realization' };
+    
+    const protagonist = {
+      name: 'Я',
+      age: narrator.age,
+      traits: ['reflective', 'honest'],
+      motivation: narratorChar.arc,
+      arc: narratorChar.arc
+    };
+
+    // Find antagonist
+    let antagonist = undefined;
+    for (const [name, char] of Object.entries(charMap)) {
+      if (name !== 'Narrator' && (char.role.includes('antagonist') || char.role.includes('catalyst'))) {
+        antagonist = {
+          name,
+          age: narrator.age, // approximation
+          traits: [char.role],
+          motivation: 'oppose narrator'
+        };
+        break;
+      }
+    }
+
+    return {
+      narrator: {
+        ...narrator,
+        voiceMarkers: Object.values(narrator.voiceHabits || {}) // Map voiceHabits to voiceMarkers
+      },
+      protagonist,
+      antagonist,
       sensoryPalette: outline.plotBible?.sensoryPalette || {
         details: ["domestic", "intimate", "complex"],
         smells: ["coffee", "old books", "home"],
@@ -217,17 +255,8 @@ export class MultiAgentService {
         textures: ["soft", "worn", "familiar"],
         lightSources: ["window", "lamp", "dawn"],
       },
-      characterMap: outline.characterMap || {
-        Narrator: {
-          role: "protagonist",
-          arc: "internal realization",
-        },
-      },
-      thematicCore: outline.plotBible?.thematicCore || {
-        centralQuestion: outline.externalTensionArc || "What if I had chosen differently?",
-        emotionalArc: params.emotion,
-        resolutionStyle: "bittersweet, uncertain",
-      },
+      timeline,
+      forbiddenThemes
     };
   }
 
@@ -282,7 +311,7 @@ export class MultiAgentService {
    * 🔧 v4.5 FIX: Generate outline structure with MANDATORY plotBible
    * Make all fields required in prompt to force Gemini to generate them
    */
-  private async generateOutline(params: {
+  public async generateOutline(params: {
     theme: string;
     angle: string;
     emotion: string;
