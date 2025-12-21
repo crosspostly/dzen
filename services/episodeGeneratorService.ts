@@ -1,6 +1,7 @@
-import { GoogleGenAI } from "@google/genai";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
+import { EpisodeValidatorService } from "./episodeValidatorService";
+import type { GoogleGenAI } from "@google/genai";
 
 /**
    * 🎬 Episode Generator Service v4.6 (QUALITY STORYTELLING UPGRADE)
@@ -32,7 +33,7 @@ import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
    * - ✅ Character perspective: pure narrative, not aware of audience
    */
 export class EpisodeGeneratorService {
-  private geminiClient: GoogleGenAI;
+  private geminiClient?: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
   private TOTAL_BUDGET = 19000; // v4.6: REDUCED from 29000 to 19000 chars
   private LEDE_BUDGET = 600;  // v4.6: Adjusted for tighter budget
@@ -40,10 +41,35 @@ export class EpisodeGeneratorService {
   private MAX_RETRIES = 2; // Only for API failures or too-short content
   private CONTEXT_LENGTH = 1200; // v4.1: Increased from 800 to 1200 chars
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, enableValidation: boolean = true) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenAI({ apiKey: key });
-    this.titleGenerator = new EpisodeTitleGenerator(key);
+    
+    // Инициализируем Gemini только если есть API ключ
+    if (key) {
+      this.geminiClient = new GoogleGenAI({ apiKey: key });
+      this.titleGenerator = new EpisodeTitleGenerator(key);
+    } else {
+      console.log('⚠️  No API key provided - Gemini services will not work');
+      this.titleGenerator = new EpisodeTitleGenerator(undefined);
+    }
+    
+    // 🆕 ВАЛИДАЦИЯ ВКЛЮЧЕНА ПО УМОЛЧАНИЮ!
+    if (enableValidation && this.geminiClient) {
+      this.episodeValidator = new EpisodeValidatorService({
+        minQualityScore: 75, // Выше из-за автофикса
+        enableAutoFix: true,
+        enableMLModel: true,
+        verbose: true
+      });
+      console.log('🔍 Episode validation ENABLED by default (anti-AI detection + auto-fix)');
+    } else {
+      this.episodeValidator = null;
+      if (enableValidation) {
+        console.log('⚠️  Episode validation requested but unavailable (no API key)');
+      } else {
+        console.log('⏭️  Episode validation DISABLED (faster generation)');
+      }
+    }
   }
 
   /**
@@ -69,29 +95,31 @@ export class EpisodeGeneratorService {
   }
 
   /**
-   * 🎯 Generate episodes sequentially with DYNAMIC POOL TRACKING
-   * 
-   * Key change: If episode exceeds budget, we accept it and adjust
-   * remaining pool for next episodes instead of retrying!
+   * 🎯 Generate episodes sequentially with DYNAMIC POOL TRACKING + ANTI-AI VALIDATION
+   *
+   * Key change: Each episode goes through validation before proceeding to next
    */
   async generateEpisodesSequentially(
     episodeOutlines: EpisodeOutline[],
     options?: {
       delayBetweenRequests?: number;
       onProgress?: (current: number, total: number, charCount: number) => void;
+      skipValidation?: boolean; // Для тестирования/скорости
     }
   ): Promise<Episode[]> {
     const episodes: Episode[] = [];
     const delay = options?.delayBetweenRequests || 1500;
-    
+    const skipValidation = options?.skipValidation || false;
+
     // Calculate budget allocation
     const budget = this.calculateBudget(episodeOutlines.length);
     console.log(`\n📊 BUDGET ALLOCATION:`);
     console.log(`   Total budget: ${budget.total} chars`);
     console.log(`   Episodes: ${budget.episodeCount} × ${budget.perEpisode} chars each`);
     console.log(`   Lede: ${budget.lede} | Finale: ${budget.finale}`);
-    console.log(`   (Remaining for episodes: ${budget.remaining} chars)\n`);
-    
+    console.log(`   (Remaining for episodes: ${budget.remaining} chars)`);
+    console.log(`   Anti-AI validation: ${skipValidation ? 'DISABLED' : 'ENABLED'}\n`);
+
     let charCountSoFar = 0;
     let remainingPool = budget.remaining;
 
@@ -99,24 +127,39 @@ export class EpisodeGeneratorService {
       const outline = episodeOutlines[i];
       const episodesLeft = episodeOutlines.length - i;
       const charsForThisEpisode = Math.floor(remainingPool / episodesLeft);
-      
+
       console.log(`\n   🎬 Episode #${outline.id} - Starting generation...`);
       console.log(`      Budget: ${charsForThisEpisode} chars (${remainingPool} remaining for rest)`);
-      
+
       try {
-        const episode = await this.generateSingleEpisode(
-          outline, 
-          episodes,
-          charsForThisEpisode,  // Pass specific budget to this episode
-          i + 1,
-          episodeOutlines.length
-        );
+        let episode: Episode;
+
+        if (skipValidation) {
+          // Быстрая генерация без валидации (для тестов)
+          episode = await this.generateSingleEpisode(
+            outline,
+            episodes,
+            charsForThisEpisode,
+            i + 1,
+            episodeOutlines.length
+          );
+        } else {
+          // Генерация с валидацией антидетектора
+          episode = await this.generateAndValidateEpisode(
+            outline,
+            episodes,
+            charsForThisEpisode,
+            i + 1,
+            episodeOutlines.length
+          );
+        }
+
         episodes.push(episode);
-        
+
         // UPDATE POOL: subtract actual chars from remaining pool
         remainingPool -= episode.charCount;
         charCountSoFar += episode.charCount;
-        
+
         // Warn if significantly over budget
         if (episode.charCount > charsForThisEpisode * 1.1) {
           console.log(`      ⚠️  Over budget: ${episode.charCount}/${charsForThisEpisode} chars`);
@@ -125,11 +168,11 @@ export class EpisodeGeneratorService {
           console.log(`      ✅ Generated: ${episode.charCount} chars (on budget)`);
         }
         console.log(`      📊 Total so far: ${charCountSoFar}/${budget.total}`);
-        
+
         if (options?.onProgress) {
           options.onProgress(i + 1, episodeOutlines.length, charCountSoFar);
         }
-        
+
         // Wait before next request
         if (i < episodeOutlines.length - 1) {
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -139,7 +182,7 @@ export class EpisodeGeneratorService {
         throw error;
       }
     }
-    
+
     const utilization = ((charCountSoFar / budget.total) * 100).toFixed(1);
     console.log(`\n✅ All episodes generated!`);
     console.log(`   Total chars: ${charCountSoFar}/${budget.total} (${utilization}% utilization)`);
@@ -147,11 +190,68 @@ export class EpisodeGeneratorService {
   }
 
   /**
+   * 🎯 Generate single episode WITH ANTI-AI VALIDATION
+   * Интеграция с EpisodeValidatorService для проверки каждого эпизода
+   */
+  private async generateAndValidateEpisode(
+    outline: EpisodeOutline,
+    previousEpisodes: Episode[],
+    charLimit: number,
+    episodeNum: number,
+    totalEpisodes: number
+  ): Promise<Episode> {
+    console.log(`   🔍 Generating with anti-AI validation...`);
+
+    try {
+      // Используем EpisodeValidatorService для генерации с валидацией
+      const validationResult = await this.episodeValidator.generateAndValidateEpisode({
+        episodeNumber: episodeNum,
+        totalEpisodes,
+        plotBible: {}, // TODO: добавить PlotBible если нужно
+        previousContext: this.buildContext(previousEpisodes),
+        remainingBudget: charLimit,
+        additionalInstructions: undefined
+      });
+
+      if (validationResult.validationPassed) {
+        console.log(`      ✅ Episode ${episodeNum} PASSED anti-AI validation`);
+        return validationResult.episode;
+      } else {
+        console.log(`      ❌ Episode ${episodeNum} FAILED anti-AI validation`);
+        console.log(`      📊 Best score: ${Math.max(...validationResult.attempts.map(a => a.score))}/100`);
+        console.log(`      🔄 Returning best attempt anyway (will be processed later)`);
+
+        // Возвращаем лучшую попытку даже если она не прошла
+        const bestAttempt = validationResult.attempts.reduce((best, current) =>
+          current.score > best.score ? current : best
+        );
+
+        return {
+          ...validationResult.episode,
+          content: bestAttempt ? bestAttempt.score > 50 ? validationResult.episode.content : validationResult.episode.content : validationResult.episode.content,
+          stage: 'draft' // Помечаем как требующий доработки
+        };
+      }
+    } catch (error) {
+      console.log(`      ⚠️  Validation failed, falling back to direct generation:`, error);
+
+      // Фолбэк на прямую генерацию без валидации
+      return this.generateSingleEpisode(
+        outline,
+        previousEpisodes,
+        charLimit,
+        episodeNum,
+        totalEpisodes
+      );
+    }
+  }
+
+  /**
    * 🎨 Generate single episode with SPECIFIC CHAR LIMIT
    * 
    * NO RETRY on oversized! Just generate once, accept, move on.
    */
-  private async generateSingleEpisode(
+  async generateSingleEpisode(
     outline: EpisodeOutline,
     previousEpisodes: Episode[],
     charLimit: number,

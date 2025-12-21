@@ -1,15 +1,17 @@
-import { GoogleGenAI } from "@google/genai";
+import type { GoogleGenAI } from "@google/genai";
 
 /**
  * Генерирует лаконичные русские названия для эпизодов.
  * Примеры: "Горячая правда", "Первая искра возмущения", "Граница перейдена".
  */
 export class EpisodeTitleGenerator {
-  private geminiClient: GoogleGenAI;
+  private geminiClient?: GoogleGenAI;
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || "";
-    this.geminiClient = new GoogleGenAI({ apiKey: key });
+    if (key) {
+      this.geminiClient = new GoogleGenAI({ apiKey: key });
+    }
   }
 
   /**
@@ -23,6 +25,10 @@ export class EpisodeTitleGenerator {
     content: string,
     openLoop: string
   ): Promise<string> {
+    if (!this.geminiClient) {
+      return `Эпизод ${episodeNumber}`;
+    }
+
     const contentPreview = (content || "").substring(0, 300);
 
     const prompt = `Ты редактор Яндекс.Дзен. Создай ЛАКОНИЧНЫЙ русский заголовок (3-5 СЛОВ!) для эпизода #${episodeNumber}.
