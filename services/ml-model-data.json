@@ -1,0 +1,68 @@
+{
+  "modelVersion": "1.0",
+  "lastUpdated": "2025-12-20T18:45:00.000Z",
+  "successfulExamples": [],
+  "fixPatterns": [
+    {
+      "problem": "AI-фразы",
+      "solution": "Естественные выражения",
+      "example": {
+        "before": "Важно отметить, что следует подчеркнуть необходимость.",
+        "after": "Помню, как всё было важно."
+      },
+      "category": "phrase",
+      "confidence": 90,
+      "usageCount": 1
+    },
+    {
+      "problem": "Неестественные обороты",
+      "solution": "Живая речь",
+      "example": {
+        "before": "Характерной особенностью является",
+        "after": "Всё дело в том, что"
+      },
+      "category": "phrase",
+      "confidence": 85,
+      "usageCount": 1
+    },
+    {
+      "problem": "Академический язык",
+      "solution": "Разговорный стиль",
+      "example": {
+        "before": "Которая при этом более того",
+        "after": "Которая, кстати,"
+      },
+      "category": "style",
+      "confidence": 80,
+      "usageCount": 1
+    },
+    {
+      "problem": "Монотонные предложения",
+      "solution": "Вариативность длины",
+      "example": {
+        "before": "Предложение. Другое предложение. Третье предложение.",
+        "after": "Предложение. Ну а потом случилось кое-что интересное. В общем, всё."
+      },
+      "category": "structure",
+      "confidence": 85,
+      "usageCount": 1
+    },
+    {
+      "problem": "Мало эмоций",
+      "solution": "Эмоциональная окраска",
+      "example": {
+        "before": "Произошло событие. Потом другое событие.",
+        "after": "Мне стало страшно. А потом - невероятное облегчение."
+      },
+      "category": "emotion",
+      "confidence": 88,
+      "usageCount": 1
+    }
+  ],
+  "statistics": {
+    "totalExamples": 0,
+    "avgScore": 0,
+    "successRate": 0,
+    "topPatterns": []
+  }
+}

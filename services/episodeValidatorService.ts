@@ -1,23 +1,23 @@
 /**
- * EPISODE VALIDATOR SERVICE
+ * EPISODE VALIDATOR SERVICE v2.0
  * 
- * Retry логика для каждого эпизода:
- * - Генерируем эпизод → валидируем → если BAD → снова
- * - Максимум 3 попытки на эпизод
- * - После 3 попыток без успеха → ОШИБКА
- * 
- * Интеграция с antiAIDetectorService для проверки каждого эпизода
+ * НОВЫЙ ПОДХОД: без retry циклов!
+ * - Генерируем эпизод → проверяем доработанным антидетектором → автофиксируем → результат
+ * - Валидация включена по умолчанию
+ * - Автофикс включен по умолчанию
+ * - ML-модель включена по умолчанию
  */
 
 import { Episode, EpisodeOutline } from '../types/ContentArchitecture';
-import { AntiAIDetectorService, DetectionResult, DetectionConfig } from './antiAIDetectorService';
+import { Phase2AntiDetectionService, type Phase2Options, type Phase2Result } from './phase2AntiDetectionService';
 import { EpisodeGeneratorService } from './episodeGeneratorService';
 
 export interface ValidationConfig {
-  maxRetries: number; // Default: 3
-  minQualityScore: number; // Default: 70
-  enableAutoFix: boolean; // Default: false (пока оставляем на ручную доработку)
-  detectorConfig: Partial<DetectionConfig>;
+  maxRetries: number; // Default: 1 (только одна попытка с автофиксом)
+  minQualityScore: number; // Default: 75 (выше из-за автофикса)
+  enableAutoFix: boolean; // Default: true (включен по умолчанию)
+  enableMLModel: boolean; // Default: true (включен по умолчанию)
+  detectorConfig: Partial<Phase2Options>;
   verbose: boolean; // Default: true
 }
 
@@ -25,10 +25,12 @@ export interface ValidationResult {
   episode: Episode;
   validationPassed: boolean;
   attempts: number;
-  finalResult: DetectionResult;
+  finalResult: Phase2Result;
   errorLog: string[];
   processingTime: number;
   retryNeeded: boolean;
+  improvementApplied: boolean; // 🆕 Был ли применён автофикс
+  scoreImprovement: number; // 🆕 На сколько улучшился балл
 }
 
 export interface EpisodeGenerationRequest {
@@ -41,31 +43,34 @@ export interface EpisodeGenerationRequest {
 }
 
 export class EpisodeValidatorService {
-  private antiDetector: AntiAIDetectorService;
+  private antiDetector: Phase2AntiDetectionService;
   private episodeGenerator: EpisodeGeneratorService;
   private config: ValidationConfig;
 
   constructor(
-    antiDetectorConfig?: Partial<DetectionConfig>,
+    antiDetectorConfig?: Partial<Phase2Options>,
     validationConfig?: Partial<ValidationConfig>
   ) {
-    // Инициализируем антидетектор
-    this.antiDetector = new AntiAIDetectorService(antiDetectorConfig);
+    // Инициализируем доработанный Phase2 антидетектор
+    this.antiDetector = new Phase2AntiDetectionService();
     
     // Инициализируем генератор эпизодов
     this.episodeGenerator = new EpisodeGeneratorService();
     
-    // Настраиваем конфигурацию валидации
+    // Настраиваем конфигурацию валидации (валидация включена по умолчанию!)
     this.config = {
-      maxRetries: 3,
-      minQualityScore: 70,
-      enableAutoFix: false,
+      maxRetries: 1, // Только одна попытка с автофиксом
+      minQualityScore: 75, // Выше из-за автофикса
+      enableAutoFix: true, // Автофикс включен по умолчанию
+      enableMLModel: true, // ML-модель включена по умолчанию
       detectorConfig: {
-        minScore: 70,
-        enableGrepCheck: true,
-        enablePartialCheck: true,
-        enableFullCheck: true,
-        strictMode: false
+        enableAutoFix: true,
+        useMLModel: true,
+        enableGatekeeper: true,
+        applyPerplexity: true,
+        applyBurstiness: true,
+        applySkazNarrative: true,
+        verbose: true
       },
       verbose: true,
       ...validationConfig
@@ -73,117 +78,134 @@ export class EpisodeValidatorService {
   }
 
   /**
-   * Главный метод: генерирует и валидирует эпизод с retry логикой
+   * 🆕 Главный метод v2.0: генерирует и валидирует эпизод с автофиксом
+   * Больше НЕТ retry циклов! Один раз генерируем + автофиксируем = результат
    */
   async generateAndValidateEpisode(request: EpisodeGenerationRequest): Promise<ValidationResult> {
     const startTime = Date.now();
-    const attempts: DetectionResult[] = [];
+    const attempts: Phase2Result[] = [];
     const errorLog: string[] = [];
     
-    console.log(`\n🎬 [Validator] Эпизод ${request.episodeNumber}/${request.totalEpisodes}`);
-    console.log(`🎯 Целевой балл антидетекции: ${this.config.minQualityScore}`);
-    console.log(`🔄 Максимум попыток: ${this.config.maxRetries}\n`);
+    console.log(`\n🎬 [Validator v2.0] Эпизод ${request.episodeNumber}/${request.totalEpisodes}`);
+    console.log(`🎯 Целевой балл: ${this.config.minQualityScore} (с автофиксом)`);
+    console.log(`🔧 Автофикс: ${this.config.enableAutoFix ? 'ENABLED' : 'DISABLED'}`);
+    console.log(`🧠 ML-модель: ${this.config.enableMLModel ? 'ENABLED' : 'DISABLED'}\n`);
 
     let lastGeneratedEpisode: Episode | null = null;
 
-    for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
-      console.log(`🔄 ПОПЫТКА ${attempt}/${this.config.maxRetries}`);
-      console.log(`═`.repeat(50));
+    // 🆕 НОВЫЙ ПОДХОД: только ОДНА попытка с автофиксом
+    console.log(`🔄 ОДНА ПОПЫТКА С АВТОФИКСОМ`);
+    console.log(`═`.repeat(50));
 
-      try {
-        // 1. Генерируем эпизод
-        console.log(`📝 Генерирую эпизод...`);
-        const episode = await this.generateEpisode(request);
-        lastGeneratedEpisode = episode;
+    try {
+      // 1. Генерируем эпизод
+      console.log(`📝 Генерирую эпизод...`);
+      const episode = await this.generateEpisode(request);
+      lastGeneratedEpisode = episode;
 
-        // 2. Проверяем антидетектором
-        console.log(`🔍 Проверяю антидетектором...`);
-        const detectionResult = await this.antiDetector.detectAI(episode.content);
-        attempts.push(detectionResult);
-
-        // 3. Логируем результат
-        console.log(`📊 Результат проверки:`);
-        console.log(`   Балл: ${detectionResult.score}/100`);
-        console.log(`   Риск: ${detectionResult.riskLevel}`);
-        console.log(`   Пройдено: ${detectionResult.passed ? '✅ ДА' : '❌ НЕТ'}`);
-        console.log(`   Проблем найдено: ${detectionResult.issues.length}`);
-
-        if (detectionResult.issues.length > 0 && this.config.verbose) {
-          console.log(`   🔍 Детали:`);
-          detectionResult.issues.slice(0, 3).forEach((issue, i) => {
-            console.log(`      ${i + 1}. ${issue.severity}: ${issue.description}`);
-          });
-          if (detectionResult.issues.length > 3) {
-            console.log(`      ... и ещё ${detectionResult.issues.length - 3} проблем`);
-          }
+      // 2. Проверяем доработанным антидетектором с автофиксом
+      console.log(`🔍 Проверяю с автофиксом...`);
+      const detectionResult = await this.antiDetector.processArticle(
+        episode.title,
+        episode.content,
+        {
+          enableAutoFix: this.config.enableAutoFix,
+          useMLModel: this.config.enableMLModel,
+          enableGatekeeper: true,
+          verbose: this.config.verbose,
+          ...this.config.detectorConfig
         }
+      );
+      
+      attempts.push(detectionResult);
 
-        // 4. Проверяем, прошёл ли валидацию
-        if (detectionResult.passed && detectionResult.score >= this.config.minQualityScore) {
-          const processingTime = Date.now() - startTime;
-          
-          console.log(`\n✅ ЭПИЗОД ${request.episodeNumber} УСПЕШНО ПРОЙДЕН!`);
-          console.log(`🎉 Финальный балл: ${detectionResult.score}/100`);
-          console.log(`⏱️  Время обработки: ${processingTime}ms`);
-          console.log(`🔄 Всего попыток: ${attempt}\n`);
-
-          return {
-            episode,
-            validationPassed: true,
-            attempts,
-            finalResult: detectionResult,
-            errorLog,
-            processingTime,
-            retryNeeded: false
-          };
-        } else {
-          // Не прошёл валидацию
-          console.log(`❌ Эпизод НЕ прошёл валидацию`);
-          if (attempt < this.config.maxRetries) {
-            console.log(`🔄 Попытка ${attempt + 1} начнётся через 2 секунды...\n`);
-            await this.sleep(2000); // Пауза между попытками
-          }
-        }
-
-      } catch (error) {
-        const errorMessage = `Попытка ${attempt}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        errorLog.push(errorMessage);
-        console.log(`❌ ОШИБКА в попытке ${attempt}:`, errorMessage);
-        
-        if (attempt < this.config.maxRetries) {
-          console.log(`🔄 Продолжаем с попыткой ${attempt + 1}...\n`);
-          await this.sleep(1000);
+      // 3. Логируем результат с детальной обратной связью
+      console.log(`📊 Результат автофикса:`);
+      console.log(`   Балл: ${detectionResult.adversarialScore.overallScore}/100`);
+      console.log(`   Риск: ${detectionResult.adversarialScore.passesAllChecks ? 'LOW' : 'HIGH'}`);
+      console.log(`   Пройдено: ${detectionResult.adversarialScore.overallScore >= this.config.minQualityScore ? '✅ ДА' : '❌ НЕТ'}`);
+      console.log(`   Проблем найдено: ${detectionResult.feedback.issues.length}`);
+      
+      // 4. Показываем обратную связь
+      if (detectionResult.feedback.issues.length > 0 && this.config.verbose) {
+        console.log(`   🔍 Детальная обратная связь:`);
+        detectionResult.feedback.issues.slice(0, 3).forEach((issue, i) => {
+          console.log(`      ${i + 1}. ${issue.severity.toUpperCase()}: ${issue.problem}`);
+          console.log(`         📍 Локация: ${issue.location}`);
+          console.log(`         💡 Решение: ${issue.fixSuggestions[0] || 'См. ML-рекомендации'}`);
+        });
+        if (detectionResult.feedback.issues.length > 3) {
+          console.log(`      ... и ещё ${detectionResult.feedback.issues.length - 3} проблем`);
         }
       }
-    }
 
-    // Если дошли сюда - все попытки исчерпаны
-    const processingTime = Date.now() - startTime;
-    const lastAttempt = attempts[attempts.length - 1];
-    
-    console.log(`\n🚨 КРИТИЧЕСКАЯ ОШИБКА: ЭПИЗОД НЕ ПРОЙДЕН`);
-    console.log(`💥 Все ${this.config.maxRetries} попытки исчерпаны`);
-    console.log(`📊 Лучший результат: ${Math.max(...attempts.map(a => a.score))}/100`);
-    console.log(`⏱️  Общее время: ${processingTime}ms`);
-    
-    if (lastAttempt) {
-      console.log(`\n📋 ДЕТАЛЬНЫЙ ОТЧЁТ ПОСЛЕДНЕЙ ПОПЫТКИ:`);
-      console.log(this.antiDetector.generateDetailedReport(lastAttempt));
-    }
+      // 5. Показываем результат автофикса
+      if (detectionResult.autoFixResult?.applied) {
+        console.log(`   🔧 Автофикс применён:`);
+        console.log(`      Улучшений: ${detectionResult.autoFixResult.improvementsApplied.length}`);
+        console.log(`      Улучшение балла: +${detectionResult.autoFixResult.improvementAmount} очков`);
+        console.log(`      Новый балл: ${detectionResult.autoFixResult.finalScore}/100`);
+      }
 
-    return {
-      episode: lastGeneratedEpisode!,
-      validationPassed: false,
-      attempts,
-      finalResult: lastAttempt!,
-      errorLog,
-      processingTime,
-      retryNeeded: true
-    };
+      // 6. Проверяем результат
+      const isPassed = detectionResult.adversarialScore.overallScore >= this.config.minQualityScore;
+      const processingTime = Date.now() - startTime;
+      
+      if (isPassed) {
+        console.log(`\n✅ ЭПИЗОД ${request.episodeNumber} УСПЕШНО ПРОЙДЕН!`);
+        console.log(`🎉 Финальный балл: ${detectionResult.adversarialScore.overallScore}/100`);
+        console.log(`⏱️  Время обработки: ${processingTime}ms`);
+        console.log(`🔧 Автофикс: ${detectionResult.autoFixResult?.applied ? 'ПРИМЕНЁН' : 'НЕ НУЖЕН'}\n`);
+      } else {
+        console.log(`\n⚠️  ЭПИЗОД ${request.episodeNumber} ТРЕБУЕТ ДОРАБОТКИ`);
+        console.log(`📊 Текущий балл: ${detectionResult.adversarialScore.overallScore}/${this.config.minQualityScore}`);
+        console.log(`💡 Рекомендации: ${detectionResult.feedback.mlRecommendations.join(', ')}`);
+        console.log(`🔧 Автофикс применён: ${detectionResult.autoFixResult?.applied ? 'ДА' : 'НЕТ'}\n`);
+      }
+
+      return {
+        episode: {
+          ...episode,
+          content: detectionResult.processedContent, // Используем улучшенный контент
+          charCount: detectionResult.processedContent.length
+        },
+        validationPassed: isPassed,
+        attempts,
+        finalResult: detectionResult,
+        errorLog,
+        processingTime,
+        retryNeeded: false, // Больше нет retry
+        improvementApplied: detectionResult.autoFixResult?.applied || false,
+        scoreImprovement: detectionResult.autoFixResult?.improvementAmount || 0
+      };
+
+    } catch (error) {
+      const errorMessage = `Попытка 1: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      errorLog.push(errorMessage);
+      console.log(`❌ ОШИБКА:`, errorMessage);
+      
+      const processingTime = Date.now() - startTime;
+      
+      console.log(`\n🚨 КРИТИЧЕСКАЯ ОШИБКА: ЭПИЗОД НЕ ОБРАБОТАН`);
+      console.log(`💥 Генерация или валидация завершилась с ошибкой`);
+      console.log(`⏱️  Время до ошибки: ${processingTime}ms`);
+      
+      return {
+        episode: lastGeneratedEpisode!,
+        validationPassed: false,
+        attempts,
+        finalResult: attempts[0] || {} as Phase2Result,
+        errorLog,
+        processingTime,
+        retryNeeded: false,
+        improvementApplied: false,
+        scoreImprovement: 0
+      };
+    }
   }
 
   /**
-   * Генерирует эпизод с учётом проблем предыдущих попыток
+   * 🆕 Генерирует эпизод (упрощённая версия)
    */
   private async generateEpisode(request: EpisodeGenerationRequest): Promise<Episode> {
     console.log(`📝 Generating episode using EpisodeGeneratorService...`);
@@ -235,7 +257,7 @@ export class EpisodeValidatorService {
   }
 
   /**
-   * Создаёт fallback контент в случае ошибки генерации
+   * 🆕 Создаёт fallback контент в случае ошибки
    */
   private createFallbackContent(request: EpisodeGenerationRequest): string {
     return `
@@ -255,20 +277,7 @@ export class EpisodeValidatorService {
   }
 
   /**
-   * Улучшает эпизод на основе найденных проблем
-   */
-  private async enhanceEpisodeWithFixes(episode: Episode, fixInstructions: string): Promise<Episode> {
-    console.log(`🔧 Применяю исправления на основе найденных проблем...`);
-
-    // Упрощённая версия без дополнительного вызова Gemini
-    // В реальной реализации здесь был бы дополнительный промпт для исправления
-    
-    console.log(`✅ Финальная обработка эпизода завершена`);
-    return episode;
-  }
-
-  /**
-   * Анализирует все попытки и создаёт сводный отчёт
+   * 🆕 Анализирует все попытки и создаёт сводный отчёт
    */
   generateRetryReport(validationResult: ValidationResult): string {
     const { episode, attempts, finalResult, processingTime } = validationResult;
@@ -276,45 +285,46 @@ export class EpisodeValidatorService {
     let report = `\n📋 ОТЧЁТ ПО ЭПИЗОДУ ${episode.id}`;
     report += `\n═══════════════════════════════════════`;
     report += `\n🎬 Название: ${episode.title}`;
-    report += `\n📊 Статус: ${validationResult.validationPassed ? '✅ ПРОЙДЕН' : '❌ НЕ ПРОЙДЕН'}`;
-    report += `\n🔄 Попыток: ${attempts.length}/${this.config.maxRetries}`;
+    report += `\n📊 Статус: ${validationResult.validationPassed ? '✅ ПРОЙДЕН' : '⚠️  ТРЕБУЕТ ДОРАБОТКИ'}`;
+    report += `\n🔄 Попыток: ${attempts.length} (1 попытка + автофикс)`;
     report += `\n⏱️  Время: ${processingTime}ms`;
     report += `\n📏 Объём: ${episode.charCount} символов`;
+    report += `\n🔧 Автофикс: ${validationResult.improvementApplied ? 'ПРИМЕНЁН' : 'НЕ ПРИМЕНЯЛСЯ'}`;
+    report += `\n📈 Улучшение: ${validationResult.scoreImprovement > 0 ? '+' : ''}${validationResult.scoreImprovement} очков`;
 
     if (attempts.length > 0) {
-      report += `\n\n📈 ДИНАМИКА РЕЗУЛЬТАТОВ:`;
+      const result = attempts[0];
+      report += `\n\n📊 РЕЗУЛЬТАТ АНТИДЕТЕКЦИИ:`;
       report += `\n─────────────────────────────────`;
+      report += `\nОбщий балл: ${result.adversarialScore.overallScore}/100`;
+      report += `\nРиск: ${result.adversarialScore.passesAllChecks ? 'Низкий' : 'Высокий'}`;
+      report += `\nПроблем: ${result.feedback.issues.length}`;
       
-      attempts.forEach((result, index) => {
-        report += `\nПопытка ${index + 1}:`;
-        report += `  Балл: ${result.score}/100`;
-        report += `  Риск: ${result.riskLevel}`;
-        report += `  Проблем: ${result.issues.length}`;
-        report += `  ${result.passed ? '✅' : '❌'}`;
-      });
-
-      const bestScore = Math.max(...attempts.map(a => a.score));
-      const avgScore = attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length;
-      
-      report += `\n\n🎯 СТАТИСТИКА:`;
-      report += `\n─────────────────────────────────`;
-      report += `\nЛучший балл: ${bestScore}/100`;
-      report += `\nСредний балл: ${avgScore.toFixed(1)}/100`;
-      report += `\nФинальный балл: ${finalResult.score}/100`;
+      if (result.autoFixResult?.applied) {
+        report += `\n\n🔧 АВТОФИКС:`;
+        report += `\n─────────────────────────────────`;
+        report += `\nПрименено улучшений: ${result.autoFixResult.improvementsApplied.length}`;
+        report += `\nУлучшение балла: +${result.autoFixResult.improvementAmount}`;
+      }
     }
 
-    if (!validationResult.validationPassed && finalResult.issues.length > 0) {
+    if (!validationResult.validationPassed && finalResult.feedback.issues.length > 0) {
       report += `\n\n🚨 ОСНОВНЫЕ ПРОБЛЕМЫ:`;
       report += `\n─────────────────────────────────`;
       
-      const topIssues = finalResult.issues
-        .sort((a, b) => this.getSeverityWeight(b.severity) - this.getSeverityWeight(a.severity))
-        .slice(0, 5);
-
+      const topIssues = finalResult.feedback.issues.slice(0, 5);
       topIssues.forEach((issue, index) => {
-        report += `\n${index + 1}. ${issue.severity.toUpperCase()}: ${issue.description}`;
-        report += `\n   💡 ${issue.suggestion}`;
+        report += `\n${index + 1}. ${issue.severity.toUpperCase()}: ${issue.problem}`;
+        report += `\n   💡 ${issue.fixSuggestions[0] || 'См. ML-рекомендации'}`;
       });
+      
+      if (finalResult.feedback.mlRecommendations.length > 0) {
+        report += `\n\n🧠 ML-РЕКОМЕНДАЦИИ:`;
+        report += `\n─────────────────────────────────`;
+        finalResult.feedback.mlRecommendations.forEach(rec => {
+          report += `\n• ${rec}`;
+        });
+      }
     }
 
     if (validationResult.errorLog.length > 0) {
@@ -331,64 +341,28 @@ export class EpisodeValidatorService {
   }
 
   /**
-   * Получает вес серьёзности проблемы
+   * 🆕 Получает статистику ML-модели
    */
-  private getSeverityWeight(severity: string): number {
-    const weights = { low: 1, medium: 2, high: 3, critical: 4 };
-    return weights[severity as keyof typeof weights] || 1;
+  getMLStats(): any {
+    return this.antiDetector.getMLStats();
   }
 
   /**
-   * Утилита для паузы
+   * 🆕 Экспорт/импорт ML-модели для репозитория
    */
-  private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  exportMLModel(): string {
+    return this.antiDetector.exportMLModel();
+  }
+
+  importMLModel(jsonData: string): void {
+    this.antiDetector.importMLModel(jsonData);
   }
 
   /**
-   * Проверяет конфигурацию сервиса
+   * 🆕 Быстрая проверка контента
    */
-  getConfig(): ValidationConfig {
-    return { ...this.config };
-  }
-
-  /**
-   * Обновляет конфигурацию
-   */
-  updateConfig(newConfig: Partial<ValidationConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-    console.log(`🔧 Конфигурация валидатора обновлена:`, this.config);
-  }
-
-  /**
-   * Тестирует антидетектор на примере
-   */
-  async testDetector(): Promise<void> {
-    console.log(`\n🧪 ТЕСТИРОВАНИЕ АНТИДЕТЕКТОРА`);
-    console.log(`═`.repeat(40));
-
-    const testTexts = [
-      {
-        name: 'AI-текст (плохой)',
-        content: 'Важно отметить, что следует подчеркнуть необходимость. Как известно, безусловно очевидно, что можно сделать вывод, таким образом, в заключение подводя итоги.'
-      },
-      {
-        name: 'Человеческий текст (хороший)',
-        content: 'Я пошла на кухню. Включила чайник. А потом поняла - надо было ещё что-то сделать. Помню, как в детстве мама готовила этот чай. Запахло ромашкой.'
-      }
-    ];
-
-    for (const test of testTexts) {
-      console.log(`\n📝 Тест: ${test.name}`);
-      const result = await this.antiDetector.detectAI(test.content);
-      console.log(`   Балл: ${result.score}/100`);
-      console.log(`   Статус: ${result.passed ? '✅ ПРОЙДЕН' : '❌ НЕ ПРОЙДЕН'}`);
-      console.log(`   Проблем: ${result.issues.length}`);
-      
-      if (result.issues.length > 0) {
-        console.log(`   Первая проблема: ${result.issues[0].description}`);
-      }
-    }
+  quickCheck(content: string): any {
+    return this.antiDetector.quickCheck(content);
   }
 }
 

@@ -49,18 +49,22 @@ export class EpisodeGeneratorService {
       this.titleGenerator = new EpisodeTitleGenerator(undefined);
     }
     
-    // Инициализируем валидатор если включен
+    // 🆕 ВАЛИДАЦИЯ ВКЛЮЧЕНА ПО УМОЛЧАНИЮ!
     if (enableValidation && this.geminiClient) {
       this.episodeValidator = new EpisodeValidatorService({
-        minScore: 70,
-        maxRetries: 3,
-        enableAutoFix: false,
+        minQualityScore: 75, // Выше из-за автофикса
+        enableAutoFix: true,
+        enableMLModel: true,
         verbose: true
       });
-      console.log('🔍 Episode validation ENABLED (anti-AI detection)');
+      console.log('🔍 Episode validation ENABLED by default (anti-AI detection + auto-fix)');
     } else {
       this.episodeValidator = null;
-      console.log('⏭️  Episode validation DISABLED (faster generation)');
+      if (enableValidation) {
+        console.log('⚠️  Episode validation requested but unavailable (no API key)');
+      } else {
+        console.log('⏭️  Episode validation DISABLED (faster generation)');
+      }
     }
   }
 
