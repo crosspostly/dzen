@@ -1,3 +1,5 @@
+import { QualityMetrics } from "../types/ContentSanitizer";
+
 /**
  * Очищает текст эпизода от markdown, JSON, метаданных и прочего мусора.
  * v4.4: Усиленная очистка markdown + качественные метрики
@@ -103,18 +105,7 @@ export class ContentSanitizer {
    */
   static calculateQualityMetrics(
     content: string
-  ): {
-    readabilityScore: number; // 0-100
-    avgParagraphLength: number;
-    avgSentenceLength: number;
-    dialoguePercentage: number;
-    paragraphCount: number;
-    paragraphsWithDialogue: number;
-    hasComplexSentences: boolean;
-    sensoryDensity: number; // детали на 1000 символов
-    travelSpeed: "slow" | "medium" | "fast";
-    issues: string[];
-  } {
+  ): QualityMetrics {
     const cleaned = this.cleanEpisodeContent(content);
     const issues: string[] = [];
 
@@ -149,7 +140,7 @@ export class ContentSanitizer {
     }
 
     // Dialogue analysis
-    const dialogueMatches = cleaned.match(/—[^—\n]+/g) || [];
+    const dialogueMatches: string[] = cleaned.match(/—[^—\n]+/g) || [];
     const dialogueChars = dialogueMatches.reduce((sum, d) => sum + d.length, 0);
     const dialoguePercentage = (dialogueChars / cleaned.length) * 100;
 

@@ -55,7 +55,7 @@ export class ArticleWorkerPool {
           angle: 'confession',
           emotion: this.getRandomEmotion(),
           audience: 'Women 35-60',
-        });
+        }, 12);
         const plotBible = multiAgentService.extractPlotBible(outline, {
           theme,
           emotion: outline.emotion,
