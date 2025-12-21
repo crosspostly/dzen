@@ -3,7 +3,7 @@
 // Orchestrates dynamic episode generation for 29K longform articles
 // ============================================================================
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
@@ -11,7 +11,7 @@ import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
 import { DEFAULT_TIMELINE, FORBIDDEN_THEMES } from "../constants";
 
 export class MultiAgentService {
-  private geminiClient: GoogleGenAI;
+  private geminiClient: GoogleGenerativeAI;
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
   private phase2Service: Phase2AntiDetectionService;
@@ -20,7 +20,7 @@ export class MultiAgentService {
 
   constructor(apiKey?: string, maxChars?: number) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenAI({ apiKey: key });
+    this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
     this.contextManager = new ContextManager();
     this.maxChars = maxChars || 29000;
     this.phase2Service = new Phase2AntiDetectionService();
@@ -280,7 +280,7 @@ export class MultiAgentService {
       return JSON.parse(cleaned);
     } catch (e) {
       let fixed = cleaned;
-      fixed = fixed.replace(/,\s*([}\]])/g, '$1');
+      fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
 
       try {
         return JSON.parse(fixed);
@@ -289,7 +289,7 @@ export class MultiAgentService {
           const objMatch = cleaned.match(/\{[\s\S]*\}/);
           if (objMatch) {
             let obj = objMatch[0];
-            obj = obj.replace(/,\s*([}\]])/g, '$1');
+            obj = obj.replace(/,(\s*[}\]])/g, '$1');
             return JSON.parse(obj);
           }
         } catch (e3) {
@@ -637,16 +637,16 @@ Respond as JSON:
     temperature: number;
   }): Promise<string> {
     try {
-      const response = await this.geminiClient.models.generateContent({
-        model: params.model,
-        contents: params.prompt,
-        config: {
+      const model = this.geminiClient.getGenerativeModel({ model: params.model });
+      const response = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
+        generationConfig: {
           temperature: params.temperature,
           topK: 40,
           topP: 0.95,
         },
       });
-      return response.text || "";
+      return response.response.text() || "";
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.warn(`Gemini call failed (${params.model}): ${errorMessage}`);
@@ -655,10 +655,10 @@ Respond as JSON:
         console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
         
         try {
-          const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite",
-            contents: params.prompt,
-            config: {
+          const fallbackModel = this.geminiClient.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+          const fallbackResponse = await fallbackModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
+            generationConfig: {
               temperature: params.temperature,
               topK: 40,
               topP: 0.95,
@@ -666,7 +666,7 @@ Respond as JSON:
           });
           
           console.log(`✅ Fallback successful`);
-          return fallbackResponse.text || "";
+          return fallbackResponse.response.text() || "";
         } catch (fallbackError) {
           console.error(`❌ Fallback also failed:`, (fallbackError as Error).message);
           throw fallbackError;
@@ -720,10 +720,10 @@ Respond as JSON:
 
 class ContentAgent {
   private id: number;
-  private geminiClient: GoogleGenAI;
+  private geminiClient: GoogleGenerativeAI;
   private titleGenerator: EpisodeTitleGenerator;
 
-  constructor(geminiClient: GoogleGenAI, id: number) {
+  constructor(geminiClient: GoogleGenerativeAI, id: number) {
     this.id = id;
     this.geminiClient = geminiClient;
     this.titleGenerator = new EpisodeTitleGenerator(
@@ -785,16 +785,16 @@ Output ONLY the episode text. No titles, no metadata.`;
     temperature: number;
   }): Promise<string> {
     try {
-      const response = await this.geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: params.prompt,
-        config: {
+      const model = this.geminiClient.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const response = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
+        generationConfig: {
           temperature: params.temperature,
           topK: 40,
           topP: 0.95,
         },
       });
-      return response.text || "";
+      return response.response.text() || "";
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.warn(`Agent #${this.id} primary model failed: ${errorMessage}`);
@@ -803,10 +803,10 @@ Output ONLY the episode text. No titles, no metadata.`;
         console.log(`Agent #${this.id} trying fallback to gemini-2.5-flash-lite...`);
         
         try {
-          const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite",
-            contents: params.prompt,
-            config: {
+          const fallbackModel = this.geminiClient.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+          const fallbackResponse = await fallbackModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
+            generationConfig: {
               temperature: params.temperature,
               topK: 40,
               topP: 0.95,
@@ -814,7 +814,7 @@ Output ONLY the episode text. No titles, no metadata.`;
           });
           
           console.log(`Agent #${this.id} fallback successful`);
-          return fallbackResponse.text || "";
+          return fallbackResponse.response.text() || "";
         } catch (fallbackError) {
           console.error(`Agent #${this.id} fallback also failed:`, (fallbackError as Error).message);
           throw fallbackError;
