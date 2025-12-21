@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality, Type } from "@google/genai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { ProjectConfig } from "./configService";
 import { ExampleArticle } from "./examplesService";
 
@@ -21,10 +21,10 @@ export interface ArticleGenerationResult {
 }
 
 export class GeminiService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenerativeAI;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    this.ai = new GoogleGenerativeAI({ apiKey: process.env.API_KEY || '' });
   }
 
   /**
@@ -32,12 +32,15 @@ export class GeminiService {
    */
   async generateFreshThemes() {
     const prompt = `Сгенерируй 5 ОСТРЫХ, провокационных заголовков для Яндекс.Дзен (CTR++). JSON массив строк.`;
-    const response = await this.ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: { responseMimeType: "application/json" },
+    const model = this.ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const response = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
-    try { return JSON.parse(response.text); } catch { return ["Ошибка тем"]; }
+    try { 
+      return JSON.parse(response.response.text()); 
+    } catch { 
+      return ["Ошибка тем"]; 
+    }
   }
 
   /**
@@ -376,22 +379,12 @@ ${slices}
 30-60 = смешанный контент (есть признаки обоих)
 60-100 = человеческий текст (вариативный, живой, эмоциональный)`;
 
-    const response = await this.ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            score: { type: Type.NUMBER },
-            tips: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
-        }
-      }
+    const model = this.ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const response = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
     try { 
-      return JSON.parse(response.text); 
+      return JSON.parse(response.response.text()); 
     } catch { 
       return { score: 50, tips: ["Не удалось провести анализ"] }; 
     }
@@ -439,16 +432,16 @@ ${slices}
     
     try {
       // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
-      const response = await this.ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
+      const genModel = this.ai.getGenerativeModel({ model });
+      const response = await genModel.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
           temperature,
           topK: 40,
           topP: 0.95,
         },
       });
-      return response.text;
+      return response.response.text();
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.error(`Ошибка вызова ${model}:`, errorMessage);
@@ -458,10 +451,10 @@ ${slices}
         console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-exp-02-05...`);
         
         try {
-          const fallbackResponse = await this.ai.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
-            contents: prompt,
-            config: {
+          const fallbackModel = this.ai.getGenerativeModel({ model: "gemini-2.5-flash-exp-02-05" });
+          const fallbackResponse = await fallbackModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
               temperature,
               topK: 40,
               topP: 0.95,
@@ -469,7 +462,7 @@ ${slices}
           });
           
           console.log(`✅ Fallback successful`);
-          return fallbackResponse.text;
+          return fallbackResponse.response.text();
         } catch (fallbackError) {
           console.error(`❌ Fallback also failed:`, (fallbackError as Error).message);
           throw fallbackError;
