@@ -1,16 +1,16 @@
-import type { GoogleGenAI } from "@google/genai";
+import type { GoogleGenerativeAI } from "@google/generative-ai";
 
 /**
  * Генерирует лаконичные русские названия для эпизодов.
  * Примеры: "Горячая правда", "Первая искра возмущения", "Граница перейдена".
  */
 export class EpisodeTitleGenerator {
-  private geminiClient?: GoogleGenAI;
+  private geminiClient?: GoogleGenerativeAI;
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || "";
     if (key) {
-      this.geminiClient = new GoogleGenAI({ apiKey: key });
+      this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
     }
   }
 

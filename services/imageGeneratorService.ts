@@ -1,4 +1,5 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Modality } from "@google/generative-ai";
 
 /**
  * 🎨 ZenMaster v3.5 Image Generator
@@ -9,11 +10,11 @@ import { GoogleGenAI, Modality } from "@google/genai";
  * Architecture: https://github.com/crosspostly/dzen/blob/main/docs/IMAGE_ARCHITECTURE.md
  */
 export class ImageGeneratorService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenerativeAI;
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.ai = new GoogleGenAI({ apiKey: key });
+    this.ai = new GoogleGenerativeAI({ apiKey: key });
   }
 
   /**
