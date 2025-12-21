@@ -489,7 +489,7 @@ Amateur photo aesthetic, NOT stock photography.
     }
 
     // Check format
-    const formatOk = image.mimeType === "image/png" || image.mimeType === "image/jpg";
+    const formatOk = image.mimeType === "image/jpg";
     if (!formatOk) {
       errors.push(`Invalid format: ${image.mimeType}`);
     }

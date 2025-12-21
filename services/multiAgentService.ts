@@ -8,6 +8,7 @@ import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePasspo
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
+import { DEFAULT_TIMELINE, FORBIDDEN_THEMES } from "../constants";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -211,14 +212,8 @@ export class MultiAgentService {
     };
 
     // Construct valid PlotBible
-    const timeline = {
-      present: "2025 год, декабрь, квартира в городе",
-      flashbacks: []
-    };
-
-    const forbiddenThemes = [
-      "убийство", "полиция", "наркотики", "сексуальное насилие", "детская смерть", "терроризм"
-    ];
+    const timeline = { ...DEFAULT_TIMELINE };
+    const forbiddenThemes = [...FORBIDDEN_THEMES];
 
     // Map characterMap to protagonist/antagonist if possible, or use defaults
     const charMap = outline.characterMap || {};

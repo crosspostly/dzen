@@ -50,12 +50,13 @@ export class ArticleWorkerPool {
         // We do this in multiAgentService but need access to outline for image gen
         // So we'll generate outline separately here
         console.log(`     📋 Generating outline + plotBible...`);
+        const optimalEpisodes = multiAgentService.calculateOptimalEpisodeCount(29000);
         const outline = await multiAgentService.generateOutline({
           theme,
           angle: 'confession',
           emotion: this.getRandomEmotion(),
           audience: 'Women 35-60',
-        }, 12);
+        }, optimalEpisodes);
         const plotBible = multiAgentService.extractPlotBible(outline, {
           theme,
           emotion: outline.emotion,
