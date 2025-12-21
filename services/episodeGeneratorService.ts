@@ -1,7 +1,7 @@
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { EpisodeValidatorService } from "./episodeValidatorService";
-import type { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 /**
    * 🎬 Episode Generator Service v4.6 (QUALITY STORYTELLING UPGRADE)
@@ -33,7 +33,7 @@ import type { GoogleGenAI } from "@google/genai";
    * - ✅ Character perspective: pure narrative, not aware of audience
    */
 export class EpisodeGeneratorService {
-  private geminiClient?: GoogleGenAI;
+  private geminiClient?: GoogleGenerativeAI;
   private titleGenerator: EpisodeTitleGenerator;
   private TOTAL_BUDGET = 19000; // v4.6: REDUCED from 29000 to 19000 chars
   private LEDE_BUDGET = 600;  // v4.6: Adjusted for tighter budget
@@ -46,7 +46,7 @@ export class EpisodeGeneratorService {
     
     // Инициализируем Gemini только если есть API ключ
     if (key) {
-      this.geminiClient = new GoogleGenAI({ apiKey: key });
+      this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
       this.titleGenerator = new EpisodeTitleGenerator(key);
     } else {
       console.log('⚠️  No API key provided - Gemini services will not work');
@@ -547,14 +547,14 @@ Your episode quality directly impacts revenue:
 ✅ HIGH QUALITY (readability 75+, dialogue 36%, twists 2, sensory 4.5)
    → Reader reads ENTIRE episode
    → Reader returns for next episode
-   → Average spend: \$1.50+ per reader
-   → 100 readers × \$1.50 = \$150
+   → Average spend: $1.50+ per reader
+   → 100 readers × $1.50 = $150
 
 ❌ POOR QUALITY (readability 45, dialogue 10%, twists 0, sensory 1.5)
    → Reader reads 30 seconds, then switches
    → Reader doesn't return
-   → Average spend: \$0.05 per reader
-   → 100 readers × \$0.05 = \$5
+   → Average spend: $0.05 per reader
+   → 100 readers × $0.05 = $5
 
 Difference: 30X REVENUE (150/5 = 30)!
 
@@ -593,8 +593,8 @@ Your job: make every word count.
    • Audience: Russian women 35-60 from cities
 
 💰 REVENUE MODEL:
-   • High quality episode → reader stays engaged → \$1.50+ per reader
-   • Poor quality episode → reader bounces → \$0.05 per reader
+   • High quality episode → reader stays engaged → $1.50+ per reader
+   • Poor quality episode → reader bounces → $0.05 per reader
    • Difference: 30X income
 
 🎬 YOUR ROLE:
@@ -765,7 +765,7 @@ Readers' experience depends on it.
     temperature: number;
   }): Promise<string> {
     try {
-      const response = await this.geminiClient.models.generateContent({
+      const response = await this.geminiClient?.models.generateContent({
         model: params.model,
         contents: params.prompt,
         config: {
@@ -774,7 +774,7 @@ Readers' experience depends on it.
           topP: 0.95,
         },
       });
-      return response.text || "";
+      return response?.text || "";
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.warn(`Gemini call failed (${params.model}): ${errorMessage}`);
