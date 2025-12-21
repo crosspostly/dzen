@@ -1,5 +1,5 @@
 /**
- * 🎨 ZenMaster v4.1 - Image Generator Agent
+ * 🎪 ZenMaster v4.1 - Image Generator Agent
  * 
  * Generates authentic mobile phone photos for Zen articles
  * Features:
@@ -12,7 +12,8 @@
  * Architecture: Multi-agent system with rate limiting
  */
 
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { GenerativeContentBlob } from "@google/generative-ai";
 import {
   ImageGenerationRequest,
   CoverImageRequest,
@@ -25,14 +26,14 @@ import {
 import { PlotBible } from "../types/PlotBible";
 
 export class ImageGeneratorAgent {
-  private geminiClient: GoogleGenAI;
+  private geminiClient: GoogleGenerativeAI;
   private config: ImageGenerationConfig;
   private fallbackModel = "gemini-2.5-flash-exp-02-05";
   private primaryModel = "gemini-2.5-flash-image";
 
   constructor(apiKey?: string, config?: Partial<ImageGenerationConfig>) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenAI({ apiKey: key });
+    this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
     
     this.config = {
       aspectRatio: "16:9",
@@ -53,7 +54,7 @@ export class ImageGeneratorAgent {
    * NOW WITH STRICT NO-TEXT REQUIREMENTS
    */
   async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
-    console.log(`🎨 Generating COVER image for article: "${request.title}"`);
+    console.log(`🎪 Generating COVER image for article: "${request.title}"`);
 
     try {
       // Build cover image prompt from title + lede (first paragraph)
@@ -213,7 +214,7 @@ PURE PHOTOGRAPH ONLY.
    * 🎯 Main entry point: Generate image from episode
    */
   async generateImage(request: ImageGenerationRequest): Promise<GeneratedImage> {
-    console.log(`🎨 Generating image for episode ${request.episodeId}...`);
+    console.log(`🎪 Generating image for episode ${request.episodeId}...`);
 
     try {
       // Extract key scene from text
@@ -371,12 +372,11 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
         parts: [{ text: prompt }] 
       },
       config: {
-        responseModalities: [Modality.IMAGE],
         temperature: 0.85,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 1024,
-        // 🔥 ASPECT RATIO CONTROL - Using Gemini API imageConfig
+        // 🔥 ASPECT RATIO CONTROL - Using Gemini API
         imageConfig: {
           aspectRatio: "16:9" // Landscape format
         } as any
@@ -395,8 +395,8 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
 
     let base64Data: string | null = null;
     for (const part of candidate.content.parts) {
-      if (part.inlineData) {
-        base64Data = part.inlineData.data;
+      if ((part as any).inlineData) {
+        base64Data = (part as any).inlineData.data;
         break;
       }
     }
