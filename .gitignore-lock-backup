@@ -1,0 +1,9 @@
+# NOTE: package-lock.json needs to be regenerated
+# Run this command locally:
+# npm install
+# git add package-lock.json
+# git commit -m "Regenerate package-lock.json with all dependencies"
+# git push
+
+# The lock file must contain ALL dependencies for npm ci to work.
+# This is a one-time action needed after updating package.json.
