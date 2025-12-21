@@ -10,6 +10,11 @@ import {
   PerplexityMetrics,
   BurstinessMetrics,
 } from '../../types/AntiDetection';
+import { PerplexityController } from './perplexityController';
+import { BurstinessOptimizer } from './burstinessOptimizer';
+import { SkazNarrativeEngine } from './skazNarrativeEngine';
+import { AdversarialGatekeeper } from './adversarialGatekeeper';
+import { VisualSanitizationService } from './visualSanitizationService';
 
 /**
  * Main Anti-Detection Engine
@@ -17,6 +22,16 @@ import {
  */
 export class AntiDetectionEngine {
   private config: AntiDetectionConfig;
+  private perplexityController: PerplexityController;
+  private burstinessOptimizer: BurstinessOptimizer;
+  private skazEngine: SkazNarrativeEngine;
+  private adversarialGatekeeper: AdversarialGatekeeper;
+  private visualSanitizer: VisualSanitizationService;
+  private metrics: {
+    perplexity?: PerplexityMetrics;
+    burstiness?: BurstinessMetrics;
+    skaz?: any;
+  } = {};
 
   constructor(config?: Partial<AntiDetectionConfig>) {
     this.config = {
@@ -52,6 +67,12 @@ export class AntiDetectionEngine {
         ...config?.visual,
       },
     };
+
+    this.perplexityController = new PerplexityController();
+    this.burstinessOptimizer = new BurstinessOptimizer();
+    this.skazEngine = new SkazNarrativeEngine();
+    this.adversarialGatekeeper = new AdversarialGatekeeper();
+    this.visualSanitizer = new VisualSanitizationService();
   }
 
   /**
@@ -75,34 +96,46 @@ export class AntiDetectionEngine {
     // Stage 2.1: Perplexity Control
     if (this.config.perplexity.enabled) {
       console.log('   📊 Perplexity boost...');
-      // TODO: Implement PerplexityController
+      processedText = this.perplexityController.increasePerplexity(processedText, this.config.perplexity.targetScore);
+      this.metrics.perplexity = this.perplexityController.analyzePerplexity(processedText);
       modifications.perplexityBoost = true;
     }
 
     // Stage 2.2: Burstiness Optimization
     if (this.config.burstiness.enabled) {
       console.log('   📈 Burstiness optimization...');
-      // TODO: Implement BurstinessOptimizer
+      processedText = this.burstinessOptimizer.optimizeBurstiness(processedText, this.config.burstiness.targetStdDev);
+      this.metrics.burstiness = this.burstinessOptimizer.analyzeBurstiness(processedText);
       modifications.burstinessOptimized = true;
     }
 
     // Stage 2.3: Skaz Narrative (CRITICAL)
     if (this.config.skaz.enabled) {
       console.log('   🎭 Skaz narrative application...');
-      // TODO: Implement SkazNarrativeEngine
+      processedText = this.skazEngine.applySkazTransformations(processedText);
+      this.metrics.skaz = this.skazEngine.analyzeSkazMetrics(processedText);
       modifications.skazApplied = true;
     }
 
     // Stage 2.4: Red Team Validation
+    let validationResult = null;
     if (this.config.redTeam.enabled) {
       console.log('   🛡️  Red team validation...');
-      // TODO: Implement AdversarialGatekeeper
+      const title = article.title || article.episodes[0]?.title || "Untitled";
+      validationResult = this.adversarialGatekeeper.assessArticle(title, processedText, article.images);
     }
 
     // Stage 2.5: Visual Sanitization
     if (this.config.visual.enabled) {
       console.log('   🖼️  Image sanitization...');
-      // TODO: Implement VisualSanitizationService
+      if (article.images && article.images.length > 0) {
+        article.images = article.images.map(imagePath => {
+          if (typeof imagePath === 'string') {
+            return this.visualSanitizer.sanitizeImage(imagePath, this.config.visual.noiseLevel);
+          }
+          return imagePath;
+        });
+      }
       modifications.visualSanitized = true;
     }
 
@@ -112,28 +145,31 @@ export class AntiDetectionEngine {
     // Reconstruct article with processed text
     const enhancedArticle = this.reconstructArticle(article, processedText);
 
+    // Build final score
+    const finalScore = this.calculateFinalScore(validationResult);
+
     // Create result metrics
     const result: AntiDetectionResult = {
-      passed: true,
-      confidence: 85, // TODO: Calculate actual confidence
+      passed: validationResult ? validationResult.overallScore >= this.config.redTeam.minScore : true,
+      confidence: finalScore,
       metrics: {
         perplexity: {
-          score: 3.2, // TODO: Calculate actual perplexity
-          entropy: 4.5,
+          score: this.metrics.perplexity?.score || 0,
+          entropy: this.metrics.perplexity?.rarityRatio || 0,
           targetScore: this.config.perplexity.targetScore,
         },
         burstiness: {
-          stdDev: 7.1, // TODO: Calculate actual burstiness
-          sentenceLengths: [],
-          variance: 50.4,
+          stdDev: this.metrics.burstiness?.standardDeviation || 0,
+          sentenceLengths: this.metrics.burstiness?.sentenceLengths || [],
+          variance: this.metrics.burstiness?.variance || 0,
           targetStdDev: this.config.burstiness.targetStdDev,
         },
-        skazScore: 78, // TODO: Calculate actual Skaz application
-        aiDetectionRisk: 12, // TODO: Estimate actual risk
+        skazScore: this.metrics.skaz?.score || 0,
+        aiDetectionRisk: this.calculateDetectionRisk(),
       },
       modifications,
-      warnings: [],
-      recommendations: [],
+      warnings: this.generateWarnings(validationResult),
+      recommendations: validationResult ? this.adversarialGatekeeper.getRecommendations(validationResult) : [],
     };
 
     return {
@@ -150,7 +186,7 @@ export class AntiDetectionEngine {
       article.lede,
       ...article.episodes.map(ep => ep.content),
       article.finale,
-    ];
+    ].filter(Boolean);
     return parts.join('\n\n');
   }
 
@@ -161,9 +197,65 @@ export class AntiDetectionEngine {
     original: LongFormArticle,
     processedText: string
   ): LongFormArticle {
-    // For now, return original
-    // TODO: Implement proper text splitting back into episodes
-    return original;
+    // Simple approach: put everything into first episode
+    // TODO: Implement proper text splitting back into episodes for production
+    const episodes = [...original.episodes];
+    if (episodes.length > 0) {
+      episodes[0] = { ...episodes[0], content: processedText };
+    }
+    
+    return {
+      ...original,
+      episodes,
+    };
+  }
+
+  /**
+   * Calculate final confidence score
+   */
+  private calculateFinalScore(validationResult: any): number {
+    if (!validationResult) {
+      // If no validation, calculate from individual metrics
+      const perplexityScore = this.metrics.perplexity?.score || 0;
+      const burstinessStdDev = this.metrics.burstiness?.standardDeviation || 0;
+      const skazScore = this.metrics.skaz?.score || 0;
+      
+      // Weighted calculation
+      return Math.round(
+        (Math.min(100, perplexityScore * 20) * 0.3) + // 30% perplexity
+        (Math.min(100, burstinessStdDev * 10) * 0.3) + // 30% burstiness
+        (skazScore * 0.4) // 40% skaz quality
+      );
+    }
+    
+    return validationResult.overallScore;
+  }
+
+  /**
+   * Calculate AI detection risk (inverse of confidence)
+   */
+  private calculateDetectionRisk(): number {
+    const confidence = this.calculateFinalScore(null) / 100;
+    return Math.max(5, Math.round((1 - confidence) * 100)); // 5-100%
+  }
+
+  /**
+   * Generate warnings based on validation
+   */
+  private generateWarnings(validationResult: any): string[] {
+    const warnings: string[] = [];
+    
+    if (!validationResult) return warnings;
+    
+    if (!validationResult.passesAllChecks) {
+      warnings.push(`Quality score too low: ${validationResult.overallScore}/100 (need 80+)`);
+    }
+    
+    if (validationResult.issues) {
+      warnings.push(...validationResult.issues);
+    }
+    
+    return warnings;
   }
 
   /**
@@ -173,19 +265,13 @@ export class AntiDetectionEngine {
     perplexity: PerplexityMetrics;
     burstiness: BurstinessMetrics;
   }> {
-    // TODO: Implement actual analysis
+    // Store current metrics
+    this.metrics.perplexity = this.perplexityController.analyzePerplexity(text);
+    this.metrics.burstiness = this.burstinessOptimizer.analyzeBurstiness(text);
+    
     return {
-      perplexity: {
-        score: 1.8,
-        entropy: 2.5,
-        targetScore: this.config.perplexity.targetScore,
-      },
-      burstiness: {
-        stdDev: 1.2,
-        sentenceLengths: [],
-        variance: 1.5,
-        targetStdDev: this.config.burstiness.targetStdDev,
-      },
+      perplexity: this.metrics.perplexity,
+      burstiness: this.metrics.burstiness,
     };
   }
 }
