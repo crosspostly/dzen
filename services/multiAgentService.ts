@@ -8,12 +8,14 @@ import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePasspo
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
+import { AutoFixOrchestrator } from "./autoFixOrchestrator";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
   private phase2Service: Phase2AntiDetectionService;
+  private autoFixOrchestrator: AutoFixOrchestrator;
   private maxChars: number = 29000;
   private episodeCount: number = 12;
 
@@ -23,6 +25,7 @@ export class MultiAgentService {
     this.contextManager = new ContextManager();
     this.maxChars = maxChars || 29000;
     this.phase2Service = new Phase2AntiDetectionService();
+    this.autoFixOrchestrator = new AutoFixOrchestrator(key);
     
     // Calculate dynamic episode count
     this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
@@ -74,6 +77,7 @@ export class MultiAgentService {
     audience: string;
     maxChars?: number;
     includeImages?: boolean;
+    applyAutoFix?: boolean;
   }): Promise<LongFormArticle> {
     const maxChars = params.maxChars || this.maxChars;
     const episodeCount = this.calculateOptimalEpisodeCount(maxChars);
@@ -157,20 +161,46 @@ export class MultiAgentService {
       phase2Applied: true
     };
 
+    // 🎭 Optional AutoFix Orchestrator (engagement-oriented AI-fix)
+    let finalArticle = article;
+    if (params.applyAutoFix !== false) { // Default: enabled
+      console.log("\n🎭 Stage 3: Running AutoFix Orchestrator (engagement-focused)...");
+      
+      try {
+        const autoFixResult = await this.autoFixOrchestrator.orchestrate(finalArticle, { verbose: true });
+        
+        if (autoFixResult.completed > 0) {
+          finalArticle = autoFixResult.refinedArticle || finalArticle;
+          console.log(`   ✅ AutoFix: ${autoFixResult.completed} episodes refined`);
+          console.log(`   📈 Average AI reduction: ${
+            autoFixResult.improvements.reduce((sum, imp) => sum + imp.aiReduction, 0) / autoFixResult.improvements.length
+          }%`);
+        } else {
+          console.log("   ✅ AutoFix: No episodes needed rewriting");
+        }
+      } catch (error) {
+        console.log("   ⚠️  AutoFix failed (non-critical), returning original article");
+        console.error(`   Error: ${error}`);
+      }
+    } else {
+      console.log("\n🎭 Stage 3: AutoFix skipped (applyAutoFix: false)");
+    }
+
     console.log(`\n✅ ARTICLE COMPLETE`);
     console.log(`📊 Metrics:`);
-    console.log(`   - Episodes: ${article.metadata.episodeCount}`);
-    console.log(`   - Characters: ${article.metadata.totalChars} (target: ${maxChars})`);
-    console.log(`   - Utilization: ${((article.metadata.totalChars / maxChars) * 100).toFixed(1)}%`);
-    console.log(`   - Reading time: ${article.metadata.totalReadingTime} min`);
-    console.log(`   - Scenes: ${article.metadata.sceneCount}`);
-    console.log(`   - Dialogues: ${article.metadata.dialogueCount}`);
-    console.log(`   - Phase 2 Score: ${article.adversarialScore?.overallScore || 0}/100`);
-    console.log(`   - Anti-Detection: ${article.phase2Applied ? '✅ Applied' : '❌ Not applied'}`);
+    console.log(`   - Episodes: ${finalArticle.metadata.episodeCount}`);
+    console.log(`   - Characters: ${finalArticle.metadata.totalChars} (target: ${maxChars})`);
+    console.log(`   - Utilization: ${((finalArticle.metadata.totalChars / maxChars) * 100).toFixed(1)}%`);
+    console.log(`   - Reading time: ${finalArticle.metadata.totalReadingTime} min`);
+    console.log(`   - Scenes: ${finalArticle.metadata.sceneCount}`);
+    console.log(`   - Dialogues: ${finalArticle.metadata.dialogueCount}`);
+    console.log(`   - Phase 2 Score: ${finalArticle.adversarialScore?.overallScore || 0}/100`);
+    console.log(`   - Anti-Detection: ${finalArticle.phase2Applied ? '✅ Applied' : '❌ Not applied'}`);
+    console.log(`   - AutoFix: ${params.applyAutoFix !== false ? '✅ Enabled' : '❌ Disabled'}`);
     console.log(`   - Cover image: Pending (will be generated in orchestrator)`);
     console.log(``);
     
-    return article;
+    return finalArticle;
   }
 
   /**
