@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766411546147,
+  "generatedAt": 1766415745453,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -14,14 +14,14 @@
     "maxChars": 19000
   },
   "articleCount": 1,
-  "totalCharacters": 25034,
+  "totalCharacters": 24912,
   "totalImages": 1,
   "outputPaths": {
     "articles": [
-      "articles/women-35-60/2025-12-22/ves-gorod-zaviduet-moemu-triumfu-no-nikto-ne-vidit-1766411546145.txt"
+      "articles/women-35-60/2025-12-22/ya-godami-skryvala-svoy-pozor-no-odin-postupok-raz-1766415745452.txt"
     ],
     "images": [
-      "articles/women-35-60/2025-12-22/ves-gorod-zaviduet-moemu-triumfu-no-nikto-ne-vidit-1766411546145-cover.jpg"
+      "articles/women-35-60/2025-12-22/ya-godami-skryvala-svoy-pozor-no-odin-postupok-raz-1766415745452-cover.jpg"
     ],
     "report": "articles/women-35-60/2025-12-22/REPORT.md"
   }
