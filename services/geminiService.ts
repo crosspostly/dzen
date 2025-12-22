@@ -92,8 +92,9 @@ export class GeminiService {
 
       console.log(`✅ Статья готова: ${finalChars} символов`);
 
-      // Генерируем образы для статьи
-      const imageScenes = this.extractImageScenes(fullContent);
+      // 🆕 Генерируем SMART образы на основе контента
+      console.log('🎨 Генерирую описания сцен для изображений...');
+      const imageScenes = await this.generateImageScenes(theme, fullContent, chunks);
 
       // Генерируем заголовок на основе первого абзаца
       const title = await this.generateTitle(theme, hook);
@@ -300,6 +301,79 @@ ${climax}
   }
 
   /**
+   * 🆕 Генерирует SMART описания сцен для изображений
+   * Анализирует контент и создаёт релевантные prompt'ы
+   */
+  private async generateImageScenes(
+    theme: string,
+    fullContent: string,
+    chunks: GenerationChunk[]
+  ): Promise<string[]> {
+    // Извлекаем ключевые моменты из текста
+    const paragraphs = fullContent.split('\n\n').filter(p => p.length > 50);
+    
+    const hookSection = chunks.find(c => c.section === 'hook')?.content || '';
+    const climaxSection = chunks.find(c => c.section === 'climax')?.content || '';
+    const resolutionSection = chunks.find(c => c.section === 'resolution')?.content || '';
+
+    try {
+      // Запрашиваем у Gemini 3 релевантных描述 сцен на основе контента
+      const prompt = `Ты генератор prompt'ов для AI изображений. На основе этой истории создай 3 РАЗНЫХ описания сцен для Midjourney/DALL-E:
+
+Тема: "${theme}"
+
+НАЧАЛО (завязка):
+${hookSection.substring(0, 300)}
+
+КУЛЬМИНАЦИЯ:
+${climaxSection.substring(0, 300)}
+
+ФИНАЛ:
+${resolutionSection.substring(0, 300)}
+
+ТВОЯ ЗАДАЧА:
+Для каждой сцены создай детальный prompt в стиле: "Handheld mobile phone photo, amateur lighting, [КОНКРЕТНЫЕ ДЕТАЛИ ИЗ ИСТОРИИ]"
+
+ТРЕБОВАНИЯ:
+✓ Сцена 1: Что происходит в НАЧАЛЕ (эмоции, место, предметы)
+✓ Сцена 2: Самый ОСТРЫЙ момент (конфликт, диалог, реакция)
+✓ Сцена 3: КАК РЕШИЛОСЬ (счастье, правда, справедливость)
+✓ Каждый prompt 1-2 строки
+✓ Упоминай ПЕРСОНАЖЕЙ и ИХ ЭМОЦИИ из истории
+✓ Базовая структура: "Handheld mobile phone photo, amateur lighting, [место], [что происходит], [лица/эмоции], [детали], [освещение/настроение]"
+✓ ЗАБУДЬ про "tense confrontation scene" - используй КОНКРЕТНЫЕ детали из текста!
+
+Ответ в формате JSON:
+{"scenes": ["scene1", "scene2", "scene3"]}`;
+
+      const response = await this.callGemini({
+        prompt,
+        model: 'gemini-3-flash-preview',
+        temperature: 0.85,
+      });
+
+      try {
+        const parsed = JSON.parse(response);
+        if (Array.isArray(parsed.scenes) && parsed.scenes.length === 3) {
+          console.log('✅ Smart image scenes generated');
+          return parsed.scenes;
+        }
+      } catch (e) {
+        console.warn('⚠️  Failed to parse image scenes JSON, using fallback');
+      }
+    } catch (error) {
+      console.warn('⚠️  Image scene generation failed:', (error as Error).message);
+    }
+
+    // Fallback если что-то пошло не так
+    return [
+      `Handheld mobile phone photo, amateur lighting, messy russian apartment, dramatic moment. ${paragraphs[0]?.substring(0, 80) || 'Woman in distress'}`,
+      `Handheld mobile phone photo, amateur lighting, intense confrontation, raw emotions. ${paragraphs[Math.floor(paragraphs.length / 2)]?.substring(0, 80) || 'Conflict scene'}`,
+      `Handheld mobile phone photo, amateur lighting, hopeful moment, warm light, justice served. ${paragraphs[paragraphs.length - 1]?.substring(0, 80) || 'Resolution and peace'}`,
+    ];
+  }
+
+  /**
    * Генерирует привлекательный заголовок
    */
   private async generateTitle(theme: string, hook: string): Promise<string> {
@@ -321,33 +395,6 @@ ${climax}
     } catch {
       return theme;
     }
-  }
-
-  /**
-   * Генерирует описания образов для визуальных сцен
-   */
-  private extractImageScenes(content: string): string[] {
-    const scenes: string[] = [];
-    
-    // Извлекаем ключевые моменты
-    const paragraphs = content.split('\n\n');
-    
-    // Сцена 1: Начало
-    scenes.push(`Handheld mobile phone photo, amateur lighting, messy russian apartment. ${paragraphs[0].substring(0, 100)}`);
-    
-    // Сцена 2: Кульминация
-    if (paragraphs.length > 5) {
-      const climaxPara = paragraphs[Math.floor(paragraphs.length / 2)];
-      scenes.push(`Raw emotion, tense confrontation scene, old furniture. ${climaxPara.substring(0, 100)}`);
-    }
-    
-    // Сцена 3: Финал
-    if (paragraphs.length > 0) {
-      const finalPara = paragraphs[paragraphs.length - 1];
-      scenes.push(`Hope and justice triumph, warm lighting, redemption moment. ${finalPara.substring(0, 100)}`);
-    }
-
-    return scenes;
   }
 
   /**
