@@ -400,7 +400,7 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
 
     const response = await this.callGemini({
       prompt,
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash",
       temperature: 0.85,
     });
 
@@ -461,7 +461,7 @@ OUTPUT: Only the text. No title, no metadata.`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash",
       temperature: 0.9,
     });
   }
@@ -499,7 +499,7 @@ OUTPUT: Only the text. No title, no metadata.`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash",
       temperature: 0.85,
     });
   }
@@ -540,7 +540,7 @@ Language: 100% RUSSIAN, no Latin letters or English`;
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-2.5-flash",
+        model: "gemini-3-flash",
         temperature: 0.8,
       });
 
@@ -594,7 +594,7 @@ Respond as JSON:
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-2.5-flash",
+        model: "gemini-3-flash",
         temperature: 0.8,
       });
       return this.parseJsonSafely(response, 'VoicePassport') as VoicePassport;
@@ -772,7 +772,7 @@ Output ONLY the episode text. No titles, no metadata.`;
   }): Promise<string> {
     try {
       const response = await this.geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3-flash",
         contents: params.prompt,
         config: {
           temperature: params.temperature,
