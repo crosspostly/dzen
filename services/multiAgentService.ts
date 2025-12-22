@@ -491,9 +491,40 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
    * ✅ v4.5: Generate opening (lede): 600-900 chars
    * CLEAN STORY: No platform mentions
    * CONTEXT: Platform details in instructions only
+   * 
+   * 🆕 v5.4: PlotBible integration - narrator voice & anti-detection
    */
   async generateLede(outline: OutlineStructure): Promise<string> {
     const firstEpisode = outline.episodes[0];
+    const plotBible = outline.plotBible;
+    
+    // Build narrator voice section
+    let voiceGuide = '';
+    if (plotBible?.narrator?.voiceHabits) {
+      const habits = plotBible.narrator.voiceHabits;
+      voiceGuide = `
+🎭 NARRATOR'S VOICE PATTERNS (USE THESE NATURALLY):
+   Age: ${plotBible.narrator.age || '40-50'} y/o ${plotBible.narrator.gender || 'woman'}
+   Tone: ${plotBible.narrator.tone || 'confessional, intimate'}
+   - When remembering: "${habits.memoryTrigger || 'Я помню...'}"
+   - When doubting: "${habits.doubtPattern || 'Может быть, я ошибалась...'}"
+   - When apologizing/justifying: "${habits.apologyPattern || 'Я же не знала...'}"
+   
+⚠️  USE THESE PATTERNS in the opening - это УНИКАЛЬНЫЙ голос!`;
+    }
+    
+    // Build sensory palette hints
+    let sensoryHints = '';
+    if (plotBible?.sensoryPalette) {
+      const palette = plotBible.sensoryPalette;
+      sensoryHints = `
+🎨 SENSORY PALETTE (USE SPECIFIC DETAILS):
+   - Visual: ${palette.details?.slice(0, 3).join(', ') || 'specific visual details'}
+   - Sounds: ${palette.sounds?.slice(0, 2).join(', ') || 'ambient sounds'}
+   - Smells: ${palette.smells?.slice(0, 2).join(', ') || 'distinctive smells'}
+   
+⚠️  Not generic "room", but THIS room with THESE details!`;
+    }
     
     const prompt = `📄 EDITORIAL CONTEXT (FOR YOU, NOT IN THE STORY):
 This is opening for serialized story on media platform (600-900 chars).
@@ -504,6 +535,34 @@ Goal: Hook reader immediately - they will scroll down if gripped.
 No meta-commentary like "I decided to share this" or "people will judge me".
 Just raw confession as if talking to trusted friend.
 
+${voiceGuide}
+
+${sensoryHints}
+
+⚠️  ANTI-DETECTION MANDATORY (Build-in human patterns):
+
+✅ SENTENCE VARIETY:
+   Mix: 3-word → 15-word → 8-word sentences
+   Pattern: Short. Medium medium sentence. Short again.
+   
+✅ INCOMPLETE SENTENCES (natural thought):
+   "Не знаю. Молчала. Просто не могла."
+   "Это было..." [instead of completing]
+   
+✅ INTERJECTIONS (natural speech):
+   "Боже, как я была слепа."
+   "Блин, даже сейчас не верю."
+   
+✅ EMOTIONS AS ACTIONS (NOT descriptions):
+   ❌ "I was terrified" 
+   ✅ "Руки тряслись. Дыхание перехватило."
+   
+✅ START WITH ACTION/DIALOGUE/QUESTION:
+   ✅ "— Ты помнишь тот день?" [dialogue]
+   ✅ "Я помню точно." [action]
+   ✅ "Почему я молчала?" [question]
+   ❌ "Эта история началась..." [description - BAD]
+
 🎯 TASK: Write LEDE (opening) - 600-900 RUSSIAN characters:
 
 Hook: "${firstEpisode.hookQuestion}"
@@ -511,18 +570,22 @@ Theme: "${outline.theme}"
 Emotion: ${outline.emotion}
 
 REQUIREMENTS:
-- Start with PARADOX or INTRIGUE (not explanation)
-- Pull reader in immediately
-- End with something that makes reader WANT to scroll
+- Start with PARADOX, ACTION, DIALOGUE, or QUESTION (not explanation)
+- Pull reader in immediately (first sentence = hook)
+- Use narrator's voice patterns naturally
+- Use specific sensory details from palette
+- Vary sentence length (3-word, 12-word, 6-word mix)
+- Include 1-2 incomplete sentences (feels human)
+- End with intrigue that makes reader scroll
 - NO "I decided to post this" or "I'm sharing because"
-- Just: "That night when...", "I still remember...", "The worst part..."
+- Just: raw memory being recalled
 
 OUTPUT: Only the text. No title, no metadata.`;
 
     return await this.callGemini({
       prompt,
       model: "gemini-3-flash-preview",
-      temperature: 0.9,
+      temperature: 0.95, // Increased for more variety
     });
   }
 
@@ -530,8 +593,36 @@ OUTPUT: Only the text. No title, no metadata.`;
    * ✅ v4.5: Generate closing (finale): 1200-1800 chars
    * CLEAN STORY: No platform mentions
    * CONTEXT: Platform goals in instructions only
+   * 
+   * 🆕 v5.4: PlotBible integration - thematic core & narrator insight
    */
   async generateFinale(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
+    const plotBible = outline.plotBible;
+    
+    // Build thematic guidance
+    let thematicGuide = '';
+    if (plotBible?.thematicCore) {
+      const core = plotBible.thematicCore;
+      thematicGuide = `
+🎯 THEMATIC CORE (WHAT THIS STORY IS REALLY ABOUT):
+   Central Question: ${core.centralQuestion || 'What if everything I believed was wrong?'}
+   Emotional Arc: ${core.emotionalArc || 'confusion → realization → acceptance'}
+   Resolution Style: ${core.resolutionStyle || 'bittersweet, realistic'}
+   
+⚠️  The finale must ANSWER the central question (not with solution, but with INSIGHT).`;
+    }
+    
+    // Build narrator voice for ending
+    let narratorInsight = '';
+    if (plotBible?.narrator) {
+      narratorInsight = `
+🎭 NARRATOR'S VOICE FOR ENDING:
+   Age: ${plotBible.narrator.age || '40-50'} y/o ${plotBible.narrator.gender || 'woman'}
+   Tone: ${plotBible.narrator.tone || 'confessional, weary, wiser'}
+   
+⚠️  This is the narrator AFTER the journey - changed, wiser, but still uncertain.`;
+    }
+    
     const prompt = `📄 EDITORIAL CONTEXT (FOR YOU, NOT IN THE STORY):
 This is finale for serialized story (1200-1800 chars).
 Goal: Reader should finish with complex emotions (not clear happy ending).
@@ -539,6 +630,68 @@ Strategy: End with question to readers (encourages comments).
 
 ⚠️  CRITICAL: Character doesn't know this will be published or discussed.
 No meta-commentary. Just the ending of their memory/story.
+
+${thematicGuide}
+
+${narratorInsight}
+
+⚠️  ANTI-DETECTION FINALE RULES:
+
+NOT A "HAPPY ENDING" - THIS IS REAL LIFE:
+
+✅ RESOLUTION TYPES (choose one):
+   1. BITTERSWEET: Something gained, something lost forever
+      "Я получила ответы. Но покой так и не пришёл."
+      
+   2. UNCERTAIN: Life continues, questions remain
+      "Прошли годы. Я до сих пор не знаю, правильно ли я поступила."
+      
+   3. REALISTIC JUSTICE: Fair, but not satisfying
+      "Она получила что заслужила. Мне от этого не легче."
+      
+   4. INSIGHT WITHOUT SOLUTION: Understanding, not resolution
+      "Я поняла одно: справедливости не существует. Только выбор."
+
+✅ STRUCTURE:
+   1. Show life AFTER the climax (specific scene, not summary)
+   2. ONE concrete detail showing what changed
+   3. Narrator's REALIZATION/INSIGHT (what they learned)
+   4. End with QUESTION (to self or reader)
+
+✅ EXAMPLES OF STRONG FINALES:
+
+   "Прошло три года. Вчера я снова увидела её дочь. Она спросила 
+    те же вопросы, что задавала её мать. И тогда я поняла: это не 
+    закончится никогда. Молчание передаётся по наследству.
+    
+    Я не получила извинений. Но я получила это: я перестала ждать.
+    
+    А вы смогли бы простить без извинений?"
+
+   "Они развелись через полгода. Она вернулась в родной город.
+    Я больше никогда её не видела. Справедливость? Да.
+    Удовлетворение? Нет.
+    
+    Раньше я верила, что правда всё исцеляет. Теперь я знаю:
+    правда просто есть. Исцеление — это отдельно.
+    
+    А вы верите в справедливость?"
+
+✅ SENTENCE VARIETY (anti-detection):
+   - Mix: Short. Medium sentence with clause. Very short.
+   - Incomplete sentences: "Не знаю. Может быть."
+   - Natural repetition: "Я помню. Помню точно. Помню этот день."
+
+✅ EMOTIONS AS ACTIONS:
+   ❌ "Я почувствовала облегчение"
+   ✅ "Плечи опустились. Дыхание стало ровным."
+
+❌ FORBIDDEN (cheap endings):
+   ❌ "И мы зажили счастливо" (fairy tale)
+   ❌ "Время лечит" (cliché)
+   ❌ "Жизнь продолжается" (generic)
+   ❌ "Я простила и забыла" (unrealistic)
+   ❌ "Теперь я знаю, что надо..." (sermon/lesson)
 
 🎯 TASK: Write FINALE - 1200-1800 RUSSIAN characters:
 
@@ -548,19 +701,19 @@ Audience: Educated women (35-60, urban, thoughtful)
 
 REQUIREMENTS:
 - Resolve EXTERNAL conflict (what actually happened)
-- Leave EMOTIONAL echo (no neat closure)
+- Show INTERNAL shift (how narrator changed)
+- NOT happy ending - REALISTIC ending
+- Life continues, questions remain
+- ONE specific scene showing aftermath
+- Narrator's insight (what they NOW understand)
 - End with HONEST QUESTION (not instruction/sermon)
-- Example questions:
-  ✅ "А вы бы поверили?"
-  ✅ "Ну а правила ли я?"
-  ✅ "Как вы думаете — это есть холодность или правда?"
 
 OUTPUT: Only the text. No title, no metadata.`;
 
     return await this.callGemini({
       prompt,
       model: "gemini-3-flash-preview",
-      temperature: 0.85,
+      temperature: 0.9, // Increased for authentic variety
     });
   }
 
@@ -568,8 +721,24 @@ OUTPUT: Only the text. No title, no metadata.`;
    * ✅ v4.5: Generate article title: 55-90 chars (Russian only)
    * CONTEXT: Platform optimization in instructions
    * STORY: Title is standalone, doesn't mention platform
+   * 
+   * 🆕 v5.4: PlotBible integration - narrator tone & central question
    */
   private async generateTitle(outline: OutlineStructure, lede: string): Promise<string> {
+    const plotBible = outline.plotBible;
+    
+    // Add central question hint if available
+    let thematicHint = '';
+    if (plotBible?.thematicCore?.centralQuestion) {
+      thematicHint = `\nCentral Question: ${plotBible.thematicCore.centralQuestion}`;
+    }
+    
+    // Add narrator tone hint
+    let narratorTone = '';
+    if (plotBible?.narrator?.tone) {
+      narratorTone = `\nNarrator Tone: ${plotBible.narrator.tone} (reflect this in title)`;
+    }
+    
     const prompt = `📄 EDITORIAL CONTEXT (FOR YOU, NOT IN THE STORY):
 Creating title for serialized story on media platform.
 Algorithm favors: Emotional words + Personal perspective + Intrigue.
@@ -580,7 +749,7 @@ OBJECTIVE: Title should make reader CLICK and READ (55-90 Russian characters).
 
 CONTEXT:
 - Theme: "${outline.theme}"
-- Emotion: ${outline.emotion}
+- Emotion: ${outline.emotion}${thematicHint}${narratorTone}
 - Audience: Educated women 35-60
 - Opening paragraph: ${lede.substring(0, 200)}...
 
@@ -589,9 +758,17 @@ FORMULA THAT WORKS:
 
 EXAMPLES (Russian):
 ✅ "Я целые годы лгала семье"
-✅ "День, когда все рушится"
-✅ "От это го деня я не знаю что делать"
-✅ "Это чья-то жентва? Нет. Это моя ошибка."
+✅ "День, когда всё рушится"
+✅ "С того дня я не знаю что делать"
+✅ "Это чья-то жертва? Нет. Это моя ошибка."
+✅ "Мама скрывала правду. Теперь я знаю почему"
+✅ "Я молчала двадцать лет. Сегодня расскажу"
+
+⚠️  TONE MATCH:
+   - If confessional → "Я скрывала...", "Теперь расскажу..."
+   - If bitter → "Она думала...", "Я не простила..."
+   - If ironic → "Смешно? Нет.", "Я верила в справедливость"
+   - If desperate → "Не знаю как...", "Что мне делать..."
 
 OUTPUT: ONLY the title text (no JSON, no quotes, no explanation).
 Characters: 55-90
@@ -601,7 +778,7 @@ Language: 100% RUSSIAN, no Latin letters or English`;
       const response = await this.callGemini({
         prompt,
         model: "gemini-3-flash-preview",
-        temperature: 0.8,
+        temperature: 0.85, // Slightly higher for variety
       });
 
       let title = response
