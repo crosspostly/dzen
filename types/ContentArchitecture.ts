@@ -195,3 +195,20 @@ export interface SanitizedImage {
   noiseLevel: number;              // 2-5% (percentage)
   timestamp: number;
 }
+
+// ============================================================================
+// ENGAGEMENT SCORE ANALYSIS
+// ============================================================================
+
+export interface EngagementAnalysis {
+  score: number;                   // 0-100 overall engagement score
+  factors: {
+    hookStrength: number;          // "но", "вдруг", крючки (0-100)
+    emotionalIntensity: number;    // эмоциональные слова (0-100)
+    specificity: number;           // конкретные детали (0-100)
+    dialogueRatio: number;         // % диалогов + действий (0-100)
+    brevityVariance: number;       // разнообразие длины предложений (0-100)
+  };
+  isProblem: boolean;              // true если score < 45
+  recommendations: string[];       // предложения если проблема
+}
