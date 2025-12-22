@@ -86,12 +86,17 @@ export class EpisodeGeneratorService {
    * - MIN_EPISODE_SIZE = 1500 chars (stop if remaining budget < MIN)
    * - Phase 2 per-episode processing
    * - If episode exceeds budget, we accept it and adjust remaining pool
+   * 
+   * 🆕 v5.3 (Issue #78): PlotBible integration
+   * - Pass plotBible to each episode generation
+   * - Use narrator voice, sensory palette, character details in prompts
    */
   async generateEpisodesSequentially(
     episodeOutlines: EpisodeOutline[],
     options?: {
       delayBetweenRequests?: number;
       onProgress?: (current: number, total: number, charCount: number) => void;
+      plotBible?: any;  // 🆕 Pass plotBible for richer context
     }
   ): Promise<Episode[]> {
     const episodes: Episode[] = [];
@@ -132,7 +137,10 @@ export class EpisodeGeneratorService {
           episodes,
           charsForThisEpisode,  // Pass specific budget to this episode
           episodeIndex + 1,
-          episodeOutlines.length
+          episodeOutlines.length,
+          1,                    // attempt
+          false,                // useFallbackModel
+          options?.plotBible    // 🆕 v5.3: Pass plotBible
         );
         episodes.push(episode);
         
@@ -185,6 +193,8 @@ export class EpisodeGeneratorService {
    * 🎨 Generate single episode with SPECIFIC CHAR LIMIT
    * 
    * NO RETRY on oversized! Just generate once, accept, move on.
+   * 
+   * 🆕 v5.3 (Issue #78): Now accepts plotBible for context-aware generation
    */
   private async generateSingleEpisode(
     outline: EpisodeOutline,
@@ -193,7 +203,8 @@ export class EpisodeGeneratorService {
     episodeNum: number,
     totalEpisodes: number,
     attempt: number = 1,
-    useFallbackModel: boolean = false
+    useFallbackModel: boolean = false,
+    plotBible?: any  // 🆕 v5.3: PlotBible for narrator voice & sensory details
   ): Promise<Episode> {
     const previousContext = this.buildContext(previousEpisodes);
     const prompt = this.buildPrompt(
@@ -202,7 +213,8 @@ export class EpisodeGeneratorService {
       charLimit,  // Pass char limit to prompt
       episodeNum,
       totalEpisodes,
-      attempt
+      attempt,
+      plotBible   // 🆕 v5.3: Pass plotBible to prompt builder
     );
     const model = useFallbackModel ? "gemini-2.5-flash-lite" : "gemini-3-flash-preview";
 
@@ -231,7 +243,8 @@ export class EpisodeGeneratorService {
             episodeNum,
             totalEpisodes,
             attempt + 1,
-            useFallbackModel
+            useFallbackModel,
+            plotBible
           );
         } else if (!useFallbackModel) {
           console.log(`      🔄 Retrying with fallback model...`);
@@ -242,7 +255,8 @@ export class EpisodeGeneratorService {
             episodeNum,
             totalEpisodes,
             1,
-            true
+            true,
+            plotBible
           );
         } else {
           console.error(`      ❌ CRITICAL: Episode #${outline.id} too short`);
@@ -319,7 +333,8 @@ export class EpisodeGeneratorService {
           episodeNum,
           totalEpisodes,
           attempt + 1,
-          useFallbackModel
+          useFallbackModel,
+          plotBible
         );
       }
       
@@ -524,6 +539,12 @@ Your job: make every word count.
   /**
    * 📝 Build the prompt with SPECIFIC CHAR LIMIT
    * v4.5: ✅ CLEAN STORY (no platform mentions) + CONTEXT IN INSTRUCTIONS
+   * 
+   * 🆕 v5.3 (Issue #78): Now includes plotBible context
+   * - Narrator voice (age, gender, tone, habits)
+   * - Sensory palette (details, smells, sounds, textures, lights)
+   * - Character map
+   * - Thematic core
    */
   private buildPrompt(
     outline: EpisodeOutline, 
@@ -531,11 +552,15 @@ Your job: make every word count.
     charLimit: number,
     episodeNum: number,
     totalEpisodes: number,
-    attempt: number = 1
+    attempt: number = 1,
+    plotBible?: any  // 🆕 v5.3: PlotBible for richer context
   ): string {
     const retryNote = attempt > 1 ? `\n⚠️  RETRY ATTEMPT #${attempt}\n` : '';
     const minChars = Math.floor(charLimit * 0.7);
     const maxChars = charLimit;
+    
+    // 🆕 v5.3: Build PlotBible section if available
+    const plotBibleSection = this.buildPlotBibleSection(plotBible);
 
     return `
 🎬 EPISODE #${outline.id} of ${totalEpisodes} - ZenMaster v4.5
@@ -567,6 +592,8 @@ Your job: make every word count.
     • NO "people will judge me"
     • Just: raw, honest memory being recalled
     • As if confiding to trusted friend at 3 AM
+
+${plotBibleSection}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📚 STYLE GUIDE: Donna Latenko + Rubina Daud (BEST RUSSIAN NARRATIVE)
@@ -713,6 +740,100 @@ Readers' experience depends on it.
     }
     
     return lastEpisode.content.slice(-contextLength);
+  }
+
+  /**
+   * 🎭 Build PlotBible section for prompt (v5.3 Issue #78)
+   * 
+   * Inserts narrator voice, sensory palette, and thematic core
+   * into the generation prompt for context-aware episode creation.
+   */
+  private buildPlotBibleSection(plotBible?: any): string {
+    if (!plotBible) {
+      return ''; // No PlotBible available, skip section
+    }
+    
+    const narrator = plotBible.narrator;
+    const sensory = plotBible.sensoryPalette;
+    const thematic = plotBible.thematicCore;
+    
+    // Build narrator section
+    let narratorSection = '';
+    if (narrator) {
+      narratorSection = `
+📖 NARRATOR VOICE (THIS STORY'S DNA):
+   Age: ${narrator.age || '40-50'} years old
+   Gender: ${narrator.gender === 'female' ? 'Woman' : narrator.gender === 'male' ? 'Man' : 'Neutral'}
+   Tone: ${narrator.tone || 'confessional, intimate'}
+   
+   Speech Patterns (USE THESE):`;
+      
+      if (narrator.voiceHabits) {
+        if (narrator.voiceHabits.apologyPattern) {
+          narratorSection += `\n   - When apologizing/justifying: "${narrator.voiceHabits.apologyPattern}"`;
+        }
+        if (narrator.voiceHabits.doubtPattern) {
+          narratorSection += `\n   - When doubting: "${narrator.voiceHabits.doubtPattern}"`;
+        }
+        if (narrator.voiceHabits.memoryTrigger) {
+          narratorSection += `\n   - When recalling: "${narrator.voiceHabits.memoryTrigger}"`;
+        }
+        if (narrator.voiceHabits.angerPattern) {
+          narratorSection += `\n   - When angry: "${narrator.voiceHabits.angerPattern}"`;
+        }
+      }
+    }
+    
+    // Build sensory palette section
+    let sensorySection = '';
+    if (sensory) {
+      sensorySection = `
+
+🎨 SENSORY PALETTE (USE THESE SPECIFIC DETAILS):`;
+      
+      if (sensory.details && sensory.details.length > 0) {
+        sensorySection += `\n   Visual Details: ${sensory.details.slice(0, 5).join(', ')}`;
+      }
+      if (sensory.smells && sensory.smells.length > 0) {
+        sensorySection += `\n   Smells: ${sensory.smells.slice(0, 3).join(', ')}`;
+      }
+      if (sensory.sounds && sensory.sounds.length > 0) {
+        sensorySection += `\n   Sounds: ${sensory.sounds.slice(0, 3).join(', ')}`;
+      }
+      if (sensory.textures && sensory.textures.length > 0) {
+        sensorySection += `\n   Textures: ${sensory.textures.slice(0, 3).join(', ')}`;
+      }
+      if (sensory.lightSources && sensory.lightSources.length > 0) {
+        sensorySection += `\n   Lighting: ${sensory.lightSources.slice(0, 3).join(', ')}`;
+      }
+    }
+    
+    // Build thematic core section
+    let thematicSection = '';
+    if (thematic) {
+      thematicSection = `
+
+🎯 THEMATIC CORE:
+   Central Question: ${thematic.centralQuestion || 'What if everything I believed was wrong?'}
+   Emotional Arc: ${thematic.emotionalArc || 'confusion → realization → acceptance'}
+   Resolution Style: ${thematic.resolutionStyle || 'bittersweet, realistic'}`;
+    }
+    
+    // Combine all sections
+    if (!narratorSection && !sensorySection && !thematicSection) {
+      return ''; // Nothing to show
+    }
+    
+    return `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎭 PLOT BIBLE (THIS STORY'S UNIQUE DNA - MANDATORY CONTEXT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${narratorSection}${sensorySection}${thematicSection}
+
+⚠️  CRITICAL: Use these SPECIFIC details in your episode.
+   Don't make up generic details - use the palette above.
+   The narrator voice patterns MUST appear naturally in dialogue and thought.
+`;
   }
 
   /**

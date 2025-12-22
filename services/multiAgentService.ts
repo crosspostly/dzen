@@ -197,17 +197,21 @@ export class MultiAgentService {
     const avgVariance = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.variance, 0) / episodesWithMetrics.length;
     const avgColloquialism = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.colloquialism, 0) / episodesWithMetrics.length;
     const avgAuthenticity = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.authenticity, 0) / episodesWithMetrics.length;
+    const avgFragmentary = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.fragmentary, 0) / episodesWithMetrics.length;
+    const avgRepetition = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.repetition, 0) / episodesWithMetrics.length;
     
     console.log(`   Article Avg Score: ${avgScore.toFixed(0)}/100`);
     console.log(``);
-    console.log(`   Component Breakdown:`);
+    console.log(`   Component Breakdown (6 metrics):`);
     console.log(`   - Perplexity:        ${avgPerplexity.toFixed(0)}/100 ${avgPerplexity >= 70 ? '✓' : '⚠️'}`);
     console.log(`   - Sentence Variance: ${avgVariance.toFixed(0)}/100 ${avgVariance >= 70 ? '✓' : '⚠️'}`);
     console.log(`   - Colloquialism:     ${avgColloquialism.toFixed(0)}/100 ${avgColloquialism >= 70 ? '✓' : '⚠️'}`);
     console.log(`   - Authenticity:      ${avgAuthenticity.toFixed(0)}/100 ${avgAuthenticity >= 70 ? '✓' : '⚠️'}`);
+    console.log(`   - Fragmentary:       ${avgFragmentary.toFixed(0)}/100 ${avgFragmentary >= 50 ? '✓' : '⚠️'}`);
+    console.log(`   - Repetition:        ${avgRepetition.toFixed(0)}/100 ${avgRepetition >= 50 ? '✓' : '⚠️'}`);
     console.log(``);
     
-    // Identify strengths and weaknesses
+    // Identify strengths and weaknesses (6 metrics)
     const strengths: string[] = [];
     const weaknesses: string[] = [];
     
@@ -222,6 +226,12 @@ export class MultiAgentService {
     
     if (avgAuthenticity >= 80) strengths.push('emotional_authenticity');
     else if (avgAuthenticity < 70) weaknesses.push('emotional_authenticity');
+    
+    if (avgFragmentary >= 70) strengths.push('fragmentary');
+    else if (avgFragmentary < 50) weaknesses.push('fragmentary');
+    
+    if (avgRepetition >= 70) strengths.push('repetition');
+    else if (avgRepetition < 50) weaknesses.push('repetition');
     
     console.log(`   Strengths: ${strengths.length > 0 ? strengths.join(', ') : 'None significant'}`);
     console.log(`   Weaknesses: ${weaknesses.length > 0 ? weaknesses.join(', ') : 'None'}`);
@@ -456,6 +466,8 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
 
   /**
    * Stage 1: Sequential episode generation
+   * 
+   * 🆕 v5.3 (Issue #78): Now passes plotBible to episode generator
    */
   private async generateEpisodesSequentially(outline: OutlineStructure): Promise<Episode[]> {
     const episodeGenerator = new EpisodeGeneratorService(
@@ -469,7 +481,8 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
         delayBetweenRequests: 1500,
         onProgress: (current, total) => {
           console.log(`   ✅ Episode ${current}/${total} complete`);
-        }
+        },
+        plotBible: outline.plotBible  // 🆕 v5.3: Pass plotBible for context-aware generation
       }
     );
   }
