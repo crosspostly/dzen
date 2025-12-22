@@ -405,9 +405,13 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
       throw new Error("No image data in response");
     }
 
+    // 🔥 IMPORTANT: base64Data from Gemini is CLEAN (no data: prefix)
+    // We'll add the prefix later when needed
+    console.log(`   📦 Received base64 image from Gemini API (${base64Data.length} chars)`);
+
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
-      base64: base64Data,
+      base64: base64Data, // ← CLEAN base64 without data: prefix
       mimeType: "image/jpeg",  // ← ALWAYS JPEG for covers
       width: 1920, // 16:9 standard
       height: 1080,

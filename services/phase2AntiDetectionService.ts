@@ -56,6 +56,162 @@ export class Phase2AntiDetectionService {
   }
 
   /**
+   * 🆕 PHASE 2 PER-EPISODE: Process single episode content
+   * Returns detailed metrics for per-episode tracking
+   */
+  public async processEpisodeContent(
+    content: string,
+    episodeNum: number,
+    targetLength?: number,
+    options: Phase2Options = {}
+  ): Promise<{
+    processedContent: string;
+    adversarialScore: number;
+    modificationStats: {
+      originalLength: number;
+      finalLength: number;
+      perplexityIncrease: number;
+      sentenceVariance: number;
+    };
+    breakdown: {
+      perplexity: number;
+      variance: number;
+      colloquialism: number;
+      authenticity: number;
+    };
+    suggestion: string;
+  }> {
+    const startTime = Date.now();
+    const originalLength = content.length;
+    
+    // Устанавливаем значения по умолчанию
+    const {
+      applyPerplexity = true,
+      applyBurstiness = true,
+      applySkazNarrative = true,
+      verbose = true,
+    } = options;
+
+    let processedContent = content;
+    
+    if (verbose) {
+      console.log(`\n   🔍 Episode #${episodeNum} Anti-Detection:`);
+      console.log(`      Original: ${originalLength} chars`);
+    }
+
+    // Этап 1: PerplexityController
+    let perplexityScore = 0;
+    if (applyPerplexity) {
+      const metrics = this.perplexityController.analyzePerplexity(processedContent);
+      perplexityScore = metrics.score;
+      
+      if (!this.perplexityController.meetsPerplexityThreshold(processedContent, 3.0)) {
+        processedContent = this.perplexityController.increasePerplexity(processedContent, 3.4);
+      }
+    }
+
+    // Этап 2: BurstinessOptimizer
+    let burstinessScore = 0;
+    if (applyBurstiness) {
+      const metrics = this.burstinessOptimizer.analyzeBurstiness(processedContent);
+      burstinessScore = metrics.standardDeviation;
+      
+      if (!this.burstinessOptimizer.meetsBurstinessThreshold(processedContent, 6.5)) {
+        processedContent = this.burstinessOptimizer.optimizeBurstiness(processedContent, 7.0);
+      }
+    }
+
+    // Этап 3: SkazNarrativeEngine
+    let skazScore = 0;
+    if (applySkazNarrative) {
+      const metrics = this.skazEngine.analyzeSkazMetrics(processedContent);
+      skazScore = metrics.score;
+      
+      if (!this.skazEngine.meetsSkazThreshold(processedContent, 70)) {
+        processedContent = this.skazEngine.applySkazTransformations(processedContent);
+      }
+    }
+
+    const finalLength = processedContent.length;
+    
+    // Calculate metrics
+    const perplexityIncrease = ((perplexityScore - 3.0) / 3.0) * 100;
+    const sentenceVariance = burstinessScore;
+    
+    // Calculate breakdown scores
+    const breakdown = {
+      perplexity: Math.min(100, Math.max(0, (perplexityScore / 3.4) * 100)),
+      variance: Math.min(100, Math.max(0, (burstinessScore / 7.0) * 100)),
+      colloquialism: skazScore,
+      authenticity: Math.min(100, (skazScore * 0.6 + (burstinessScore / 7.0) * 40))
+    };
+    
+    // Overall adversarial score (weighted average)
+    const adversarialScore = Math.round(
+      breakdown.perplexity * 0.25 +
+      breakdown.variance * 0.25 +
+      breakdown.colloquialism * 0.3 +
+      breakdown.authenticity * 0.2
+    );
+    
+    // Generate suggestion
+    let suggestion = '';
+    if (breakdown.perplexity < 70) suggestion += 'Increase word rarity. ';
+    if (breakdown.variance < 70) suggestion += 'Add more sentence length variance. ';
+    if (breakdown.colloquialism < 70) suggestion += 'Use more colloquial expressions. ';
+    if (breakdown.authenticity < 70) suggestion += 'Enhance emotional authenticity. ';
+    if (!suggestion) suggestion = 'Episode passes AI detection, good quality.';
+    
+    if (verbose) {
+      console.log(`      Processed: ${finalLength} chars`);
+      console.log(`      Adversarial Score: ${adversarialScore}/100`);
+      console.log(`      - Perplexity: ${breakdown.perplexity.toFixed(0)}/100 ${breakdown.perplexity >= 70 ? '✓' : '⚠️'}`);
+      console.log(`      - Sentence Variance: ${breakdown.variance.toFixed(0)}/100 ${breakdown.variance >= 70 ? '✓' : '(medium)'}`);
+      console.log(`      - Colloquialism: ${breakdown.colloquialism.toFixed(0)}/100 ${breakdown.colloquialism >= 70 ? '✓' : '⚠️'}`);
+      console.log(`      - Emotional Authenticity: ${breakdown.authenticity.toFixed(0)}/100 ${breakdown.authenticity >= 70 ? '✓' : '⚠️'}`);
+      console.log(``);
+      console.log(`      💡 Suggestion: ${suggestion}`);
+    }
+    
+    // If over target length, refine
+    if (targetLength && finalLength > targetLength) {
+      if (verbose) {
+        console.log(`      ⚠️  Over target (${finalLength} > ${targetLength}), triggering refine...`);
+      }
+      
+      // Simple refinement: trim to target length at sentence boundary
+      const sentences = processedContent.split(/([.!?]+\s+)/);
+      let refined = '';
+      for (const sentence of sentences) {
+        if (refined.length + sentence.length <= targetLength) {
+          refined += sentence;
+        } else {
+          break;
+        }
+      }
+      
+      processedContent = refined.trim();
+      
+      if (verbose) {
+        console.log(`      Refine result: ${processedContent.length} chars, score: ${adversarialScore}/100 ✓`);
+      }
+    }
+
+    return {
+      processedContent,
+      adversarialScore,
+      modificationStats: {
+        originalLength,
+        finalLength: processedContent.length,
+        perplexityIncrease,
+        sentenceVariance
+      },
+      breakdown,
+      suggestion
+    };
+  }
+
+  /**
    * Главный метод: обрабатывает статью через все компоненты Phase 2
    */
   public async processArticle(

@@ -82,13 +82,17 @@ export class ArticleWorkerPool {
             });
 
             if (generatedImage && generatedImage.base64) {
-              // Ensure proper data URI format
+              // 🔥 CRITICAL: Ensure proper data URI format for Canvas processing
+              // Gemini returns CLEAN base64, we MUST add data: prefix
               if (generatedImage.base64.startsWith('data:')) {
                 coverImageBase64 = generatedImage.base64;
               } else {
                 coverImageBase64 = `data:${generatedImage.mimeType};base64,${generatedImage.base64}`;
               }
+              
               console.log(`     ✅ Cover image generated (${Math.round(generatedImage.fileSize / 1024)}KB)`);
+              console.log(`     📋 Data URL format: ${coverImageBase64.substring(0, 30)}...`);
+              console.log(`     📋 Ready for Canvas processing (Stage 3)`);
             }
           } catch (imageError) {
             console.warn(`     ⚠️  Cover image generation failed (will skip):`, (imageError as Error).message);
