@@ -130,6 +130,9 @@ export interface LongFormArticle {
   episodes: Episode[];
 
   lede: string; // 600-900 символов
+  development: string; // 1500-2000 символов 🆕 v5.4
+  climax: string; // 1200-1600 символов 🆕 v5.4  
+  resolution: string; // 1000-1300 символов 🆕 v5.4
   finale: string; // 1200-1800 символов
 
   voicePassport: VoicePassport;

@@ -98,6 +98,12 @@ export class MultiAgentService {
     // 📊 Phase 2 Summary for all episodes
     this.printPhase2Summary(episodes);
     
+    // Generate Development, Climax & Resolution (NEW - v5.4)
+    console.log("🎯 Generating development, climax & resolution...");
+    const development = await this.generateDevelopment(outline, episodes);
+    const climax = await this.generateClimax(outline, development, episodes);
+    const resolution = await this.generateResolution(outline, climax);
+    
     // Generate Lede & Finale
     console.log("🎯 Generating lede (600-900) and finale (1200-1800)...");
     const lede = await this.generateLede(outline);
@@ -112,10 +118,13 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
-    // Assemble full content
+    // Assemble full content (including new development, climax, resolution)
     const fullContent = [
       lede,
+      development,
       ...episodes.map(ep => ep.content),
+      climax,
+      resolution,
       finale
     ].join('\n\n');
     
@@ -126,15 +135,18 @@ export class MultiAgentService {
       outline,
       episodes,
       lede,
+      development,
+      climax,
+      resolution,
       finale,
       voicePassport,
       coverImage: undefined,
       metadata: {
-        totalChars: lede.length + episodes.reduce((sum, ep) => sum + ep.charCount, 0) + finale.length,
-        totalReadingTime: this.calculateReadingTime(lede, episodes, finale),
+        totalChars: lede.length + development.length + climax.length + resolution.length + episodes.reduce((sum, ep) => sum + ep.charCount, 0) + finale.length,
+        totalReadingTime: this.calculateReadingTime(lede, episodes, finale), // TODO: include development, climax, resolution
         episodeCount: episodes.length,
-        sceneCount: this.countScenes(lede, episodes, finale),
-        dialogueCount: this.countDialogues(lede, episodes, finale),
+        sceneCount: this.countScenes(lede, episodes, finale), // TODO: include new parts
+        dialogueCount: this.countDialogues(lede, episodes, finale), // TODO: include new parts
       },
       processedContent: fullContent,
       adversarialScore: undefined,
@@ -175,6 +187,162 @@ export class MultiAgentService {
     console.log(``);
     
     return article;
+  }
+
+  /**
+   * 🎯 TASK 1: generateDevelopment() с Anti-Detection (v5.4)
+   * Средняя часть истории с PlotBible и правилами анти-детекции
+   */
+  async generateDevelopment(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
+    const plotBible = outline.plotBible;
+    const lastEpisode = episodes[episodes.length - 1];
+    const previousContext = lastEpisode ? lastEpisode.content.substring(0, 150) : 'Начало истории';
+    
+    let voiceGuide = '';
+    if (plotBible?.narrator?.voiceHabits) {
+      const h = plotBible.narrator.voiceHabits;
+      voiceGuide = `
+🎭 NARRATOR VOICE:
+   Age: ${plotBible.narrator.age} ${plotBible.narrator.gender}
+   Tone: ${plotBible.narrator.tone}
+   Memory: "${h.memoryTrigger}"
+   Doubt: "${h.doubtPattern}"
+   Anger: "${h.angerPattern}"`;
+    }
+    
+    const sensoryGuide = plotBible?.sensoryPalette ? `
+🎨 SENSORY PALETTE:
+   Visuals: ${plotBible.sensoryPalette.details?.slice(0, 3).join(', ')}
+   Sounds: ${plotBible.sensoryPalette.sounds?.slice(0, 2).join(', ')}
+   Smells: ${plotBible.sensoryPalette.smells?.slice(0, 2).join(', ')}` : '';
+
+    const antiDetection = `
+⚠️ ANTI-DETECTION MANDATORY:
+✅ SENTENCE VARIETY: Short. Medium medium sentence. Long complex structure. Short.
+✅ INCOMPLETE SENTENCES: "Я началась говорить, но..." (3-4 times)
+✅ INTERJECTIONS: "Боже, как я была слепа." (2 times)
+✅ EMOTIONS AS ACTIONS: ✅ "Руки тряслись." NOT ❌ "I was scared."
+✅ DIALOGUE WITH SUBTEXT: Show subtext, don't explain
+✅ SENSORY GROUNDING: ✅ "Холодная плитка. Запах кофе." NOT ❌ "We talked."
+✅ NO PLATFORM MENTIONS: Stay timeless, Russian, literary
+✅ START WITH ACTION/DIALOGUE: NOT description`;
+
+    const prompt = `📄 CONTEXT: Development episode (1500-2000 chars) - middle of story
+
+${voiceGuide}
+${sensoryGuide}
+${antiDetection}
+
+🎯 TASK: Write DEVELOPMENT
+Hook from previous: "${previousContext}"
+Theme: "${outline.theme}"
+
+REQUIREMENTS:
+- Continue from previous episode
+- Build tension toward climax
+- Narrator's specific voice patterns
+- Sensory details from palette
+- Varied sentence length
+- Include 2-3 incomplete sentences
+- Include 2 interjections
+- End with moment leading to climax
+
+OUTPUT: Only text`;
+
+    return await this.callGemini({
+      prompt,
+      model: "gemini-3-flash-preview",
+      temperature: 0.92
+    });
+  }
+
+  /**
+   * 🎯 TASK 2: generateClimax() с Триггерами (v5.4)
+   * Кульминация с короткими предложениями и сенсорной перегрузкой
+   */
+  async generateClimax(outline: OutlineStructure, development: string, episodes: Episode[]): Promise<string> {
+    const plotBible = outline.plotBible;
+    const previousContext = development.substring(0, 150);
+
+    const antiDetection = `
+⚠️ CLIMAX ANTI-DETECTION:
+✅ SHORT PUNCHY SENTENCES: "Она открыла рот. Ничего. Я вспомнила."
+✅ SENSORY OVERLOAD: "Комната вращалась. Звон в ушах. Не понимала."
+✅ DIALOGUE OVERLAP: "— Ты... — Нет! Ты не знаешь!"
+✅ INTERNAL + ACTION MIX: "Я должна уйти. Уйти сейчас. Ноги не двигались."
+✅ TIME COMPRESSION: "Минута. Две. Целая вечность."
+✅ THE TURNING POINT: Moment of no return`;
+
+    const prompt = `📄 CONTEXT: CLIMAX (1200-1600 chars) - turning point
+
+${antiDetection}
+
+Central Question: "${plotBible?.thematicCore?.centralQuestion || 'What changed everything?'}"
+
+🎯 TASK: Write CLIMAX
+Previous: "${previousContext}"
+
+REQUIREMENTS:
+- Build from development
+- One core revelation/confrontation
+- Maximum emotional intensity
+- Physical/sensory breakdown
+- Fast-paced sentences (many short)
+- Dialogue that breaks/interrupts
+- Moment narrator realizes something permanent
+- End at turning point (not resolution)
+
+OUTPUT: Only text`;
+
+    return await this.callGemini({
+      prompt,
+      model: "gemini-3-flash-preview",
+      temperature: 0.88
+    });
+  }
+
+  /**
+   * 🎯 TASK 3: generateResolution() - НОВАЯ ФУНКЦИЯ (v5.4)
+   * Развязка с интроспективным тоном и честной путаницей
+   */
+  async generateResolution(outline: OutlineStructure, climax: string): Promise<string> {
+    const plotBible = outline.plotBible;
+    const previousContext = climax.substring(0, 150);
+
+    const antiDetection = `
+⚠️ RESOLUTION ANTI-DETECTION:
+✅ SLOWER PACE: "Я сидела. Просто сидела. Время странно..."
+✅ SELF-REFLECTION: "Я была...? Какая я была?"
+✅ HONEST CONFUSION: "Облегчение? Ужас? Пусто? Может быть, всё."
+✅ NO MORALIZING: Realization without lesson
+✅ QUESTIONS NOT ANSWERED: "Почему я молчала? Боялась. Любила?"
+✅ WHAT CHANGED FOREVER: "Я больше не верила в добро."`;
+
+    const prompt = `📄 CONTEXT: RESOLUTION (1000-1300 chars) - aftermath of climax
+
+${antiDetection}
+
+Central Question: "${plotBible?.thematicCore?.centralQuestion || 'What changed everything?'}"
+
+🎯 TASK: Write RESOLUTION (realization moment)
+
+REQUIREMENTS:
+- After climax rush, slower pace
+- Narrator processing what happened
+- Honest confusion, not neat answers
+- Physical return to normal
+- What changed permanently
+- Deep questions asked but not answered
+- Acceptance of complexity
+- NO happy ending, NO neat closure
+
+OUTPUT: Only text`;
+
+    return await this.callGemini({
+      prompt,
+      model: "gemini-3-flash-preview",
+      temperature: 0.85
+    });
   }
 
   /**
