@@ -85,6 +85,8 @@ export class Phase2AntiDetectionService {
       variance: number;
       colloquialism: number;
       authenticity: number;
+      fragmentary: number;      // 🆕 v5.2: Fragmentary sentences
+      repetition: number;        // 🆕 v5.2: Natural repetition
     };
     suggestion: string;
   }> {
@@ -187,12 +189,14 @@ export class Phase2AntiDetectionService {
     // ✅ BUG FIX #1: CALL GEMINI API FOR ADVERSARIAL SCORE WITH VALIDATION
     const analysisResult = await this.analyzeWithGemini(processedContent);
     
-    // Calculate breakdown scores
+    // Calculate breakdown scores (6 metrics)
     const breakdown = {
       perplexity: analysisResult.perplexity,
       variance: analysisResult.sentenceVariance,
       colloquialism: analysisResult.colloquialism,
-      authenticity: analysisResult.emotionalAuthenticity
+      authenticity: analysisResult.emotionalAuthenticity,
+      fragmentary: analysisResult.fragmentary,
+      repetition: analysisResult.repetition
     };
     
     // Overall adversarial score
@@ -203,7 +207,7 @@ export class Phase2AntiDetectionService {
     const perplexityIncrease = ((perplexityScore - 3.0) / 3.0) * 100;
     const sentenceVariance = burstinessScore;
     
-    // ✅ STRUCTURED LOGGING WITH VISUAL INDICATORS
+    // ✅ STRUCTURED LOGGING WITH VISUAL INDICATORS (6 metrics)
     if (verbose) {
       const scoreEmoji = adversarialScore >= 80 ? '✅' : adversarialScore >= 60 ? '⚠️ ' : '❌';
       const scoreBar = this.getScoreBar(adversarialScore);
@@ -211,11 +215,13 @@ export class Phase2AntiDetectionService {
       console.log(`\n   ${scoreEmoji} Episode #${episodeNum} Phase 2 Analysis Complete:`);
       console.log(`      Score: ${adversarialScore}/100 ${scoreBar}`);
       console.log(``);
-      console.log(`      Breakdown:`);
+      console.log(`      Breakdown (6 metrics):`);
       console.log(`      - Perplexity: ${breakdown.perplexity}/100 ${breakdown.perplexity >= 75 ? '✓' : '⚠️'}`);
       console.log(`      - Sentence Variance: ${breakdown.variance}/100 ${breakdown.variance >= 70 ? '✓' : '⚠️'}`);
       console.log(`      - Colloquialism: ${breakdown.colloquialism}/100 ${breakdown.colloquialism >= 75 ? '✓' : '⚠️'}`);
       console.log(`      - Emotional Authenticity: ${breakdown.authenticity}/100 ${breakdown.authenticity >= 70 ? '✓' : '⚠️'}`);
+      console.log(`      - Fragmentary: ${breakdown.fragmentary}/100 ${breakdown.fragmentary >= 50 ? '✓' : '⚠️'}`);
+      console.log(`      - Repetition: ${breakdown.repetition}/100 ${breakdown.repetition >= 50 ? '✓' : '⚠️'}`);
       console.log(``);
       console.log(`      💡 Suggestion: ${suggestion}`);
       console.log(``);
@@ -239,6 +245,7 @@ export class Phase2AntiDetectionService {
   /**
    * ✅ CALL GEMINI API FOR ADVERSARIAL SCORE ANALYSIS
    * With JSON validation and fallback values
+   * 🆕 v5.2: Now returns 6 metrics (added fragmentary, repetition)
    */
   private async analyzeWithGemini(content: string): Promise<{
     score: number;
@@ -246,6 +253,8 @@ export class Phase2AntiDetectionService {
     sentenceVariance: number;
     colloquialism: number;
     emotionalAuthenticity: number;
+    fragmentary: number;        // 🆕 v5.2
+    repetition: number;          // 🆕 v5.2
     suggestion: string;
   }> {
     // ✅ EXPLICIT NUMERIC TYPE REQUIREMENT IN PROMPT
@@ -258,21 +267,27 @@ export class Phase2AntiDetectionService {
   "sentenceVariance": <INTEGER 0-100>,
   "colloquialism": <INTEGER 0-100>,
   "emotionalAuthenticity": <INTEGER 0-100>,
+  "fragmentary": <INTEGER 0-100>,
+  "repetition": <INTEGER 0-100>,
   "suggestion": "SPECIFIC, actionable advice based on weakest areas"
 }
 
-Guidelines for scoring:
+Guidelines for scoring (6 metrics):
 - score: Overall adversarial score (0=obvious AI, 100=completely human)
 - perplexity: Word choice entropy and rarity (0=common words, 100=rare/varied vocabulary)
 - sentenceVariance: Sentence length variation (0=monotonous, 100=highly varied)
 - colloquialism: Use of natural speech patterns (0=formal/academic, 100=very conversational)
 - emotionalAuthenticity: Emotional depth and authenticity (0=robotic, 100=deeply human)
+- fragmentary: Incomplete thoughts, fragmented sentences like natural speech (0=perfect sentences, 100=lots of fragments)
+- repetition: Natural repetition of words/phrases like memory patterns (0=no repetition, 100=natural echo)
 
 For suggestion: Identify the WEAKEST metric and provide SPECIFIC improvements.
 Example good suggestions:
 - "Paragraph 3 uses 'данная ситуация' which sounds academic. Replace with 'это было совсем...' for more casual tone."
 - "Sentences 2-4 are all 18-20 words. Break one into 6-8 words for more varied rhythm."
 - "Add an emotional reaction in paragraph 2 - reader needs to feel the character's shock or pain here."
+- "All sentences are complete. Add 1-2 fragments like 'Не знаю.' or 'Не могла...' for authenticity."
+- "No word repetition. People remembering events naturally repeat key words - add some echoes."
 
 Text to analyze:
 ${content}`;
@@ -289,12 +304,14 @@ ${content}`;
         return this.getDefaultBreakdown();
       }
       
-      // ✅ VALIDATE EACH FIELD AS NUMBER
+      // ✅ VALIDATE EACH FIELD AS NUMBER (6 metrics)
       const score = this.validateNumber(parsed.score, 'score', 0, 100, 65);
       const perplexity = this.validateNumber(parsed.perplexity, 'perplexity', 0, 100, 70);
       const sentenceVariance = this.validateNumber(parsed.sentenceVariance, 'sentenceVariance', 0, 100, 60);
       const colloquialism = this.validateNumber(parsed.colloquialism, 'colloquialism', 0, 100, 65);
       const emotionalAuthenticity = this.validateNumber(parsed.emotionalAuthenticity, 'emotionalAuthenticity', 0, 100, 60);
+      const fragmentary = this.validateNumber(parsed.fragmentary, 'fragmentary', 0, 100, 50);        // 🆕 v5.2
+      const repetition = this.validateNumber(parsed.repetition, 'repetition', 0, 100, 55);            // 🆕 v5.2
       const suggestion = typeof parsed.suggestion === 'string' && parsed.suggestion.trim().length > 0 
         ? parsed.suggestion 
         : 'Add more emotional depth and natural conversational tone.';
@@ -305,6 +322,8 @@ ${content}`;
         sentenceVariance,
         colloquialism,
         emotionalAuthenticity,
+        fragmentary,
+        repetition,
         suggestion
       };
     } catch (error) {
@@ -349,6 +368,7 @@ ${content}`;
 
   /**
    * ✅ FALLBACK VALUES FOR ERROR CASES
+   * 🆕 v5.2: Now includes 6 metrics
    */
   private getDefaultBreakdown(): {
     score: number;
@@ -356,6 +376,8 @@ ${content}`;
     sentenceVariance: number;
     colloquialism: number;
     emotionalAuthenticity: number;
+    fragmentary: number;
+    repetition: number;
     suggestion: string;
   } {
     console.warn(`⚠️  Returning default Phase 2 breakdown due to API error`);
@@ -365,6 +387,8 @@ ${content}`;
       sentenceVariance: 60,
       colloquialism: 65,
       emotionalAuthenticity: 60,
+      fragmentary: 50,          // 🆕 v5.2
+      repetition: 55,           // 🆕 v5.2
       suggestion: 'Could not analyze due to API error. Default suggestion: Add more dialogue and personal emotional reactions to enhance authenticity.'
     };
   }

@@ -36,6 +36,8 @@ export interface Episode {
       variance: number;
       colloquialism: number;
       authenticity: number;
+      fragmentary: number;      // 🆕 v5.2: Fragmentary sentences (incomplete thoughts)
+      repetition: number;        // 🆕 v5.2: Natural repetition (memory patterns)
     };
     modificationStats: {
       originalLength: number;
