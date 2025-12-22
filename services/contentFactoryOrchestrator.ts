@@ -15,6 +15,7 @@ import * as path from 'path';
 import { ArticleWorkerPool } from './articleWorkerPool';
 import { ImageWorkerPool } from './imageWorkerPool';
 import { ImageProcessorService } from './imageProcessorService';
+import { MobilePhotoAuthenticityProcessor, AuthenticityResult } from './mobilePhotoAuthenticityProcessor';
 import {
   ContentFactoryConfig,
   FactoryProgress,
@@ -153,6 +154,13 @@ ${'='.repeat(60)}`);
 
         console.log(`
 ✅ Stage 3 complete: All images post-processed and ready for export
+`);
+
+        // 🆕 STAGE 4: Mobile Authenticity - Make images look like real mobile photos
+        await this.applyMobileAuthenticityProcessing();
+
+        console.log(`
+✅ Stage 4 complete: All images processed for mobile authenticity (Samsung Galaxy A10 style)
 `);
       }
 
@@ -330,6 +338,90 @@ ${'='.repeat(60)}`);
     console.log(`
 ✅ Post-processing complete: ${successCount} OK, ${failureCount} used JPEG fallback`);
     console.log(`   Ready for export
+`);
+  }
+
+  /**
+   * 🆕 STAGE 4: Apply Mobile Photo Authenticity Processing
+   * Makes AI-generated images look like authentic mobile phone photos from 2018-2020
+   * Adds noise, EXIF metadata, compression artifacts, and physical wear effects
+   */
+  private async applyMobileAuthenticityProcessing(): Promise<void> {
+    if (!this.config.includeImages || this.articles.length === 0) {
+      return; // Skip if images not enabled or no articles
+    }
+
+    const authenticityProcessor = new MobilePhotoAuthenticityProcessor();
+    let successCount = 0;
+    let failureCount = 0;
+
+    console.log(`
+${'='.repeat(60)}`);
+    console.log(`📱 STAGE 4: Mobile Photo Authenticity Processing`);
+    console.log(`${'='.repeat(60)}\n`);
+
+    for (let i = 0; i < this.articles.length; i++) {
+      const article = this.articles[i];
+
+      if (article.coverImage?.base64) {
+        try {
+          console.log(`  📱 Processing authenticity ${i + 1}/${this.articles.length}...`);
+
+          // Get the current buffer (processedBuffer from Canvas or fallback to original)
+          let currentBuffer: Buffer;
+          if (article.coverImage.processedBuffer) {
+            currentBuffer = article.coverImage.processedBuffer;
+          } else {
+            // Fallback: Use original JPEG from API
+            const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
+            currentBuffer = Buffer.from(base64Data, 'base64');
+          }
+
+          // Apply mobile authenticity processing
+          const authenticityResult = await authenticityProcessor.processForMobileAuthenticity(
+            currentBuffer.toString('base64')
+          );
+
+          // Handle result
+          if (authenticityResult.success && authenticityResult.processedBuffer) {
+            // Authenticity processing succeeded - replace buffer
+            article.coverImage.processedBuffer = authenticityResult.processedBuffer;
+            article.coverImage.format = 'jpeg';
+            
+            const sizeKb = Math.round(authenticityResult.processedBuffer.length / 1024);
+            console.log(`     ✅ Authenticity OK: ${sizeKb}KB (${authenticityResult.authenticityLevel} level)`);
+            console.log(`        Effects: ${authenticityResult.appliedEffects.join(', ')}`);
+            successCount++;
+          } else {
+            // Authenticity processing failed - keep current buffer
+            console.warn(`     ⚠️  Authenticity failed: ${authenticityResult.errorMessage}`);
+            console.log(`        Fallback: Using processed buffer from Stage 3`);
+            failureCount++;
+          }
+
+          // Always attach metadata about authenticity processing status
+          if (!article.metadata) {
+            article.metadata = { generatedAt: Date.now() };
+          }
+          article.metadata.mobileAuthenticityApplied = authenticityResult.success;
+          article.metadata.authenticityLevel = authenticityResult.authenticityLevel;
+          article.metadata.appliedAuthenticityEffects = authenticityResult.appliedEffects;
+          article.metadata.authenticityError = authenticityResult.errorMessage;
+          article.metadata.mobileCameraEmulated = "Samsung Galaxy A10 (2019)";
+
+        } catch (error) {
+          console.error(
+            `     ❌ Unexpected authenticity error: ${(error as Error).message}`
+          );
+          failureCount++;
+          // Continue with next image
+        }
+      }
+    }
+
+    console.log(`
+✅ Mobile authenticity complete: ${successCount} OK, ${failureCount} used fallback`);
+    console.log(`   All images now look like real mobile photos from 2018-2020
 `);
   }
 

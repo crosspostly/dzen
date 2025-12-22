@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { createCanvas, loadImage, Canvas } from 'canvas';
+import { MobilePhotoAuthenticityProcessor, AuthenticityResult } from './mobilePhotoAuthenticityProcessor';
 
 export interface ImageProcessResult {
   buffer: Buffer | null;
