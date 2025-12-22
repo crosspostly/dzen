@@ -27,6 +27,24 @@ export interface Episode {
   // 🖼️ ИЗОБРАЖЕНИЯ
   imageBuffer?: Buffer;       // Буфер обработанного изображения
   imagePath?: string;         // Путь к сохраненному файлу
+  
+  // 🆕 PHASE 2: Per-episode anti-detection metrics
+  phase2Metrics?: {
+    adversarialScore: number;
+    breakdown: {
+      perplexity: number;
+      variance: number;
+      colloquialism: number;
+      authenticity: number;
+    };
+    modificationStats: {
+      originalLength: number;
+      finalLength: number;
+      perplexityIncrease: number;
+      sentenceVariance: number;
+    };
+    suggestion: string;
+  };
 }
 
 export interface EpisodeOutline {

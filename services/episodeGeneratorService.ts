@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
+import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
 
 /**
    * 🎬 Episode Generator Service v4.6 (QUALITY STORYTELLING UPGRADE)
@@ -40,6 +41,7 @@ import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
+  private phase2Service: Phase2AntiDetectionService;
   private TOTAL_BUDGET: number; // Use single source of truth
   private LEDE_BUDGET = 600;  // v4.6: Adjusted for tighter budget
   private FINALE_BUDGET = 1200; // v4.6: Adjusted for tighter budget
@@ -50,6 +52,7 @@ export class EpisodeGeneratorService {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.titleGenerator = new EpisodeTitleGenerator(key);
+    this.phase2Service = new Phase2AntiDetectionService();
     this.TOTAL_BUDGET = maxChars || CHAR_BUDGET; // Use central budget as default
   }
 
@@ -76,10 +79,13 @@ export class EpisodeGeneratorService {
   }
 
   /**
-   * 🎯 Generate episodes sequentially with DYNAMIC POOL TRACKING
+   * 🎯 Generate episodes sequentially with DYNAMIC EPISODE COUNT
    * 
-   * Key change: If episode exceeds budget, we accept it and adjust
-   * remaining pool for next episodes instead of retrying!
+   * v5.1 CHANGES:
+   * - Dynamic episode count: generate episodes until budget exhausted
+   * - MIN_EPISODE_SIZE = 1500 chars (stop if remaining budget < MIN)
+   * - Phase 2 per-episode processing
+   * - If episode exceeds budget, we accept it and adjust remaining pool
    */
   async generateEpisodesSequentially(
     episodeOutlines: EpisodeOutline[],
@@ -90,32 +96,42 @@ export class EpisodeGeneratorService {
   ): Promise<Episode[]> {
     const episodes: Episode[] = [];
     const delay = options?.delayBetweenRequests || 1500;
+    const MIN_EPISODE_SIZE = 1500; // Minimum viable episode size
     
-    // Calculate budget allocation
+    // Calculate initial budget allocation
     const budget = this.calculateBudget(episodeOutlines.length);
-    console.log(`\n📊 BUDGET ALLOCATION [EpisodeGeneratorService]:`);
+    console.log(`\n📊 BUDGET ALLOCATION [Dynamic Episodes]:`);
     console.log(`   Total budget: ${budget.total} chars`);
-    console.log(`   Episodes: ${budget.episodeCount} × ${budget.perEpisode} chars each`);
+    console.log(`   Max episodes planned: ${episodeOutlines.length} × ${budget.perEpisode} chars each (estimated)`);
     console.log(`   Lede: ${budget.lede} | Finale: ${budget.finale}`);
-    console.log(`   (Remaining for episodes: ${budget.remaining} chars)\n`);
+    console.log(`   (Remaining for episodes: ${budget.remaining} chars)`);
+    console.log(`   MIN_EPISODE_SIZE: ${MIN_EPISODE_SIZE} chars (stop if remaining < this)\n`);
     
     let charCountSoFar = 0;
     let remainingPool = budget.remaining;
+    let episodeIndex = 0;
 
-    for (let i = 0; i < episodeOutlines.length; i++) {
-      const outline = episodeOutlines[i];
-      const episodesLeft = episodeOutlines.length - i;
+    // 🔄 Dynamic episode generation: while budget allows
+    while (remainingPool > MIN_EPISODE_SIZE && episodeIndex < episodeOutlines.length) {
+      const outline = episodeOutlines[episodeIndex];
+      const episodesLeft = episodeOutlines.length - episodeIndex;
       const charsForThisEpisode = Math.floor(remainingPool / episodesLeft);
       
       console.log(`\n   🎬 Episode #${outline.id} - Starting generation...`);
       console.log(`      Budget: ${charsForThisEpisode} chars (${remainingPool} remaining for rest)`);
+      
+      // Check if remaining budget is sufficient
+      if (charsForThisEpisode < MIN_EPISODE_SIZE) {
+        console.log(`      📊 Remaining budget ${remainingPool} < MIN (${MIN_EPISODE_SIZE}), stopping...`);
+        break;
+      }
       
       try {
         const episode = await this.generateSingleEpisode(
           outline, 
           episodes,
           charsForThisEpisode,  // Pass specific budget to this episode
-          i + 1,
+          episodeIndex + 1,
           episodeOutlines.length
         );
         episodes.push(episode);
@@ -134,13 +150,21 @@ export class EpisodeGeneratorService {
         console.log(`      📊 Total so far: ${charCountSoFar}/${budget.total}`);
         
         if (options?.onProgress) {
-          options.onProgress(i + 1, episodeOutlines.length, charCountSoFar);
+          options.onProgress(episodeIndex + 1, episodeOutlines.length, charCountSoFar);
+        }
+        
+        // Check if we should continue
+        if (remainingPool < MIN_EPISODE_SIZE) {
+          console.log(`\n   📊 Remaining budget ${remainingPool} < MIN (${MIN_EPISODE_SIZE}), stopping generation...`);
+          break;
         }
         
         // Wait before next request
-        if (i < episodeOutlines.length - 1) {
+        if (episodeIndex < episodeOutlines.length - 1) {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
+        
+        episodeIndex++;
       } catch (error) {
         console.error(`   ❌ Episode #${outline.id} failed:`, error);
         throw error;
@@ -148,8 +172,12 @@ export class EpisodeGeneratorService {
     }
     
     const utilization = ((charCountSoFar / budget.total) * 100).toFixed(1);
-    console.log(`\n✅ All episodes generated!`);
-    console.log(`   Total chars: ${charCountSoFar}/${budget.total} (${utilization}% utilization)`);
+    console.log(`\n🔄 Dynamic episode generation:`);
+    console.log(`   Total budget: ${budget.total} chars`);
+    console.log(`   Generated: ${episodes.length} episodes (not ${episodeOutlines.length})`);
+    console.log(`   Used: ${charCountSoFar} chars (${utilization}%)`);
+    console.log(`   Remaining: ${remainingPool} chars ${remainingPool < MIN_EPISODE_SIZE ? '(< MIN_EPISODE_SIZE, stopping)' : ''}`);
+    console.log(``);
     return episodes;
   }
 
@@ -233,6 +261,23 @@ export class EpisodeGeneratorService {
         console.log(`      ✅ Episode ${episodeNum}: ${content.length} chars (within budget)`);
       }
 
+      // 🆕 PHASE 2: Anti-Detection processing (per-episode)
+      console.log(`\n   📋 [Phase 2] Processing episode ${episodeNum} for anti-detection...`);
+      const phase2Result = await this.phase2Service.processEpisodeContent(
+        content,
+        episodeNum,
+        charLimit, // Target length
+        {
+          applyPerplexity: true,
+          applyBurstiness: true,
+          applySkazNarrative: true,
+          verbose: true
+        }
+      );
+      
+      // Use processed content
+      content = phase2Result.processedContent;
+
       // Generate title
       const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
         outline.id,
@@ -252,6 +297,13 @@ export class EpisodeGeneratorService {
         characters: [],
         generatedAt: Date.now(),
         stage: "draft",
+        // 🆕 Add Phase 2 metrics
+        phase2Metrics: {
+          adversarialScore: phase2Result.adversarialScore,
+          breakdown: phase2Result.breakdown,
+          modificationStats: phase2Result.modificationStats,
+          suggestion: phase2Result.suggestion
+        }
       };
     } catch (error) {
       const errorMessage = (error as Error).message;

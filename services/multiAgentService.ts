@@ -91,9 +91,12 @@ export class MultiAgentService {
     console.log(`   - Tone: ${plotBible.narrator.tone}`);
     console.log(`   - Sensory palette: ${plotBible.sensoryPalette.details.slice(0, 3).join(', ')}...`);
     
-    // Stage 1: Sequential Episode Generation
-    console.log(`🔄 Stage 1: Generating ${episodeCount} episodes sequentially...`);
+    // Stage 1: Sequential Episode Generation (with Phase 2 per-episode)
+    console.log(`🔄 Stage 1: Generating ${episodeCount} episodes sequentially (Phase 2 per-episode)...`);
     const episodes = await this.generateEpisodesSequentially(outline);
+    
+    // 📊 Phase 2 Summary for all episodes
+    this.printPhase2Summary(episodes);
     
     // Generate Lede & Finale
     console.log("🎯 Generating lede (600-900) and finale (1200-1800)...");
@@ -138,32 +141,24 @@ export class MultiAgentService {
       phase2Applied: false
     };
 
-    // 🆕 PHASE 2: Anti-Detection Processing
-    if (params.applyPhase2AntiDetection !== false) {
-      console.log('🔄 [Phase 2] Applying anti-detection transformations...');
-      
-      const phase2Service = new Phase2AntiDetectionService();
-      
-      const phase2Result = await phase2Service.processArticle(
-        article.title,
-        article.processedContent!,
-        {
-          applyPerplexity: true,        // повысить энтропию слов
-          applyBurstiness: true,        // варьировать длину предложений
-          applySkazNarrative: true,     // добавить русские частицы
-          enableGatekeeper: true,       // финальная проверка
-          sanitizeImages: true,         // очистить изображения
-          verbose: false
-        },
-        article.episodes.map(ep => ep.imagePath!).filter(Boolean)
-      );
-      
-      // Заменяем контент на обработанный
-      article.processedContent = phase2Result.processedContent;
-      article.adversarialScore = phase2Result.adversarialScore;
-      article.phase2Applied = true;
-      
-      console.log(`✅ [Phase 2] Complete. Adversarial score: ${phase2Result.adversarialScore?.overallScore}/100`);
+    // 🆕 Phase 2 is now applied PER-EPISODE in episodeGeneratorService
+    // Mark as applied if any episodes have Phase 2 metrics
+    article.phase2Applied = episodes.some(ep => ep.phase2Metrics !== undefined);
+    
+    // Calculate article-level adversarial score from episode metrics
+    const episodesWithMetrics = episodes.filter(ep => ep.phase2Metrics);
+    if (episodesWithMetrics.length > 0) {
+      const avgScore = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.adversarialScore, 0) / episodesWithMetrics.length;
+      article.adversarialScore = {
+        perplexity: episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.perplexity, 0) / episodesWithMetrics.length,
+        burstiness: episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.variance, 0) / episodesWithMetrics.length,
+        skazRussianness: episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.colloquialism, 0) / episodesWithMetrics.length,
+        contentLength: article.metadata.totalChars,
+        noClichés: 100, // Placeholder
+        overallScore: avgScore,
+        passesAllChecks: avgScore >= 70,
+        issues: avgScore < 70 ? ['Overall score below threshold'] : []
+      };
     }
 
     console.log(`\n✅ ARTICLE COMPLETE`);
@@ -180,6 +175,63 @@ export class MultiAgentService {
     console.log(``);
     
     return article;
+  }
+
+  /**
+   * 📊 Print Phase 2 Summary for all episodes
+   */
+  private printPhase2Summary(episodes: Episode[]): void {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`📊 FINAL ADVERSARIAL METRICS`);
+    console.log(`${'='.repeat(60)}\n`);
+    
+    // Calculate average scores
+    const episodesWithMetrics = episodes.filter(ep => ep.phase2Metrics);
+    if (episodesWithMetrics.length === 0) {
+      console.log('   No Phase 2 metrics available (Phase 2 not applied)\n');
+      return;
+    }
+    
+    const avgScore = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.adversarialScore, 0) / episodesWithMetrics.length;
+    const avgPerplexity = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.perplexity, 0) / episodesWithMetrics.length;
+    const avgVariance = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.variance, 0) / episodesWithMetrics.length;
+    const avgColloquialism = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.colloquialism, 0) / episodesWithMetrics.length;
+    const avgAuthenticity = episodesWithMetrics.reduce((sum, ep) => sum + ep.phase2Metrics!.breakdown.authenticity, 0) / episodesWithMetrics.length;
+    
+    console.log(`   Article Avg Score: ${avgScore.toFixed(0)}/100`);
+    console.log(``);
+    console.log(`   Component Breakdown:`);
+    console.log(`   - Perplexity:        ${avgPerplexity.toFixed(0)}/100 ${avgPerplexity >= 70 ? '✓' : '⚠️'}`);
+    console.log(`   - Sentence Variance: ${avgVariance.toFixed(0)}/100 ${avgVariance >= 70 ? '✓' : '⚠️'}`);
+    console.log(`   - Colloquialism:     ${avgColloquialism.toFixed(0)}/100 ${avgColloquialism >= 70 ? '✓' : '⚠️'}`);
+    console.log(`   - Authenticity:      ${avgAuthenticity.toFixed(0)}/100 ${avgAuthenticity >= 70 ? '✓' : '⚠️'}`);
+    console.log(``);
+    
+    // Identify strengths and weaknesses
+    const strengths: string[] = [];
+    const weaknesses: string[] = [];
+    
+    if (avgPerplexity >= 80) strengths.push('perplexity');
+    else if (avgPerplexity < 70) weaknesses.push('perplexity');
+    
+    if (avgVariance >= 80) strengths.push('sentence_variance');
+    else if (avgVariance < 70) weaknesses.push('sentence_variance');
+    
+    if (avgColloquialism >= 80) strengths.push('colloquialism');
+    else if (avgColloquialism < 70) weaknesses.push('colloquialism');
+    
+    if (avgAuthenticity >= 80) strengths.push('emotional_authenticity');
+    else if (avgAuthenticity < 70) weaknesses.push('emotional_authenticity');
+    
+    console.log(`   Strengths: ${strengths.length > 0 ? strengths.join(', ') : 'None significant'}`);
+    console.log(`   Weaknesses: ${weaknesses.length > 0 ? weaknesses.join(', ') : 'None'}`);
+    console.log(``);
+    
+    // Recommendation
+    const recommendation = avgScore >= 70 ? 'PASS' : 'NEEDS_IMPROVEMENT';
+    const status = avgScore >= 70 ? '✅' : '⚠️';
+    console.log(`   Recommendation: ${status} Article ${recommendation} (${avgScore >= 70 ? '>70' : '<70'}, ready for publication: ${avgScore >= 70 ? 'YES' : 'NO'})`);
+    console.log(``);
   }
 
   /**
