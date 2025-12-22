@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
@@ -32,7 +32,7 @@ import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
    * - ✅ Character perspective: pure narrative, not aware of audience
    */
 export class EpisodeGeneratorService {
-  private geminiClient: GoogleGenerativeAI;
+  private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
   private TOTAL_BUDGET = 19000; // v4.6: REDUCED from 29000 to 19000 chars
   private LEDE_BUDGET = 600;  // v4.6: Adjusted for tighter budget
@@ -42,7 +42,7 @@ export class EpisodeGeneratorService {
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
+    this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.titleGenerator = new EpisodeTitleGenerator(key);
   }
 
