@@ -6,6 +6,7 @@ import { GoogleGenAI } from "@google/genai";
  */
 export class EpisodeTitleGenerator {
   private geminiClient: GoogleGenAI;
+  private MAX_RETRIES = 3; // Количество повторных попыток при ошибке
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || "";
@@ -55,86 +56,84 @@ export class EpisodeTitleGenerator {
 - "Елена говорит с матерью" (слишком описательно)
 - "Очень длинное название из семи или восьми слов" (слишком много)
 
-ОТВЕТЬ ТОЛЬКО НАЗВАНИЕМ (без JSON, без кавычек, без объяснений):`;
+ОТВЕТЬ ТОЛЬКО НАЗВАНИЕМ (без JSON, без кавычек, без объяснений):`;;
 
-    try {
-      // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
-      const response = await this.geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          temperature: 0.85,
-          topK: 40,
-          topP: 0.95,
-        },
-      });
+    // Попытаемся с retries
+    for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
+      try {
+        // Чередуем модели при повторах для разнообразия
+        const model = attempt === 1 
+          ? "gemini-3-flash-preview"      // PRIMARY
+          : attempt === 2 
+          ? "gemini-2.5-flash-lite"       // FALLBACK 1
+          : "gemini-2.5-flash";            // FALLBACK 2
 
-      const title = (response.text || "")
-        .trim()
-        .replace(/^[\s"'`({\[<]+/, "")
-        .replace(/[\s"'`)\}\]\>]+$/, "")
-        .replace(/^[-–—]\s*/, "")
-        .replace(/\.+$/, "")
-        .replace(/\s+/g, " ")
-        .substring(0, 60);
+        console.log(`   📝 Generating title (attempt ${attempt}/${this.MAX_RETRIES}, model: ${model})...`);
 
-      if (!title || title.length < 3) {
-        return `Часть ${episodeNumber}`;
-      }
+        const response = await this.geminiClient.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            temperature: 0.85,
+            topK: 40,
+            topP: 0.95,
+          },
+        });
 
-      if (!/[а-яёА-ЯЁ]/.test(title) || /\b(Episode|Эпизод)\b/i.test(title)) {
-        return `Часть ${episodeNumber}`;
-      }
+        const title = (response.text || "")
+          .trim()
+          .replace(/^[\s"'`({\[<]+/, "")
+          .replace(/[\s"'`)\}\]>]+$/, "")
+          .replace(/^[-–—]\s*/, "")
+          .replace(/\.+$/, "")
+          .replace(/\s+/g, " ")
+          .substring(0, 60);
 
-      const words = title.split(/\s+/).filter(Boolean);
-      if (words.length < 2 || words.length > 5) {
-        return `Часть ${episodeNumber}`;
-      }
+        if (!title || title.length < 3) {
+          console.warn(`   ⚠️  Title too short: "${title}" (${title.length} chars)`);
+          if (attempt < this.MAX_RETRIES) continue;
+          return `Часть ${episodeNumber}`;
+        }
 
-      return title;
-    } catch (error) {
-      const errorMessage = (error as Error).message;
-      console.warn(`Episode #${episodeNumber} primary model failed (${errorMessage}), trying fallback...`);
-      
-      // 🔄 ФОЛБЕК: если модель перегружена
-      if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`Trying fallback to gemini-2.5-flash-lite...`);
-        
-        try {
-          const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
-            contents: prompt,
-            config: {
-              temperature: 0.85,
-              topK: 40,
-              topP: 0.95,
-            },
-          });
+        if (!/[а-яёА-ЯЁ]/.test(title) || /\b(Episode|Эпизод)\b/i.test(title)) {
+          console.warn(`   ⚠️  Invalid title format: "${title}"`);
+          if (attempt < this.MAX_RETRIES) continue;
+          return `Часть ${episodeNumber}`;
+        }
 
-          const fallbackTitle = (fallbackResponse.text || "")
-            .trim()
-            .replace(/^[\s"'`({\[<]+/, "")
-            .replace(/[\s"'`)\}\]\>]+$/, "")
-            .replace(/^[-–—]\s*/, "")
-            .replace(/\.+$/, "")
-            .replace(/\s+/g, " ")
-            .substring(0, 60);
+        const words = title.split(/\s+/).filter(Boolean);
+        if (words.length < 2 || words.length > 5) {
+          console.warn(`   ⚠️  Wrong word count (${words.length}): "${title}"`);
+          if (attempt < this.MAX_RETRIES) continue;
+          return `Часть ${episodeNumber}`;
+        }
 
-          if (fallbackTitle && fallbackTitle.length >= 3) {
-            const words = fallbackTitle.split(/\s+/).filter(Boolean);
-            if (words.length >= 2 && words.length <= 5) {
-              console.log(`✅ Fallback successful: "${fallbackTitle}"`);
-              return fallbackTitle;
-            }
+        console.log(`   ✅ Title generated: "${title}"`);
+        return title;
+
+      } catch (error) {
+        const errorMessage = (error as Error).message;
+        console.warn(`   ❌ Attempt ${attempt} failed: ${errorMessage}`);
+
+        // Если это ошибка API (503, overloaded), может быть стоит retry
+        if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
+          if (attempt < this.MAX_RETRIES) {
+            console.log(`   ⏳ Waiting 2s before retry...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
           }
-        } catch (fallbackError) {
-          console.error(`❌ Fallback also failed:`, (fallbackError as Error).message);
+        }
+
+        // Если это последний retry, используем fallback
+        if (attempt === this.MAX_RETRIES) {
+          console.error(`   ⚠️  All retries exhausted for episode #${episodeNumber}, using fallback`);
+          return `Часть ${episodeNumber}`;
         }
       }
-      
-      console.error(`Episode #${episodeNumber} title generation failed:`, error);
-      return `Часть ${episodeNumber}`;
     }
+
+    // Не должно дойти сюда, но на случай:
+    return `Часть ${episodeNumber}`;
   }
 
   /**
