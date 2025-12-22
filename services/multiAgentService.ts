@@ -1,8 +1,3 @@
-// ============================================================================
-// ZenMaster v2.0 — Multi-Agent Service
-// Orchestrates dynamic episode generation for 29K longform articles
-// ============================================================================
-
 import { GoogleGenAI } from "@google/genai";
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
@@ -400,7 +395,7 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
 
     const response = await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.85,
     });
 
@@ -461,7 +456,7 @@ OUTPUT: Only the text. No title, no metadata.`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.9,
     });
   }
@@ -499,7 +494,7 @@ OUTPUT: Only the text. No title, no metadata.`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.85,
     });
   }
@@ -540,7 +535,7 @@ Language: 100% RUSSIAN, no Latin letters or English`;
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-3-flash",
+        model: "gemini-3-flash-preview",
         temperature: 0.8,
       });
 
@@ -594,7 +589,7 @@ Respond as JSON:
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-3-flash",
+        model: "gemini-3-flash-preview",
         temperature: 0.8,
       });
       return this.parseJsonSafely(response, 'VoicePassport') as VoicePassport;
@@ -772,7 +767,7 @@ Output ONLY the episode text. No titles, no metadata.`;
   }): Promise<string> {
     try {
       const response = await this.geminiClient.models.generateContent({
-        model: "gemini-3-flash",
+        model: "gemini-3-flash-preview",
         contents: params.prompt,
         config: {
           temperature: params.temperature,
