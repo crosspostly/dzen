@@ -33,7 +33,7 @@ export class GeminiService {
   async generateFreshThemes() {
     const prompt = `Сгенерируй 5 ОСТРЫХ, провокационных заголовков для Яндекс.Дзен (CTR++). JSON массив строк.`;
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: { responseMimeType: "application/json" },
     });
@@ -106,7 +106,7 @@ export class GeminiService {
         metadata: {
           total_chars: finalChars,
           generation_time_ms: Date.now() - startTime,
-          model_used: config.gemini_model || 'gemini-3-flash',
+          model_used: config.gemini_model || 'gemini-3-flash-preview',
         },
       };
     } catch (error) {
@@ -151,7 +151,7 @@ ${examplesContext}
 
     const response = await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.9,
     });
 
@@ -187,7 +187,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.95,
     });
   }
@@ -224,7 +224,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.95,
     });
   }
@@ -262,7 +262,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.95,
     });
   }
@@ -294,7 +294,7 @@ ${climax}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.9,
     });
   }
@@ -313,7 +313,7 @@ ${climax}
     try {
       const response = await this.callGemini({
         prompt,
-        model: 'gemini-3-flash',
+        model: 'gemini-3-flash-preview',
         temperature: 0.8,
       });
       const parsed = JSON.parse(response);
@@ -377,7 +377,7 @@ ${slices}
 60-100 = человеческий текст (вариативный, живой, эмоциональный)`;
 
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
