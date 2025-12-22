@@ -10,6 +10,7 @@ import { imageGeneratorAgent } from './imageGeneratorAgent';
 import { ContentSanitizer } from './contentSanitizer';
 import { Article } from '../types/ContentFactory';
 import { ContentFactoryConfig } from '../types/ContentFactory';
+import { CHAR_BUDGET } from '../constants/BUDGET_CONFIG';
 
 export class ArticleWorkerPool {
   private workers: number;
@@ -32,9 +33,10 @@ export class ArticleWorkerPool {
     onProgress?: (completed: number, total: number) => void
   ): Promise<Article[]> {
     const articles: Article[] = [];
-    const multiAgentService = new MultiAgentService(this.apiKey);
+    const maxChars = config.maxChars || CHAR_BUDGET; // ✅ Use config value, fallback to central budget
+    const multiAgentService = new MultiAgentService(this.apiKey, maxChars);
 
-    console.log(`\n📑 Generating ${count} articles (${this.workers} parallel workers)...\n`);
+    console.log(`\n📑 Generating ${count} articles (${this.workers} parallel workers) with ${maxChars} char budget...\n`);
 
     // Generate articles sequentially (since Gemini API has rate limits)
     for (let i = 1; i <= count; i++) {

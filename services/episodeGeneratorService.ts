@@ -1,13 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
+import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
 
 /**
    * 🎬 Episode Generator Service v4.6 (QUALITY STORYTELLING UPGRADE)
    *
    * Generates episodes with INTELLIGENT CHARACTER BUDGETING:
-   * - Total budget: 19000 chars (v4.6: REDUCED from 29K to 19K)
-   * - Lede: ~600 chars (v4.6: Adjusted)
+   * - Total budget: ${CHAR_BUDGET} chars (v4.6: REDUCED from 29K to 19K)
+   * - Lede: ~600 chars (v4.6: Adjusted) 
    * - Finale: ~1200 chars (v4.6: Adjusted)
    * - Remaining divided equally among episodes initially
    * - Each episode gets specific char limit in prompt
@@ -15,7 +16,7 @@ import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
    * - NO RETRIES for oversized - just continue with recalculated pool
    *
    * v4.6 CHANGES - ENHANCED QUALITY METRICS for STORYTELLING:
-   * - ✅ REDUCED total budget from 29K to 19K chars (user request)
+   * - ✅ REDUCED total budget from 29K to ${CHAR_BUDGET} chars (user request) 
    * - ✅ ENHANCED quality metrics to target sophisticated storytelling
    * - ✅ ADDED character arc quality checking
    * - ✅ ADDED emotional catharsis verification
@@ -30,20 +31,26 @@ import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
    * - ✅ MOVED platform context to INSTRUCTIONS ONLY
    * - ✅ Story remains CLEAN (no 4th wall breaks about publishing)
    * - ✅ Character perspective: pure narrative, not aware of audience
+   * 
+   * v5.0 FIX: Single Source of Truth via constants/BUDGET_CONFIG.ts
+   * - Removed hardcoded TOTAL_BUDGET
+   * - Now accepts maxChars via constructor parameter
+   * - Falls back to CHAR_BUDGET from central config
    */
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
-  private TOTAL_BUDGET = 19000; // v4.6: REDUCED from 29000 to 19000 chars
+  private TOTAL_BUDGET: number; // Use single source of truth
   private LEDE_BUDGET = 600;  // v4.6: Adjusted for tighter budget
   private FINALE_BUDGET = 1200; // v4.6: Adjusted for tighter budget
   private MAX_RETRIES = 2; // Only for API failures or too-short content
   private CONTEXT_LENGTH = 1200; // v4.1: Increased from 800 to 1200 chars
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, maxChars?: number) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.titleGenerator = new EpisodeTitleGenerator(key);
+    this.TOTAL_BUDGET = maxChars || CHAR_BUDGET; // Use central budget as default
   }
 
   /**
@@ -86,7 +93,7 @@ export class EpisodeGeneratorService {
     
     // Calculate budget allocation
     const budget = this.calculateBudget(episodeOutlines.length);
-    console.log(`\n📊 BUDGET ALLOCATION:`);
+    console.log(`\n📊 BUDGET ALLOCATION [EpisodeGeneratorService]:`);
     console.log(`   Total budget: ${budget.total} chars`);
     console.log(`   Episodes: ${budget.episodeCount} × ${budget.perEpisode} chars each`);
     console.log(`   Lede: ${budget.lede} | Finale: ${budget.finale}`);
