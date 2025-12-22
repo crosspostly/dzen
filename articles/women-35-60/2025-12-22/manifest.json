@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766415745453,
+  "generatedAt": 1766420849923,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -14,15 +14,13 @@
     "maxChars": 19000
   },
   "articleCount": 1,
-  "totalCharacters": 24912,
-  "totalImages": 1,
+  "totalCharacters": 20243,
+  "totalImages": 0,
   "outputPaths": {
     "articles": [
-      "articles/women-35-60/2025-12-22/ya-godami-skryvala-svoy-pozor-no-odin-postupok-raz-1766415745452.txt"
+      "articles/women-35-60/2025-12-22/ya-tridtsat-let-zhila-s-chuvstvom-styda-poka-sluch-1766420849922.txt"
     ],
-    "images": [
-      "articles/women-35-60/2025-12-22/ya-godami-skryvala-svoy-pozor-no-odin-postupok-raz-1766415745452-cover.jpg"
-    ],
+    "images": [],
     "report": "articles/women-35-60/2025-12-22/REPORT.md"
   }
 }

@@ -1,6 +1,6 @@
 # 🎭 ZenMaster v4.0 - Factory Report
 
-Generated: 12/22/2025, 3:02:25 PM
+Generated: 12/22/2025, 4:27:29 PM
 
 ## 📋 Summary
 
@@ -9,29 +9,29 @@ Generated: 12/22/2025, 3:02:25 PM
 | Total Articles | 1 |
 | Successful | 1 ✅ |
 | Failed | 0 ❌ |
-| Total Images | 1 |
-| Total Characters | 24,912 |
-| Total Time | 5.6 min |
-| Avg Time/Article | 337.4s |
+| Total Images | 0 |
+| Total Characters | 20,243 |
+| Total Time | 6.2 min |
+| Avg Time/Article | 373.6s |
 
 ## 🎯 Quality Metrics
 
 | Metric | Value |
 |--------|-------|
-| Avg Quality Score | 85.0/100 |
-| Avg AI Detection | 23.4% |
-| Avg Read Time | 42.0 min |
-| Avg Readability | 85.0/100 |
-| Avg Dialogue | 40.9% |
+| Avg Quality Score | 70.0/100 |
+| Avg AI Detection | 20.9% |
+| Avg Read Time | 34.0 min |
+| Avg Readability | 70.0/100 |
+| Avg Dialogue | 90.3% |
 | Avg Sensory | 0.0/10 |
 
 ## ⚡ Performance
 
 | Metric | Value |
 |--------|-------|
-| Articles/Hour | 10.7 |
-| Images/Hour | 10.7 |
-| API Calls | 16 |
+| Articles/Hour | 9.6 |
+| Images/Hour | 0.0 |
+| API Calls | 15 |
 | Success Rate | 100.0% |
 
 ## ❌ Errors
