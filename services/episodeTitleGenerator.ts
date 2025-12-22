@@ -98,11 +98,11 @@ export class EpisodeTitleGenerator {
       
       // 🔄 ФОЛБЕК: если модель перегружена
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`Trying fallback to gemini-2.5-flash-exp-02-05...`);
+        console.log(`Trying fallback to gemini-2.5-flash-lite...`);
         
         try {
           const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: prompt,
             config: {
               temperature: 0.85,

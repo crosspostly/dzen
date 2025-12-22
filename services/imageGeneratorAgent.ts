@@ -27,7 +27,7 @@ import { PlotBible } from "../types/PlotBible";
 export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
   private config: ImageGenerationConfig;
-  private fallbackModel = "gemini-2.5-flash-exp-02-05";
+  private fallbackModel = "gemini-2.5-flash-lite";
   private primaryModel = "gemini-2.5-flash-image";
 
   constructor(apiKey?: string, config?: Partial<ImageGenerationConfig>) {

@@ -453,13 +453,13 @@ ${slices}
       const errorMessage = (error as Error).message;
       console.error(`Ошибка вызова ${model}:`, errorMessage);
       
-      // 🔄 ФОЛБЕК: если модель перегружена, используем gemini-2.5-flash-exp-02-05
+      // 🔄 ФОЛБЕК: если модель перегружена, используем gemini-2.5-flash-lite
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-exp-02-05...`);
+        console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
         
         try {
           const fallbackResponse = await this.ai.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: prompt,
             config: {
               temperature,

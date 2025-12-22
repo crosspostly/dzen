@@ -151,10 +151,10 @@ RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
         
         // 🔄 ФОЛБЕК: если модель перегружена
         if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-          console.log(`${LOG.LOADING} Trying fallback to gemini-2.5-flash-exp-02-05...`);
+          console.log(`${LOG.LOADING} Trying fallback to gemini-2.5-flash-lite...`);
           
           response = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-exp-02-05", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: prompt,
             config: {
               temperature: 0.95,
