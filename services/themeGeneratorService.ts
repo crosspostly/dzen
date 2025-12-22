@@ -5,7 +5,8 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
-import https from "https";
+import fs from "fs";
+import path from "path";
 
 const LOG = {
   INFO: '🔷',
@@ -18,7 +19,7 @@ const LOG = {
 
 export class ThemeGeneratorService {
   private geminiClient: GoogleGenAI;
-  private csvUrl = "https://raw.githubusercontent.com/crosspostly/dzen/main/top_articles_formatted.csv";
+  private csvPath = path.join(process.cwd(), 'top_articles.csv');
   private cachedThemes: string[] = [];
   private lastFetchTime: number = 0;
   private cacheDuration = 3600000; // 1 hour
@@ -29,38 +30,66 @@ export class ThemeGeneratorService {
   }
 
   /**
-   * Fetch CSV from GitHub and extract themes
+   * Load CSV from local file and extract themes
    */
-  private async fetchThemesFromCSV(): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      https.get(this.csvUrl, (res) => {
-        let data = '';
-        res.on('data', chunk => { data += chunk; });
-        res.on('end', () => {
-          try {
-            const lines = data.split('\n').slice(1); // Skip header
-            const themes = lines
-              .map(line => {
-                const parts = line.split(',');
-                if (parts.length >= 2) {
-                  return parts[1].trim().replace(/^"|"$/g, ''); // Column 2 = title
-                }
-                return '';
-              })
-              .filter(t => t.length > 5)
-              .slice(0, 50); // Get top 50 themes
-            
-            resolve(themes);
-          } catch (error) {
-            reject(error);
+  private async loadThemesFromCSV(): Promise<string[]> {
+    try {
+      console.log(`${LOG.LOADING} Loading themes from: ${this.csvPath}`);
+      console.log(`${LOG.LOADING} File exists: ${fs.existsSync(this.csvPath)}`);
+      
+      if (!fs.existsSync(this.csvPath)) {
+        throw new Error(`CSV file not found at: ${this.csvPath}`);
+      }
+      
+      const content = fs.readFileSync(this.csvPath, 'utf-8');
+      console.log(`${LOG.LOADING} File size: ${content.length} bytes`);
+      console.log(`${LOG.LOADING} File lines: ${content.split('\n').length}`);
+      
+      // Remove BOM if present
+      const cleanContent = content.replace(/^\uFEFF/, '');
+      const lines = cleanContent.split('\n').slice(1); // Skip header
+      
+      const themes = lines
+        .map(line => {
+          // Handle CSV with commas in quoted strings
+          // Format: Место,Просмотры,Тема,Статья,Идея
+          const parts: string[] = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              parts.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
           }
-        });
-      }).on('error', reject);
-    });
+          parts.push(current.trim()); // Add last part
+          
+          if (parts.length >= 3) {
+            return parts[2].trim().replace(/^"|"$/g, ''); // Column 3 = Тема (Theme)
+          }
+          return '';
+        })
+        .filter(t => t.length > 3) // Theme should have some content
+        .filter(t => t !== ''); // Remove empty themes
+      
+      console.log(`${LOG.SUCCESS} Loaded ${themes.length} themes from local CSV`);
+      console.log(`${LOG.LOADING} Sample themes: ${themes.slice(0, 3).join(', ')}`);
+      
+      return themes;
+    } catch (error) {
+      console.error(`${LOG.ERROR} Failed to load local CSV:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Get themes from cache or fetch fresh
+   * Get themes from cache or load fresh
    */
   private async getAvailableThemes(): Promise<string[]> {
     const now = Date.now();
@@ -72,14 +101,14 @@ export class ThemeGeneratorService {
     }
 
     try {
-      console.log(`${LOG.LOADING} Fetching themes from GitHub CSV...`);
-      const themes = await this.fetchThemesFromCSV();
+      console.log(`${LOG.LOADING} Loading themes from local CSV...`);
+      const themes = await this.loadThemesFromCSV();
       this.cachedThemes = themes;
       this.lastFetchTime = now;
-      console.log(`${LOG.SUCCESS} Loaded ${themes.length} real themes from top articles`);
+      console.log(`${LOG.SUCCESS} Loaded ${themes.length} real themes from top_articles.csv`);
       return themes;
     } catch (error) {
-      console.warn(`${LOG.WARN} Failed to fetch CSV, using fallback list`);
+      console.warn(`${LOG.WARN} Failed to load local CSV, using fallback list`);
       return this.getFallbackThemes();
     }
   }
