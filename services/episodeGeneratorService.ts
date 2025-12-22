@@ -176,7 +176,7 @@ export class EpisodeGeneratorService {
       totalEpisodes,
       attempt
     );
-    const model = useFallbackModel ? "gemini-2.5-flash-lite" : "gemini-2.5-flash";
+    const model = useFallbackModel ? "gemini-2.5-flash-lite" : "gemini-3-flash";
 
     try {
       const response = await this.callGemini({
@@ -706,7 +706,7 @@ Readers' experience depends on it.
       try {
         const content = await this.callGemini({
           prompt: refinementPrompt,
-          model: 'gemini-1.5-flash',
+          model: 'gemini-3-flash',
           temperature: 0.8, // Higher temperature for more creative rewriting
         });
 
