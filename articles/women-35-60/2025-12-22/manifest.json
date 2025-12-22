@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766411007237,
+  "generatedAt": 1766411546147,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -13,12 +13,16 @@
     "enablePlotBible": true,
     "maxChars": 19000
   },
-  "articleCount": 0,
-  "totalCharacters": 0,
-  "totalImages": 0,
+  "articleCount": 1,
+  "totalCharacters": 25034,
+  "totalImages": 1,
   "outputPaths": {
-    "articles": [],
-    "images": [],
+    "articles": [
+      "articles/women-35-60/2025-12-22/ves-gorod-zaviduet-moemu-triumfu-no-nikto-ne-vidit-1766411546145.txt"
+    ],
+    "images": [
+      "articles/women-35-60/2025-12-22/ves-gorod-zaviduet-moemu-triumfu-no-nikto-ne-vidit-1766411546145-cover.jpg"
+    ],
     "report": "articles/women-35-60/2025-12-22/REPORT.md"
   }
 }
