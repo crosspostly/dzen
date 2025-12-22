@@ -8,20 +8,21 @@ import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePasspo
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
+import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
   private phase2Service: Phase2AntiDetectionService;
-  private maxChars: number = 29000;
+  private maxChars: number;
   private episodeCount: number = 12;
 
   constructor(apiKey?: string, maxChars?: number) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.contextManager = new ContextManager();
-    this.maxChars = maxChars || 29000;
+    this.maxChars = maxChars || CHAR_BUDGET; // Use central budget as default
     this.phase2Service = new Phase2AntiDetectionService();
     
     // Calculate dynamic episode count
@@ -36,7 +37,7 @@ export class MultiAgentService {
    * 
    * Budget allocation:
    * - Lede: 750 chars (600-900)
-   * - Finale: 1500 chars (1200-1800)
+   * - Finale: 1500 chars (1200-1800) 
    * - Episodes: remaining chars / 3200 (avg episode length)
    * 
    * Constraints:
@@ -44,11 +45,11 @@ export class MultiAgentService {
    * - Maximum: 15 episodes (48K chars for episodes alone)
    */
   private calculateOptimalEpisodeCount(maxChars: number): number {
-    const LEDE_CHARS = 750;
-    const FINALE_CHARS = 1500;
-    const AVG_EPISODE_CHARS = 3200;
-    const MIN_EPISODES = 6;
-    const MAX_EPISODES = 15;
+    const LEDE_CHARS = (BUDGET_ALLOCATIONS.LEDE_BUDGET_MIN + BUDGET_ALLOCATIONS.LEDE_BUDGET_MAX) / 2; // 750 average
+    const FINALE_CHARS = (BUDGET_ALLOCATIONS.FINALE_BUDGET_MIN + BUDGET_ALLOCATIONS.FINALE_BUDGET_MAX) / 2; // 1500 average
+    const AVG_EPISODE_CHARS = BUDGET_ALLOCATIONS.AVG_EPISODE_CHARS_BASE; // 3200 base
+    const MIN_EPISODES = BUDGET_ALLOCATIONS.MIN_EPISODES; // 6
+    const MAX_EPISODES = BUDGET_ALLOCATIONS.MAX_EPISODES; // 15
 
     const remainingChars = maxChars - LEDE_CHARS - FINALE_CHARS;
     const optimalCount = Math.floor(remainingChars / AVG_EPISODE_CHARS);
@@ -411,7 +412,8 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
    */
   private async generateEpisodesSequentially(outline: OutlineStructure): Promise<Episode[]> {
     const episodeGenerator = new EpisodeGeneratorService(
-      process.env.GEMINI_API_KEY || process.env.API_KEY
+      process.env.GEMINI_API_KEY || process.env.API_KEY,
+      this.maxChars // ✅ PASS the budget so episodeGenerator knows the same budget
     );
 
     return await episodeGenerator.generateEpisodesSequentially(

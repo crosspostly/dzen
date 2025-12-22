@@ -36,6 +36,7 @@ export interface ContentFactoryConfig {
   timeoutPerArticle?: number; // ms, default 300000 (5 min)
   enableAntiDetection?: boolean; // Apply AI detection countermeasures
   enablePlotBible?: boolean; // Use PlotBible for consistency
+  maxChars?: number; // Character budget for articles, default 19000
 }
 
 /**
@@ -284,7 +285,8 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     outputFormat: "zen",
     timeoutPerArticle: 300000,
     enableAntiDetection: true,
-    enablePlotBible: true
+    enablePlotBible: true,
+    maxChars: 19000 // ✅ Single Source of Truth: Centralized budget
   },
   "small-batch": {
     articleCount: 5,
@@ -295,7 +297,8 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     outputFormat: "zen",
     timeoutPerArticle: 300000,
     enableAntiDetection: true,
-    enablePlotBible: true
+    enablePlotBible: true,
+    maxChars: 19000 // ✅ Single Source of Truth: Centralized budget
   },
   "medium-batch": {
     articleCount: 25,
@@ -306,7 +309,8 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     outputFormat: "zen",
     timeoutPerArticle: 300000,
     enableAntiDetection: true,
-    enablePlotBible: true
+    enablePlotBible: true,
+    maxChars: 19000 // ✅ Single Source of Truth: Centralized budget
   },
   "large-batch": {
     articleCount: 100,
@@ -317,6 +321,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     outputFormat: "zen",
     timeoutPerArticle: 300000,
     enableAntiDetection: false, // Faster
-    enablePlotBible: true
+    enablePlotBible: true,
+    maxChars: 19000 // ✅ Single Source of Truth: Centralized budget
   }
 };
