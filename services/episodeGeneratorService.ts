@@ -127,7 +127,7 @@ export class EpisodeGeneratorService {
         // Warn if significantly over budget
         if (episode.charCount > charsForThisEpisode * 1.1) {
           console.log(`      ⚠️  Over budget: ${episode.charCount}/${charsForThisEpisode} chars`);
-          console.log(`      📉 Pool adjusted: remaining ${remainingPool} chars for ${episodesLeft - 1} episodes`);
+          console.log(`      📋 Pool adjusted: remaining ${remainingPool} chars for ${episodesLeft - 1} episodes`);
         } else {
           console.log(`      ✅ Generated: ${episode.charCount} chars (on budget)`);
         }
@@ -176,7 +176,7 @@ export class EpisodeGeneratorService {
       totalEpisodes,
       attempt
     );
-    const model = useFallbackModel ? "gemini-2.5-flash-lite" : "gemini-3-flash";
+    const model = useFallbackModel ? "gemini-2.5-flash-lite" : "gemini-3-flash-preview";
 
     try {
       const response = await this.callGemini({
@@ -315,7 +315,7 @@ export class EpisodeGeneratorService {
    What counts as dialogue:
    ✅ "— Откуда ты это знаешь? — спросила я."
    ✅ "— Я не могу сказать."
-   ✅ "— Может быть, я ошиблась?"
+   ✅ "— Может быть, я ошибалась?"
    
    How to achieve 35-40%:
    ✅ Include 6-8 dialogues per episode (not 2, not 10, but 6-8)
@@ -352,7 +352,7 @@ export class EpisodeGeneratorService {
    
    Examples:
    ✅ "Я думала, муж ушёл от скуки. Но оказалось, его искал полицейский."
-   ✅ "Я был уверена, что она моя врагиня. Потом узнала — она спасала меня."
+   ✅ "Я была уверена, что она моя враги. Потом узнала — она спасала меня."
    ✅ "Письмо пришло из мёртвого города. Но почтовая дата была сегодня."
    
    How to create twists:
@@ -360,7 +360,7 @@ export class EpisodeGeneratorService {
    • Build tension: Details that seem to confirm expectation
    • Subvert it: "Но вот тогда я узнала..."
    • Reveal: "Оказывается, он..."
-   • Reader shocked: "A это значит..."
+   • Reader shocked: "А это значит..."
    
    ✅ GOOD (2 clear twists):
    "Я думала, муж ушёл от скуки.            [expectation]
@@ -397,7 +397,7 @@ export class EpisodeGeneratorService {
     — Откуда? — спросила я [AUDIO: голос].
     Её голос дрожал [TOUCH: emotion]. Я смотрела
     на [VISUAL: стекло кабинета]. На улице шёл [VISUAL: снег].
-    Холодный [TOUCH: temperature] снег [VISUAL] в апреле.
+    Хладный [TOUCH: temperature] снег [VISUAL] в апреле.
     Я чувствовала [TOUCH: sensation] ледяную боль [TOUCH: pain] в груди.
     Письмо было в руке [TOUCH: texture]. Бумага пахла [SMELL] старостью."
     
@@ -526,7 +526,7 @@ NOT: Village dialect, NOT: clichés, NOT: "I feel" (SHOW don't tell)
 TONE EXAMPLES:
 ✅ "Я же тебе скажу" (conversational, intimate)
 ✅ "Вот тогда всё и началось" (turning point)
-✅ "Может быть, я ошиблась. Но не думаю" (doubt + conviction)
+✅ "Может быть, я ошибалась. Но не думаю" (doubt + conviction)
 ✅ "И главное — я не знала, что это последний раз" (revelation)
 
 ❌ AVOID:
@@ -536,18 +536,18 @@ TONE EXAMPLES:
 ❌ Explanations: "я была в депрессии потому что" → SHOW: "Я не вставала три дня"
 
 STRUCTURE (alternating pace):
-┌──────────────────────────────────────────┐
+┌─────────────────────────────────────────────────────┐
 │ PACE 1: FAST (Donna) - Action, dialogue  │
 │ PACE 2: DEEP (Rubina) - Psychology      │
 │ PACE 3: FAST (Donna) - Confrontation    │
 │ PACE 4: DEEP (Rubina) - Reflection      │
-└──────────────────────────────────────────┘
+└─────────────────────────────────────────────────────┘
 
 EXAMPLE - SHOWING EMOTION (not telling):
 
 ✅ GOOD (visual, emotional, immersive):
 "Её голос дрожал. Я смотрела на стекло кабинета.
- На улице шёл снег. Холодный апрельский снег.
+ Па улице шёл снег. Холодный апрельский снег.
  Я чувствовала ледяную боль в груди. Письмо было
  в руке. Бумага пахла старостью."
 
@@ -587,7 +587,7 @@ FORMAT:
 PRO TIPS:
 ✅ Use em-dash (—) for dialogue start
 ✅ Natural interruptions: "— Слушай, я не имею... — Но ты..."
-✅ Pauses: "— Я... не знаю. Может быть, я ошиблась?"
+✅ Pauses: "— Я... не знаю. Может быть, я ошибалась?"
 ✅ Short exchanges (3-5 lines max per dialogue block)
 ✅ Mix with action: "— Закрой дверь, — сказала она. Я закрыла."
 
@@ -622,10 +622,10 @@ ${previousContext}
 ✅ Continue as if one paragraph ends, next begins naturally` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📏 CHARACTER LENGTH GUIDELINE
+📋 CHARACTER LENGTH GUIDELINE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ℹ️  GUIDELINE: ${minChars}-${maxChars} characters (with spaces)
+️ℹ️  GUIDELINE: ${minChars}-${maxChars} characters (with spaces)
 
 ✅ QUALITY FIRST: Prioritize story over hitting exact numbers
 ✅ If you need 3500 chars for great storytelling → write 3500
@@ -690,7 +690,7 @@ Readers' experience depends on it.
   }
 
   /**
-   * 🆕 Refine Episode (AutoFix Orchestrator Support)
+   * 🔨 Refine Episode (AutoFix Orchestrator Support)
    * Переписывает эпизод для уменьшения AI-признаков
    * Используется в AutoFix Orchestrator для селективного улучшения
    */
@@ -706,7 +706,7 @@ Readers' experience depends on it.
       try {
         const content = await this.callGemini({
           prompt: refinementPrompt,
-          model: 'gemini-3-flash',
+          model: 'gemini-3-flash-preview',
           temperature: 0.8, // Higher temperature for more creative rewriting
         });
 
