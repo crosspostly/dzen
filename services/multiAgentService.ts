@@ -74,6 +74,7 @@ export class MultiAgentService {
     audience: string;
     maxChars?: number;
     includeImages?: boolean;
+    applyPhase2AntiDetection?: boolean;
   }): Promise<LongFormArticle> {
     const maxChars = params.maxChars || this.maxChars;
     const episodeCount = this.calculateOptimalEpisodeCount(maxChars);
@@ -112,30 +113,14 @@ export class MultiAgentService {
     const title = await this.generateTitle(outline, lede);
     console.log(`✅ Title (Russian): "${title}"`);
     
-    // 🎭 Phase 2: Apply Anti-Detection processing
-    console.log("🎭 Phase 2: Applying anti-detection transformations...");
+    // Assemble full content
     const fullContent = [
       lede,
       ...episodes.map(ep => ep.content),
       finale
     ].join('\n\n');
     
-    const phase2Result = await this.phase2Service.processArticle(
-      title,
-      fullContent,
-      {
-        applyPerplexity: true,
-        applyBurstiness: true,
-        applySkazNarrative: true,
-        enableGatekeeper: true,
-        sanitizeImages: false,
-        verbose: true,
-      }
-    );
-    
-    console.log(`✅ Phase 2 complete! Score: ${phase2Result.adversarialScore.overallScore}/100`);
-    
-    // Assemble article
+    // Create initial article object
     const article: LongFormArticle = {
       id: `article_${Date.now()}`,
       title,
@@ -152,10 +137,38 @@ export class MultiAgentService {
         sceneCount: this.countScenes(lede, episodes, finale),
         dialogueCount: this.countDialogues(lede, episodes, finale),
       },
-      processedContent: phase2Result.processedContent,
-      adversarialScore: phase2Result.adversarialScore,
-      phase2Applied: true
+      processedContent: fullContent,
+      adversarialScore: undefined,
+      phase2Applied: false
     };
+
+    // 🆕 PHASE 2: Anti-Detection Processing
+    if (params.applyPhase2AntiDetection !== false) {
+      console.log('🔄 [Phase 2] Applying anti-detection transformations...');
+      
+      const phase2Service = new Phase2AntiDetectionService();
+      
+      const phase2Result = await phase2Service.processArticle(
+        article.title,
+        article.processedContent!,
+        {
+          applyPerplexity: true,        // повысить энтропию слов
+          applyBurstiness: true,        // варьировать длину предложений
+          applySkazNarrative: true,     // добавить русские частицы
+          enableGatekeeper: true,       // финальная проверка
+          sanitizeImages: true,         // очистить изображения
+          verbose: false
+        },
+        article.episodes.map(ep => ep.imagePath!).filter(Boolean)
+      );
+      
+      // Заменяем контент на обработанный
+      article.processedContent = phase2Result.processedContent;
+      article.adversarialScore = phase2Result.adversarialScore;
+      article.phase2Applied = true;
+      
+      console.log(`✅ [Phase 2] Complete. Adversarial score: ${phase2Result.adversarialScore?.overallScore}/100`);
+    }
 
     console.log(`\n✅ ARTICLE COMPLETE`);
     console.log(`📊 Metrics:`);
