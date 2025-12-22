@@ -15,6 +15,7 @@
  * See: ZENMASTER_COMPLETE_ROADMAP.md for details
  */
 
+import { GoogleGenAI } from "@google/genai";
 import { PerplexityController } from "./perplexityController";
 import { BurstinessOptimizer } from "./burstinessOptimizer";
 import { SkazNarrativeEngine } from "./skazNarrativeEngine";
@@ -58,6 +59,12 @@ export class Phase2AntiDetectionService {
   /**
    * 🆕 PHASE 2 PER-EPISODE: Process single episode content
    * Returns detailed metrics for per-episode tracking
+   * 
+   * v5.2 CRITICAL FIX:
+   * - Calls Gemini API for adversarial score analysis
+   * - Validates JSON parsing with fallback values
+   * - Trims by sentences instead of refining (no extra API calls)
+   * - Improved suggestion prompts for specific feedback
    */
   public async processEpisodeContent(
     content: string,
@@ -132,69 +139,87 @@ export class Phase2AntiDetectionService {
       }
     }
 
-    const finalLength = processedContent.length;
+    let finalLength = processedContent.length;
     
-    // Calculate metrics
-    const perplexityIncrease = ((perplexityScore - 3.0) / 3.0) * 100;
-    const sentenceVariance = burstinessScore;
+    // ✅ BUG FIX #2: TRIM BY SENTENCES (instead of refining)
+    if (targetLength && finalLength > targetLength * 1.15) {
+      if (verbose) {
+        console.log(`      ⚠️  Content exceeds target (${finalLength} > ${targetLength}), trimming by sentences...`);
+      }
+      
+      // Split by sentence boundaries
+      const sentences = processedContent
+        .split(/([.!?]+)/)
+        .reduce((acc: string[], part, i, arr) => {
+          if (i % 2 === 0) {
+            return [...acc, part];
+          } else {
+            return acc.length > 0 ? [...acc.slice(0, -1), acc[acc.length - 1] + part] : acc;
+          }
+        }, [])
+        .filter((s: string) => s.trim().length > 0);
+      
+      let trimmed = '';
+      for (let i = 0; i < sentences.length; i++) {
+        const sentence = sentences[i];
+        const candidate = trimmed ? trimmed + ' ' + sentence : sentence;
+        
+        // Stop if adding this sentence exceeds 95% of target
+        if (candidate.length > targetLength * 0.95) {
+          break;
+        }
+        
+        trimmed = candidate;
+      }
+      
+      // Ensure ends with period
+      processedContent = trimmed.trim();
+      if (!processedContent.endsWith('.') && !processedContent.endsWith('!') && !processedContent.endsWith('?')) {
+        processedContent += '.';
+      }
+      
+      finalLength = processedContent.length;
+      if (verbose) {
+        console.log(`      ✅ Trimmed to ${finalLength} chars (target was ${targetLength})`);
+      }
+    }
+    
+    // ✅ BUG FIX #1: CALL GEMINI API FOR ADVERSARIAL SCORE WITH VALIDATION
+    const analysisResult = await this.analyzeWithGemini(processedContent);
     
     // Calculate breakdown scores
     const breakdown = {
-      perplexity: Math.min(100, Math.max(0, (perplexityScore / 3.4) * 100)),
-      variance: Math.min(100, Math.max(0, (burstinessScore / 7.0) * 100)),
-      colloquialism: skazScore,
-      authenticity: Math.min(100, (skazScore * 0.6 + (burstinessScore / 7.0) * 40))
+      perplexity: analysisResult.perplexity,
+      variance: analysisResult.sentenceVariance,
+      colloquialism: analysisResult.colloquialism,
+      authenticity: analysisResult.emotionalAuthenticity
     };
     
-    // Overall adversarial score (weighted average)
-    const adversarialScore = Math.round(
-      breakdown.perplexity * 0.25 +
-      breakdown.variance * 0.25 +
-      breakdown.colloquialism * 0.3 +
-      breakdown.authenticity * 0.2
-    );
+    // Overall adversarial score
+    const adversarialScore = analysisResult.score;
+    const suggestion = analysisResult.suggestion;
     
-    // Generate suggestion
-    let suggestion = '';
-    if (breakdown.perplexity < 70) suggestion += 'Increase word rarity. ';
-    if (breakdown.variance < 70) suggestion += 'Add more sentence length variance. ';
-    if (breakdown.colloquialism < 70) suggestion += 'Use more colloquial expressions. ';
-    if (breakdown.authenticity < 70) suggestion += 'Enhance emotional authenticity. ';
-    if (!suggestion) suggestion = 'Episode passes AI detection, good quality.';
+    // Calculate metrics for modificationStats
+    const perplexityIncrease = ((perplexityScore - 3.0) / 3.0) * 100;
+    const sentenceVariance = burstinessScore;
     
+    // ✅ STRUCTURED LOGGING WITH VISUAL INDICATORS
     if (verbose) {
-      console.log(`      Processed: ${finalLength} chars`);
-      console.log(`      Adversarial Score: ${adversarialScore}/100`);
-      console.log(`      - Perplexity: ${breakdown.perplexity.toFixed(0)}/100 ${breakdown.perplexity >= 70 ? '✓' : '⚠️'}`);
-      console.log(`      - Sentence Variance: ${breakdown.variance.toFixed(0)}/100 ${breakdown.variance >= 70 ? '✓' : '(medium)'}`);
-      console.log(`      - Colloquialism: ${breakdown.colloquialism.toFixed(0)}/100 ${breakdown.colloquialism >= 70 ? '✓' : '⚠️'}`);
-      console.log(`      - Emotional Authenticity: ${breakdown.authenticity.toFixed(0)}/100 ${breakdown.authenticity >= 70 ? '✓' : '⚠️'}`);
+      const scoreEmoji = adversarialScore >= 80 ? '✅' : adversarialScore >= 60 ? '⚠️ ' : '❌';
+      const scoreBar = this.getScoreBar(adversarialScore);
+      
+      console.log(`\n   ${scoreEmoji} Episode #${episodeNum} Phase 2 Analysis Complete:`);
+      console.log(`      Score: ${adversarialScore}/100 ${scoreBar}`);
+      console.log(``);
+      console.log(`      Breakdown:`);
+      console.log(`      - Perplexity: ${breakdown.perplexity}/100 ${breakdown.perplexity >= 75 ? '✓' : '⚠️'}`);
+      console.log(`      - Sentence Variance: ${breakdown.variance}/100 ${breakdown.variance >= 70 ? '✓' : '⚠️'}`);
+      console.log(`      - Colloquialism: ${breakdown.colloquialism}/100 ${breakdown.colloquialism >= 75 ? '✓' : '⚠️'}`);
+      console.log(`      - Emotional Authenticity: ${breakdown.authenticity}/100 ${breakdown.authenticity >= 70 ? '✓' : '⚠️'}`);
       console.log(``);
       console.log(`      💡 Suggestion: ${suggestion}`);
-    }
-    
-    // If over target length, refine
-    if (targetLength && finalLength > targetLength) {
-      if (verbose) {
-        console.log(`      ⚠️  Over target (${finalLength} > ${targetLength}), triggering refine...`);
-      }
-      
-      // Simple refinement: trim to target length at sentence boundary
-      const sentences = processedContent.split(/([.!?]+\s+)/);
-      let refined = '';
-      for (const sentence of sentences) {
-        if (refined.length + sentence.length <= targetLength) {
-          refined += sentence;
-        } else {
-          break;
-        }
-      }
-      
-      processedContent = refined.trim();
-      
-      if (verbose) {
-        console.log(`      Refine result: ${processedContent.length} chars, score: ${adversarialScore}/100 ✓`);
-      }
+      console.log(``);
+      console.log(`      Content: ${originalLength} chars → ${finalLength} chars`);
     }
 
     return {
@@ -202,13 +227,160 @@ export class Phase2AntiDetectionService {
       adversarialScore,
       modificationStats: {
         originalLength,
-        finalLength: processedContent.length,
+        finalLength,
         perplexityIncrease,
         sentenceVariance
       },
       breakdown,
       suggestion
     };
+  }
+
+  /**
+   * ✅ CALL GEMINI API FOR ADVERSARIAL SCORE ANALYSIS
+   * With JSON validation and fallback values
+   */
+  private async analyzeWithGemini(content: string): Promise<{
+    score: number;
+    perplexity: number;
+    sentenceVariance: number;
+    colloquialism: number;
+    emotionalAuthenticity: number;
+    suggestion: string;
+  }> {
+    // ✅ EXPLICIT NUMERIC TYPE REQUIREMENT IN PROMPT
+    const analysisPrompt = `Analyze the following text for AI detection evasion characteristics. 
+    Respond with VALID JSON ONLY (no markdown, no explanations, just JSON):
+
+{
+  "score": <INTEGER 0-100>,
+  "perplexity": <INTEGER 0-100>,
+  "sentenceVariance": <INTEGER 0-100>,
+  "colloquialism": <INTEGER 0-100>,
+  "emotionalAuthenticity": <INTEGER 0-100>,
+  "suggestion": "SPECIFIC, actionable advice based on weakest areas"
+}
+
+Guidelines for scoring:
+- score: Overall adversarial score (0=obvious AI, 100=completely human)
+- perplexity: Word choice entropy and rarity (0=common words, 100=rare/varied vocabulary)
+- sentenceVariance: Sentence length variation (0=monotonous, 100=highly varied)
+- colloquialism: Use of natural speech patterns (0=formal/academic, 100=very conversational)
+- emotionalAuthenticity: Emotional depth and authenticity (0=robotic, 100=deeply human)
+
+For suggestion: Identify the WEAKEST metric and provide SPECIFIC improvements.
+Example good suggestions:
+- "Paragraph 3 uses 'данная ситуация' which sounds academic. Replace with 'это было совсем...' for more casual tone."
+- "Sentences 2-4 are all 18-20 words. Break one into 6-8 words for more varied rhythm."
+- "Add an emotional reaction in paragraph 2 - reader needs to feel the character's shock or pain here."
+
+Text to analyze:
+${content}`;
+
+    try {
+      const response = await this.callGeminiApi(analysisPrompt);
+      
+      // ✅ PARSE JSON WITH ERROR HANDLING
+      let parsed;
+      try {
+        parsed = JSON.parse(response);
+      } catch (parseError) {
+        console.error(`❌ JSON parse failed. Response (first 300 chars):`, response.substring(0, 300));
+        return this.getDefaultBreakdown();
+      }
+      
+      // ✅ VALIDATE EACH FIELD AS NUMBER
+      const score = this.validateNumber(parsed.score, 'score', 0, 100, 65);
+      const perplexity = this.validateNumber(parsed.perplexity, 'perplexity', 0, 100, 70);
+      const sentenceVariance = this.validateNumber(parsed.sentenceVariance, 'sentenceVariance', 0, 100, 60);
+      const colloquialism = this.validateNumber(parsed.colloquialism, 'colloquialism', 0, 100, 65);
+      const emotionalAuthenticity = this.validateNumber(parsed.emotionalAuthenticity, 'emotionalAuthenticity', 0, 100, 60);
+      const suggestion = typeof parsed.suggestion === 'string' && parsed.suggestion.trim().length > 0 
+        ? parsed.suggestion 
+        : 'Add more emotional depth and natural conversational tone.';
+      
+      return {
+        score,
+        perplexity,
+        sentenceVariance,
+        colloquialism,
+        emotionalAuthenticity,
+        suggestion
+      };
+    } catch (error) {
+      console.error(`❌ Gemini API error:`, (error as Error).message);
+      return this.getDefaultBreakdown();
+    }
+  }
+
+  /**
+   * ✅ VALIDATE NUMBER FIELD (not NaN, within range)
+   */
+  private validateNumber(
+    value: any,
+    fieldName: string,
+    min: number,
+    max: number,
+    defaultValue: number
+  ): number {
+    // Check if it's a valid number
+    if (typeof value !== 'number' || isNaN(value)) {
+      console.warn(`⚠️  ${fieldName} is not a valid number (got ${typeof value}: ${value}), using default: ${defaultValue}`);
+      return defaultValue;
+    }
+    
+    // Clamp to range
+    if (value < min || value > max) {
+      console.warn(`⚠️  ${fieldName} out of range [${min}-${max}] (got ${value}), clamping...`);
+      return Math.max(min, Math.min(max, value));
+    }
+    
+    return value;
+  }
+
+  /**
+   * ✅ VISUAL PROGRESS BAR
+   */
+  private getScoreBar(score: number): string {
+    const filled = Math.floor(score / 10);
+    const empty = 10 - filled;
+    return '[' + '█'.repeat(filled) + '░'.repeat(empty) + ']';
+  }
+
+  /**
+   * ✅ FALLBACK VALUES FOR ERROR CASES
+   */
+  private getDefaultBreakdown(): {
+    score: number;
+    perplexity: number;
+    sentenceVariance: number;
+    colloquialism: number;
+    emotionalAuthenticity: number;
+    suggestion: string;
+  } {
+    console.warn(`⚠️  Returning default Phase 2 breakdown due to API error`);
+    return {
+      score: 65,
+      perplexity: 70,
+      sentenceVariance: 60,
+      colloquialism: 65,
+      emotionalAuthenticity: 60,
+      suggestion: 'Could not analyze due to API error. Default suggestion: Add more dialogue and personal emotional reactions to enhance authenticity.'
+    };
+  }
+
+  /**
+   * ✅ CALL GEMINI API (helper method)
+   */
+  private async callGeminiApi(prompt: string): Promise<string> {
+    const client = new GoogleGenAI({ apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY });
+    
+    const response = await client.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    
+    return response.text.trim();
   }
 
   /**
