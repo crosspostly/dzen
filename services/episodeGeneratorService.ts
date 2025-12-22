@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 
@@ -32,7 +32,7 @@ import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
    * - ✅ Character perspective: pure narrative, not aware of audience
    */
 export class EpisodeGeneratorService {
-  private geminiClient: GoogleGenAI;
+  private geminiClient: GoogleGenerativeAI;
   private titleGenerator: EpisodeTitleGenerator;
   private TOTAL_BUDGET = 19000; // v4.6: REDUCED from 29000 to 19000 chars
   private LEDE_BUDGET = 600;  // v4.6: Adjusted for tighter budget
@@ -42,7 +42,7 @@ export class EpisodeGeneratorService {
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenAI({ apiKey: key });
+    this.geminiClient = new GoogleGenerativeAI({ apiKey: key });
     this.titleGenerator = new EpisodeTitleGenerator(key);
   }
 
@@ -681,4 +681,55 @@ Readers' experience depends on it.
       throw error;
     }
   }
+
+  /**
+   * 🆕 Refine Episode (AutoFix Orchestrator Support)
+   * Переписывает эпизод для уменьшения AI-признаков
+   * Используется в AutoFix Orchestrator для селективного улучшения
+   */
+  async refineEpisode(
+    episode: Episode,
+    refinementPrompt: string,
+    options: { retryCount?: number } = {}
+  ): Promise<Episode> {
+    const retries = options.retryCount || 2;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const content = await this.callGemini({
+          prompt: refinementPrompt,
+          model: 'gemini-1.5-flash',
+          temperature: 0.8, // Higher temperature for more creative rewriting
+        });
+
+        if (!content || content.length < 100) {
+          throw new Error('Generated content too short');
+        }
+
+        // Создаём новый эпизод с обновлённым контентом
+        const refinedEpisode: Episode = {
+          ...episode,
+          content: content.trim(),
+          charCount: content.length,
+          stage: 'humanized' as const,
+          generatedAt: Date.now(),
+        };
+
+        return refinedEpisode;
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Refinement attempt ${attempt} failed:`, lastError.message);
+        
+        if (attempt === retries) {
+          throw new Error(`Failed to refine episode after ${retries} attempts: ${lastError.message}`);
+        }
+      }
+    }
+
+    throw lastError!;
+  }
 }
+
+// Export singleton instance
+export const episodeGeneratorService = new EpisodeGeneratorService();
