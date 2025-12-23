@@ -306,8 +306,15 @@ function generateFeed() {
           // Используем актуальное имя файла изображения
           const dirPath = path.dirname(relativePath);
 
-          // Формируем путь к изображению в published
-          let imagePath = path.join('articles', 'published', dirPath, actualImageFileName);
+          // Определяем где находится файл: в published или в исходной папке
+          let imagePath;
+          if (filePath.includes('published')) {
+            // Файл уже в published, используем путь как есть
+            imagePath = path.join('articles', 'published', dirPath, actualImageFileName);
+          } else {
+            // Файл новый, будет в published после перемещения
+            imagePath = path.join('articles', 'published', dirPath, actualImageFileName);
+          }
 
           // Убираем начальный './' если он есть
           imagePath = imagePath.replace(/^\.\\/, '');
