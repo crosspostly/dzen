@@ -15,9 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write
-      id-token: write
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -30,7 +28,17 @@ jobs:
         node-version: '18'
         cache: 'npm'
 
+    - name: Cache node modules
+      id: cache-node-modules
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-modules-
+
     - name: Install dependencies
+      if: steps.cache-node-modules.outputs.cache-hit != 'true'
       run: npm install
 
     - name: Set environment variables
@@ -41,29 +49,17 @@ jobs:
     - name: Generate RSS feed
       run: node scripts/generate-feed.js
 
-    - name: Create public directory
+    - name: Create public directory and copy feed
       run: |
         mkdir -p public
-        cp feed.xml public/
-        cp index.html public/
-
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: 'public'
-
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+        cp feed.xml public/ || echo "feed.xml not found"
+        cp index.html public/ || echo "index.html not found"
 
     - name: Commit and push if changed
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add feed.xml
+        git add feed.xml public/
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
