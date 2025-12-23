@@ -127,14 +127,15 @@
 
         .label-helper {
             font-size: 11px;
-            color: var(--color-text-secondary);
-            font-weight: 400;
+            color: var(--color-error);
+            font-weight: 600;
             margin-left: var(--space-8);
         }
 
         input[type="text"],
         input[type="number"],
         input[type="password"],
+        input[type="file"],
         textarea,
         select {
             width: 100%;
@@ -145,6 +146,11 @@
             background-color: var(--color-background);
             color: var(--color-text);
             font-family: inherit;
+        }
+
+        input[type="file"] {
+            padding: var(--space-8);
+            cursor: pointer;
         }
 
         textarea {
@@ -284,6 +290,20 @@
             margin-top: var(--space-4);
             font-style: italic;
         }
+
+        .error-text {
+            color: var(--color-error);
+            font-size: 12px;
+            margin-top: var(--space-4);
+            display: none;
+        }
+
+        .image-preview {
+            margin-top: var(--space-12);
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: var(--radius-base);
+        }
     </style>
 </head>
 <body>
@@ -335,6 +355,21 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="imageFile">🖼️ Загрузить изображение
+                        <span class="label-helper">ОБЯЗАТЕЛЬНО!</span>
+                    </label>
+                    <input type="file" id="imageFile" 
+                           accept="image/jpeg,image/png" 
+                           required>
+                    <div class="hint">📏 Рекомендуемый размер: 1200×630px или больше</div>
+                    <div class="hint">📦 Максимум: 5MB, формат: JPG или PNG</div>
+                    <div id="imageError" class="error-text"></div>
+                    <div id="imagePreviewContainer" style="display: none; margin-top: var(--space-12);">
+                        <img id="imagePreview" class="image-preview" alt="Превью изображения">
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="content">📄 Текст статьи</label>
                     <textarea id="content" placeholder="Вставьте текст статьи здесь..."></textarea>
                 </div>
@@ -380,9 +415,19 @@
                         </button>
                     </div>
 
+                    <div class="output-section">
+                        <h3>🖼️ Загруженное изображение</h3>
+                        <div style="background: rgba(33, 128, 141, 0.1); padding: var(--space-16); border-radius: var(--radius-base); margin-bottom: var(--space-16);">
+                            <div id="outputImagePreview" style="max-width: 100%; max-height: 200px; margin-bottom: var(--space-12);"></div>
+                            <button class="btn btn--secondary download-btn" id="downloadImageBtn">
+                                🖼️ Скачать изображение
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="info-box">
                         <strong>✅ Готово!</strong>
-                        <span>Файл готов для загрузки в articles/published/</span>
+                        <span>Загрузите оба файла в articles/published/YYYY/MM/DD/ на GitHub</span>
                     </div>
                 </div>
             </div>
@@ -396,6 +441,10 @@
         const dayInput = document.getElementById('day');
         const categoryInput = document.getElementById('category');
         const imageNameInput = document.getElementById('imageName');
+        const imageFile = document.getElementById('imageFile');
+        const imageError = document.getElementById('imageError');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
         const contentInput = document.getElementById('content');
         const apiKeyInput = document.getElementById('apiKey');
         const convertBtn = document.getElementById('convertBtn');
@@ -407,8 +456,9 @@
         const previewFull = document.getElementById('previewFull');
         const copyBtn = document.getElementById('copyBtn');
         const downloadBtn = document.getElementById('downloadBtn');
+        const downloadImageBtn = document.getElementById('downloadImageBtn');
+        const outputImagePreview = document.getElementById('outputImagePreview');
 
-        // 🔑 Функция для генерации imageName из заголовка
         function generateImageName(title) {
             const translitMap = {
                 'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
@@ -419,7 +469,6 @@
             };
 
             let slug = title.toLowerCase();
-
             for (let [cyrillic, latin] of Object.entries(translitMap)) {
                 slug = slug.replace(new RegExp(cyrillic, 'g'), latin);
             }
@@ -433,6 +482,48 @@
 
             return slug || 'article';
         }
+
+        function validateImageFile(file) {
+            if (!file) {
+                imageError.style.display = 'none';
+                imagePreviewContainer.style.display = 'none';
+                return true;
+            }
+
+            const maxSize = 5 * 1024 * 1024;
+
+            if (file.size > maxSize) {
+                imageError.textContent = `❌ Файл слишком большой: ${(file.size / 1024 / 1024).toFixed(2)}MB (макс 5MB)`;
+                imageError.style.display = 'block';
+                imageFile.value = '';
+                imagePreviewContainer.style.display = 'none';
+                return false;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                imageError.textContent = '❌ Это не изображение! Выберите JPG или PNG';
+                imageError.style.display = 'block';
+                imageFile.value = '';
+                imagePreviewContainer.style.display = 'none';
+                return false;
+            }
+
+            imageError.style.display = 'none';
+            return true;
+        }
+
+        imageFile.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                if (validateImageFile(e.target.files[0])) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        imagePreview.src = event.target.result;
+                        imagePreviewContainer.style.display = 'block';
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            }
+        });
 
         async function generateDescription(content) {
             const apiKey = apiKeyInput.value.trim();
@@ -498,7 +589,7 @@ ${context}
             const year = yearInput.value.trim();
             const month = pad(monthInput.value);
             const day = pad(dayInput.value);
-            let imageName = imageNameInput.value.trim();  // Может быть пустым!
+            let imageName = imageNameInput.value.trim();
             const content = contentInput.value.trim();
             const category = categoryInput.value.trim() || 'lifestory';
 
@@ -507,10 +598,18 @@ ${context}
                 return;
             }
 
-            // 🔑 КЛЮЧЕВАЯ ЛОГИКА: Если imageName не указан → генерируем из title
+            if (!imageFile.files[0]) {
+                showStatus('❌ ОБЯЗАТЕЛЬНО: Загрузите изображение для статьи!', 'error');
+                return;
+            }
+
+            if (!validateImageFile(imageFile.files[0])) {
+                return;
+            }
+
             if (!imageName) {
                 imageName = generateImageName(title);
-                imageNameInput.value = imageName;  // Показываем пользователю
+                imageNameInput.value = imageName;
             }
 
             convertBtn.disabled = true;
@@ -541,6 +640,13 @@ ${content}`;
 
                 previewMatter.textContent = frontMatter;
                 previewFull.textContent = fullContent;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    outputImagePreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
+                };
+                reader.readAsDataURL(imageFile.files[0]);
+
                 previewSection.style.display = 'block';
 
                 showStatus('✅ Конвертация успешна!', 'success');
@@ -561,7 +667,20 @@ ${content}`;
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    showStatus('💾 Файл скачан!', 'success');
+                    showStatus('✅ .md файл скачан!', 'success');
+                };
+
+                downloadImageBtn.onclick = () => {
+                    const file = imageFile.files[0];
+                    const url = URL.createObjectURL(file);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${imageName}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showStatus('✅ Изображение скачано!', 'success');
                 };
             } catch (err) {
                 showStatus('❌ Ошибка: ' + err.message, 'error');
