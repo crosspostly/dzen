@@ -70,7 +70,16 @@ function getPublishedMarkdownFiles(dir) {
   return files;
 }
 
-// Функция для перемещения файла в папку published
+// Функция для копирования файла
+function copyFile(source, destination) {
+  const destDir = path.dirname(destination);
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+  fs.copyFileSync(source, destination);
+}
+
+// Функция для перемещения файла в папку published (копирование + удаление)
 function moveFileToPublished(filePath) {
   try {
     // Проверяем, находится ли файл уже в папке published
@@ -89,9 +98,9 @@ function moveFileToPublished(filePath) {
     // Создаем необходимые подкаталоги в published
     fs.mkdirSync(publishedDir, { recursive: true });
 
-    // Перемещаем файл
-    fs.renameSync(filePath, publishedPath);
-    console.log(`   📁 Перемещено в published: ${relativePath}`);
+    // КОПИРУЕМ файл (не переименовываем!)
+    copyFile(filePath, publishedPath);
+    console.log(`   📁 Скопировано в published: ${relativePath}`);
 
     // Также перемещаем связанное изображение, если оно существует
     const fileDir = path.dirname(filePath);
@@ -122,8 +131,39 @@ function moveFileToPublished(filePath) {
           const publishedImageFile = path.join(publishedDir, file);
 
           if (fs.existsSync(imageFile)) {
-            fs.renameSync(imageFile, publishedImageFile);
-            console.log(`   🖼️  Перемещено изображение в published: ${file}`);
+            copyFile(imageFile, publishedImageFile);
+            console.log(`   🖼️  Скопировано изображение в published: ${file}`);
+          }
+        }
+      }
+    }
+
+    // ТЕПЕРЬ УДАЛЯЕМ исходные файлы
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`   🗑️  Удален исходный файл: ${relativePath}`);
+    } catch (err) {
+      console.warn(`   ⚠️  Не удалось удалить ${relativePath}: ${err.message}`);
+    }
+
+    // Удаляем связанные изображения
+    for (const file of filesInDir) {
+      const fileExt = path.extname(file).toLowerCase();
+      if (imageExtensions.includes(fileExt)) {
+        const baseName = path.basename(file, fileExt);
+        const originalBaseName = fileName;
+
+        if (baseName.startsWith(originalBaseName) ||
+            originalBaseName.startsWith(baseName) ||
+            baseName.includes(originalBaseName)) {
+          const imageFile = path.join(fileDir, file);
+          if (fs.existsSync(imageFile)) {
+            try {
+              fs.unlinkSync(imageFile);
+              console.log(`   🗑️  Удалено изображение: ${file}`);
+            } catch (err) {
+              console.warn(`   ⚠️  Не удалось удалить ${file}: ${err.message}`);
+            }
           }
         }
       }
@@ -194,7 +234,7 @@ function generateFeed() {
     generator: 'ZenMaster RSS Generator'
   });
 
-  // Получаем все markdown файлы (ТОЛЬКО новые, не из published)
+  // Получаем все markdown файлы (ТОЛЬКО НОВЫЕ, не из published)
   const markdownFiles = getMarkdownFiles('./articles');
   console.log(`Найдено ${markdownFiles.length} новых markdown файлов`);
 
