@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm install && node scripts/generate-feed.js",
+  "outputDirectory": "public",
+  "public": false,
+  "rewrites": [
+    {
+      "source": "/feed.xml",
+      "destination": "/feed.xml"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/index.html"
+    }
+  ]
+}
