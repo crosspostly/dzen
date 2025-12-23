@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convert TXT to MD</title>
+    <title>Convert TXT to MD + Upload</title>
     <style>
         :root {
             --color-white: rgba(255, 255, 255, 1);
@@ -308,13 +308,21 @@
 </head>
 <body>
     <div class="container">
-        <h1>📝 Конвертер TXT → MD</h1>
-        <p class="subtitle">Для Яндекс Дзена через GitHub RSS</p>
+        <h1>📝 Конвертер TXT → MD + GitHub Upload</h1>
+        <p class="subtitle">Автоматическая публикация на GitHub и генерация RSS</p>
 
         <div class="grid">
             <!-- INPUT CARD -->
             <div class="card">
                 <h2>1️⃣ Исходные данные</h2>
+
+                <div class="form-group">
+                    <label for="ghToken">🔑 GitHub Token
+                        <span class="label-helper">ОБЯЗАТЕЛЬНО!</span>
+                    </label>
+                    <input type="password" id="ghToken" placeholder="ghp_...">
+                    <div class="hint">📌 Нужен для загрузки файлов на GitHub (scope: repo)</div>
+                </div>
 
                 <div class="form-group">
                     <label for="title">📌 Заголовок статьи</label>
@@ -358,9 +366,7 @@
                     <label for="imageFile">🖼️ Загрузить изображение
                         <span class="label-helper">ОБЯЗАТЕЛЬНО!</span>
                     </label>
-                    <input type="file" id="imageFile" 
-                           accept="image/jpeg,image/png" 
-                           required>
+                    <input type="file" id="imageFile" accept="image/jpeg,image/png" required>
                     <div class="hint">📏 Рекомендуемый размер: 1200×630px или больше</div>
                     <div class="hint">📦 Максимум: 5MB, формат: JPG или PNG</div>
                     <div id="imageError" class="error-text"></div>
@@ -381,7 +387,7 @@
                 </div>
 
                 <button class="btn btn--primary btn--full" id="convertBtn">
-                    🚀 Конвертировать
+                    🚀 Конвертировать и загрузить на GitHub
                 </button>
             </div>
 
@@ -426,8 +432,8 @@
                     </div>
 
                     <div class="info-box">
-                        <strong>✅ Готово!</strong>
-                        <span>Загрузите оба файла в articles/published/YYYY/MM/DD/ на GitHub</span>
+                        <strong>✅ Успешно загружено на GitHub!</strong>
+                        <span id="githubLink" style="display: block; margin-top: var(--space-8);"></span>
                     </div>
                 </div>
             </div>
@@ -435,6 +441,7 @@
     </div>
 
     <script>
+        const ghTokenInput = document.getElementById('ghToken');
         const titleInput = document.getElementById('title');
         const yearInput = document.getElementById('year');
         const monthInput = document.getElementById('month');
@@ -458,6 +465,7 @@
         const downloadBtn = document.getElementById('downloadBtn');
         const downloadImageBtn = document.getElementById('downloadImageBtn');
         const outputImagePreview = document.getElementById('outputImagePreview');
+        const githubLink = document.getElementById('githubLink');
 
         function generateImageName(title) {
             const translitMap = {
@@ -584,7 +592,70 @@ ${context}
             statusEl.className = 'status show status--' + type;
         }
 
+        async function uploadToGitHub(token, mdContent, imageBitArray, fileName, imageName, year, month, day) {
+            const owner = 'crosspostly';
+            const repo = 'dzen';
+            const dirPath = `articles/published/${year}/${month}/${day}`;
+
+            try {
+                // 1️⃣ Загружаем .md файл
+                const mdPath = `${dirPath}/${imageName}.md`;
+                const mdBase64 = btoa(unescape(encodeURIComponent(mdContent)));
+
+                const mdResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${mdPath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `📝 Article: ${fileName}`,
+                        content: mdBase64,
+                        branch: 'main'
+                    })
+                });
+
+                if (!mdResponse.ok) {
+                    throw new Error(`Ошибка загрузки MD: ${mdResponse.statusText}`);
+                }
+
+                showStatus('✅ .md файл загружен на GitHub', 'success');
+
+                // 2️⃣ Загружаем изображение
+                const imagePath = `${dirPath}/${imageName}.jpg`;
+                const imageBase64 = imageBitArray;
+
+                const imageResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${imagePath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `🖼️ Image: ${imageName}`,
+                        content: imageBase64,
+                        branch: 'main'
+                    })
+                });
+
+                if (!imageResponse.ok) {
+                    throw new Error(`Ошибка загрузки изображения: ${imageResponse.statusText}`);
+                }
+
+                showStatus('✅ Оба файла успешно загружены на GitHub!', 'success');
+                
+                const githubUrl = `https://github.com/${owner}/${repo}/tree/main/${dirPath}`;
+                githubLink.innerHTML = `<a href="${githubUrl}" target="_blank" style="color: var(--color-primary);">📂 Открыть папку на GitHub →</a>`;
+
+                return true;
+            } catch (error) {
+                showStatus(`❌ Ошибка GitHub: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
         convertBtn.addEventListener('click', async () => {
+            const ghToken = ghTokenInput.value.trim();
             const title = titleInput.value.trim();
             const year = yearInput.value.trim();
             const month = pad(monthInput.value);
@@ -592,18 +663,24 @@ ${context}
             let imageName = imageNameInput.value.trim();
             const content = contentInput.value.trim();
             const category = categoryInput.value.trim() || 'lifestory';
+            const imageFileObj = imageFile.files[0];
+
+            if (!ghToken) {
+                showStatus('❌ GitHub Token обязателен!', 'error');
+                return;
+            }
 
             if (!title || !content) {
                 showStatus('❌ Заполните заголовок и текст статьи', 'error');
                 return;
             }
 
-            if (!imageFile.files[0]) {
-                showStatus('❌ ОБЯЗАТЕЛЬНО: Загрузите изображение для статьи!', 'error');
+            if (!imageFileObj) {
+                showStatus('❌ ОБЯЗАТЕЛЬНО: Загрузите изображение!', 'error');
                 return;
             }
 
-            if (!validateImageFile(imageFile.files[0])) {
+            if (!validateImageFile(imageFileObj)) {
                 return;
             }
 
@@ -622,7 +699,6 @@ ${context}
 
                 const date = `${year}-${month}-${day}`;
                 const imagePath = `${imageName}.jpg`;
-
                 const dirPath = `${year}/${month}/${day}`;
                 const imageUrl = `https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/${dirPath}/${imagePath}`;
 
@@ -636,20 +712,39 @@ category: "${category}"
 
 ${content}`;
 
-                const fullContent = frontMatter;
-
                 previewMatter.textContent = frontMatter;
-                previewFull.textContent = fullContent;
+                previewFull.textContent = frontMatter;
 
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     outputImagePreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
                 };
-                reader.readAsDataURL(imageFile.files[0]);
+                reader.readAsDataURL(imageFileObj);
 
                 previewSection.style.display = 'block';
 
-                showStatus('✅ Конвертация успешна!', 'success');
+                // Преобразуем изображение в base64 для GitHub API
+                const imageReader = new FileReader();
+                imageReader.onload = async (event) => {
+                    const imageBase64 = event.target.result.split(',')[1];
+
+                    // Загружаем на GitHub
+                    const uploadSuccess = await uploadToGitHub(
+                        ghToken,
+                        frontMatter,
+                        imageBase64,
+                        title,
+                        imageName,
+                        year,
+                        month,
+                        day
+                    );
+
+                    if (uploadSuccess) {
+                        showStatus('✅ Файлы успешно загружены! Запусти generate-feed.js для публикации.', 'success');
+                    }
+                };
+                imageReader.readAsDataURL(imageFileObj);
 
                 copyBtn.onclick = () => {
                     navigator.clipboard.writeText(frontMatter).then(() => {
@@ -658,7 +753,7 @@ ${content}`;
                 };
 
                 downloadBtn.onclick = () => {
-                    const blob = new Blob([fullContent], { type: 'text/markdown' });
+                    const blob = new Blob([frontMatter], { type: 'text/markdown' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -667,12 +762,10 @@ ${content}`;
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    showStatus('✅ .md файл скачан!', 'success');
                 };
 
                 downloadImageBtn.onclick = () => {
-                    const file = imageFile.files[0];
-                    const url = URL.createObjectURL(file);
+                    const url = URL.createObjectURL(imageFileObj);
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = `${imageName}.jpg`;
@@ -680,8 +773,8 @@ ${content}`;
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    showStatus('✅ Изображение скачано!', 'success');
                 };
+
             } catch (err) {
                 showStatus('❌ Ошибка: ' + err.message, 'error');
             } finally {
@@ -690,7 +783,7 @@ ${content}`;
         });
 
         contentInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
+            if (e.key === 'Enter' && e.ctrlValue) {
                 convertBtn.click();
             }
         });
