@@ -731,6 +731,30 @@ ${sensoryHints}
    ✅ "Почему я молчала?" [question]
    ❌ "Эта история началась..." [description - BAD]
 
+❌ FORBIDDEN (profanity & vulgarity ABSOLUTELY PROHIBITED):
+   ❌ NO profanity, vulgarisms, or obscene language of ANY kind
+   ❌ NO street slang or crude expressions
+   ❌ This is INTELLIGENT writing for educated audience
+   
+   ✅ USE LITERARY, ELEGANT RUSSIAN:
+      - Express emotions through actions: "Я затаила злость. Дыхание сбилось."
+      - Use refined vocabulary: "ужасный", "отвратительный", "восхитительный"
+      - Choose cultured interjections: "Боже мой", "Господи", "Чёрт побери"
+      - Maintain dignified, confessional tone (like letter to trusted friend)
+      
+   ✅ EXAMPLES OF PROPER STYLE:
+      ❌ "...блять..." (vulgar, street language)
+      ✅ "...чёрт побери, как я была слепа..." (cultured, literary)
+      
+      ❌ "...пиздец какой-то..." (crude, unacceptable)
+      ✅ "...это была катастрофа..." (intelligent, descriptive)
+      
+      ❌ "...ахуенно выглядела..." (vulgar slang)
+      ✅ "...выглядела потрясающе..." (refined expression)
+      
+      ❌ "...блядский дождь..." (profanity)
+      ✅ "...проклятый дождь..." (literary equivalent)
+
 🎯 TASK: Write LEDE (opening) - 600-900 RUSSIAN characters:
 
 Hook: "${firstEpisode.hookQuestion}"
@@ -860,6 +884,45 @@ NOT A "HAPPY ENDING" - THIS IS REAL LIFE:
    ❌ "Жизнь продолжается" (generic)
    ❌ "Я простила и забыла" (unrealistic)
    ❌ "Теперь я знаю, что надо..." (sermon/lesson)
+
+❌ FORBIDDEN (profanity & vulgarity ABSOLUTELY PROHIBITED):
+   ❌ NO profanity, vulgarisms, or obscene language of ANY kind
+   ❌ NO street slang or crude expressions
+   ❌ This is INTELLIGENT writing for educated audience
+   
+   ✅ USE LITERARY, ELEGANT RUSSIAN:
+      - Express emotions through actions: "Я затаила злость. Дыхание сбилось."
+      - Use refined vocabulary: "ужасный", "отвратительный", "восхитительный"
+      - Choose cultured interjections: "Боже мой", "Господи", "Чёрт побери"
+      - Maintain dignified, confessional tone (like letter to trusted friend)
+      
+   ✅ EXAMPLES OF PROPER STYLE:
+      ❌ "...блять..." (vulgar, street language)
+      ✅ "...чёрт побери, как я была слепа..." (cultured, literary)
+      
+      ❌ "...пиздец какой-то..." (crude, unacceptable)
+      ✅ "...это была катастрофа..." (intelligent, descriptive)
+      
+      ❌ "...ахуенно выглядела..." (vulgar slang)
+      ✅ "...выглядела потрясающе..." (refined expression)
+      
+      ❌ "...блядский дождь..." (profanity)
+      ✅ "...проклятый дождь..." (literary equivalent)
+
+⚠️ GRAPHIC FORMATTING (v5.5 spec):
+   - Include ONE of these signature elements (author's final word):
+     a) ЗАГЛАВНЫМИ: "Я НЕ ЗНАЮ, ПРАВИЛЬНА ЛИ Я БЫЛА." (2-3 words max)
+     b) Mноготочия: "Я сидела и думала... Что теперь?"
+     c) Вопрос к читателю: "А вы бы простили?"
+     d) Курсив (опционально): *Прошло три года. Я до сих пор не знаю.*
+   
+   - Use THREE different punctuation marks per paragraph minimum:
+     Example: "Что делать? Не знала... Решила — уйти."
+   
+   - End with ONE signature phrase that feels personal:
+     "А вы бы поступили иначе?"
+     "Это всё, что я могу рассказать."
+     "Может быть, я ошибалась. Но не думаю."
 
 🎯 TASK: Write FINALE - 1200-1800 RUSSIAN characters:
 

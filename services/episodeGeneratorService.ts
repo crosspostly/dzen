@@ -656,6 +656,50 @@ REAL WORLD DETAILS (urban, modern, contemporary):
 - "Деревенская изба" (village hut)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📢 VOCAL READABILITY (FOR AUDIO VERSION - IMPORTANT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your text will be READ ALOUD. Follow these rules:
+
+✅ AVOID DIFFICULT CONSTRUCTIONS:
+   - Complex participles: "говоривший" → "который говорил"
+   - Many prefixes: "пре-", "super-" → use simple words
+   - Long compounds: "самоуправленческий" → "самоуправление"
+   - Rare archaisms: "селение", "жительство"
+
+✅ TEST BY READING ALOUD:
+   - Read paragraph aloud. If you stumble > 2 times → SIMPLIFY
+   - Sentence should be speakable in ONE breath
+   - Rhythm: mix short and long, but max 20-25 words per sentence
+
+✅ FORBIDDEN LEXICON (profanity ABSOLUTELY PROHIBITED):
+   ❌ NO profanity, vulgarisms, or obscene language of ANY kind
+   ❌ NO street slang or crude expressions
+   ❌ This is INTELLIGENT writing with LITERARY RUSSIAN
+   
+   ✅ USE CULTURED EXPRESSIONS:
+      - Express emotions through actions and sensations
+      - Use refined vocabulary: "ужасный", "отвратительный", "восхитительный"
+      - Choose literary interjections: "Боже мой", "Господи", "Чёрт побери"
+      - Maintain dignified, confessional tone
+      
+   ✅ EXAMPLES:
+      ❌ "...блять..." (street language, vulgar)
+      ✅ "...чёрт побери, как я была слепа..." (cultured, literary)
+      
+      ❌ "...пиздец какой-то..." (unacceptable)
+      ✅ "...это была катастрофа..." (intelligent, descriptive)
+
+✅ GOOD (easy to speak):
+"Я села. Взяла письмо. Прочитала. И всё."
+(Short. Clear. Natural rhythm.)
+
+❌ BAD (tongue-twister):
+"После того как я получила данное корреспонденциарное отправление,
+ я, пребывая в состоянии неопределённости, приступила к его осмотру."
+(Difficult words, nested structure, unnatural.)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📖 DIALOGUE (REALISTIC RUSSIAN)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
