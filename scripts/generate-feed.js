@@ -255,8 +255,8 @@ function generateFeed() {
 
       console.log(`✅ Добавлена статья: ${frontmatter.title}`);
 
-      // Не перемещаем файлы, оставляем их в текущем месте
-      // moveFileToPublished(filePath);
+      // Перемещаем файл в папку published после успешной обработки
+      moveFileToPublished(filePath);
 
     } catch (error) {
       console.error(`❌ Ошибка при обработке файла ${filePath}:`, error.message);

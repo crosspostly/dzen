@@ -31,7 +31,7 @@ async function generateDescription(content) {
   if (!apiKey) {
     console.warn('⚠️ GEMINI_API_KEY не установлен, используем fallback...');
     // Fallback: первые 150 символов
-    return content.substring(0, 150).replace(/\n/g, ' ').replace(/"/g, '\\'') + '...';
+    return content.substring(0, 150).replace(/\n/g, ' ').replace(/"/g, "'") + '...';
   }
   
   try {
@@ -67,10 +67,10 @@ ${context}
       throw new Error('No description in response');
     }
     
-    return description.replace(/"/g, '\\'');
+    return description.replace(/"/g, "'");
   } catch (err) {
     console.warn(`⚠️ Ошибка Gemini: ${err.message}, используем fallback...`);
-    return content.substring(0, 150).replace(/\n/g, ' ').replace(/"/g, '\\'') + '...';
+    return content.substring(0, 150).replace(/\n/g, ' ').replace(/"/g, "'") + '...';
   }
 }
 
