@@ -14,7 +14,8 @@ dist-ssr
 
 # ZenMaster v4.0 Factory Output
 output/
-articles/*
+# Allow generated articles to be committed
+# articles/*
 !articles/published/
 
 # Test files
