@@ -42,6 +42,34 @@ function getMarkdownFiles(dir) {
   return files;
 }
 
+// Функция для получения всех markdown файлов из папки published (для полноты ленты)
+function getPublishedMarkdownFiles(dir) {
+  const files = [];
+  
+  if (!fs.existsSync(dir)) {
+    return files;
+  }
+  
+  const items = fs.readdirSync(dir);
+
+  for (const item of items) {
+    if (item === '.gitkeep') {
+      continue;
+    }
+
+    const fullPath = path.join(dir, item);
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      files.push(...getPublishedMarkdownFiles(fullPath));
+    } else if (path.extname(item) === '.md' || path.extname(item) === '.markdown') {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
 // Функция для перемещения файла в папку published
 function moveFileToPublished(filePath) {
   try {
@@ -114,9 +142,9 @@ function markdownToHtml(md) {
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
     .replace(/^# (.*$)/gim, '<h1>$1</h1>')
     // Жирный текст
-    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
     // Курсив
-    .replace(/\*(.*)\*/gim, '<em>$1</em>')
+    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
     // Параграфы
     .replace(/\n\n/gim, '</p><p>')
     .replace(/\n/gim, '<br>')
@@ -148,12 +176,19 @@ function generateFeed() {
     generator: 'ZenMaster RSS Generator'
   });
 
-  // Получаем все markdown файлы
+  // Получаем все markdown файлы (ТОЛЬКО новые, не из published)
   const markdownFiles = getMarkdownFiles('./articles');
-  console.log(`Найдено ${markdownFiles.length} markdown файлов`);
+  console.log(`Найдено ${markdownFiles.length} новых markdown файлов`);
+
+  // Получаем опубликованные файлы (они уже обработаны)
+  const publishedFiles = getPublishedMarkdownFiles('./articles/published');
+  console.log(`Найдено ${publishedFiles.length} опубликованных статей`);
+
+  // Объединяем: сначала новые, потом опубликованные
+  const allFiles = [...markdownFiles, ...publishedFiles];
 
   // Проходимся по каждому файлу
-  for (const filePath of markdownFiles) {
+  for (const filePath of allFiles) {
     try {
       const fileContent = fs.readFileSync(filePath, 'utf8');
       const parsed = matter(fileContent);
@@ -168,7 +203,7 @@ function generateFeed() {
       }
 
       // Формируем URL для статьи и изображения
-      let relativePath = path.relative('./articles', filePath); // Обновлено с content/articles на articles
+      let relativePath = path.relative('./articles', filePath);
       // Убираем published из пути для формирования корректного URL
       relativePath = relativePath.replace('published/', '');
 
@@ -217,7 +252,7 @@ function generateFeed() {
           let imagePath = path.join('articles', 'published', dirPath, actualImageFileName);
 
           // Убираем начальный './' если он есть
-          imagePath = imagePath.replace(/^\.\//, '');
+          imagePath = imagePath.replace(/^\.\\/, '');
 
           // Формируем URL для изображения на GitHub (а не на GitHub Pages)
           // Пример: https://raw.githubusercontent.com/username/repository/main/articles/published/path/image.jpg
@@ -248,8 +283,10 @@ function generateFeed() {
 
       console.log(`✅ Добавлена статья: ${frontmatter.title}`);
 
-      // Перемещаем файл в папку published после успешной обработки
-      moveFileToPublished(filePath);
+      // Перемещаем ТОЛЬКО новые файлы в папку published после успешной обработки
+      if (!filePath.includes('published')) {
+        moveFileToPublished(filePath);
+      }
 
     } catch (error) {
       console.error(`❌ Ошибка при обработке файла ${filePath}:`, error.message);
