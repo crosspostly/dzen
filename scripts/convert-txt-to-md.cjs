@@ -2,7 +2,7 @@
 
 /**
  * Скрипт конвертации TXT → Markdown с front-matter
- * Используется для создания файлов статей для Яндекс Дзена
+ * КРИТИЧНО: imageName обязателен! Каждая статья должна иметь уникальное имя для изображения
  */
 
 const fs = require('fs');
@@ -12,16 +12,50 @@ const path = require('path');
 const args = process.argv.slice(2);
 
 if (args.length < 3) {
-  console.error('❌ Использование: node convert-txt-to-md.cjs <title> <content-file> <image-name> [year] [month] [day]');
+  console.error('❌ ОШИБКА: imageName обязателен!');
+  console.error('');
+  console.error('Использование: node convert-txt-to-md.cjs <title> <content-file> <image-name> [year] [month] [day] [category]');
+  console.error('');
+  console.error('Параметры:');
+  console.error('  title         - Заголовок статьи');
+  console.error('  content-file  - Файл с текстом статьи');
+  console.error('  image-name    - ОБЯЗАТЕЛЬНО! Уникальное имя для изображения (без расширения)');
+  console.error('  year          - Год (по умолчанию текущий)');
+  console.error('  month         - Месяц 1-12 (по умолчанию текущий)');
+  console.error('  day           - День 1-31 (по умолчанию текущий)');
+  console.error('  category      - lifestory|article|story|experience (по умолчанию: lifestory)');
+  console.error('');
+  console.error('Примеры:');
+  console.error('  node scripts/convert-txt-to-md.cjs "Мой стыд" article.txt fear-story');
+  console.error('  node scripts/convert-txt-to-md.cjs "История успеха" content.txt success-story 2025 12 21 lifestory');
   process.exit(1);
 }
 
 const title = args[0];
 const contentFile = args[1];
-const imageName = args[2];
-const year = args[3] || new Date().getFullYear();
-const month = String(args[4] || new Date().getMonth() + 1).padStart(2, '0');
-const day = String(args[5] || new Date().getDate()).padStart(2, '0');
+const imageName = args[2];  // ❌ КРИТИЧНО - ОБЯЗАТЕЛЕН!
+
+const now = new Date();
+const year = args[3] || now.getFullYear();
+const month = String(args[4] || now.getMonth() + 1).padStart(2, '0');
+const day = String(args[5] || now.getDate()).padStart(2, '0');
+const category = args[6] || 'lifestory';
+
+// ВАЛИДАЦИЯ imageName
+if (!imageName || imageName.trim() === '') {
+  console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: imageName не может быть пустым!');
+  console.error('   Каждая статья должна иметь уникальное имя для изображения.');
+  console.error('   Пример: fear-story, success-story, first-love, и т.д.');
+  process.exit(1);
+}
+
+// ВАЛИДАЦИЯ категории
+const validCategories = ['lifestory', 'article', 'story', 'experience'];
+if (!validCategories.includes(category)) {
+  console.error(`❌ Неправильная категория: "${category}"`);
+  console.error(`   Валидные категории: ${validCategories.join(', ')}`);
+  process.exit(1);
+}
 
 // Проверяем, существует ли файл с контентом
 if (!fs.existsSync(contentFile)) {
@@ -35,15 +69,15 @@ const content = fs.readFileSync(contentFile, 'utf8');
 // Формируем дату
 const date = `${year}-${month}-${day}`;
 
-// Формируем имя файла изображения
-const imageFileName = imageName ? `${imageName}.jpg` : 'cover.jpg';
+// Формируем имя файла изображения (обязательно с расширением)
+const imageFileName = `${imageName}.jpg`;
 
 // Формируем GitHub raw URL для изображения
-// https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/2025/12/21/image.jpg
+// https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/2025/12/21/fear-story.jpg
 const dirPath = `${year}/${month}/${day}`;
 const imageUrl = `https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/${dirPath}/${imageFileName}`;
 
-// Функция для экранирования YAML строк
+// Функция для эскраниирования YAML строк
 function escapeYaml(str) {
   if (!str) return '""';
   if (str.includes('"') || str.includes('\n')) {
@@ -52,13 +86,16 @@ function escapeYaml(str) {
   return '"' + str + '"';
 }
 
+// Генерируем краткое описание из первых 150 символов
+const description = content.substring(0, 150).replace(/\n/g, ' ').trim() + '...';
+
 // Создаем front-matter
 const frontMatter = `---
 title: ${escapeYaml(title)}
 date: ${date}
-description: ${escapeYaml(content.substring(0, 150).replace(/\n/g, ' '))}
+description: ${escapeYaml(description)}
 image: "${imageUrl}"
-category: "news"
+category: "${category}"
 ---
 `;
 
@@ -72,10 +109,29 @@ const outputPath = path.join(process.cwd(), outputFileName);
 // Записываем файл
 try {
   fs.writeFileSync(outputPath, markdownContent, 'utf8');
-  console.log(`✅ Файл успешно создан: ${outputFileName}`);
-  console.log(`📝 Заголовок: ${title}`);
-  console.log(`🖼️  Изображение URL: ${imageUrl}`);
-  console.log(`📋 Front-matter с GitHub raw URL готов!`);
+  
+  console.log('\n' + '='.repeat(70));
+  console.log('✅ УСПЕШНО: Markdown файл создан!');
+  console.log('='.repeat(70));
+  console.log(`📄 Файл: ${outputFileName}`);
+  console.log(`📌 Заголовок: ${title}`);
+  console.log(`📅 Дата: ${date}`);
+  console.log(`🖼️  Изображение: ${imageFileName}`);
+  console.log(`🌐 GitHub RAW URL: ${imageUrl}`);
+  console.log(`📂 Категория: ${category}`);
+  console.log('');
+  console.log('⚡ Инструкции:');
+  console.log(`1. Загрузите файл "${outputFileName}" в articles/published/${dirPath}/`);
+  console.log(`2. Загрузите изображение "${imageFileName}" в articles/published/${dirPath}/`);
+  console.log(`3. Сделайте git push на GitHub`);
+  console.log(`4. GitHub Actions автоматически обновит RSS`);
+  console.log(`5. Яндекс Дзен парсит RSS и публикует статью`);
+  console.log('');
+  console.log('⚠️  ВАЖНО:');
+  console.log(`   • Изображение ДОЛЖНО быть названо ${imageFileName}`);
+  console.log(`   • Путь должен быть: articles/published/${dirPath}/${imageFileName}`);
+  console.log(`   • RSS будет ссылаться на: ${imageUrl}`);
+  console.log('='.repeat(70) + '\n');
 } catch (err) {
   console.error(`❌ Ошибка при создании файла: ${err.message}`);
   process.exit(1);
