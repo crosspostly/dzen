@@ -13,6 +13,10 @@ on:
 jobs:
   generate-feed:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     
     steps:
     - name: Checkout repository
@@ -31,11 +35,17 @@ jobs:
 
     - name: Set environment variables
       run: |
-        echo "BASE_URL=https://${{ github.repository_owner }}.github.io" >> $GITHUB_ENV
-        echo "SITE_URL=https://${{ github.repository_owner }}.github.io" >> $GITHUB_ENV
+        echo "BASE_URL=https://${{ github.repository_owner }}.github.io/dzen" >> $GITHUB_ENV
+        echo "SITE_URL=https://${{ github.repository_owner }}.github.io/dzen" >> $GITHUB_ENV
 
     - name: Generate RSS feed
       run: node scripts/generate-feed.js
+
+    - name: Create public directory
+      run: |
+        mkdir -p public
+        cp feed.xml public/
+        cp index.html public/
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -43,7 +53,11 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: '.'
+        path: 'public'
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
 
     - name: Commit and push if changed
       run: |
