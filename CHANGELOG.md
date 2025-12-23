@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] - v4.9+ Development
+## [Unreleased] - v5.4.2+ Development
+
+### 🔥 Fixed
+- **v5.4.2 Image Format Auto-Detection** (Issue #83)
+  - Fixed "Invalid image magic bytes" error when Gemini returns PNG instead of JPEG
+  - Implemented automatic format detection using magic bytes inspection
+  - Added support for PNG (`89504E47`), JPEG (`FFD8FF`), WebP (`52494646...57454250`)
+  - Decodes first 20 bytes to detect format before Canvas processing
+  - Created comprehensive unit tests (4/4 passing, 100% success rate)
+  - See `docs/IMAGE_FORMAT_DETECTION.md` for technical details
 
 ### ✨ Added
 - **v4.9 QualityValidator Service** (PR #42)
@@ -16,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Detailed authenticity reports with 4-factor assessment
   - Factors: appearance authenticity, narrative authenticity, technical authenticity, linguistic authenticity
   - Comprehensive validation for AI-generated content
+
+### 🧪 Testing
+- **Image Format Detection Tests**
+  - New test suite: `test-magic-bytes-detection.ts`
+  - Tests PNG, JPEG, WebP format detection
+  - Tests edge case: already-prefixed data URLs
+  - 100% test coverage for format detection logic
 
 ### 📚 Documentation
 - **Complete Documentation Suite**
