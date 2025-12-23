@@ -14,9 +14,18 @@ dist-ssr
 
 # ZenMaster v4.0 Factory Output
 output/
+test-output/
+
 # Allow generated articles to be committed
-# articles/*
-!articles/published/
+# Preserve published structure
+articles/published/
+# Also allow channel-based structure (from exportForZen)
+articles/*/*/*/
+!articles/*/.*
+
+# But ignore temporary files
+*.tmp
+*.temp
 
 # Test files
 test-v4-modules.ts
