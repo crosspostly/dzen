@@ -293,14 +293,31 @@ ${'='.repeat(60)}`);
       if (article.coverImage?.base64) {
         try {
           console.log(`\n   📼 Processing cover image (${i + 1}/${this.articles.length})...`);
-           // 🔥 FIX: Add data URL prefix if missing (Gemini returns clean base64)
+           // 🔥 FIX: Auto-detect image format from magic bytes (Gemini may return PNG/JPEG/WebP)
            let dataUrl = article.coverImage.base64;
            const hasDataPrefix = dataUrl.startsWith('data:');
+           
            if (!hasDataPrefix) {
-             dataUrl = `data:image/jpeg;base64,${dataUrl}`;
+             // Decode first 20 bytes to detect actual format (WebP needs more bytes)
+             const binaryString = Buffer.from(dataUrl.substring(0, 28), 'base64');
+             const magic = binaryString.toString('hex').toUpperCase();
+             
+             // Detect format by magic bytes
+             let mimeType = 'image/jpeg'; // default fallback
+             if (magic.startsWith('89504E47')) {
+               mimeType = 'image/png';
+             } else if (magic.startsWith('FFD8FF')) {
+               mimeType = 'image/jpeg';
+             } else if (magic.startsWith('52494646') && magic.includes('57454250')) {
+               // WebP: RIFF....WEBP (52 49 46 46 xx xx xx xx 57 45 42 50)
+               mimeType = 'image/webp';
+             }
+             
+             dataUrl = `data:${mimeType};base64,${dataUrl}`;
+             console.log(`   ℹ️  Detected format: ${mimeType} (magic bytes: ${magic.substring(0, 16)})`);
            }
            
-           console.log(`   ✅ Data URL validation: ${hasDataPrefix ? 'PASS (already prefixed)' : 'PASS (fixed)'}`);
+           console.log(`   ✅ Data URL validation: ${hasDataPrefix ? 'PASS (already prefixed)' : 'PASS (auto-detected)'}`);
            console.log(`   📋 Validating base64 format...`);
 
           const processorResult = await imageProcessorService.processImage(dataUrl);
