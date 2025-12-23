@@ -102,7 +102,7 @@ function moveFileToPublished(filePath) {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
     // Получаем список всех файлов в директории статьи
-    const filesInDir = fs.readdirSync(fileDir);
+    const filesInDir = fs.existsSync(fileDir) ? fs.readdirSync(fileDir) : [];
 
     for (const file of filesInDir) {
       const fileExt = path.extname(file).toLowerCase();
@@ -128,6 +128,24 @@ function moveFileToPublished(filePath) {
         }
       }
     }
+
+    // Удаляем пустые папки в исходной директории
+    let currentDir = fileDir;
+    while (currentDir !== './articles' && currentDir !== '.' && fs.existsSync(currentDir)) {
+      try {
+        const files = fs.readdirSync(currentDir);
+        if (files.length === 0) {
+          fs.rmdirSync(currentDir);
+          console.log(`   🗑️  Удалена пустая папка: ${path.relative('./articles', currentDir)}`);
+          currentDir = path.dirname(currentDir);
+        } else {
+          break;
+        }
+      } catch (err) {
+        break;
+      }
+    }
+
   } catch (error) {
     console.error(`❌ Ошибка при перемещении файла ${filePath}:`, error.message);
   }
@@ -221,7 +239,7 @@ function generateFeed() {
         const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
         // Ищем файл изображения, соответствующий шаблону
-        const filesInDir = fs.readdirSync(articleDir);
+        const filesInDir = fs.existsSync(articleDir) ? fs.readdirSync(articleDir) : [];
         for (const file of filesInDir) {
           const fileExt = path.extname(file).toLowerCase();
           if (imageExtensions.includes(fileExt)) {
@@ -283,7 +301,7 @@ function generateFeed() {
 
       console.log(`✅ Добавлена статья: ${frontmatter.title}`);
 
-      // Перемещаем ТОЛЬКО новые файлы в папку published после успешной обработки
+      // ПЕРЕМЕЩАЕМ ТОЛЬКО новые файлы в папку published после успешной обработки
       if (!filePath.includes('published')) {
         moveFileToPublished(filePath);
       }
