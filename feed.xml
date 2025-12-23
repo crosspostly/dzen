@@ -2,16 +2,16 @@
 <rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
     <channel>
         <title>ZenMaster Articles</title>
-        <link>https://dzen-livid.vercel.app</link>
+        <link>https://crosspostly.github.io/dzen</link>
         <description>AI-generated articles for Yandex Dzen</description>
-        <lastBuildDate>Tue, 23 Dec 2025 12:07:15 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 23 Dec 2025 12:30:10 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>ZenMaster RSS Generator</generator>
         <language>ru</language>
         <image>
             <title>ZenMaster Articles</title>
-            <url>https://dzen-livid.vercel.app/logo.png</url>
-            <link>https://dzen-livid.vercel.app</link>
+            <url>https://crosspostly.github.io/dzen/logo.png</url>
+            <link>https://crosspostly.github.io/dzen</link>
         </image>
         <copyright>All rights reserved 2025, ZenMaster</copyright>
         <item>
