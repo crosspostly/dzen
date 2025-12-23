@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * Скрипт генерации RSS-ленты для Яндекс Дзен
+ * Упрощенный скрипт генерации RSS-ленты для Яндекс Дзен
  * Читает markdown-файлы из content/articles/ и создает feed.xml
+ * Не перемещает файлы, только генерирует RSS с правильными URL
  */
 
 import fs from 'fs';
@@ -11,17 +12,17 @@ import matter from 'gray-matter'; // Для парсинга front-matter
 import { Feed } from 'feed'; // Библиотека для генерации RSS
 
 // Получаем корневой URL для изображений
-const BASE_URL = process.env.BASE_URL || 'https://dzen-livid.vercel.app';
+const BASE_URL = process.env.BASE_URL || 'https://dzen.vercel.app';
 const SITE_URL = process.env.SITE_URL || BASE_URL;
 
-// Функция для получения всех markdown файлов из папки (исключая published и служебные файлы)
+// Функция для получения всех markdown файлов из папки (включая published)
 function getMarkdownFiles(dir) {
   const files = [];
   const items = fs.readdirSync(dir);
 
   for (const item of items) {
-    // Пропускаем папку published и служебные файлы
-    if (item === 'published' || item === 'REPORT.md' || item === 'manifest.json') {
+    // Пропускаем только служебные файлы, но не папку published
+    if (item === 'REPORT.md' || item === 'manifest.json') {
       continue;
     }
 
@@ -40,69 +41,6 @@ function getMarkdownFiles(dir) {
   }
 
   return files;
-}
-
-// Функция для перемещения файла в папку published
-function moveFileToPublished(filePath) {
-  try {
-    // Проверяем, находится ли файл уже в папке published
-    if (filePath.includes('published')) {
-      // Файл уже в папке published, не перемещаем его снова
-      return;
-    }
-
-    // Получаем относительный путь файла внутри папки articles
-    const relativePath = path.relative('./articles', filePath);
-
-    // Создаем путь в папке published
-    const publishedPath = path.join('./articles/published', relativePath);
-    const publishedDir = path.dirname(publishedPath);
-
-    // Создаем необходимые подкаталоги в published
-    fs.mkdirSync(publishedDir, { recursive: true });
-
-    // Перемещаем файл
-    fs.renameSync(filePath, publishedPath);
-    console.log(`   📁 Перемещено в published: ${relativePath}`);
-
-    // Также перемещаем связанное изображение, если оно существует
-    const fileDir = path.dirname(filePath);
-    const fileName = path.basename(filePath, path.extname(filePath));
-
-    // Ищем файлы изображений, которые могут соответствовать этой статье
-    // (имя может содержать timestamp, который нужно учитывать)
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-
-    // Получаем список всех файлов в директории статьи
-    const filesInDir = fs.readdirSync(fileDir);
-
-    for (const file of filesInDir) {
-      const fileExt = path.extname(file).toLowerCase();
-
-      // Проверяем, является ли файл изображением
-      if (imageExtensions.includes(fileExt)) {
-        const baseName = path.basename(file, fileExt);
-        const originalBaseName = fileName; // Имя статьи без расширения
-
-        // Проверяем, соответствует ли имя файла шаблону: originalName-timestamp-suffix
-        // или просто начинается с оригинального имени
-        if (baseName.startsWith(originalBaseName) ||
-            originalBaseName.startsWith(baseName) ||
-            baseName.includes(originalBaseName)) {
-
-          const imageFile = path.join(fileDir, file);
-          const publishedImageFile = path.join(publishedDir, file);
-
-          if (fs.existsSync(imageFile)) {
-            fs.renameSync(imageFile, publishedImageFile);
-            console.log(`   🖼️  Перемещено изображение в published: ${file}`);
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error(`❌ Ошибка при перемещении файла ${filePath}:`, error.message);
-  }
 }
 
 // Функция для преобразования markdown в HTML (упрощенная)
@@ -141,15 +79,18 @@ function generateFeed() {
     id: SITE_URL,
     link: SITE_URL,
     language: 'ru',
-    image: `${SITE_URL}/logo.png`, // Заглушка, замените на реальный логотип
+    image: `${SITE_URL}/logo.png`, // Используем SITE_URL вместо BASE_URL
     favicon: `${SITE_URL}/favicon.ico`,
     copyright: `All rights reserved ${new Date().getFullYear()}, ZenMaster`,
     updated: new Date(), // Дата последнего обновления ленты
     generator: 'ZenMaster RSS Generator'
   });
 
-  // Получаем все markdown файлы
-  const markdownFiles = getMarkdownFiles('./articles');
+  // Получаем все markdown файлы из всех возможных директорий
+  const markdownFiles = [
+    ...getMarkdownFiles('./articles'),
+    ...getMarkdownFiles('./test-output'),
+  ];
   console.log(`Найдено ${markdownFiles.length} markdown файлов`);
 
   // Проходимся по каждому файлу
@@ -167,15 +108,11 @@ function generateFeed() {
         continue;
       }
 
-      // Формируем URL для статьи и изображения
-      let relativePath = path.relative('./articles', filePath); // Обновлено с content/articles на articles
-      // Убираем published из пути для формирования корректного URL
-      relativePath = relativePath.replace('published/', '');
-
+      // Формируем URL для статьи
       const fileName = path.basename(filePath, path.extname(filePath));
 
-      // Для статьи используем Vercel URL приложения
-      const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://dzen-livid.vercel.app';
+      // Для статьи используем URL Vercel приложения
+      const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : BASE_URL;
       const articleUrl = `${vercelUrl}/articles/${fileName}`;
 
       // Ищем реальное имя файла изображения, соответствующее значению в frontmatter
@@ -211,24 +148,15 @@ function generateFeed() {
           imageUrl = frontmatter.image;
         } else {
           // Используем актуальное имя файла изображения
+          const relativePath = path.relative('./articles', filePath);
           const dirPath = path.dirname(relativePath);
-
-          // Если путь содержит published, корректируем его для URL изображения
-          let imagePath;
-          if (relativePath.includes('published/')) {
-            // Для файлов из published корректируем путь для URL
-            const correctedPath = relativePath.replace('published/', '');
-            imagePath = path.join('articles', correctedPath, actualImageFileName);
-          } else {
-            imagePath = path.join('articles', dirPath, actualImageFileName);
-          }
-
-          // Убираем начальный './' если он есть
-          imagePath = imagePath.replace(/^\.\//, '');
 
           // Формируем URL для изображения на GitHub (а не на GitHub Pages)
           // Пример: https://raw.githubusercontent.com/username/repository/main/articles/path/image.jpg
           const githubRawBaseUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY || 'crosspostly/dzen'}/main`;
+
+          // Путь к изображению в формате articles/директория/файл
+          const imagePath = path.join('articles', dirPath, actualImageFileName);
           imageUrl = `${githubRawBaseUrl}/${imagePath}`.replace(/\\/g, '/');
         }
       }
@@ -254,9 +182,6 @@ function generateFeed() {
       });
 
       console.log(`✅ Добавлена статья: ${frontmatter.title}`);
-
-      // Не перемещаем файлы, оставляем их в текущем месте
-      // moveFileToPublished(filePath);
 
     } catch (error) {
       console.error(`❌ Ошибка при обработке файла ${filePath}:`, error.message);
