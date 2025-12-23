@@ -1,8 +1,15 @@
 /**
- * 🖼️ Mobile Photo Authenticity Processor
+ * 📱 Modern Mobile Photo Authenticity Processor
  * 
- * Makes AI-generated images look like authentic mobile phone photos from 2018-2020
- * Adds imperfections, metadata, and effects to make images appear as real mobile photography
+ * Makes AI-generated images look like authentic modern smartphone photos
+ * (iPhone 14/15, Samsung S23/S24, Pixel 8)
+ * 
+ * Modern phones have excellent optics:
+ * - Minimal noise (AI-based noise reduction)
+ * - Sharp, clean focus
+ * - Natural color science
+ * - Subtle computational photography effects
+ * - Professional-grade processing
  */
 
 import { createCanvas, loadImage, Canvas } from 'canvas';
@@ -13,274 +20,299 @@ export interface AuthenticityResult {
   processedBuffer: Buffer | null;
   authenticityLevel: 'low' | 'medium' | 'high';
   appliedEffects: string[];
+  deviceSimulated: string;
   errorMessage?: string;
 }
 
 export class MobilePhotoAuthenticityProcessor {
-  private readonly CAMERA_MODEL = 'Samsung Galaxy A10';
-  private readonly CAMERA_MAKE = 'Samsung';
-  private readonly BASE_YEAR = 2019;
+  // Modern flagship devices (2023-2024)
+  private readonly DEVICE_PROFILES = {
+    iphone15: {
+      make: 'Apple',
+      model: 'iPhone 15 Pro',
+      year: 2023,
+      characteristics: {
+        saturation: 1.02,        // Slightly vibrant (Apple tuning)
+        brightness: 1.0,         // Natural
+        contrast: 1.05,          // Slight contrast boost
+        warmth: 0.98,            // Slightly warm tone
+        sharpness: 'medium',     // Natural sharpness
+        noiseFactor: 0.02        // Minimal noise
+      }
+    },
+    samsung_s24: {
+      make: 'Samsung',
+      model: 'Galaxy S24',
+      year: 2024,
+      characteristics: {
+        saturation: 1.08,        // Samsung loves vibrant colors
+        brightness: 1.02,        // Slightly bright
+        contrast: 1.08,          // More contrast
+        warmth: 0.95,            // Slightly cool tone
+        sharpness: 'high',       // Sharp edge detection
+        noiseFactor: 0.015       // Very minimal noise
+      }
+    },
+    pixel_8: {
+      make: 'Google',
+      model: 'Pixel 8 Pro',
+      year: 2023,
+      characteristics: {
+        saturation: 1.04,        // Balanced, natural
+        brightness: 0.99,        // Slightly cool white balance
+        contrast: 1.04,          // Moderate contrast
+        warmth: 0.93,            // Cool tone (Google style)
+        sharpness: 'medium',     // Balanced sharpness
+        noiseFactor: 0.01        // Almost none (AI denoise)
+      }
+    }
+  };
+
+  private selectedDevice: keyof typeof MobilePhotoAuthenticityProcessor.prototype.DEVICE_PROFILES;
+
+  constructor(device: 'iphone15' | 'samsung_s24' | 'pixel_8' = 'iphone15') {
+    this.selectedDevice = device;
+  }
 
   /**
-   * Main method: Apply all authenticity transformations to make image look like real mobile photo
+   * Main method: Apply modern smartphone characteristics
    */
   async processForMobileAuthenticity(base64Image: string): Promise<AuthenticityResult> {
-    console.log(`🔧 Starting mobile authenticity processing...`);
+    console.log(`📱 Processing as modern smartphone photo...`);
 
     try {
-      // Convert base64 to buffer
       let buffer = Buffer.from(base64Image, 'base64');
       const appliedEffects: string[] = [];
 
-      console.log(`   📷 Original buffer size: ${Math.round(buffer.length / 1024)}KB`);
+      const device = this.DEVICE_PROFILES[this.selectedDevice];
+      console.log(`   📷 Device: ${device.model} (${device.year})`);
 
-      // Step 1: Add mobile noise and imperfections
-      buffer = await this.addMobileNoise(buffer);
-      appliedEffects.push('mobile_noise');
+      // Step 1: Apply device color science
+      buffer = await this.applyDeviceColorScience(buffer);
+      appliedEffects.push('device_color_science');
+      console.log(`   ✅ Applied ${device.model} color tuning`);
 
-      console.log(`   ✅ Added mobile noise`);
+      // Step 2: Apply computational photography effects (subtle)
+      buffer = await this.applyComputationalPhotography(buffer);
+      appliedEffects.push('computational_photography');
+      console.log(`   ✅ Applied computational photography`);
 
-      // Step 2: Add fake EXIF metadata
-      buffer = await this.addFakeExifData(buffer);
-      appliedEffects.push('fake_exif');
+      // Step 3: Add minimal, realistic noise (modern phones use AI denoise)
+      buffer = await this.addRealisticNoise(buffer);
+      appliedEffects.push('realistic_noise_profile');
+      console.log(`   ✅ Added realistic noise profile`);
 
-      console.log(`   ✅ Added fake EXIF data`);
+      // Step 4: Apply subtle edge enhancement (modern phones sharpen slightly)
+      buffer = await this.applyEdgeEnhancement(buffer);
+      appliedEffects.push('edge_enhancement');
+      console.log(`   ✅ Applied edge enhancement`);
 
-      // Step 3: Add compression artifacts
-      buffer = await this.addCompressionArtifacts(buffer);
-      appliedEffects.push('compression_artifacts');
+      // Step 5: Simulate HDR tone mapping (if applicable)
+      buffer = await this.applyHDRToneMapping(buffer);
+      appliedEffects.push('hdr_tone_mapping');
+      console.log(`   ✅ Applied HDR tone mapping`);
 
-      console.log(`   ✅ Added compression artifacts`);
-
-      // Step 4: Add physical wear effects
-      buffer = await this.addPhysicalWear(buffer);
-      appliedEffects.push('physical_wear');
-
-      console.log(`   ✅ Added physical wear effects`);
-
-      console.log(`   🎯 Authenticity processing complete. Effects: ${appliedEffects.join(', ')}`);
+      console.log(`   🎯 Modern smartphone processing complete`);
 
       return {
         success: true,
         processedBuffer: buffer,
         authenticityLevel: 'high',
-        appliedEffects
+        appliedEffects,
+        deviceSimulated: device.model
       };
 
     } catch (error) {
-      console.error(`   ❌ Authenticity processing failed:`, (error as Error).message);
+      console.error(`   ❌ Processing failed:`, (error as Error).message);
       return {
         success: false,
         processedBuffer: null,
         authenticityLevel: 'low',
         appliedEffects: [],
+        deviceSimulated: 'unknown',
         errorMessage: (error as Error).message
       };
     }
   }
 
   /**
-   * 1️⃣ Add mobile camera imperfections: noise, slight blur, color temperature shift
+   * 1️⃣ Apply device color science (brand-specific tuning)
    */
-  private async addMobileNoise(buffer: Buffer): Promise<Buffer> {
+  private async applyDeviceColorScience(buffer: Buffer): Promise<Buffer> {
     try {
-      // Use Sharp for image manipulation
-      // Add slight blur to simulate imperfect mobile focus
-      const blurredBuffer = await sharp(buffer)
-        .blur(0.5) // Very slight blur radius
-        .jpeg({ quality: 90 })
-        .toBuffer();
+      const device = this.DEVICE_PROFILES[this.selectedDevice];
+      const chars = device.characteristics;
 
-      // Apply color temperature shift (simulate slightly incorrect white balance)
-      const finalBuffer = await this.applyColorTemperatureShift(blurredBuffer);
-
-      return finalBuffer;
-
-    } catch (error) {
-      console.warn(`   ⚠️  Mobile noise failed, using original:`, (error as Error).message);
-      return buffer;
-    }
-  }
-
-  /**
-   * 2️⃣ Add fake EXIF metadata to make image appear captured by real camera
-   */
-  private async addFakeExifData(buffer: Buffer): Promise<Buffer> {
-    try {
-      // For now, we'll skip actual EXIF insertion due to library issues
-      // In a production environment, we would use piexifjs or similar library
-      // This simulates the EXIF metadata by applying slight color temperature shift
-      
-      console.log(`      📷 Simulating EXIF metadata for ${this.CAMERA_MODEL}`);
-      
-      // Apply slight color shift that mimics camera characteristics
       return await sharp(buffer)
         .modulate({
-          saturation: 0.92 + Math.random() * 0.08, // Slightly desaturated
-          brightness: 0.97 + Math.random() * 0.06  // Slightly dimmer
+          saturation: chars.saturation,
+          brightness: chars.brightness,
+          hue: Math.round((chars.warmth - 1) * 30) // Convert warmth to hue shift
         })
-        .jpeg({ quality: 89 })
+        .linear(
+          1 + (chars.contrast - 1) * 0.5, // Subtle contrast boost
+          0
+        )
+        .jpeg({ quality: 92, progressive: true })
         .toBuffer();
 
     } catch (error) {
-      console.warn(`   ⚠️  EXIF data addition failed, using original:`, (error as Error).message);
+      console.warn(`   ⚠️  Color science failed:`, (error as Error).message);
       return buffer;
     }
   }
 
   /**
-   * 3️⃣ Add compression artifacts to simulate repeated JPEG compression
+   * 2️⃣ Apply computational photography effects
+   * Modern phones use AI-powered processing for:
+   * - Smart tone mapping
+   * - Scene recognition
+   * - Exposure optimization
+   * - Color preservation
    */
-  private async addCompressionArtifacts(buffer: Buffer): Promise<Buffer> {
+  private async applyComputationalPhotography(buffer: Buffer): Promise<Buffer> {
     try {
-      // Re-encode multiple times with slightly varying quality to simulate mobile compression
-      let currentBuffer = buffer;
+      const device = this.DEVICE_PROFILES[this.selectedDevice];
 
-      // First compression: quality 87-93
-      const quality1 = Math.floor(87 + Math.random() * 6);
-      currentBuffer = await sharp(currentBuffer)
-        .jpeg({ quality: quality1 })
+      // Subtle clarity/structure enhancement (not over-sharpened)
+      return await sharp(buffer)
+        .enhance()  // Auto-enhance (mild)
+        .sharpen({
+          sigma: device.characteristics.sharpness === 'high' ? 0.7 : 0.4,
+          flat: 0.5,
+          jagged: 1
+        })
+        .jpeg({ quality: 92, progressive: true })
         .toBuffer();
-
-      // Second compression: quality 85-90 (slight degradation)
-      const quality2 = Math.max(85, quality1 - Math.floor(Math.random() * 3));
-      currentBuffer = await sharp(currentBuffer)
-        .jpeg({ quality: quality2 })
-        .toBuffer();
-
-      // Apply subtle sharpening to compensate for compression blur
-      const finalBuffer = await sharp(currentBuffer)
-        .sharpen({ sigma: 0.3, flat: 1, jagged: 2 })
-        .jpeg({ quality: quality2 })
-        .toBuffer();
-
-      return finalBuffer;
 
     } catch (error) {
-      console.warn(`   ⚠️  Compression artifacts failed, using original:`, (error as Error).message);
+      console.warn(`   ⚠️  Computational photography failed:`, (error as Error).message);
       return buffer;
     }
   }
 
   /**
-   * 4️⃣ Add physical wear effects: vignetting, micro-scratches, edge wear
+   * 3️⃣ Add realistic noise profile
+   * Modern phones have very low noise:
+   * - iPhone: Near zero noise with advanced denoise
+   * - Samsung: Optimized low-light noise reduction
+   * - Google: AI-powered denoise
    */
-  private async addPhysicalWear(buffer: Buffer): Promise<Buffer> {
+  private async addRealisticNoise(buffer: Buffer): Promise<Buffer> {
     try {
-      // Create canvas for overlay effects
-      const canvas = createCanvas(1920, 1080);
+      const device = this.DEVICE_PROFILES[this.selectedDevice];
+      const noiseFactor = device.characteristics.noiseFactor;
+
+      // Get image dimensions
+      const metadata = await sharp(buffer).metadata();
+      if (!metadata.width || !metadata.height) {
+        return buffer;
+      }
+
+      // Create very subtle noise overlay (modern phones have almost no visible noise)
+      const canvas = createCanvas(metadata.width, metadata.height);
       const ctx = canvas.getContext('2d');
 
-      // Load the image onto canvas
-      const img = await loadImage(buffer);
-      ctx.drawImage(img, 0, 0, 1920, 1080);
+      const imageData = ctx.createImageData(metadata.width, metadata.height);
+      const data = imageData.data;
 
-      // Add vignette effect (darkening towards edges)
-      this.addVignette(ctx, 1920, 1080);
+      // Add minimal Gaussian-like noise
+      for (let i = 0; i < data.length; i += 4) {
+        const noise = (Math.random() - 0.5) * noiseFactor * 10;
+        data[i] += noise;     // R
+        data[i + 1] += noise; // G
+        data[i + 2] += noise; // B
+        // Alpha unchanged
+      }
 
-      // Add micro-scratches (simulate wear from being in pocket/bag)
-      this.addMicroScratches(ctx, 1920, 1080);
+      ctx.putImageData(imageData, 0, 0);
+      const noiseBuffer = canvas.toBuffer('image/jpeg', { quality: 92 });
 
-      // Add edge wear (slight color shift at edges)
-      this.addEdgeWear(ctx, 1920, 1080);
-
-      // Convert back to buffer
-      const wornBuffer = canvas.toBuffer('image/jpeg', { quality: 89 });
-
-      return wornBuffer;
+      return noiseBuffer;
 
     } catch (error) {
-      console.warn(`   ⚠️  Physical wear failed, using original:`, (error as Error).message);
+      console.warn(`   ⚠️  Noise profile failed:`, (error as Error).message);
       return buffer;
     }
   }
 
   /**
-   * Add vignette effect (darkening towards edges)
+   * 4️⃣ Apply edge enhancement
+   * Modern phones apply smart edge detection:
+   * - Preserve natural details
+   * - Avoid halo effects
+   * - Enhance texture without over-processing
    */
-  private addVignette(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    const gradient = ctx.createRadialGradient(
-      width / 2, height / 2, Math.min(width, height) * 0.7,
-      width / 2, height / 2, Math.max(width, height) * 0.8
-    );
-    
-    gradient.addColorStop(0, 'rgba(0,0,0,0)');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.025)'); // Very subtle 2.5% darkening
-
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-  }
-
-  /**
-   * Add micro-scratches simulating wear from pocket/bag
-   */
-  private addMicroScratches(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    const scratchCount = Math.floor(3 + Math.random() * 7); // 3-10 scratches
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 0.5;
-
-    for (let i = 0; i < scratchCount; i++) {
-      const x1 = Math.random() * width;
-      const y1 = Math.random() * height;
-      const x2 = x1 + (Math.random() - 0.5) * 100;
-      const y2 = y1 + (Math.random() - 0.5) * 100;
-
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-    }
-  }
-
-  /**
-   * Add edge wear with slight color shift
-   */
-  private addEdgeWear(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    // Create edge gradient for worn effect
-    const edgeGradient = ctx.createLinearGradient(0, 0, width, height);
-    edgeGradient.addColorStop(0, 'rgba(139,69,19,0.02)'); // Slight brown tint
-    edgeGradient.addColorStop(0.1, 'rgba(0,0,0,0)');
-    edgeGradient.addColorStop(0.9, 'rgba(0,0,0,0)');
-    edgeGradient.addColorStop(1, 'rgba(139,69,19,0.02)'); // Slight brown tint
-
-    ctx.fillStyle = edgeGradient;
-    ctx.fillRect(0, 0, width, height);
-  }
-
-  /**
-   * Apply color temperature shift to simulate incorrect white balance
-   */
-  private async applyColorTemperatureShift(buffer: Buffer): Promise<Buffer> {
+  private async applyEdgeEnhancement(buffer: Buffer): Promise<Buffer> {
     try {
-      // Slight color temperature adjustment
-      return await sharp(buffer)
-        .modulate({
-          saturation: 0.95 + Math.random() * 0.1, // Slightly desaturated
-          brightness: 0.98 + Math.random() * 0.04 // Slightly dimmer
-        })
-        .jpeg({ quality: 90 })
-        .toBuffer();
+      const device = this.DEVICE_PROFILES[this.selectedDevice];
+      const sharpnessLevel = device.characteristics.sharpness;
+
+      if (sharpnessLevel === 'high') {
+        // Samsung S24 style: crisp, detailed
+        return await sharp(buffer)
+          .sharpen({
+            sigma: 0.8,
+            flat: 1.0,
+            jagged: 1.5
+          })
+          .jpeg({ quality: 92, progressive: true })
+          .toBuffer();
+      } else {
+        // iPhone/Pixel style: natural, balanced
+        return await sharp(buffer)
+          .sharpen({
+            sigma: 0.5,
+            flat: 0.8,
+            jagged: 0.8
+          })
+          .jpeg({ quality: 92, progressive: true })
+          .toBuffer();
+      }
+
     } catch (error) {
-      console.warn(`   ⚠️  Color temperature shift failed:`, (error as Error).message);
+      console.warn(`   ⚠️  Edge enhancement failed:`, (error as Error).message);
       return buffer;
     }
   }
 
   /**
-   * Utility method to validate authenticity processing
+   * 5️⃣ Apply HDR tone mapping
+   * Modern phones apply subtle HDR even in standard photos:
+   * - Recover shadow details
+   * - Preserve highlight information
+   * - Natural tone curve
+   */
+  private async applyHDRToneMapping(buffer: Buffer): Promise<Buffer> {
+    try {
+      // Apply subtle tone curve adjustment (simulates HDR tone mapping)
+      return await sharp(buffer)
+        .normalize()  // Mild normalization
+        .modulate({
+          brightness: 1.0,
+          saturation: 0.98,  // Slight desaturation to avoid oversaturation
+          lightness: 0.02    // Tiny lightness adjustment
+        })
+        .jpeg({ quality: 92, progressive: true })
+        .toBuffer();
+
+    } catch (error) {
+      console.warn(`   ⚠️  HDR tone mapping failed:`, (error as Error).message);
+      return buffer;
+    }
+  }
+
+  /**
+   * Validate authenticity processing
    */
   validateAuthenticity(result: AuthenticityResult): boolean {
     if (!result.success || !result.processedBuffer) {
       return false;
     }
 
-    // Check that buffer is reasonable size (not too degraded)
     const sizeInKB = result.processedBuffer.length / 1024;
-    const isReasonableSize = sizeInKB > 20 && sizeInKB < 2000; // 20KB - 2MB
-
-    // Check that effects were applied
-    const hasEffects = result.appliedEffects.length >= 3;
+    const isReasonableSize = sizeInKB > 50 && sizeInKB < 2000; // 50KB - 2MB
+    const hasEffects = result.appliedEffects.length >= 4;
 
     return isReasonableSize && hasEffects;
   }
