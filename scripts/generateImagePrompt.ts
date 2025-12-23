@@ -62,73 +62,189 @@ function formatTime(ms: number): string {
 }
 
 /**
- * Генерирует ПРОМПТЫ для картинок на основе outline статьи
- * Не генерирует сами картинки или текст статьи!
+ * 🎨 VARIABLE SCENES DATABASE
+ * Provides diverse scene descriptions to avoid repetitive images
+ */
+const SCENE_VARIATIONS = {
+  // Scene 1: Problem/Conflict specific visual elements
+  scene1Elements: [
+    'Person looking worried/confused',
+    'Tense atmosphere',
+    'Closed body language',
+    'Uncomfortable setting',
+    'Hidden emotions visible',
+    'Dark/moody lighting',
+    'Isolated figure',
+    'Unresolved tension',
+    'Inner struggle on face',
+    'Unanswered questions in eyes'
+  ],
+
+  // Scene 2: Climax/Action specific visual elements
+  scene2Elements: [
+    'Dynamic action/movement',
+    'Intense emotional peak',
+    'Dramatic lighting contrast',
+    'Action-focused composition',
+    'Tension at breaking point',
+    'Decisive moment frozen',
+    'Energy and movement',
+    'Confrontation or realization',
+    'Peak emotional expression',
+    'Dramatic gesture or action'
+  ],
+
+  // Scene 3: Resolution/Transformation specific visual elements
+  scene3Elements: [
+    'Calm peaceful expression',
+    'Open body language',
+    'Warm golden lighting',
+    'Transformed environment',
+    'Hope and acceptance',
+    'Growth and strength visible',
+    'New beginning atmosphere',
+    'Released tension',
+    'Smile of relief',
+    'New perspective visible'
+  ],
+
+  // Diverse locations
+  locations: [
+    'Kitchen with morning light',
+    'Living room with soft shadows',
+    'Bedroom with evening glow',
+    'Balcony overlooking city',
+    'Bathroom with privacy',
+    'Hallway with closed doors',
+    'Couch in cozy corner',
+    'Window seat with view',
+    'Table by the window',
+    'Quiet corner with books'
+  ],
+
+  // Diverse camera angles
+  angles: [
+    'Eye-level medium shot',
+    'Close-up on face',
+    'Wide establishing shot',
+    'Over-the-shoulder view',
+    'Low angle looking up',
+    'High angle looking down',
+    'Through doorway',
+    'Reflexion in mirror',
+    'Candid from corner',
+    'Intimate close-up'
+  ]
+};
+
+/**
+ * Get random element from array
+ */
+function getRandomElement<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * Генерирует РАЗНЫЕ промпты для трёх сцен на основе outline статьи
+ * Каждая сцена визуально и эмоционально отличается от других!
  */
 async function generateImagePrompts(outline: any): Promise<ImagePrompt[]> {
   const prompts: ImagePrompt[] = [];
-  
-  // Извлекаем информацию из outline для создания visual description
+
+  // Извлекаем информацию из outline
   const theme = outline.theme || '';
   const mainEmotion = outline.emotion || 'neutral';
   const targetAudience = outline.audience || 'general';
-  const angle = outline.angle || 'storytelling';
-  
-  // Scene 1: Opening/Hook - интригующая сцена, которая зацепляет
+  const keyMoments = outline.keyMoments || [];
+  const visualCues = outline.visualCues || [];
+
+  // Get random variations for uniqueness
+  const location1 = getRandomElement(SCENE_VARIATIONS.locations);
+  const location2 = getRandomElement(SCENE_VARIATIONS.locations);
+  const location3 = getRandomElement(SCENE_VARIATIONS.locations);
+
+  // 🎬 SCENE 1: OPENING - Problem/Conflict hook
+  // Фокус на НАЧАЛЬНОЙ эмоции и проблеме
   prompts.push({
     sceneNumber: 1,
-    sceneName: 'Opening Hook',
-    prompt: `Amateur lifestyle photography. Scene from the theme: "${theme}". Focus on emotional moment. ${mainEmotion} mood. For audience: ${targetAudience}. High quality, natural lighting.`,
-    detailedPrompt: `Amateur lifestyle photography, 16:9 aspect ratio. Opening scene for article about "${theme}". Real people, authentic emotions, candid moment. ${mainEmotion} mood. Target audience: ${targetAudience}. Professional quality but looks authentic and not staged. Natural indoor lighting. Woman or family in realistic home setting.`,
+    sceneName: 'Opening: The Problem',
+    prompt: `Real person in ${location1}. ${mainEmotion} emotion. Worried expression. Natural indoor lighting. Candid authentic moment. For ${targetAudience}.`,
+    detailedPrompt: `HYPERREALISTIC PHOTO: ${location1}. Real person (${targetAudience.includes('Women') ? 'woman' : 'person'} 35-50 years old) sitting alone, looking ${mainEmotion}. ${getRandomElement(SCENE_VARIATIONS.scene1Elements)}. ${getRandomElement(SCENE_VARIATIONS.scene1Elements)}. Soft natural window light creating shadows. Amateur smartphone photo aesthetic. AUTHENTIC EMOTION: Show the inner conflict and questions. This is the START of the story - the problem is introduced.`,
     visualElements: [
-      'Real person/people',
-      'Emotional expression',
+      getRandomElement(SCENE_VARIATIONS.scene1Elements),
+      getRandomElement(SCENE_VARIATIONS.scene1Elements),
+      'Atmospheric lighting',
       'Authentic setting',
-      'Natural lighting',
-      'Candid moment',
-      mainEmotion + ' mood'
+      `${location1} environment`
     ],
-    mood: mainEmotion,
-    cameraAngle: 'Medium shot, slightly off-center for dynamic composition'
+    mood: `introspective, ${mainEmotion}`,
+    cameraAngle: getRandomElement(SCENE_VARIATIONS.angles)
   });
-  
-  // Scene 2: Climax/Turning Point - напряженный момент
+
+  // 🎬 SCENE 2: TURNING POINT - Climax/Action
+  // Полная противоположность сцене 1 - ДЕЙСТВИЕ и напряжение!
+  const oppositeEmotion = getOppositeEmotion(mainEmotion);
   prompts.push({
     sceneNumber: 2,
-    sceneName: 'Turning Point',
-    prompt: `Amateur lifestyle photography. Critical moment from the theme: "${theme}". Show tension/conflict/realization. Dramatic mood. Target: ${targetAudience}. Natural lighting, cinematic composition.`,
-    detailedPrompt: `Amateur lifestyle photography, 16:9 aspect ratio. Dramatic turning point scene for the article. Real people experiencing crucial moment. ${mainEmotion === 'triumph' ? 'Tension turning to relief' : 'Emotional breakthrough'}. Target audience: ${targetAudience}. Medium shot, focused on faces/expressions. Soft dramatic lighting. Indoor or intimate setting.`,
+    sceneName: 'Turning Point: The Climax',
+    prompt: `DRAMATIC moment in ${location2}. Action, tension, realization. Different from scene 1! ${oppositeEmotion} emotion. Cinematic lighting. For ${targetAudience}.`,
+    detailedPrompt: `HYPERREALISTIC PHOTO: ${location2}. Real person experiencing a CRUCIAL MOMENT - the turning point of the story. ${getRandomElement(SCENE_VARIATIONS.scene2Elements)}. ${getRandomElement(SCENE_VARIATIONS.scene2Elements)}. COMPLETELY DIFFERENT FROM SCENE 1 in mood and energy! Action-focused, dramatic. Natural light but with more contrast and intensity. Amateur smartphone photo. AUTHENTIC: Show the peak emotion - tension, realization, or decisive action.`,
     visualElements: [
-      'Intense emotions',
-      'Climactic moment',
-      'Realistic expressions',
-      'Dramatic lighting',
-      'Central conflict resolved',
-      'Turning point'
+      'Dramatic action moment',
+      getRandomElement(SCENE_VARIATIONS.scene2Elements),
+      getRandomElement(SCENE_VARIATIONS.scene2Elements),
+      'Cinematic lighting',
+      'Tension and energy'
     ],
-    mood: 'dramatic, ' + mainEmotion,
-    cameraAngle: 'Close-up on expressions, slightly lower angle for emphasis'
+    mood: `dramatic, intense, ${oppositeEmotion}`,
+    cameraAngle: getRandomElement(['Close-up on face showing emotion', 'Action shot', 'Dramatic low angle', 'Through doorway perspective'])
   });
-  
-  // Scene 3: Resolution - заключение с позитивным результатом
+
+  // 🎬 SCENE 3: RESOLUTION - Transformation
+  // Полная трансформация от сцены 1 - СПОКОЙСТВИЕ и надежда!
+  const positiveEmotion = getPositiveEmotion(mainEmotion);
   prompts.push({
     sceneNumber: 3,
-    sceneName: 'Resolution',
-    prompt: `Amateur lifestyle photography. Resolution of the theme: "${theme}". Show outcome/growth/triumph. Positive, uplifting mood. For ${targetAudience}. Warm lighting, hopeful atmosphere.`,
-    detailedPrompt: `Amateur lifestyle photography, 16:9 aspect ratio. Final scene showing resolution and positive outcome. Real people looking relieved, happy, or transformed. ${mainEmotion} mood. Target audience: ${targetAudience}. Wide shot showing environment change or character transformation. Warm, natural lighting. Hopeful and uplifting atmosphere.`,
+    sceneName: 'Resolution: New Beginning',
+    prompt: `TRANSFORMED person in ${location3}. Peaceful, hopeful. COMPLETELY DIFFERENT from scenes 1 & 2! Warm lighting. Growth visible. For ${targetAudience}.`,
+    detailedPrompt: `HYPERREALISTIC PHOTO: ${location3}. Real person looking TRANFORMED, peaceful, hopeful. ${getRandomElement(SCENE_VARIATIONS.scene3Elements)}. ${getRandomElement(SCENE_VARIATIONS.scene3Elements)}. COMPLETELY OPPOSITE to scene 1 - no more worry, now there's acceptance and peace. Warm golden lighting suggesting hope. Wide shot showing the changed environment or new perspective. Amateur smartphone photo. AUTHENTIC: Show the resolution - how the person changed.`,
     visualElements: [
-      'Positive outcome',
-      'Character growth',
-      'Warm atmosphere',
-      'Resolution achieved',
-      'Hopeful mood',
-      'Natural joy/relief'
+      'Transformed person',
+      getRandomElement(SCENE_VARIATIONS.scene3Elements),
+      getRandomElement(SCENE_VARIATIONS.scene3Elements),
+      'Warm hopeful lighting',
+      'Open space, new beginning'
     ],
-    mood: 'positive, uplifting, ' + mainEmotion,
-    cameraAngle: 'Wide shot, open composition suggesting freedom/resolution'
+    mood: `peaceful, hopeful, ${positiveEmotion}`,
+    cameraAngle: getRandomElement(['Wide establishing shot', 'Open composition', 'Looking toward light source', 'Peaceful medium shot'])
   });
-  
+
   return prompts;
+}
+
+/**
+ * Get emotionally opposite emotion for turning point
+ */
+function getOppositeEmotion(emotion: string): string {
+  const opposites: Record<string, string> = {
+    'fear': 'brave confrontation',
+    'worry': 'sudden clarity',
+    'sadness': 'intense grief',
+    'anger': 'explosive release',
+    'neutral': 'surprising revelation',
+    'triumph': 'hard-won victory',
+    'joy': 'overwhelming happiness'
+  };
+  return opposites[emotion] || 'sudden realization';
+}
+
+/**
+ * Get positive resolution emotion
+ */
+function getPositiveEmotion(originalEmotion: string): string {
+  if (originalEmotion === 'triumph') return 'victorious';
+  if (originalEmotion === 'joy') return 'blissful';
+  return 'peaceful, at peace';
 }
 
 async function main() {
