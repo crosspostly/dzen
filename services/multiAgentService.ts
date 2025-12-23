@@ -731,16 +731,29 @@ ${sensoryHints}
    ✅ "Почему я молчала?" [question]
    ❌ "Эта история началась..." [description - BAD]
 
-❌ FORBIDDEN (profanity & vulgarity - MANDATORY):
-   ❌ NO profanity: "блядь", "блять", "ебать", "хуй", "пизда", "мудила", "хуёвый" and variations
-   ❌ NO vulgar expressions: "блядский", "ёбаный", "пиздец"
-   ❌ NO obscene derivatives: "мать твою", "ахуенно", "ебанутый"
+❌ FORBIDDEN (profanity & vulgarity ABSOLUTELY PROHIBITED):
+   ❌ NO profanity, vulgarisms, or obscene language of ANY kind
+   ❌ NO street slang or crude expressions
+   ❌ This is INTELLIGENT writing for educated audience
    
-   ✅ USE LITERARY ALTERNATIVES:
-      - "блядский" → "проклятый", "отвратительный", "ужасный"
-      - "пиздец" → "конец", "крах", "катастрофа"
-      - "блять" (interjection) → "чёрт возьми", "чёрт побери", "вот так вот"
-      - "ахуенно" → "потрясающе", "удивительно", "невероятно"
+   ✅ USE LITERARY, ELEGANT RUSSIAN:
+      - Express emotions through actions: "Я затаила злость. Дыхание сбилось."
+      - Use refined vocabulary: "ужасный", "отвратительный", "восхитительный"
+      - Choose cultured interjections: "Боже мой", "Господи", "Чёрт побери"
+      - Maintain dignified, confessional tone (like letter to trusted friend)
+      
+   ✅ EXAMPLES OF PROPER STYLE:
+      ❌ "...блять..." (vulgar, street language)
+      ✅ "...чёрт побери, как я была слепа..." (cultured, literary)
+      
+      ❌ "...пиздец какой-то..." (crude, unacceptable)
+      ✅ "...это была катастрофа..." (intelligent, descriptive)
+      
+      ❌ "...ахуенно выглядела..." (vulgar slang)
+      ✅ "...выглядела потрясающе..." (refined expression)
+      
+      ❌ "...блядский дождь..." (profanity)
+      ✅ "...проклятый дождь..." (literary equivalent)
 
 🎯 TASK: Write LEDE (opening) - 600-900 RUSSIAN characters:
 
@@ -872,24 +885,29 @@ NOT A "HAPPY ENDING" - THIS IS REAL LIFE:
    ❌ "Я простила и забыла" (unrealistic)
    ❌ "Теперь я знаю, что надо..." (sermon/lesson)
 
-❌ FORBIDDEN (profanity & vulgarity - MANDATORY):
-   ❌ NO profanity: "блядь", "блять", "ебать", "хуй", "пизда", "мудила", "хуёвый" and variations
-   ❌ NO vulgar expressions: "блядский", "ёбаный", "пиздец"
-   ❌ NO obscene derivatives: "мать твою", "ахуенно", "ебанутый"
+❌ FORBIDDEN (profanity & vulgarity ABSOLUTELY PROHIBITED):
+   ❌ NO profanity, vulgarisms, or obscene language of ANY kind
+   ❌ NO street slang or crude expressions
+   ❌ This is INTELLIGENT writing for educated audience
    
-   ✅ USE LITERARY ALTERNATIVES:
-      - "блядский" → "проклятый", "отвратительный", "ужасный"
-      - "пиздец" → "конец", "крах", "катастрофа"
-      - "блять" (interjection) → "чёрт возьми", "чёрт побери", "вот так вот"
-      - "ахуенно" → "потрясающе", "удивительно", "невероятно"
+   ✅ USE LITERARY, ELEGANT RUSSIAN:
+      - Express emotions through actions: "Я затаила злость. Дыхание сбилось."
+      - Use refined vocabulary: "ужасный", "отвратительный", "восхитительный"
+      - Choose cultured interjections: "Боже мой", "Господи", "Чёрт побери"
+      - Maintain dignified, confessional tone (like letter to trusted friend)
       
-   ✅ SHOW EMOTION THROUGH ACTIONS, NOT WORDS:
-      ❌ "Я была блять зла" 
-      ✅ "Я затаила злость. Дыхание сбилось."
+   ✅ EXAMPLES OF PROPER STYLE:
+      ❌ "...блять..." (vulgar, street language)
+      ✅ "...чёрт побери, как я была слепа..." (cultured, literary)
       
-   ✅ IMPLIED vs EXPLICIT:
-      ❌ "Ругалась матом на весь дом"
-      ✅ "Материла себя под нос, прикусывая губу"
+      ❌ "...пиздец какой-то..." (crude, unacceptable)
+      ✅ "...это была катастрофа..." (intelligent, descriptive)
+      
+      ❌ "...ахуенно выглядела..." (vulgar slang)
+      ✅ "...выглядела потрясающе..." (refined expression)
+      
+      ❌ "...блядский дождь..." (profanity)
+      ✅ "...проклятый дождь..." (literary equivalent)
 
 ⚠️ GRAPHIC FORMATTING (v5.5 spec):
    - Include ONE of these signature elements (author's final word):

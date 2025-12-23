@@ -672,10 +672,23 @@ Your text will be READ ALOUD. Follow these rules:
    - Sentence should be speakable in ONE breath
    - Rhythm: mix short and long, but max 20-25 words per sentence
 
-✅ FORBIDDEN LEXICON (profanity):
-   ❌ NO: блядь, блять, ебать, хуй, пизда, мудила, хуёвый and all derivatives
-   ❌ NO: блядский, ёбаный, пиздец, ахуенно, ебанутый
-   ✅ USE: чёрт возьми, проклятый, отвратительный, потрясающе
+✅ FORBIDDEN LEXICON (profanity ABSOLUTELY PROHIBITED):
+   ❌ NO profanity, vulgarisms, or obscene language of ANY kind
+   ❌ NO street slang or crude expressions
+   ❌ This is INTELLIGENT writing with LITERARY RUSSIAN
+   
+   ✅ USE CULTURED EXPRESSIONS:
+      - Express emotions through actions and sensations
+      - Use refined vocabulary: "ужасный", "отвратительный", "восхитительный"
+      - Choose literary interjections: "Боже мой", "Господи", "Чёрт побери"
+      - Maintain dignified, confessional tone
+      
+   ✅ EXAMPLES:
+      ❌ "...блять..." (street language, vulgar)
+      ✅ "...чёрт побери, как я была слепа..." (cultured, literary)
+      
+      ❌ "...пиздец какой-то..." (unacceptable)
+      ✅ "...это была катастрофа..." (intelligent, descriptive)
 
 ✅ GOOD (easy to speak):
 "Я села. Взяла письмо. Прочитала. И всё."
