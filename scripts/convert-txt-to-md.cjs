@@ -1,138 +1,109 @@
 #!/usr/bin/env node
 
-/**
- * Скрипт конвертации TXT → Markdown с front-matter
- * КРИТИЧНО: imageName обязателен! Каждая статья должна иметь уникальное имя для изображения
- */
-
 const fs = require('fs');
 const path = require('path');
 
-// Получаем аргументы из командной строки
 const args = process.argv.slice(2);
 
-if (args.length < 3) {
-  console.error('❌ ОШИБКА: imageName обязателен!');
+const title = args[0];
+const inputFile = args[1];
+let imageName = args[2] || '';  // Может быть пустым!
+const year = args[3] || new Date().getFullYear();
+const month = String(args[4] || new Date().getMonth() + 1).padStart(2, '0');
+const day = String(args[5] || new Date().getDate()).padStart(2, '0');
+const category = args[6] || 'lifestory';
+
+// ✅ ВАЛИДАЦИЯ
+if (!title || !inputFile) {
+  console.error('❌ ИСПОЛЬЗОВАНИЕ:');
+  console.error('   node convert-txt-to-md.cjs "<title>" <input.txt> [imageName] [year] [month] [day] [category]');
   console.error('');
-  console.error('Использование: node convert-txt-to-md.cjs <title> <content-file> <image-name> [year] [month] [day] [category]');
+  console.error('❌ ПРИМЕРЫ:');
+  console.error('   # С автоматической генерацией imageName:');
+  console.error('   node convert-txt-to-md.cjs "Мучительный стыд" article.txt');
   console.error('');
-  console.error('Параметры:');
-  console.error('  title         - Заголовок статьи');
-  console.error('  content-file  - Файл с текстом статьи');
-  console.error('  image-name    - ОБЯЗАТЕЛЬНО! Уникальное имя для изображения (без расширения)');
-  console.error('  year          - Год (по умолчанию текущий)');
-  console.error('  month         - Месяц 1-12 (по умолчанию текущий)');
-  console.error('  day           - День 1-31 (по умолчанию текущий)');
-  console.error('  category      - lifestory|article|story|experience (по умолчанию: lifestory)');
+  console.error('   # С явным imageName:');
+  console.error('   node convert-txt-to-md.cjs "История успеха" content.txt success-2025');
   console.error('');
-  console.error('Примеры:');
-  console.error('  node scripts/convert-txt-to-md.cjs "Мой стыд" article.txt fear-story');
-  console.error('  node scripts/convert-txt-to-md.cjs "История успеха" content.txt success-story 2025 12 21 lifestory');
+  console.error('   # С датой и категорией:');
+  console.error('   node convert-txt-to-md.cjs "Новая жизнь" text.txt "" 2025 12 21 lifestory');
+  console.error('   (пустая строка "" для imageName = автогенерация)');
   process.exit(1);
 }
 
-const title = args[0];
-const contentFile = args[1];
-const imageName = args[2];  // ❌ КРИТИЧНО - ОБЯЗАТЕЛЕН!
+// 🔑 ФУНКЦИЯ ГЕНЕРАЦИИ imageName
+function generateImageName(titleText) {
+  const translitMap = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+    'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '',
+    'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+  };
 
-const now = new Date();
-const year = args[3] || now.getFullYear();
-const month = String(args[4] || now.getMonth() + 1).padStart(2, '0');
-const day = String(args[5] || now.getDate()).padStart(2, '0');
-const category = args[6] || 'lifestory';
+  let slug = titleText.toLowerCase();
 
-// ВАЛИДАЦИЯ imageName
-if (!imageName || imageName.trim() === '') {
-  console.error('❌ КРИТИЧЕСКАЯ ОШИБКА: imageName не может быть пустым!');
-  console.error('   Каждая статья должна иметь уникальное имя для изображения.');
-  console.error('   Пример: fear-story, success-story, first-love, и т.д.');
-  process.exit(1);
+  // Применяем транслитерацию
+  for (let [cyrillic, latin] of Object.entries(translitMap)) {
+    slug = slug.replace(new RegExp(cyrillic, 'g'), latin);
+  }
+
+  // Очищаем от спец символов
+  slug = slug
+    .replace(/[^\w\s-]/g, '')     // Удаляем спец символы кроме пробелов и дефисов
+    .replace(/\s+/g, '-')         // Пробелы в дефисы
+    .replace(/-+/g, '-')          // Множественные дефисы в один
+    .replace(/^-+|-+$/g, '')      // Удаляем дефисы в начале/конце
+    .slice(0, 50);                // Максимум 50 символов
+
+  return slug || 'article';  // Fallback если всё очистилось
+}
+
+// 🔑 КРИТИЧЕСКАЯ ЛОГИКА: Если imageName не указан → генерируем из title
+if (!imageName) {
+  imageName = generateImageName(title);
+  console.log(`\n✨ imageName не указан, генерируем из заголовка: "${imageName}"\n`);
 }
 
 // ВАЛИДАЦИЯ категории
-const validCategories = ['lifestory', 'article', 'story', 'experience'];
+const validCategories = ['lifestory', 'article', 'story', 'experience', 'news'];
 if (!validCategories.includes(category)) {
-  console.error(`❌ Неправильная категория: "${category}"`);
-  console.error(`   Валидные категории: ${validCategories.join(', ')}`);
+  console.warn(`⚠️  ПРЕДУПРЕЖДЕНИЕ: категория "${category}" может быть неправильной`);
+  console.warn(`   Рекомендуемые: ${validCategories.join(', ')}\n`);
+}
+
+// Читаем файл
+if (!fs.existsSync(inputFile)) {
+  console.error(`\n❌ ОШИБКА: Файл не найден: ${inputFile}\n`);
   process.exit(1);
 }
 
-// Проверяем, существует ли файл с контентом
-if (!fs.existsSync(contentFile)) {
-  console.error(`❌ Файл не найден: ${contentFile}`);
-  process.exit(1);
-}
+const content = fs.readFileSync(inputFile, 'utf-8');
 
-// Читаем контент
-const content = fs.readFileSync(contentFile, 'utf8');
-
-// Формируем дату
+// Генерируем front-matter
 const date = `${year}-${month}-${day}`;
+const imageUrl = `https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/${year}/${month}/${day}/${imageName}.jpg`;
 
-// Формируем имя файла изображения (обязательно с расширением)
-const imageFileName = `${imageName}.jpg`;
-
-// Формируем GitHub raw URL для изображения
-// https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/2025/12/21/fear-story.jpg
-const dirPath = `${year}/${month}/${day}`;
-const imageUrl = `https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/${dirPath}/${imageFileName}`;
-
-// Функция для эскраниирования YAML строк
-function escapeYaml(str) {
-  if (!str) return '""';
-  if (str.includes('"') || str.includes('\n')) {
-    return '"' + str.replace(/"/g, '\\"') + '"';
-  }
-  return '"' + str + '"';
-}
-
-// Генерируем краткое описание из первых 150 символов
-const description = content.substring(0, 150).replace(/\n/g, ' ').trim() + '...';
-
-// Создаем front-matter
 const frontMatter = `---
-title: ${escapeYaml(title)}
+title: "${title}"
 date: ${date}
-description: ${escapeYaml(description)}
+description: "Описание будет сгенерировано через Gemini или взято из текста"
 image: "${imageUrl}"
 category: "${category}"
 ---
-`;
 
-// Объединяем front-matter с контентом
-const markdownContent = frontMatter + content;
+${content}`;
 
-// Формируем имя выходного файла
-const outputFileName = `${title.replace(/\s+/g, '-').toLowerCase()}-${date}.md`;
-const outputPath = path.join(process.cwd(), outputFileName);
+// Выводим результат
+console.log('✅ УСПЕШНО СГЕНЕРИРОВАНО:\n');
+console.log(frontMatter);
 
-// Записываем файл
-try {
-  fs.writeFileSync(outputPath, markdownContent, 'utf8');
-  
-  console.log('\n' + '='.repeat(70));
-  console.log('✅ УСПЕШНО: Markdown файл создан!');
-  console.log('='.repeat(70));
-  console.log(`📄 Файл: ${outputFileName}`);
-  console.log(`📌 Заголовок: ${title}`);
-  console.log(`📅 Дата: ${date}`);
-  console.log(`🖼️  Изображение: ${imageFileName}`);
-  console.log(`🌐 GitHub RAW URL: ${imageUrl}`);
-  console.log(`📂 Категория: ${category}`);
-  console.log('');
-  console.log('⚡ Инструкции:');
-  console.log(`1. Загрузите файл "${outputFileName}" в articles/published/${dirPath}/`);
-  console.log(`2. Загрузите изображение "${imageFileName}" в articles/published/${dirPath}/`);
-  console.log(`3. Сделайте git push на GitHub`);
-  console.log(`4. GitHub Actions автоматически обновит RSS`);
-  console.log(`5. Яндекс Дзен парсит RSS и публикует статью`);
-  console.log('');
-  console.log('⚠️  ВАЖНО:');
-  console.log(`   • Изображение ДОЛЖНО быть названо ${imageFileName}`);
-  console.log(`   • Путь должен быть: articles/published/${dirPath}/${imageFileName}`);
-  console.log(`   • RSS будет ссылаться на: ${imageUrl}`);
-  console.log('='.repeat(70) + '\n');
-} catch (err) {
-  console.error(`❌ Ошибка при создании файла: ${err.message}`);
-  process.exit(1);
-}
+console.log(`\n${'='.repeat(60)}`);
+console.log(`📁 ФАЙЛ ДЛЯ СОХРАНЕНИЯ: ${imageName}-${date}.md`);
+console.log(`📸 ИЗОБРАЖЕНИЕ: ${imageName}.jpg`);
+console.log(`📍 ПУТЬ НА GITHUB: articles/published/${year}/${month}/${day}/`);
+console.log(`🏷️  КАТЕГОРИЯ: ${category}`);
+console.log(`${'='.repeat(60)}\n`);
+
+console.log('🔗 ПРОВЕРКА URL ИЗОБРАЖЕНИЯ:');
+console.log(`${imageUrl}\n`);
