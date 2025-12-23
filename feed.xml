@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+    <channel>
+        <title>ZenMaster Articles</title>
+        <link>https://yourusername.github.io</link>
+        <description>AI-generated articles for Yandex Dzen</description>
+        <lastBuildDate>Tue, 23 Dec 2025 08:52:01 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>ZenMaster RSS Generator</generator>
+        <language>ru</language>
+        <image>
+            <title>ZenMaster Articles</title>
+            <url>https://yourusername.github.io/logo.png</url>
+            <link>https://yourusername.github.io</link>
+        </image>
+        <copyright>All rights reserved 2025, ZenMaster</copyright>
+    </channel>
+</rss>

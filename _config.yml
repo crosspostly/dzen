@@ -1,0 +1,35 @@
+---
+# GitHub Pages configuration
+title: ZenMaster Articles
+email: your-email@example.com
+description: AI-generated articles for Yandex Dzen
+baseurl: ""
+url: "https://yourusername.github.io"
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - scripts/
+  - package.json
+  - package-lock.json
+  - test*.ts
+  - cli*.ts
+  - services/
+  - types/
+  - docs/
+  - constants/
+  - config/
+---

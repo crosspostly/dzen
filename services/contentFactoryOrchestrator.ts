@@ -484,7 +484,7 @@ ${'='.repeat(60)}`);
   /**
    * 📄 Export articles for Zen
    * ✅ UPDATED v4.0: Save to articles/{channel_name}/{YYYY-MM-DD}/ with flat structure
-   * - ONE .txt file (article content)
+   * - ONE .md file (article content with front-matter for RSS)
    * - ONE .jpg file (processed cover image via Canvas, or original JPEG if Canvas fails)
    * - Same filename for both (only extension differs)
    */
@@ -493,7 +493,7 @@ ${'='.repeat(60)}`);
 📄 Exporting ${this.articles.length} articles
 `);
 
-    // Create articles/{channel_name}/{YYYY-MM-DD}/ directory
+    // Create content/articles/{channel_name}/{YYYY-MM-DD}/ directory
     const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const finalDir = path.join(outputDir, this.channelName, dateStr);
     fs.mkdirSync(finalDir, { recursive: true });
@@ -506,20 +506,38 @@ ${'='.repeat(60)}`);
     // Export each article with FLAT structure (no article-1/, article-2/ folders)
     for (let i = 0; i < this.articles.length; i++) {
       const article = this.articles[i];
-      const timestamp = Date.now() + i; // Unique timestamp per article
       const slug = this.createSlug(article.title); // Convert title to URL-safe slug
-      
-      // Same filename for both .txt and .jpg!
-      const filename = `${slug}-${timestamp}`;
-      
-      try {
-        // Save article as TEXT (for copy-paste to Zen)
-        const txtPath = path.join(finalDir, `${filename}.txt`);
-        fs.writeFileSync(txtPath, article.content);
-        exportedFiles.push(txtPath);
-        console.log(`✅ Article ${i + 1}: ${filename}.txt`);
 
-        // 🔥 FIX: ALWAYS save COVER image as JPEG
+      // Remove timestamp from filename
+      const filename = slug;
+
+      try {
+        // Generate front-matter for the markdown file (compatible with RSS generation)
+        const description = this.generateIntriguingDescription(article.content);
+        const imageFileName = `${slug}.jpg`; // Image file without timestamp
+        const frontMatter = `---
+title: "${article.title}"
+date: "${dateStr}"
+description: "${description}"
+image: "${imageFileName}"
+category: "lifestory"
+---
+`;
+
+        // Prepare the article content (without the first line which is the title)
+        const contentLines = article.content.split('\n');
+        const articleBody = contentLines.slice(1).join('\n').trim(); // Skip first line (title)
+
+        // Combine front-matter and article content
+        const markdownContent = frontMatter + '\n' + articleBody;
+
+        // Save article as MARKDOWN (with front-matter)
+        const mdPath = path.join(finalDir, `${filename}.md`);
+        fs.writeFileSync(mdPath, markdownContent);
+        exportedFiles.push(mdPath);
+        console.log(`✅ Article ${i + 1}: ${filename}.md`);
+
+        // 🔥 FIX: ALWAYS save COVER image as JPEG (without timestamp)
         if (article.coverImage) {
           let jpegBuffer: Buffer | null = null;
           let source: string;
@@ -536,11 +554,11 @@ ${'='.repeat(60)}`);
             source = 'Original API JPEG';
           }
 
-          // 🔥 ALWAYS save as .jpg
-          const jpgPath = path.join(finalDir, `${filename}-cover.jpg`);
+          // 🔥 ALWAYS save as .jpg with same slug (no timestamp)
+          const jpgPath = path.join(finalDir, imageFileName);
           fs.writeFileSync(jpgPath, jpegBuffer);
           exportedFiles.push(jpgPath);
-          console.log(`   🗼️  Cover: ${filename}-cover.jpg (${source})`);
+          console.log(`   🗼️  Cover: ${imageFileName} (${source})`);
         }
       } catch (error) {
         console.error(`❌ Failed to export article ${i + 1}: ${(error as Error).message}`);
@@ -568,6 +586,40 @@ ${'='.repeat(60)}`);
   }
 
   /**
+   * 📄 Create intriguing description for Yandex Zen (150-200 characters)
+   * Creates an engaging, click-worthy description that teases the content
+   */
+  private generateIntriguingDescription(content: string): string {
+    // Get the first part of the content (excluding title which is usually the first line)
+    const contentLines = content.split('\n');
+    const contentWithoutTitle = contentLines.slice(1).join(' ');
+
+    // Take first 150-200 characters that don't break words
+    let description = contentWithoutTitle.substring(0, 200).trim();
+
+    // Ensure it's at least 150 characters
+    if (description.length < 150 && contentWithoutTitle.length > 150) {
+      description = contentWithoutTitle.substring(0, 200).trim();
+    } else if (description.length > 150) {
+      // Find the last space to avoid cutting words
+      const lastSpaceIndex = description.lastIndexOf(' ');
+      if (lastSpaceIndex > 150) {
+        description = description.substring(0, lastSpaceIndex).trim();
+      }
+    }
+
+    // Add ellipsis if original content was longer
+    if (contentWithoutTitle.length > description.length) {
+      description += '...';
+    }
+
+    // Ensure it doesn't contain quotes that might break the front-matter
+    description = description.replace(/"/g, "'").replace(/\n/g, " ");
+
+    return description;
+  }
+
+  /**
    * 📄 Create URL-safe slug from Russian text
    * Example: "Я всю жизнь боялась одиночества" → "ya-vsyu-zhizn-boyalas-odinochestva"
    */
@@ -592,7 +644,7 @@ ${'='.repeat(60)}`);
 
     // Transliterate
     let slug = title.split('').map(char => transliterationMap[char] || char).join('');
-    
+
     // Convert to lowercase, remove non-alphanumeric, replace spaces with hyphens
     slug = slug.toLowerCase();
     slug = slug.replace(/[^a-z0-9\s-]/g, ''); // Remove special chars

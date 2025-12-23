@@ -1,0 +1,59 @@
+name: Generate RSS Feed
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'content/articles/**'
+  schedule:
+    # Запускать каждый час
+    - cron: '0 * * * *'
+  workflow_dispatch: # Ручной запуск
+
+jobs:
+  generate-feed:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Set environment variables
+      run: |
+        echo "BASE_URL=https://${{ github.repository_owner }}.github.io" >> $GITHUB_ENV
+        echo "SITE_URL=https://${{ github.repository_owner }}.github.io" >> $GITHUB_ENV
+
+    - name: Generate RSS feed
+      run: node scripts/generate-feed.js
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+
+    - name: Commit and push if changed
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add feed.xml
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Auto-generate RSS feed [skip ci]"
+          git push
+        fi
+      continue-on-error: true

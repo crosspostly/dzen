@@ -110,7 +110,7 @@ export class ArticleExporter {
     console.log(`${LOG.SUCCESS} Article exported to: ${articleDir}\n`);
 
     // 🧹 ПОСТ-ЭКСПОРТ: Автоматическая очистка метаданных изображений
-    if (options.includeImages && imagePaths.length > 0) {
+    if (options.includeImages && imagePath) {
       console.log(`🧹 Post-processing images...`);
       try {
         const cleaner = new MetadataCleanerService();
