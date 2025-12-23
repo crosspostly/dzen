@@ -60,11 +60,11 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add feed.xml public/
+        git add feed.xml public/ articles/published/
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "Auto-generate RSS feed [skip ci]"
+          git commit -m "Auto-generate RSS feed and move articles to published [skip ci]"
           git push
         fi
       continue-on-error: true
