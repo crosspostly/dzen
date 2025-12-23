@@ -1,28 +1,34 @@
 #!/usr/bin/env npx tsx
 
 /**
- * 📸 Image Prompt Generator
+ * 📸 Dynamic Image Prompt Generator
  * 
- * Генерирует ПРОМПТЫ для картинок, не создавая сами картинки и текст.
+ * Генерирует УНИКАЛЬНЫЕ ПРОМПТЫ ДЛЯ КАЖДОЙ СТАТЬИ на основе:
+ * 1. Темы статьи
+ * 2. Содержания статьи
+ * 3. Эмоционального тона (через Gemini)
  * 
- * Flow:
- * 1. Выбирает тему (как обычно)
- * 2. Генерирует outline статьи (структура,角度, эмоция)
- * 3. На основе outline генерирует детальные ПРОМПТЫ для 2-3 картинок
- * 4. Выводит промпты в консоль и файл
- * 5. Опционально генерирует реальные картинки (--generate-images)
+ * Gemini генерирует:
+ * - Конкретные сцены для фото
+ * - Описание людей (их внешность, одежду, эмоции)
+ * - Детали окружения
+ * - Освещение и атмосферу
+ * 
+ * Фотографии выглядят как:
+ * - Снято на смартфон (реалистично, не постановка)
+ * - Эмоционально заряженные
+ * - Гиперреалистичные детали
+ * - Уникальные под конкретную статью
  * 
  * Использование:
- *   npx tsx scripts/generateImagePrompt.ts
- *   npx tsx scripts/generateImagePrompt.ts --theme="My theme"
- *   npx tsx scripts/generateImagePrompt.ts --generate-images --count=3
+ *   npx tsx scripts/generateImagePrompt.ts --title="Заголовок" --content="Текст статьи"
+ *   npx tsx scripts/generateImagePrompt.ts --file="path/to/article.md"
+ *   npx tsx scripts/generateImagePrompt.ts --generate-images --file="article.md"
  */
 
 import path from 'path';
 import fs from 'fs';
-import { MultiAgentService } from '../services/multiAgentService';
-import { ImageGeneratorService } from '../services/imageGeneratorService';
-import { ImageProcessorService } from '../services/imageProcessorService';
+import matter from 'gray-matter';
 
 const LOG = {
   INFO: '🔷',
@@ -33,16 +39,19 @@ const LOG = {
   BRAIN: '🧠',
   TIMER: '⏱️',
   SAVE: '💾',
+  SCENE: '🎬',
 };
 
 interface ImagePrompt {
   sceneNumber: number;
   sceneName: string;
-  prompt: string;
-  detailedPrompt: string;
+  shortPrompt: string;  // Для быстрой генерации
+  detailedPrompt: string;  // Полный промпт с деталями
   visualElements: string[];
   mood: string;
+  lightingConditions: string;
   cameraAngle: string;
+  context: string;  // Откуда эта сцена в статье
 }
 
 function getArg(name: string, defaultValue?: string): string | undefined {
@@ -56,288 +65,402 @@ function getFlag(name: string): boolean {
   return args.includes(`--${name}`);
 }
 
-function formatTime(ms: number): string {
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  return `${(ms / 1000).toFixed(2)}s`;
+/**
+ * Генерирует УНИКАЛЬНЫЕ промпты через Gemini на основе РЕАЛЬНОГО СОДЕРЖАНИЯ статьи
+ */
+async function generateDynamicImagePrompts(
+  articleTitle: string,
+  articleContent: string,
+  apiKey: string
+): Promise<ImagePrompt[]> {
+  console.log(`${LOG.BRAIN} Анализирую статью через Gemini API...\n`);
+
+  const systemPrompt = `Ты - expert визуальный режиссер для Яндекс Дзена.
+
+Твоя задача: на основе содержания статьи создать 3 УНИКАЛЬНЫХ, ЭМОЦИОНАЛЬНЫХ сцены для фотографий.
+
+Требования к сценам:
+- РЕАЛЬНЫЕ: выглядят как снято на смартфон реальным человеком
+- ГИПЕРРЕАЛИСТИЧНЫЕ: конкретные детали (одежда, лица, интерьер)
+- ЭМОЦИОНАЛЬНЫЕ: показывают чувства и истории людей
+- УНИКАЛЬНЫЕ: каждая совершенно разная, не повторяют друг друга
+- ДЛЯ СТАТЬИ: сцены точно отражают содержание и эмоцию статьи
+
+Оформат ответа - ТОЛЬКО JSON, без дополнительного текста:
+{
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "sceneName": "Opening: [название сцены]",
+      "context": "[Где в статье эта сцена?]",
+      "shortPrompt": "[Одна строка для быстрой генерации]",
+      "detailedPrompt": "[Полное описание для Gemini Image Gen]",
+      "visualElements": ["элемент1", "элемент2", ...],
+      "mood": "[эмоция]",
+      "lightingConditions": "[освещение]",
+      "cameraAngle": "[угол камеры]"
+    },
+    { "sceneNumber": 2, ... },
+    { "sceneNumber": 3, ... }
+  ]
 }
 
-/**
- * Генерирует ПРОМПТЫ для картинок на основе outline статьи
- * Не генерирует сами картинки или текст статьи!
- */
-async function generateImagePrompts(outline: any): Promise<ImagePrompt[]> {
-  const prompts: ImagePrompt[] = [];
-  
-  // Извлекаем информацию из outline для создания visual description
-  const theme = outline.theme || '';
-  const mainEmotion = outline.emotion || 'neutral';
-  const targetAudience = outline.audience || 'general';
-  const angle = outline.angle || 'storytelling';
-  
-  // Scene 1: Opening/Hook - интригующая сцена, которая зацепляет
-  prompts.push({
-    sceneNumber: 1,
-    sceneName: 'Opening Hook',
-    prompt: `Amateur lifestyle photography. Scene from the theme: "${theme}". Focus on emotional moment. ${mainEmotion} mood. For audience: ${targetAudience}. High quality, natural lighting.`,
-    detailedPrompt: `Amateur lifestyle photography, 16:9 aspect ratio. Opening scene for article about "${theme}". Real people, authentic emotions, candid moment. ${mainEmotion} mood. Target audience: ${targetAudience}. Professional quality but looks authentic and not staged. Natural indoor lighting. Woman or family in realistic home setting.`,
-    visualElements: [
-      'Real person/people',
-      'Emotional expression',
-      'Authentic setting',
-      'Natural lighting',
-      'Candid moment',
-      mainEmotion + ' mood'
-    ],
-    mood: mainEmotion,
-    cameraAngle: 'Medium shot, slightly off-center for dynamic composition'
-  });
-  
-  // Scene 2: Climax/Turning Point - напряженный момент
-  prompts.push({
-    sceneNumber: 2,
-    sceneName: 'Turning Point',
-    prompt: `Amateur lifestyle photography. Critical moment from the theme: "${theme}". Show tension/conflict/realization. Dramatic mood. Target: ${targetAudience}. Natural lighting, cinematic composition.`,
-    detailedPrompt: `Amateur lifestyle photography, 16:9 aspect ratio. Dramatic turning point scene for the article. Real people experiencing crucial moment. ${mainEmotion === 'triumph' ? 'Tension turning to relief' : 'Emotional breakthrough'}. Target audience: ${targetAudience}. Medium shot, focused on faces/expressions. Soft dramatic lighting. Indoor or intimate setting.`,
-    visualElements: [
-      'Intense emotions',
-      'Climactic moment',
-      'Realistic expressions',
-      'Dramatic lighting',
-      'Central conflict resolved',
-      'Turning point'
-    ],
-    mood: 'dramatic, ' + mainEmotion,
-    cameraAngle: 'Close-up on expressions, slightly lower angle for emphasis'
-  });
-  
-  // Scene 3: Resolution - заключение с позитивным результатом
-  prompts.push({
-    sceneNumber: 3,
-    sceneName: 'Resolution',
-    prompt: `Amateur lifestyle photography. Resolution of the theme: "${theme}". Show outcome/growth/triumph. Positive, uplifting mood. For ${targetAudience}. Warm lighting, hopeful atmosphere.`,
-    detailedPrompt: `Amateur lifestyle photography, 16:9 aspect ratio. Final scene showing resolution and positive outcome. Real people looking relieved, happy, or transformed. ${mainEmotion} mood. Target audience: ${targetAudience}. Wide shot showing environment change or character transformation. Warm, natural lighting. Hopeful and uplifting atmosphere.`,
-    visualElements: [
-      'Positive outcome',
-      'Character growth',
-      'Warm atmosphere',
-      'Resolution achieved',
-      'Hopeful mood',
-      'Natural joy/relief'
-    ],
-    mood: 'positive, uplifting, ' + mainEmotion,
-    cameraAngle: 'Wide shot, open composition suggesting freedom/resolution'
-  });
-  
-  return prompts;
+ЛЕТЧИЕ ПРИМЕРЫ:
+
+✅ ХОРОШО: "Женщина 45 лет сидит на кухне с чашкой кофе, смотрит за окно с грустным выражением. Солнечный свет через окно создает тени на её лице. На столе письмо. Снято на iPhone, режим портрета."
+
+❌ ПЛОХО: "Woman in room. Sad mood. Professional photography."
+
+✅ ХОРОШО: "Две подруги обнимаются в проезде между домов, слёзы счастья. Один держит другую. Фото снято в золотой час, контровое освещение. Реальное эмоциональное переживание."
+
+❌ ПЛОХО: "People hugging. Happy moment. Real photo."
+`;
+
+  const userPrompt = `СТАТЬЯ:
+
+ЗАГОЛОВОК: "${articleTitle}"
+
+СОДЕРЖАНИЕ (первые 1000 символов):
+${articleContent.substring(0, 1000)}...
+
+ГЕНЕРИРУЙ 3 УНИКАЛЬНЫЕ СЦЕНЫ:
+1. OPENING: Эмоциональный крючок, показывает начальную проблему/ситуацию
+2. CLIMAX: Кульминация, пик эмоции, поворотный момент
+3. RESOLUTION: Финал, результат, новое состояние (СОВЕРШЕННО ОТЛИЧАЕТСЯ от сцены 1!)
+
+Ответ - ТОЛЬКО JSON!`;
+
+  try {
+    // Вызываем Gemini API
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=' +
+        apiKey,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: [{ text: systemPrompt }],
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const responseText = data.candidates[0].content.parts[0].text;
+
+    // Парсим JSON из ответа
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Не смог парсить JSON из ответа Gemini');
+    }
+
+    const parsedResponse = JSON.parse(jsonMatch[0]);
+    const scenes = parsedResponse.scenes || [];
+
+    // Конвертируем в наш формат
+    const prompts: ImagePrompt[] = scenes.map((scene: any) => ({
+      sceneNumber: scene.sceneNumber,
+      sceneName: scene.sceneName,
+      shortPrompt: scene.shortPrompt,
+      detailedPrompt: scene.detailedPrompt,
+      visualElements: scene.visualElements || [],
+      mood: scene.mood,
+      lightingConditions: scene.lightingConditions,
+      cameraAngle: scene.cameraAngle,
+      context: scene.context,
+    }));
+
+    return prompts;
+  } catch (error) {
+    console.error(
+      `${LOG.ERROR} Ошибка Gemini API:`,
+      (error as Error).message
+    );
+    throw error;
+  }
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const showHelp = args.includes('--help') || args.includes('-h') || args.length === 0;
-  
+  const showHelp =
+    args.includes('--help') ||
+    args.includes('-h') ||
+    (args.length === 0 && !getArg('file'));
+
   if (showHelp) {
     console.log(`
-📸 Image Prompt Generator\n`);
+📸 Dynamic Image Prompt Generator\n`);
     console.log(`Usage:`);
-    console.log(`  npx tsx scripts/generateImagePrompt.ts [options]\n`);
+    console.log(
+      `  npx tsx scripts/generateImagePrompt.ts [options]\n`
+    );
     console.log(`Options:`);
-    console.log(`  --theme=TEXT              Custom theme for article`);
-    console.log(`  --angle=VALUE             Article angle (confession, advice, etc)`);
-    console.log(`  --emotion=VALUE           Primary emotion (triumph, fear, joy, etc)`);
-    console.log(`  --audience=TEXT           Target audience (Women 35-60, etc)`);
-    console.log(`  --project=NAME            Project name (default: channel-1)`);
-    console.log(`  --generate-images         Generate actual images from prompts`);
-    console.log(`  --image-count=N           Number of images per prompt (default: 1)`);
-    console.log(`  --image-delay=MS          Delay between image generations (default: 3000)`);
-    console.log(`  --output=PATH             Output directory`);
-    console.log(`  --verbose                 Detailed logs`);
-    console.log(`  --help                    Show this help\n`);
+    console.log(
+      `  --file=PATH               Путь к markdown файлу статьи`
+    );
+    console.log(
+      `  --title=TEXT              Заголовок статьи (если без файла)`
+    );
+    console.log(
+      `  --content=TEXT            Содержание статьи (если без файла)`
+    );
+    console.log(
+      `  --generate-images         Генерировать реальные изображения`
+    );
+    console.log(
+      `  --image-count=N           Количество вариантов на сцену (default: 1)`
+    );
+    console.log(
+      `  --output=PATH             Папка для сохранения (default: ./generated/)`
+    );
+    console.log(`  --verbose                 Подробные логи\n`);
     console.log(`Examples:`);
-    console.log(`  # Generate only prompts (no images)`);
-    console.log(`  npx tsx scripts/generateImagePrompt.ts\n`);
-    console.log(`  # Generate prompts with custom theme`);
-    console.log(`  npx tsx scripts/generateImagePrompt.ts --theme="My theme" --emotion=triumph\n`);
-    console.log(`  # Generate prompts AND images`);
-    console.log(`  npx tsx scripts/generateImagePrompt.ts --generate-images --image-count=2\n`);
+    console.log(
+      `  # Из markdown файла\n  npx tsx scripts/generateImagePrompt.ts --file=articles/story.md\n`
+    );
+    console.log(
+      `  # Вручную\n  npx tsx scripts/generateImagePrompt.ts --title="Заголовок" --content="Текст"\n`
+    );
+    console.log(
+      `  # Генерировать картинки\n  npx tsx scripts/generateImagePrompt.ts --file=article.md --generate-images\n`
+    );
     process.exit(0);
   }
-  
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+
+  const apiKey =
+    process.env.GEMINI_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    console.error(`${LOG.ERROR} GEMINI_API_KEY not set`);
+    console.error(`${LOG.ERROR} GEMINI_API_KEY не установлен`);
     process.exit(1);
   }
-  
-  const theme = getArg('theme');
-  const angle = getArg('angle', 'confession');
-  const emotion = getArg('emotion', 'triumph');
-  const audience = getArg('audience', 'Women 35-60');
-  const project = getArg('project', 'channel-1');
+
+  const filePath = getArg('file');
+  let articleTitle = getArg('title', '');
+  let articleContent = getArg('content', '');
   const generateImages = getFlag('generate-images');
   const imageCount = parseInt(getArg('image-count', '1'), 10);
-  const imageDelay = parseInt(getArg('image-delay', '3000'), 10);
   const verbose = getFlag('verbose');
   const outputDir = getArg('output', './generated/image-prompts/');
-  
+
   console.log(`\n${LOG.PROMPT} ============================================`);
-  console.log(`${LOG.PROMPT} Image Prompt Generator`);
+  console.log(`${LOG.PROMPT} Dynamic Image Prompt Generator`);
   console.log(`${LOG.PROMPT} ============================================\n`);
-  
+
   const startTime = Date.now();
-  
+
   try {
-    // Step 1: Generate outline (without text)
-    console.log(`${LOG.BRAIN} Step 1: Generating article outline...`);
-    const multiAgentService = new MultiAgentService(apiKey);
-    
-    // Generate outline with theme
-    const articleTheme = theme || `Auto-selected theme for ${audience}`;
-    console.log(`   📝 Theme: "${articleTheme}"`);
-    console.log(`   🎯 Angle: ${angle}`);
-    console.log(`   💫 Emotion: ${emotion}`);
-    console.log(`   👥 Audience: ${audience}`);
-    
-    // Call outline generation (not full article with episodes)
-    const outlinePrompt = `
-      Create article outline (NOT the full article) based on:
-      - Theme: "${articleTheme}"
-      - Angle: ${angle}
-      - Primary emotion: ${emotion}
-      - Target audience: ${audience}
-      
-      Return JSON with:
-      {
-        "theme": "...",
-        "angle": "${angle}",
-        "emotion": "${emotion}",
-        "audience": "${audience}",
-        "mainIdea": "Core concept (1 sentence)",
-        "keyMoments": ["Moment 1", "Moment 2", "Moment 3"],
-        "visualCues": ["Visual element for scene 1", "Visual element for scene 2", "Visual element for scene 3"]
+    // Step 1: Получаем содержание статьи
+    if (filePath) {
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`Файл не найден: ${filePath}`);
       }
-    `;
-    
-    if (verbose) console.log(`\n${LOG.INFO} Generating outline with Gemini API...\n`);
-    
-    // Use gemini directly to generate outline
-    const geminiService = require('../services/geminiService').geminiService;
-    const outlineResult = await geminiService.sendMessage(outlinePrompt);
-    const outline = JSON.parse(outlineResult);
-    
-    console.log(`${LOG.SUCCESS} ✅ Outline generated\n`);
-    
-    if (verbose) {
-      console.log(`   Main idea: ${outline.mainIdea}`);
-      console.log(`   Key moments: ${outline.keyMoments.join(', ')}`);
-      console.log('');
+
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const parsed = matter(fileContent);
+      articleTitle = parsed.data.title || 'Untitled';
+      articleContent = parsed.content;
+
+      console.log(`${LOG.INFO} Файл: ${filePath}`);
+    } else {
+      console.log(`${LOG.INFO} Заголовок: "${articleTitle}"`);
     }
-    
-    // Step 2: Generate image prompts
-    console.log(`${LOG.PROMPT} Step 2: Generating image prompts...`);
-    const imagePrompts = await generateImagePrompts(outline);
-    console.log(`${LOG.SUCCESS} ✅ Generated ${imagePrompts.length} image prompts\n`);
-    
-    // Step 3: Display prompts
-    console.log(`${LOG.PROMPT} ============================================`);
-    console.log(`${LOG.PROMPT} IMAGE PROMPTS`);
-    console.log(`${LOG.PROMPT} ============================================\n`);
-    
-    imagePrompts.forEach(prompt => {
-      console.log(`${LOG.PROMPT} Scene ${prompt.sceneNumber}: ${prompt.sceneName}`);
-      console.log(`   Mood: ${prompt.mood}`);
-      console.log(`   Camera: ${prompt.cameraAngle}`);
-      console.log(`   Visual elements: ${prompt.visualElements.join(', ')}`);
-      console.log('');
-      console.log(`   Quick prompt:`);
-      console.log(`   "${prompt.prompt}"`);
-      console.log('');
-      console.log(`   Detailed prompt:`);
-      console.log(`   "${prompt.detailedPrompt}"`);
-      console.log('');
+
+    if (!articleContent) {
+      throw new Error('Содержание статьи не предоставлено');
+    }
+
+    console.log(`${LOG.INFO} Объем: ${articleContent.length} символов\n`);
+
+    // Step 2: Генерируем промпты через Gemini
+    console.log(`${LOG.BRAIN} Step 1: Анализ статьи...`);
+    const imagePrompts = await generateDynamicImagePrompts(
+      articleTitle,
+      articleContent,
+      apiKey
+    );
+
+    console.log(
+      `${LOG.SUCCESS} ✅ Сгенерировано ${imagePrompts.length} уникальных сцен\n`
+    );
+
+    // Step 3: Показываем результаты
+    console.log(
+      `${LOG.PROMPT} ============================================`
+    );
+    console.log(`${LOG.PROMPT} СЦЕНЫ ДЛЯ ФОТОГРАФИЙ`);
+    console.log(
+      `${LOG.PROMPT} ============================================\n`
+    );
+
+    imagePrompts.forEach((prompt) => {
+      console.log(
+        `${LOG.SCENE} Сцена ${prompt.sceneNumber}: ${prompt.sceneName}`
+      );
+      console.log(`   📍 Контекст: ${prompt.context}`);
+      console.log(`   💭 Настроение: ${prompt.mood}`);
+      console.log(
+        `   💡 Освещение: ${prompt.lightingConditions}`
+      );
+      console.log(`   📷 Камера: ${prompt.cameraAngle}`);
+      console.log(`   🎨 Элементы: ${prompt.visualElements.join(', ')}`);
+      console.log(`\n   ⚡ Промпт (быстро):\n   "${prompt.shortPrompt}"`);
+      console.log(`\n   📝 Полный промпт:\n   "${prompt.detailedPrompt}"\n`);
     });
-    
-    // Step 4: Save prompts to file
+
+    // Step 4: Сохраняем промпты
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const promptsFile = path.join(outputDir, `prompts_${timestamp}.json`);
-    
-    fs.writeFileSync(promptsFile, JSON.stringify({
-      generatedAt: new Date().toISOString(),
-      theme: articleTheme,
-      angle,
-      emotion,
-      audience,
-      outline,
-      imagePrompts
-    }, null, 2));
-    
-    console.log(`${LOG.SAVE} Prompts saved: ${promptsFile}\n`);
-    
-    // Step 5: Optionally generate images
+
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, '-');
+    const promptsFile = path.join(
+      outputDir,
+      `prompts_${timestamp}.json`
+    );
+
+    fs.writeFileSync(
+      promptsFile,
+      JSON.stringify(
+        {
+          generatedAt: new Date().toISOString(),
+          articleTitle,
+          articleLength: articleContent.length,
+          imagePrompts,
+        },
+        null,
+        2
+      )
+    );
+
+    console.log(`${LOG.SAVE} Сохранено: ${promptsFile}\n`);
+
+    // Step 5: Опционально генерируем картинки
     if (generateImages) {
-      console.log(`${LOG.PROMPT} Step 3: Generating images from prompts...\n`);
-      
-      const imageGenerator = new ImageGeneratorService();
-      const imageProcessor = new ImageProcessorService();
-      const imagesDir = path.join(outputDir, `images_${timestamp}`);
-      
-      if (!fs.existsSync(imagesDir)) {
-        fs.mkdirSync(imagesDir, { recursive: true });
-      }
-      
-      let generatedCount = 0;
-      
-      for (const imgPrompt of imagePrompts) {
-        console.log(`${LOG.PROMPT} Scene ${imgPrompt.sceneNumber}: ${imgPrompt.sceneName}`);
-        
-        for (let i = 1; i <= imageCount; i++) {
-          try {
-            if (verbose) console.log(`   Generating image ${i}/${imageCount}...`);
-            
-            const base64Image = await imageGenerator.generateVisual(imgPrompt.detailedPrompt);
-            if (!base64Image) throw new Error('Generation returned null');
-            
-            const processedBuffer = await imageProcessor.processImage(base64Image);
-            
-            const filename = `scene_${imgPrompt.sceneNumber}_image_${i}.jpg`;
-            const filepath = path.join(imagesDir, filename);
-            fs.writeFileSync(filepath, processedBuffer, 'binary');
-            
-            console.log(`   ✅ ${filename} (${(processedBuffer.length / 1024).toFixed(1)} KB)`);
-            generatedCount++;
-            
-            if (i < imageCount) {
-              await new Promise(resolve => setTimeout(resolve, imageDelay));
-            }
-          } catch (error) {
-            console.log(`   ❌ Failed: ${(error as Error).message}`);
-          }
+      console.log(
+        `${LOG.PROMPT} Step 2: Генерирование изображений...\n`
+      );
+
+      try {
+        const { ImageGeneratorService } = await import(
+          '../services/imageGeneratorService'
+        );
+        const { ImageProcessorService } = await import(
+          '../services/imageProcessorService'
+        );
+
+        const imageGenerator = new ImageGeneratorService();
+        const imageProcessor = new ImageProcessorService();
+        const imagesDir = path.join(
+          outputDir,
+          `images_${timestamp}`
+        );
+
+        if (!fs.existsSync(imagesDir)) {
+          fs.mkdirSync(imagesDir, { recursive: true });
         }
-        console.log('');
+
+        let generatedCount = 0;
+
+        for (const imgPrompt of imagePrompts) {
+          console.log(
+            `${LOG.SCENE} Сцена ${imgPrompt.sceneNumber}: ${imgPrompt.sceneName}`
+          );
+
+          for (let i = 1; i <= imageCount; i++) {
+            try {
+              if (verbose)
+                console.log(
+                  `   🎨 Генерирую вариант ${i}/${imageCount}...`
+                );
+
+              // Используем ДЕТАЛЬНЫЙ промпт для максимального качества
+              const base64Image =
+                await imageGenerator.generateVisual(
+                  imgPrompt.detailedPrompt
+                );
+              if (!base64Image)
+                throw new Error('Generation returned null');
+
+              const processedBuffer =
+                await imageProcessor.processImage(
+                  base64Image
+                );
+
+              const filename = `scene_${imgPrompt.sceneNumber}_variant_${i}.jpg`;
+              const filepath = path.join(
+                imagesDir,
+                filename
+              );
+              fs.writeFileSync(
+                filepath,
+                processedBuffer,
+                'binary'
+              );
+
+              console.log(
+                `   ✅ ${filename} (${
+                  (processedBuffer.length / 1024).toFixed(1)
+                } KB)`
+              );
+              generatedCount++;
+
+              if (i < imageCount) {
+                await new Promise((resolve) =>
+                  setTimeout(resolve, 3000)
+                );
+              }
+            } catch (error) {
+              console.log(
+                `   ❌ Ошибка: ${
+                  (error as Error).message
+                }`
+              );
+            }
+          }
+          console.log('');
+        }
+
+        console.log(
+          `${LOG.SUCCESS} ✅ Сгенерировано ${generatedCount} изображений`
+        );
+        console.log(`${LOG.SAVE} Сохранено: ${imagesDir}\n`);
+      } catch (error) {
+        console.error(
+          `${LOG.ERROR} Ошибка при генерировании картинок:`,
+          (error as Error).message
+        );
       }
-      
-      console.log(`${LOG.SUCCESS} ✅ Generated ${generatedCount} images`);
-      console.log(`${LOG.SAVE} Images saved: ${imagesDir}\n`);
     }
-    
+
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-    
+
     console.log(`${LOG.SUCCESS} ============================================`);
-    console.log(`${LOG.SUCCESS} Complete!`);
+    console.log(`${LOG.SUCCESS} Готово!`);
     console.log(`${LOG.SUCCESS} ============================================`);
     console.log(``);
-    console.log(`📊 Summary:`);
-    console.log(`   ✅ Prompts generated: ${imagePrompts.length}`);
-    console.log(`   ${generateImages ? '✅' : '⊘'} Images generated: ${generateImages ? imagePrompts.length * imageCount : 'disabled (use --generate-images)'}`);
-    console.log(`   📁 Output: ${path.resolve(outputDir)}`);
-    console.log(`   ⏱️  Duration: ${duration}s`);
+    console.log(`📊 Статистика:`);
+    console.log(`   ✅ Промпты: ${imagePrompts.length}`);
+    console.log(
+      `   ${generateImages ? '✅' : '⊘'} Картинки: ${
+        generateImages
+          ? imagePrompts.length * imageCount
+          : 'пропущено (используй --generate-images)'
+      }`
+    );
+    console.log(`   📁 Сохранено: ${path.resolve(outputDir)}`);
+    console.log(`   ⏱️  Время: ${duration}s`);
     console.log('');
-    
   } catch (error) {
-    console.error(`\n${LOG.ERROR} Error:`, (error as Error).message);
+    console.error(
+      `\n${LOG.ERROR} Ошибка:`,
+      (error as Error).message
+    );
     if (verbose) {
       console.error(error);
     }
