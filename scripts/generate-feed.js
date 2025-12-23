@@ -213,21 +213,14 @@ function generateFeed() {
           // Используем актуальное имя файла изображения
           const dirPath = path.dirname(relativePath);
 
-          // Если путь содержит published, корректируем его для URL изображения
-          let imagePath;
-          if (relativePath.includes('published/')) {
-            // Для файлов из published корректируем путь для URL
-            const correctedPath = relativePath.replace('published/', '');
-            imagePath = path.join('articles', correctedPath, actualImageFileName);
-          } else {
-            imagePath = path.join('articles', dirPath, actualImageFileName);
-          }
+          // Формируем путь к изображению в published
+          let imagePath = path.join('articles', 'published', dirPath, actualImageFileName);
 
           // Убираем начальный './' если он есть
           imagePath = imagePath.replace(/^\.\//, '');
 
           // Формируем URL для изображения на GitHub (а не на GitHub Pages)
-          // Пример: https://raw.githubusercontent.com/username/repository/main/articles/path/image.jpg
+          // Пример: https://raw.githubusercontent.com/username/repository/main/articles/published/path/image.jpg
           const githubRawBaseUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY || 'crosspostly/dzen'}/main`;
           imageUrl = `${githubRawBaseUrl}/${imagePath}`.replace(/\\/g, '/');
         }
