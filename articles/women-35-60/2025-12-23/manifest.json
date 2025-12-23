@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766507990487,
+  "generatedAt": 1766509880420,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -14,12 +14,12 @@
     "maxChars": 19000
   },
   "articleCount": 1,
-  "totalCharacters": 20738,
+  "totalCharacters": 20102,
   "totalImages": 1,
   "outputPaths": {
     "articles": [],
     "images": [
-      "articles/women-35-60/2025-12-23/ya-nenavizhu-ego-za-etu-podluyu-lozh-tot-klyuch-v-.jpg"
+      "articles/women-35-60/2025-12-23/mama-skryvala-pravdu-v-sinem-bloknote-teper-ya-vsy.jpg"
     ],
     "report": "articles/women-35-60/2025-12-23/REPORT.md"
   }
