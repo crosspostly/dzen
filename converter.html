@@ -125,6 +125,11 @@
             font-size: var(--font-size-base);
         }
 
+        .required {
+            color: var(--color-error);
+            margin-left: var(--space-4);
+        }
+
         input[type="text"],
         input[type="number"],
         input[type="password"],
@@ -274,8 +279,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>📝 Конвертер TXT → MD</h1>
-        <p class="subtitle">Преобразование статей для Дзена в Markdown с front-matter (GitHub raw URLs)</p>
+        <h1>📝 Конвертер TXT → MD для Дзена</h1>
+        <p class="subtitle">Преобразование статей в Markdown с front-matter. Каждая статья должна иметь уникальное имя для изображения!</p>
 
         <div class="grid">
             <!-- INPUT CARD -->
@@ -298,13 +303,24 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="day">🗓️ День (опционально)</label>
+                    <label for="day">🗓️ День</label>
                     <input type="number" id="day" value="1" min="1" max="31">
                 </div>
 
                 <div class="form-group">
-                    <label for="imageName">🖼️ Имя изображения (без расширения)</label>
-                    <input type="text" id="imageName" placeholder="Например: article-cover">
+                    <label for="imageName">🖼️ Имя изображения (БЕЗ расширения) <span class="required">*</span></label>
+                    <input type="text" id="imageName" placeholder="Например: fear-story (будет fear-story.jpg)" required>
+                    <small style="color: var(--color-text-secondary);">⚠️ ОБЯЗАТЕЛЬНО! Каждая статья должна иметь уникальное имя!</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">📂 Категория Дзена <span class="required">*</span></label>
+                    <select id="category" required>
+                        <option value="lifestory" selected>lifestory - Истории из жизни</option>
+                        <option value="article">article - Статьи и анализ</option>
+                        <option value="story">story - Рассказы</option>
+                        <option value="experience">experience - Опыт и советы</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -354,7 +370,7 @@
 
                     <div class="info-box">
                         <strong>✅ Готово!</strong>
-                        <span>Файл содержит GitHub raw URL для published папки!</span>
+                        <span>GitHub RAW URL готов. Загружайте статью и изображение в articles/published/2025/12/21/</span>
                     </div>
                 </div>
             </div>
@@ -367,6 +383,7 @@
         const monthInput = document.getElementById('month');
         const dayInput = document.getElementById('day');
         const imageNameInput = document.getElementById('imageName');
+        const categoryInput = document.getElementById('category');
         const contentInput = document.getElementById('content');
         const apiKeyInput = document.getElementById('apiKey');
         const convertBtn = document.getElementById('convertBtn');
@@ -444,10 +461,18 @@ ${context}
             const month = pad(monthInput.value);
             const day = pad(dayInput.value);
             const imageName = imageNameInput.value.trim();
+            const category = categoryInput.value.trim();
             const content = contentInput.value.trim();
 
+            // Валидация
             if (!title || !content) {
                 showStatus('❌ Заполните заголовок и текст статьи', 'error');
+                return;
+            }
+
+            if (!imageName) {
+                showStatus('❌ ОБЯЗАТЕЛЬНО укажите уникальное имя для изображения! (например: fear-story)', 'error');
+                convertBtn.disabled = false;
                 return;
             }
 
@@ -460,18 +485,19 @@ ${context}
                 descriptionSection.style.display = 'block';
 
                 const date = `${year}-${month}-${day}`;
-                const imagePath = imageName ? `${imageName}.jpg` : 'cover.jpg';
+                const imagePath = `${imageName}.jpg`;
                 
                 // GitHub raw URL для изображения в published папке
                 const dirPath = `${year}/${month}/${day}`;
                 const imageUrl = `https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/${dirPath}/${imagePath}`;
 
+                // Front-matter уже содержит content через шаблонные строки
                 const frontMatter = `---
 title: ${escapeYaml(title)}
 date: ${date}
 description: ${escapeYaml(description)}
 image: "${imageUrl}"
-category: "news"
+category: "${category}"
 ---
 
 ${content}`;
@@ -480,7 +506,7 @@ ${content}`;
                 previewFull.textContent = frontMatter;
                 previewSection.style.display = 'block';
 
-                showStatus('✅ Конвертация успешна! GitHub raw URL установлен!', 'success');
+                showStatus('✅ Конвертация успешна! GitHub RAW URL установлен.', 'success');
 
                 copyBtn.onclick = () => {
                     navigator.clipboard.writeText(frontMatter).then(() => {
