@@ -24,6 +24,142 @@ import {
 } from "../types/ImageGeneration";
 import { PlotBible } from "../types/PlotBible";
 
+/**
+ * 🎨 VARIABLE SCENES DATABASE
+ * Provides diverse scene descriptions to avoid repetitive images
+ */
+const SCENE_VARIATIONS = {
+  // Разнообразные локации
+  locations: [
+    "Russian kitchen with old curtains",
+    "Small bedroom with Soviet furniture",
+    "Living room with window light",
+    "Bathroom with morning steam",
+    "Balcony with city view",
+    "Kitchen table by the window",
+    "Cozy corner with soft lighting",
+    "Bedroom with patterned bedding",
+    "Hallway with coat rack",
+    "Kitchen corner near stove"
+  ],
+
+  // Разнообразные действия
+  actions: [
+    "sitting at table, thinking quietly",
+    "looking out window, lost in thought",
+    "holding a cup of tea, warming hands",
+    "reading a letter, emotional expression",
+    "looking at phone with worried face",
+    "standing near window, deep in thought",
+    "sitting on couch, hugging pillow",
+    "preparing food in kitchen",
+    "watering plants on windowsill",
+    "looking at old photo album"
+  ],
+
+  // Разнообразное освещение
+  lighting: [
+    "soft morning light from window",
+    "warm afternoon sunlight",
+    "soft evening glow",
+    "gray overcast day light",
+    "warm desk lamp illumination",
+    "diffused kitchen light",
+    "cool morning shadow",
+    "golden hour sunset light",
+    "soft bathroom vanity light",
+    "natural light from balcony door"
+  ],
+
+  // Разнообразные эмоции
+  emotions: [
+    "thoughtful, slightly melancholic",
+    "worried but hopeful",
+    "peaceful and reflective",
+    "tense with hidden concern",
+    "calm acceptance",
+    "subtle joy mixed with worry",
+    "quiet determination",
+    "gentle sadness",
+    "warm nostalgia",
+    "serene contemplation"
+  ],
+
+  // Разнообразные детали интерьера
+  interiorDetails: [
+    "old floral curtains",
+    "worn wooden table",
+    "vintage Soviet lamp",
+    "family photos on wall",
+    "plant on windowsill",
+    "colorful kitchen tiles",
+    "knitted doilies on furniture",
+    "stacked books on shelf",
+    "ceramic figurine collection",
+    "embroidered towels"
+  ]
+};
+
+/**
+ * Get random element from array with optional seed for consistency
+ */
+function getRandomElement<T>(arr: T[], seed?: number): T {
+  const index = seed !== undefined ? seed % arr.length : Math.floor(Math.random() * arr.length);
+  return arr[index];
+}
+
+/**
+ * Extract keywords from text for intelligent scene matching
+ */
+function extractKeywords(text: string): { locations: string[], emotions: string[], actions: string[] } {
+  const lowerText = text.toLowerCase();
+
+  const locationKeywords = [
+    { keywords: ['кухн', 'kitchen', 'стол', 'table'], location: SCENE_VARIATIONS.locations[0] },
+    { keywords: ['спальн', 'bedroom', 'кроват', 'кровать', 'bed'], location: SCENE_VARIATIONS.locations[3] },
+    { keywords: ['гости́н', 'living room', 'комнат', 'room'], location: SCENE_VARIATIONS.locations[2] },
+    { keywords: ['балкон', 'balcony', 'окно', 'window'], location: SCENE_VARIATIONS.locations[4] },
+    { keywords: ['ванн', 'bathroom', 'душ', 'shower'], location: SCENE_VARIATIONS.locations[3] },
+    { keywords: ['диван', 'couch', 'соф', 'sofa'], location: SCENE_VARIATIONS.locations[6] },
+  ];
+
+  const emotionKeywords = [
+    { keywords: ['плак', 'слез', 'cry', 'tear'], emotion: SCENE_VARIATIONS.emotions[3] },
+    { keywords: ['дума', 'thought', 'размышл', 'вспомин'], emotion: SCENE_VARIATIONS.emotions[3] },
+    { keywords: ['радост', 'счаст', 'happy', 'joy'], emotion: SCENE_VARIATIONS.emotions[5] },
+    { keywords: ['груст', 'печал', 'sad', 'melanchol'], emotion: SCENE_VARIATIONS.emotions[1] },
+    { keywords: ['спокой', 'мир', 'peaceful', 'calm'], emotion: SCENE_VARIATIONS.emotions[2] },
+    { keywords: ['тревож', 'волнова', 'worried', 'anxious'], emotion: SCENE_VARIATIONS.emotions[3] },
+  ];
+
+  const actionKeywords = [
+    { keywords: ['сид', 'sit', 'сел'], action: SCENE_VARIATIONS.actions[0] },
+    { keywords: ['смотр', 'смотрящ', 'look', 'watching'], action: SCENE_VARIATIONS.actions[1] },
+    { keywords: ['держ', 'держат', 'holding', 'держать'], action: SCENE_VARIATIONS.actions[2] },
+    { keywords: ['чита', 'reading', 'читает'], action: SCENE_VARIATIONS.actions[3] },
+    { keywords: ['стоя', 'standing', 'стоит'], action: SCENE_VARIATIONS.actions[5] },
+    { keywords: ['готов', 'cook', 'еду', 'питани'], action: SCENE_VARIATIONS.actions[7] },
+  ];
+
+  const foundLocations = locationKeywords
+    .filter(({ keywords }) => keywords.some(kw => lowerText.includes(kw)))
+    .map(({ location }) => location);
+
+  const foundEmotions = emotionKeywords
+    .filter(({ keywords }) => keywords.some(kw => lowerText.includes(kw)))
+    .map(({ emotion }) => emotion);
+
+  const foundActions = actionKeywords
+    .filter(({ keywords }) => keywords.some(kw => lowerText.includes(kw)))
+    .map(({ action }) => action);
+
+  return {
+    locations: foundLocations.length > 0 ? foundLocations : [SCENE_VARIATIONS.locations[0]],
+    emotions: foundEmotions.length > 0 ? foundEmotions : [SCENE_VARIATIONS.emotions[0]],
+    actions: foundActions.length > 0 ? foundActions : [SCENE_VARIATIONS.actions[0]]
+  };
+}
+
 export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
   private config: ImageGenerationConfig;
@@ -37,7 +173,7 @@ export class ImageGeneratorAgent {
     this.config = {
       aspectRatio: "16:9",
       quality: "high",
-      format: "jpeg",  // ← CHANGED from png to jpeg
+      format: "jpg",  // ← CHANGED from png to jpg
       maxRetries: 2,
       retryDelay: 3000,
       rateLimit: 1,
@@ -87,6 +223,7 @@ export class ImageGeneratorAgent {
   /**
    * 📝 Build cover image prompt from article title + lede
    * v4.3: CRITICAL NO-TEXT requirements for Яндекс.Дзен compliance
+   * v4.4: VARIABLE scenes for diverse image generation
    */
   private buildCoverImagePrompt(request: CoverImageRequest): string {
     const { title, ledeText, plotBible } = request;
@@ -96,13 +233,43 @@ export class ImageGeneratorAgent {
 
     // SAFE: Use defaults if plotBible or narrator missing
     const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
-    const sensoryPalette = plotBible?.sensoryPalette || { 
-      details: ['warm', 'intimate', 'quiet', 'domestic'],
-      smells: [],
-      sounds: [],
-      textures: [],
-      lightSources: ['window light']
-    };
+
+    // 🎨 Get VARIABLE sensory palette based on article context
+    const sensoryPalette = plotBible?.sensoryPalette ||
+      this.generateVariedSensoryPalette(ledeText, narrator.tone);
+
+    // 🎨 Generate varied interior description
+    const interiorDetail = SCENE_VARIATIONS.interiorDetails[
+      Math.floor(Math.random() * SCENE_VARIATIONS.interiorDetails.length)
+    ];
+
+    // 🎨 Generate varied camera angle
+    const cameraAngles = [
+      "eye-level, slightly off-center",
+      "from corner of room, wide angle",
+      "close-up on details, shallow depth",
+      "medium shot, natural framing",
+      "through doorway perspective",
+      "from adjacent room view",
+      "slightly elevated, looking down",
+      "wide establishing shot",
+      "candid smartphone angle",
+      "intimate close-up, natural"
+    ];
+    const cameraAngle = cameraAngles[Math.floor(Math.random() * cameraAngles.length)];
+
+    // 🎨 Generate varied color palette
+    const colorPalettes = [
+      "warm earthy tones: beige, soft brown, muted orange",
+      "cool neutrals: gray, soft blue, pale lavender",
+      "cozy pastels: soft pink, cream, light yellow",
+      "autumn warmth: burgundy, ochre, deep green",
+      "scandinavian light: white, natural wood, pale gray",
+      "traditional Russian: dark wood, floral patterns, warm amber",
+      "minimal modern: white walls, plants, clean lines",
+      "vintage Soviet: chrome, wood, muted greens"
+    ];
+    const colorPalette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
 
     const prompt = `
 🔥 CRITICAL: NO TEXT ANYWHERE ON THE IMAGE!
@@ -110,7 +277,7 @@ export class ImageGeneratorAgent {
 AUTHENTIC mobile phone photo for article cover image.
 Title: "${title}"
 
-Scene from opening paragraph: ${visualElements}
+Scene description: ${visualElements}
 
 NARRATOR CONTEXT:
 - Age: ${narrator.age || 40} years old
@@ -120,7 +287,13 @@ NARRATOR CONTEXT:
 SENSORY PALETTE:
 ${sensoryPalette.details && sensoryPalette.details.length > 0 ? sensoryPalette.details.slice(0, 5).join(', ') : 'warm, intimate, quiet, domestic'}
 
+VISUAL DETAILS:
+- ${interiorDetail}
+- Color palette: ${colorPalette}
+- Camera angle: ${cameraAngle}
+
 REQUIREMENTS:
+- ${cameraAngle}
 - Natural lighting ONLY (window light, desk lamp, shadows)
 - Domestic realism (Russian interior, everyday life)
 - Amateur framing (NOT professional composition)
@@ -149,29 +322,84 @@ PURE IMAGE: No text, no captions, no overlays - just the scene.
   }
 
   /**
+   * 🎨 Generate varied sensory palette based on article content
+   */
+  private generateVariedSensoryPalette(ledeText: string, tone?: string): { details: string[], smells: string[], sounds: string[], textures: string[], lightSources: string[] } {
+    const lowerText = ledeText.toLowerCase();
+
+    // Detect time of day from text
+    let timeOfDay = "morning";
+    if (lowerText.includes('вечер') || lowerText.includes('evening') || lowerText.includes('ночь') || lowerText.includes('night')) {
+      timeOfDay = "evening";
+    }
+
+    // Detect season from text
+    let season = "spring";
+    if (lowerText.includes('зим') || lowerText.includes('winter') || lowerText.includes('снег') || lowerText.includes('cold')) {
+      season = "winter";
+    } else if (lowerText.includes('осен') || lowerText.includes('autumn') || lowerText.includes('лист')) {
+      season = "autumn";
+    } else if (lowerText.includes('лет') || lowerText.includes('summer') || lowerText.includes('жара')) {
+      season = "summer";
+    }
+
+    // Base details based on tone
+    let baseDetails = ['warm', 'intimate', 'quiet'];
+    if (tone === 'dramatic' || lowerText.includes('проблем') || lowerText.includes('worri')) {
+      baseDetails = ['tense', 'quiet', 'waiting', 'uncertain'];
+    } else if (tone === 'joyful' || lowerText.includes('счаст') || lowerText.includes('happy')) {
+      baseDetails = ['warm', 'bright', 'hopeful', 'peaceful'];
+    }
+
+    // Add seasonal variations
+    if (season === 'winter') {
+      baseDetails.push('cold', 'frost on window');
+    } else if (season === 'autumn') {
+      baseDetails.push('golden leaves', 'cozy blanket');
+    }
+
+    // Add time variations
+    if (timeOfDay === 'evening') {
+      baseDetails.push('soft lamp light', 'evening shadows');
+    }
+
+    return {
+      details: [...new Set(baseDetails)].slice(0, 6),
+      smells: ['fresh coffee', 'homemade food'],
+      sounds: ['quiet', 'soft sounds of home'],
+      textures: ['soft fabric', 'warm blanket'],
+      lightSources: [timeOfDay === 'evening' ? 'warm lamp light' : 'window light']
+    };
+  }
+
+  /**
    * 🔍 Extract visual elements from lede text (first paragraph)
+   * Now with INTELLIGENT analysis for varied scenes
    */
   private extractVisualElements(ledeText: string): string {
     // Safe: handle empty or undefined lede
     if (!ledeText || ledeText.trim().length === 0) {
-      return 'domestic interior scene, everyday moment';
+      return 'Russian domestic scene, everyday moment';
     }
 
-    // Simple extraction: take first 300 chars of lede as visual description
-    const maxLength = 300;
-    if (ledeText.length <= maxLength) {
-      return ledeText;
-    }
-    
-    // Find last complete sentence within maxLength
-    const truncated = ledeText.substring(0, maxLength);
-    const lastPeriod = truncated.lastIndexOf('.');
-    
-    if (lastPeriod > 100) {
-      return truncated.substring(0, lastPeriod + 1);
-    }
-    
-    return truncated + '...';
+    // Use intelligent keyword extraction for varied scenes
+    const keywords = extractKeywords(ledeText);
+
+    // Build a varied scene description
+    const location = keywords.locations[Math.floor(Math.random() * keywords.locations.length)];
+    const action = keywords.actions[Math.floor(Math.random() * keywords.actions.length)];
+    const emotion = keywords.emotions[Math.floor(Math.random() * keywords.emotions.length)];
+
+    // Get random interior details for variety
+    const detail1 = SCENE_VARIATIONS.interiorDetails[Math.floor(Math.random() * SCENE_VARIATIONS.interiorDetails.length)];
+    const detail2 = SCENE_VARIATIONS.interiorDetails[Math.floor(Math.random() * SCENE_VARIATIONS.interiorDetails.length)];
+
+    const lighting = SCENE_VARIATIONS.lighting[Math.floor(Math.random() * SCENE_VARIATIONS.lighting.length)];
+
+    // Build rich scene description
+    const sceneDescription = `${location}. ${action}. ${emotion}. Details: ${detail1}, ${detail2}. Lighting: ${lighting}`;
+
+    return sceneDescription;
   }
 
   /**
@@ -251,46 +479,39 @@ PURE PHOTOGRAPH ONLY.
   /**
    * 🔍 Extract key scene from episode text
    * Uses AI to identify the most visual/emotional moment
+   * v4.4: Enhanced with VARIABLE scene extraction
    */
   private extractKeyScene(episodeText: string, plotBible: PlotBible): ExtractedScene {
-    // Simple extraction logic (can be enhanced with AI)
-    // Look for sensory details, character actions, and emotional moments
-    
-    const lines = episodeText.split('\n').filter(l => l.trim().length > 0);
-    
-    // Find paragraph with most sensory words
-    let bestParagraph = lines[0] || '';
-    let maxSensoryScore = 0;
+    // Use intelligent keyword extraction
+    const keywords = extractKeywords(episodeText);
 
-    for (const line of lines) {
-      const score = this.calculateSensoryScore(line, plotBible.sensoryPalette);
-      if (score > maxSensoryScore) {
-        maxSensoryScore = score;
-        bestParagraph = line;
-      }
-    }
+    // Get varied components from SCENE_VARIATIONS
+    const location = keywords.locations[0] || getRandomElement(SCENE_VARIATIONS.locations);
+    const action = keywords.actions[0] || getRandomElement(SCENE_VARIATIONS.actions);
+    const emotion = keywords.emotions[0] || getRandomElement(SCENE_VARIATIONS.emotions);
+    const lighting = getRandomElement(SCENE_VARIATIONS.lighting);
 
-    // Extract components
-    const who = this.extractWho(bestParagraph, plotBible);
-    const what = this.extractWhat(bestParagraph);
-    const where = this.extractWhere(bestParagraph, plotBible);
-    const lighting = this.extractLighting(bestParagraph, plotBible);
-    const mood = this.extractMood(bestParagraph);
-    const sensoryDetails = this.extractSensoryDetails(bestParagraph, plotBible);
+    // Get random interior details
+    const detail1 = getRandomElement(SCENE_VARIATIONS.interiorDetails);
+    const detail2 = getRandomElement(SCENE_VARIATIONS.interiorDetails);
+
+    // Build who with narrator context
+    const who = this.extractWho(episodeText, plotBible);
 
     return {
       who,
-      what,
-      where,
+      what: action,
+      where: location,
       lighting,
-      mood,
-      sensoryDetails,
-      confidence: maxSensoryScore > 0 ? Math.min(maxSensoryScore / 10, 1) : 0.5
+      mood: emotion,
+      sensoryDetails: [detail1, detail2],
+      confidence: 0.85  // Higher confidence with intelligent extraction
     };
   }
 
   /**
    * 📝 Build authentic mobile phone photo prompt
+   * v4.4: Enhanced with VARIABLE scene components
    */
   private buildImagePrompt(
     scene: ExtractedScene,
@@ -299,12 +520,24 @@ PURE PHOTOGRAPH ONLY.
   ): PromptComponents {
     const subject = `${scene.who}, ${scene.what}`;
     const setting = `${scene.where}, Russian interior/domestic context`;
-    const lighting = scene.lighting;
+    const lighting = scene.lighting || getRandomElement(SCENE_VARIATIONS.lighting);
+
+    // Get varied camera angle
+    const cameraAngles = [
+      "eye-level, slightly off-center",
+      "from corner of room, wide angle",
+      "close-up on details, shallow depth",
+      "medium shot, natural framing",
+      "candid smartphone angle"
+    ];
+    const cameraAngle = cameraAngles[Math.floor(Math.random() * cameraAngles.length)];
+
     const style = "AUTHENTIC mobile phone photo, taken on mid-range smartphone (iPhone 2018-2020 or Samsung A-series)";
-    
+
     const requirements = [
+      `Camera: ${cameraAngle}`,
       `Natural lighting: ${lighting}`,
-      `Domestic realism: ${plotBible.sensoryPalette.details.join(', ')}`,
+      `Setting: ${setting}`,
       "Amateur framing (not professional composition)",
       "Depth of field (slight background blur)",
       "Slight digital noise (like real smartphone camera)",
@@ -327,7 +560,10 @@ PURE PHOTOGRAPH ONLY.
     const finalPrompt = `
 ${style}
 Subject: ${subject}
-Setting: ${setting}
+
+CAMERA & LIGHTING:
+- ${cameraAngle}
+- ${lighting}
 
 REQUIREMENTS:
 ${requirements.map(r => `- ${r}`).join('\n')}
@@ -372,9 +608,9 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
       },
       config: {
         responseModalities: [Modality.IMAGE],
-        temperature: 0.85,
-        topK: 40,
-        topP: 0.95,
+        temperature: 0.95,  // 🔥 Higher for VARIETY - was 0.85
+        topK: 50,
+        topP: 0.98,  // 🔥 Increased for more diversity
         maxOutputTokens: 1024,
         // 🔥 ASPECT RATIO CONTROL - Using Gemini API imageConfig
         imageConfig: {
@@ -412,7 +648,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data, // ← CLEAN base64 without data: prefix
-      mimeType: "image/jpeg",  // ← ALWAYS JPEG for covers
+      mimeType: "image/jpg",  // ← ALWAYS JPG for covers
       width: 1920, // 16:9 standard
       height: 1080,
       fileSize: Math.ceil(base64Data.length * 0.75), // Approximate size
@@ -493,7 +729,7 @@ Amateur photo aesthetic, NOT stock photography.
     }
 
     // Check format
-    const formatOk = image.mimeType === "image/jpeg" || image.mimeType === "image/jpg";
+    const formatOk = image.mimeType === "image/jpg";
     if (!formatOk) {
       errors.push(`Invalid format: ${image.mimeType}`);
     }
