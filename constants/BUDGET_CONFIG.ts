@@ -18,14 +18,29 @@
  */
 
 /**
- * Default character budget for LONGFORM articles
- * - Lede: ~6-7 minutes (600-900 chars)
+ * Default character budget for LONGFORM articles (15000-20000 chars with spaces)
+ * - Lede: ~600-900 chars (500-750 symbols without spaces)
  * - Episodes: adjustable based on episode count  
- * - Finale: ~12-15 minutes (1200-1800 chars)
+ * - Finale: ~1200-1800 chars (1000-1500 symbols without spaces)
  * 
- * Total: 19000 characters (reduced from 29000 to tighten content)
+ * Total: 19000 characters (with spaces) = ~15000 symbols (without spaces)
+ * This aligns with editorial spec: "7000-15000 symbols" (non-space characters)
+ * 
+ * Note: "Символы без пробелов" = we count characters, not words
  */
 export const CHAR_BUDGET = 19000;
+
+/**
+ * SYMBOL_BUDGET_WITHOUT_SPACES - Editorial requirement from client spec
+ * Client requires: 7000-15000 символов (без пробелов)
+ * Our system: 19000 chars (with spaces) × 0.8 = ~15200 symbols (without spaces)
+ */
+export const SYMBOL_BUDGET_WITHOUT_SPACES = {
+  min: 7000,
+  max: 15000,
+  target: Math.round(CHAR_BUDGET * 0.8), // ~15200 symbols
+  currentFormat: "СЛЕДИМ ЗА СИМВОЛАМИ БЕЗ ПРОБЕЛОВ (используем CHAR_BUDGET × 0.8)"
+};
 
 /**
  * Budget allocation guidelines (calculated dynamically)

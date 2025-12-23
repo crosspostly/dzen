@@ -656,6 +656,37 @@ REAL WORLD DETAILS (urban, modern, contemporary):
 - "Деревенская изба" (village hut)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📢 VOCAL READABILITY (FOR AUDIO VERSION - IMPORTANT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your text will be READ ALOUD. Follow these rules:
+
+✅ AVOID DIFFICULT CONSTRUCTIONS:
+   - Complex participles: "говоривший" → "который говорил"
+   - Many prefixes: "пре-", "super-" → use simple words
+   - Long compounds: "самоуправленческий" → "самоуправление"
+   - Rare archaisms: "селение", "жительство"
+
+✅ TEST BY READING ALOUD:
+   - Read paragraph aloud. If you stumble > 2 times → SIMPLIFY
+   - Sentence should be speakable in ONE breath
+   - Rhythm: mix short and long, but max 20-25 words per sentence
+
+✅ FORBIDDEN LEXICON (profanity):
+   ❌ NO: блядь, блять, ебать, хуй, пизда, мудила, хуёвый and all derivatives
+   ❌ NO: блядский, ёбаный, пиздец, ахуенно, ебанутый
+   ✅ USE: чёрт возьми, проклятый, отвратительный, потрясающе
+
+✅ GOOD (easy to speak):
+"Я села. Взяла письмо. Прочитала. И всё."
+(Short. Clear. Natural rhythm.)
+
+❌ BAD (tongue-twister):
+"После того как я получила данное корреспонденциарное отправление,
+ я, пребывая в состоянии неопределённости, приступила к его осмотру."
+(Difficult words, nested structure, unnatural.)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📖 DIALOGUE (REALISTIC RUSSIAN)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
