@@ -293,14 +293,17 @@ ${'='.repeat(60)}`);
       if (article.coverImage?.base64) {
         try {
           console.log(`\n   📼 Processing cover image (${i + 1}/${this.articles.length})...`);
-          console.log(`   ✅ Data URL validation: ${article.coverImage.base64.startsWith('data:') ? 'PASS' : 'FAIL'}`);
+           // 🔥 FIX: Add data URL prefix if missing (Gemini returns clean base64)
+           let dataUrl = article.coverImage.base64;
+           const hasDataPrefix = dataUrl.startsWith('data:');
+           if (!hasDataPrefix) {
+             dataUrl = `data:image/jpeg;base64,${dataUrl}`;
+           }
+           
+           console.log(`   ✅ Data URL validation: ${hasDataPrefix ? 'PASS (already prefixed)' : 'PASS (fixed)'}`);
+           console.log(`   📋 Validating base64 format...`);
 
-          // Process base64 JPEG through Canvas
-          // Input: "data:image/jpeg;base64,/9j/4AAQ..." (from API)
-          // Output: ImageProcessResult { buffer, success, format, ... }
-          const processorResult = await imageProcessorService.processImage(
-            article.coverImage.base64
-          );
+          const processorResult = await imageProcessorService.processImage(dataUrl);
 
           // Handle result
           if (processorResult.success && processorResult.buffer) {
