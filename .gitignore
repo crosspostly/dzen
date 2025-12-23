@@ -14,7 +14,8 @@ dist-ssr
 
 # ZenMaster v4.0 Factory Output
 output/
-articles/
+articles/*
+!articles/published/
 
 # Test files
 test-v4-modules.ts
@@ -39,4 +40,3 @@ docs/.docusaurus/
 *.tmp
 *.temp
 .cache/
-/articles
