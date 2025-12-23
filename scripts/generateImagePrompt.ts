@@ -145,6 +145,104 @@ function getRandomElement<T>(arr: T[]): T {
 }
 
 /**
+ * 🎯 GENERATE COVER IMAGE PROMPT - ONE universal function
+ * Creates the BEST single cover image prompt based on article content
+ */
+function generateCoverPrompt(params: {
+  title: string;
+  ledeText: string;
+  theme: string;
+  emotion: string;
+  audience: string;
+}): {
+  sceneNumber: number;
+  sceneName: string;
+  prompt: string;
+  detailedPrompt: string;
+  visualElements: string[];
+  mood: string;
+  cameraAngle: string;
+} {
+  const { title, ledeText, theme, emotion, audience } = params;
+
+  // Smart analysis of article content
+  const lowerLede = ledeText.toLowerCase();
+  const lowerTitle = title.toLowerCase();
+
+  // Detect keywords for better matching
+  const hasConflict = /проблем|страх|тревог|боле|умер|потерял|измен|развод|скандал/i.test(lowerLede + lowerTitle);
+  const hasResolution = /счасть|радость|любовь|побед|простил|принял|нашел|смог/i.test(lowerLede + lowerTitle);
+  const hasReflection = /думал|вспомнил|понял|осознал|решил/i.test(lowerLede + lowerTitle);
+
+  // Select appropriate scene elements based on content
+  let sceneElements: string[];
+  let moodOverride: string;
+  let sceneName: string;
+
+  if (hasConflict && !hasResolution) {
+    // Opening/Problem focused
+    sceneElements = SCENE_VARIATIONS.scene1Elements;
+    moodOverride = `introspective, ${emotion}`;
+    sceneName = 'Cover: Setting the Scene';
+  } else if (hasResolution) {
+    // Resolution focused
+    sceneElements = SCENE_VARIATIONS.scene3Elements;
+    moodOverride = `peaceful, hopeful, ${emotion}`;
+    sceneName = 'Cover: The Resolution';
+  } else {
+    // Balanced - use reflection elements
+    sceneElements = [...SCENE_VARIATIONS.scene1Elements.slice(0, 5), ...SCENE_VARIATIONS.scene3Elements.slice(0, 5)];
+    moodOverride = `reflective, ${emotion}`;
+    sceneName = 'Cover: The Story';
+  }
+
+  // Select diverse components for variety
+  const location = getRandomElement(SCENE_VARIATIONS.locations);
+  const angle = getRandomElement(SCENE_VARIATIONS.angles);
+  const elem1 = getRandomElement(sceneElements);
+  const elem2 = getRandomElement(sceneElements);
+
+  // Build the perfect cover prompt
+  const prompt = `Cover image for "${title}". ${moodOverride} mood. ${audience}. Authentic domestic scene. Natural lighting.`;
+
+  const detailedPrompt = `HYPERREALISTIC COVER PHOTO for article "${title}":
+
+${location}. Real person (${audience.includes('Women') ? 'woman' : 'person'} 35-50 years old) with authentic ${emotion} expression.
+
+VISUAL ELEMENTS:
+- ${elem1}
+- ${elem2}
+- Authentic ${moodOverride} mood
+- Natural window light creating soft shadows
+- Real domestic Russian interior (not staged)
+- Amateur smartphone photography aesthetic
+
+CAMERA: ${angle}
+
+EMOTION: Show the ${emotion} feeling authentically - this is the COVER that represents the entire story.
+
+STYLE: "Like a photo from neighbor's WhatsApp" - authentic, slightly imperfect, real life. 4K detail but amateur aesthetic.
+
+🔥 CRITICAL: NO text, watermarks, or overlays! Just the emotional scene.`;
+
+  return {
+    sceneNumber: 1,
+    sceneName,
+    prompt,
+    detailedPrompt,
+    visualElements: [
+      elem1,
+      elem2,
+      location,
+      `${moodOverride} atmosphere`,
+      'Authentic setting'
+    ],
+    mood: moodOverride,
+    cameraAngle: angle
+  };
+}
+
+/**
  * Генерирует РАЗНЫЕ промпты для трёх сцен на основе outline статьи
  * Каждая сцена визуально и эмоционально отличается от других!
  */
@@ -253,28 +351,35 @@ async function main() {
   
   if (showHelp) {
     console.log(`
-📸 Image Prompt Generator\n`);
-    console.log(`Usage:`);
-    console.log(`  npx tsx scripts/generateImagePrompt.ts [options]\n`);
-    console.log(`Options:`);
-    console.log(`  --theme=TEXT              Custom theme for article`);
-    console.log(`  --angle=VALUE             Article angle (confession, advice, etc)`);
-    console.log(`  --emotion=VALUE           Primary emotion (triumph, fear, joy, etc)`);
-    console.log(`  --audience=TEXT           Target audience (Women 35-60, etc)`);
-    console.log(`  --project=NAME            Project name (default: channel-1)`);
-    console.log(`  --generate-images         Generate actual images from prompts`);
-    console.log(`  --image-count=N           Number of images per prompt (default: 1)`);
-    console.log(`  --image-delay=MS          Delay between image generations (default: 3000)`);
-    console.log(`  --output=PATH             Output directory`);
-    console.log(`  --verbose                 Detailed logs`);
-    console.log(`  --help                    Show this help\n`);
-    console.log(`Examples:`);
-    console.log(`  # Generate only prompts (no images)`);
-    console.log(`  npx tsx scripts/generateImagePrompt.ts\n`);
-    console.log(`  # Generate prompts with custom theme`);
-    console.log(`  npx tsx scripts/generateImagePrompt.ts --theme="My theme" --emotion=triumph\n`);
-    console.log(`  # Generate prompts AND images`);
-    console.log(`  npx tsx scripts/generateImagePrompt.ts --generate-images --image-count=2\n`);
+📸 Image Prompt Generator
+
+Usage:
+  npx tsx scripts/generateImagePrompt.ts [options]
+
+Options:
+  --theme=TEXT              Custom theme for article
+  --angle=VALUE             Article angle (confession, advice, etc)
+  --emotion=VALUE           Primary emotion (triumph, fear, joy, etc)
+  --audience=TEXT           Target audience (Women 35-60, etc)
+  --project=NAME            Project name (default: channel-1)
+  --cover-only              Generate ONE cover image (RECOMMENDED for articles)
+  --generate-images         Generate actual images from prompts
+  --image-count=N           Number of images per prompt (default: 1)
+  --image-delay=MS          Delay between image generations (default: 3000)
+  --output=PATH             Output directory
+  --verbose                 Detailed logs
+  --help                    Show this help
+
+Examples:
+  # Generate ONE cover image (RECOMMENDED)
+  npx tsx scripts/generateImagePrompt.ts --cover-only --theme="My story"
+
+  # Generate cover AND images
+  npx tsx scripts/generateImagePrompt.ts --cover-only --generate-images
+
+  # Generate 3 scene prompts (for multi-image articles)
+  npx tsx scripts/generateImagePrompt.ts --theme="My theme" --emotion=triumph
+`);
     process.exit(0);
   }
   
@@ -289,11 +394,72 @@ async function main() {
   const emotion = getArg('emotion', 'triumph');
   const audience = getArg('audience', 'Women 35-60');
   const project = getArg('project', 'channel-1');
+  const coverOnly = getFlag('cover-only');
   const generateImages = getFlag('generate-images');
   const imageCount = parseInt(getArg('image-count', '1'), 10);
   const imageDelay = parseInt(getArg('image-delay', '3000'), 10);
   const verbose = getFlag('verbose');
   const outputDir = getArg('output', './generated/image-prompts/');
+
+  // 🔥 NEW: If --cover-only, generate ONE cover and exit
+  if (coverOnly) {
+    console.log(`\n${LOG.PROMPT} ============================================`);
+    console.log(`${LOG.PROMPT} COVER IMAGE GENERATOR (1 image)`);
+    console.log(`${LOG.PROMPT} ============================================\n`);
+
+    // Use smart analysis to create best cover prompt
+    const articleTheme = theme || `Article about ${audience}`;
+    const ledeText = `This is a story about ${articleTheme}. ${emotion} emotions.`;
+
+    const coverPrompt = generateCoverPrompt({
+      title: articleTheme,
+      ledeText,
+      theme: articleTheme,
+      emotion,
+      audience
+    });
+
+    console.log(`${LOG.PROMPT} 🎯 COVER IMAGE PROMPT:\n`);
+    console.log(`   Scene: ${coverPrompt.sceneName}`);
+    console.log(`   Mood: ${coverPrompt.mood}`);
+    console.log(`   Camera: ${coverPrompt.cameraAngle}\n`);
+    console.log(`   Quick: ${coverPrompt.prompt}\n`);
+    console.log(`   Detailed:`);
+    console.log(`   "${coverPrompt.detailedPrompt}"`);
+
+    // Save to file
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const promptsFile = path.join(outputDir, `cover_${timestamp}.json`);
+    fs.writeFileSync(promptsFile, JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      type: 'cover-only',
+      theme: articleTheme,
+      emotion,
+      audience,
+      prompt: coverPrompt
+    }, null, 2));
+    console.log(`\n${LOG.SAVE} Saved: ${promptsFile}\n`);
+
+    // Optionally generate image
+    if (generateImages) {
+      console.log(`${LOG.PROMPT} Generating cover image...\n`);
+      const imageGenerator = new ImageGeneratorService();
+      try {
+        const base64Image = await imageGenerator.generateVisual(coverPrompt.detailedPrompt);
+        if (base64Image) {
+          console.log(`\n${LOG.SUCCESS} ✅ Cover image generated!\n`);
+        }
+      } catch (error) {
+        console.error(`\n${LOG.ERROR} Failed: ${(error as Error).message}\n`);
+      }
+    }
+
+    console.log(`${LOG.SUCCESS} Done!`);
+    process.exit(0);
+  }
   
   console.log(`\n${LOG.PROMPT} ============================================`);
   console.log(`${LOG.PROMPT} Image Prompt Generator`);
