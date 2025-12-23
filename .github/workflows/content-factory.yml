@@ -124,7 +124,7 @@ jobs:
             echo "📖 Articles generated, committing..."
             git commit -m "📝 Generated articles: $(date +'%Y-%m-%d') - ${{ inputs.count }} articles (${{ inputs.channel }})"
 
-            # Push changes
-            git push origin main
-            echo "✅ Articles pushed to repository!"
+            # Push changes to current branch (not hardcoded 'main')
+            git push origin ${{ github.ref_name }}
+            echo "✅ Articles pushed to repository branch: ${{ github.ref_name }}"
           fi
