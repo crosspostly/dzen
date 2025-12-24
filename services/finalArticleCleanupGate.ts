@@ -132,14 +132,24 @@ export class FinalArticleCleanupGate {
     }
 
     console.log(`   🔄 Applying AI cleanup...`);
-    
+
     try {
       const cleanText = await this.callGeminiForCleanup(article, analysis);
       const cleanAnalysis = FinalArticleCleanupGate.analyzeForIssues(cleanText);
 
+      // Calculate real metrics
+      const artifactsRemoved = analysis.issues.length - cleanAnalysis.issues.length;
+      const sentencesFixed = this.countSentencesFixes(article, cleanText);
+      const paragraphsRestructured = this.countParagraphRestructures(article, cleanText);
+      const duplicatesRemoved = analysis.metadata?.repeatedPhrases?.reduce((sum: number, p: any) => sum + Math.max(0, p.count - 2), 0) || 0;
+
       console.log(`   ✅ Cleanup successful`);
       console.log(`      Issues before: ${analysis.issues.length}`);
       console.log(`      Issues after: ${cleanAnalysis.issues.length}`);
+      console.log(`      Artifacts removed: ${artifactsRemoved}`);
+      console.log(`      Sentences fixed: ${sentencesFixed}`);
+      console.log(`      Paragraphs restructured: ${paragraphsRestructured}`);
+      console.log(`      Duplicates removed: ${duplicatesRemoved}`);
 
       return {
         cleanText,
@@ -149,10 +159,10 @@ export class FinalArticleCleanupGate {
         appliedCleanup: true,
         restorationReport: {
           stagesCompleted: ['De-noising', 'Syntax Restoration', 'Deduplication', 'Paragraph Pacing', 'Voice Preservation'],
-          artifactsRemoved: analysis.issues.length - cleanAnalysis.issues.length,
-          sentencesFixed: Math.floor(Math.random() * 10) + 5, // Estimated
-          paragraphsRestructured: Math.floor(Math.random() * 5) + 2, // Estimated
-          duplicatesRemoved: analysis.metadata?.repeatedPhrases?.length || 0
+          artifactsRemoved,
+          sentencesFixed,
+          paragraphsRestructured,
+          duplicatesRemoved
         }
       };
     } catch (error) {
@@ -165,6 +175,101 @@ export class FinalArticleCleanupGate {
         appliedCleanup: false
       };
     }
+  }
+
+  /**
+   * 📊 Count actual sentences that were fixed/changed
+   */
+  private countSentencesFixes(original: string, restored: string): number {
+    const originalSentences = original.split(/[.!?]+/).filter(s => s.trim());
+    const restoredSentences = restored.split(/[.!?]+/).filter(s => s.trim());
+
+    // Simple heuristic: count sentences that differ significantly
+    let fixedCount = 0;
+
+    // Count sentences that were significantly shortened (likely broken up)
+    restoredSentences.forEach(sentence => {
+      if (sentence.length < 50 && originalSentences.some(orig =>
+        orig.length > 100 && this.similarity(orig, sentence) < 0.3)) {
+        fixedCount++;
+      }
+    });
+
+    // Count sentences that had metadata/garbage removed
+    const garbagePatterns = /\[[^\]]+\]|\(.*\)|  +/g;
+    if ((original.match(garbagePatterns) || []).length > 0) {
+      fixedCount += Math.min(5, (original.match(garbagePatterns) || []).length);
+    }
+
+    return fixedCount;
+  }
+
+  /**
+   * 📊 Count actual paragraph restructurings
+   */
+  private countParagraphRestructures(original: string, restored: string): number {
+    const originalParas = original.split(/\n\s*\n/).filter(p => p.trim());
+    const restoredParas = restored.split(/\n\s*\n/).filter(p => p.trim());
+
+    // Count paragraphs that were significantly changed
+    let restructured = 0;
+
+    // More paragraphs = likely restructured for pacing
+    if (restoredParas.length > originalParas.length) {
+      restructured = Math.min(5, restoredParas.length - originalParas.length);
+    }
+
+    // Check for short paragraphs (rhythmic pacing added)
+    const shortParas = restoredParas.filter(p => p.split(/\s+/).length < 30).length;
+    if (shortParas > 0) {
+      restructured += Math.min(3, shortParas);
+    }
+
+    return restructured;
+  }
+
+  /**
+   * 🔍 Calculate string similarity (simple Levenshtein-based)
+   */
+  private similarity(a: string, b: string): number {
+    const longer = a.length > b.length ? a : b;
+    const shorter = a.length > b.length ? b : a;
+
+    if (longer.length === 0) return 1.0;
+
+    const editDistance = this.levenshteinDistance(longer, shorter);
+    return (longer.length - editDistance) / longer.length;
+  }
+
+  /**
+   * 📏 Levenshtein distance for similarity calculation
+   */
+  private levenshteinDistance(a: string, b: string): number {
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= a.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+
+    return matrix[b.length][a.length];
   }
 
   /**
@@ -522,17 +627,57 @@ ${article}
 ВЫПОЛНИ ВСЕ ПЯТЬ ЭТАПОВ (по порядку) И ВЫВЕДИ ТОЛЬКО ФИНАЛЬНЫЙ ТЕКСТ.
 НИКАКИХ КОММЕНТАРИЕВ, ТОЛЬКО ТЕКСТ И МАРКЕР В КОНЦЕ.`;
 
-    const response = await this.geminiClient.models.generateContent({
-      model: this.model,
-      contents: deepRestorationPrompt,
-      config: {
-        temperature: this.temperature,
-        topK: 40,
-        topP: 0.95,
-      }
-    });
+    // 🎬 v6.1: DEEP TEXT RESTORATION with fallback and validation
+    console.log(`   🚀 Sending to Gemini (${this.model})...`);
 
-    let text = response.text || '';
+    let text = '';
+    let usedFallback = false;
+
+    try {
+      // First attempt with primary model
+      const response = await this.geminiClient.models.generateContent({
+        model: this.model,
+        contents: deepRestorationPrompt,
+        config: {
+          temperature: this.temperature,
+          topK: 40,
+          topP: 0.95,
+        }
+      });
+      text = response.text || '';
+    } catch (primaryError) {
+      const errorMessage = (primaryError as Error).message;
+
+      // Check if we should fallback (503 overloaded or unavailable)
+      if (errorMessage.includes('503') ||
+          errorMessage.includes('overloaded') ||
+          errorMessage.includes('UNAVAILABLE') ||
+          errorMessage.includes('429')) {
+
+        console.log(`   ⚠️  Primary model overloaded (${errorMessage}), trying fallback...`);
+        usedFallback = true;
+
+        try {
+          // Fallback to gemini-2.5-flash-lite for faster recovery
+          const fallbackResponse = await this.geminiClient.models.generateContent({
+            model: 'gemini-2.5-flash-lite',
+            contents: deepRestorationPrompt,
+            config: {
+              temperature: this.temperature,
+              topK: 32,
+              topP: 0.9,
+            }
+          });
+          text = fallbackResponse.text || '';
+          console.log(`   ✅ Fallback successful`);
+        } catch (fallbackError) {
+          console.error(`   ❌ Fallback also failed: ${(fallbackError as Error).message}`);
+          throw primaryError; // Re-throw original error
+        }
+      } else {
+        throw primaryError; // Re-throw non-retryable error
+      }
+    }
 
     // Extract restoration marker and clean text
     const markerMatch = text.match(/✅\s*DEEP\s*RESTORATION\s*COMPLETE/i);
@@ -540,14 +685,25 @@ ${article}
 
     if (hasMarker) {
       text = text.replace(/✅\s*DEEP\s*RESTORATION\s*COMPLETE/gi, '').trim();
+    } else {
+      console.warn(`   ⚠️  Gemini did not return completion marker, text may be incomplete`);
     }
 
-    // Validate result
-    if (!text || text.length < article.length * 0.5) {
-      throw new Error(`Restored text too short (${text.length} chars from ${article.length})`);
+    // Validate result with stricter threshold (75% minimum)
+    const MIN_RATIO = 0.75;
+    const ratio = text.length / article.length;
+
+    if (!text || text.length < article.length * MIN_RATIO) {
+      throw new Error(
+        `Text corrupted: ${((ratio) * 100).toFixed(1)}% of original (need ${MIN_RATIO * 100}%)`
+      );
     }
 
-    console.log(`   📊 Deep restoration complete: ${text.length} chars (${((text.length / article.length) * 100).toFixed(1)}% of original)`);
+    // Log detailed results
+    console.log(`   ✅ Restoration complete`);
+    console.log(`      📏 Output: ${text.length} chars (${(ratio * 100).toFixed(1)}% of original)`);
+    console.log(`      🆔 Used fallback: ${usedFallback ? 'Yes (gemini-2.5-flash-lite)' : 'No'}`);
+    console.log(`      ✅ Completion marker: ${hasMarker ? 'Present' : 'Missing'}`);
 
     return text;
   }
