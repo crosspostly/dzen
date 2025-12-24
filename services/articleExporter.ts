@@ -123,53 +123,11 @@ export class ArticleExporter {
     return result;
   }
 
-  /**
-   * 🆕 v5.5: Extract description from image prompt details
-   * Builds description from scene elements extracted during image generation
-   * If no metadata available, generates from lede
-   */
-  private static extractDescriptionFromImagePrompt(article: LongFormArticle): string {
-    // Check if image has prompt metadata with scene extraction data
-    if (article.coverImage?.metadata?.sceneDescription) {
-      // Extract the scene description from image prompt
-      let description = article.coverImage.metadata.sceneDescription;
-      
-      // Clean up markdown/prompt artifacts
-      description = description
-        .replace(/^#+\s*/gm, '') // Remove markdown headers
-        .replace(/\[.*?\]/g, '') // Remove bracketed text
-        .replace(/\*\*|__/g, '') // Remove bold markers
-        .split('\n')
-        .filter(line => line.trim().length > 0)
-        .slice(0, 5) // Take first 5 lines max
-        .join('. ')
-        .substring(0, 500); // Cap at 500 chars
-      
-      return description.trim();
-    }
-
-    // Fallback: generate description from lede
-    const lede = article.lede || '';
-    const sentences = lede
-      .split(/[.!?]+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-    
-    // Take first 1-2 sentences as description
-    const description = sentences.slice(0, 2).join('. ');
-    return description.substring(0, 300);
-  }
-
   private static formatArticleAsText(article: LongFormArticle): string {
     const lines: string[] = [];
 
     // Заголовок
     lines.push(article.title);
-    lines.push("");
-
-    // 🆕 Description field (from image prompt or lede)
-    const description = this.extractDescriptionFromImagePrompt(article);
-    lines.push(`Description: ${description}`);
     lines.push("");
 
     // Вступление
@@ -265,16 +223,6 @@ export class ArticleExporter {
       font-size: 1.3em;
       font-weight: bold;
       color: #2c3e50;
-    }
-    .description {
-      font-size: 1em;
-      color: #555;
-      background: #f5ede3;
-      padding: 15px;
-      border-left: 3px solid #d4a574;
-      margin: 20px 0;
-      border-radius: 4px;
-      font-style: italic;
     }
     .lede {
       font-size: 1.1em;
@@ -384,10 +332,6 @@ export class ArticleExporter {
         <div class="meta-value">${article.metadata.sceneCount}</div>
       </div>
     </div>
-  </div>
-
-  <div class="description">
-    ${this.escapeHtml(this.extractDescriptionFromImagePrompt(article))}
   </div>
 
   <div class="lede">
