@@ -126,9 +126,9 @@ export class ContentFactoryOrchestrator {
     try {
       // Stage 1: Generate articles (parallel)
       console.log(`
-${'='.repeat(60)}`);
+${"=".repeat(60)}`);
       console.log(`📝 STAGE 1: Article Generation (${this.config.articleCount} articles)`);
-      console.log(`${'='.repeat(60)}\n`);
+      console.log(`${"=".repeat(60)}\n`);
 
       this.articles = await this.generateArticles();
 
@@ -139,9 +139,9 @@ ${'='.repeat(60)}`);
       // Stage 2: Generate COVER images (serial, 1 per article!)
       if (this.config.includeImages && this.articles.length > 0) {
         console.log(`
-${'='.repeat(60)}`);
+${"=".repeat(60)}`);
         console.log(`🗼️  STAGE 2: COVER Image Generation (${this.articles.length} covers, not ${this.articles.length * 12}!)`);
-        console.log(`${'='.repeat(60)}\n`);
+        console.log(`${"=".repeat(60)}\n`);
 
         // ✅ STAGE 2: Generate cover images from article title + lede
         await this.generateCoverImages();
@@ -160,7 +160,7 @@ ${'='.repeat(60)}`);
         await this.applyMobileAuthenticityProcessing();
 
         console.log(`
-✅ Stage 4 complete: All images processed for mobile authenticity (Samsung Galaxy A10 style)
+✅ Stage 4 complete: All images processed for mobile authenticity
 `);
       }
 
@@ -283,9 +283,9 @@ ${'='.repeat(60)}`);
     let failureCount = 0;
 
     console.log(`
-${'='.repeat(60)}`);
+${"=".repeat(60)}`);
     console.log(`🎨 STAGE 3: Canvas Image Post-Processing`);
-    console.log(`${'='.repeat(60)}\n`);
+    console.log(`${"=".repeat(60)}\n`);
 
     for (let i = 0; i < this.articles.length; i++) {
       const article = this.articles[i];
@@ -379,9 +379,82 @@ ${'='.repeat(60)}`);
   }
 
   /**
+   * 🔥 DYNAMIC device selection based on article emotion
+   * NOT hardcoded Samsung Galaxy A10!
+   */
+  private selectDeviceForArticle(article: Article): { model: string; year: number } {
+    // Extract emotion from metadata or content
+    const emotion = (article.metadata?.emotion || '').toLowerCase();
+    const content = (article.content || '').toLowerCase();
+    
+    // Analyze emotional markers in content
+    let detectedEmotion = emotion;
+    
+    if (!detectedEmotion) {
+      if (content.includes('плак') || content.includes('слез') || content.includes('горе')) {
+        detectedEmotion = 'grief';
+      } else if (content.includes('смех') || content.includes('радо')) {
+        detectedEmotion = 'joy';
+      } else if (content.includes('гнев') || content.includes('зло')) {
+        detectedEmotion = 'anger';
+      } else if (content.includes('страх') || content.includes('трев')) {
+        detectedEmotion = 'anxiety';
+      } else if (content.includes('облегч') || content.includes('спокой')) {
+        detectedEmotion = 'relief';
+      } else if (content.includes('побед') || content.includes('триумф')) {
+        detectedEmotion = 'triumph';
+      } else if (content.includes('стыд') || content.includes('вина')) {
+        detectedEmotion = 'shame';
+      }
+    }
+
+    // Determine device based on emotion
+    // Positive emotions → newer device
+    // Negative emotions → older device
+    let yearOffset = 0;
+    if (detectedEmotion.includes('triumph') || detectedEmotion.includes('joy')) {
+      yearOffset = 0;      // Current year phone
+    } else if (detectedEmotion.includes('relief') || detectedEmotion.includes('peaceful')) {
+      yearOffset = 2;      // 2-3 year old
+    } else if (detectedEmotion.includes('anxiety') || detectedEmotion.includes('shame')) {
+      yearOffset = 4;      // 4-5 years old
+    } else if (detectedEmotion.includes('grief') || detectedEmotion.includes('mourning') || detectedEmotion.includes('sad')) {
+      yearOffset = 7;      // 7-8 years old
+    } else if (detectedEmotion.includes('anger') || detectedEmotion.includes('rage')) {
+      yearOffset = 3;      // 3-4 years old
+    } else {
+      yearOffset = 2;      // Default: recent but not brand new
+    }
+
+    const year = 2025 - yearOffset;
+
+    // Select device model based on year and narrator age
+    const narratorAge = (article.metadata as any)?.narrator?.age || 40;
+    let model = 'iPhone 11';  // Default
+
+    if (year >= 2023) {
+      model = narratorAge < 40 ? 'iPhone 15' : 'Galaxy S24';
+    } else if (year >= 2021) {
+      model = narratorAge < 40 ? 'iPhone 13' : 'Galaxy A51';
+    } else if (year >= 2019) {
+      model = narratorAge < 40 ? 'iPhone 11' : 'Galaxy A31';
+    } else if (year >= 2017) {
+      model = narratorAge < 45 ? 'iPhone XS' : 'Galaxy S9';
+    } else if (year >= 2015) {
+      model = narratorAge < 50 ? 'iPhone 6s' : 'Galaxy J7';
+    } else {
+      model = 'Galaxy J5';
+    }
+
+    console.log(`   📱 Device selected: ${model} (${year}) based on emotion: "${detectedEmotion}"`);
+
+    return { model, year };
+  }
+
+  /**
    * 🆕 STAGE 4: Apply Mobile Photo Authenticity Processing
-   * Makes AI-generated images look like authentic mobile phone photos from 2018-2020
-   * Adds noise, EXIF metadata, compression artifacts, and physical wear effects
+   * Makes AI-generated images look like authentic mobile phone photos
+   * DYNAMIC device selection based on article emotion!
    */
   private async applyMobileAuthenticityProcessing(): Promise<void> {
     if (!this.config.includeImages || this.articles.length === 0) {
@@ -393,15 +466,19 @@ ${'='.repeat(60)}`);
     let failureCount = 0;
 
     console.log(`
-${'='.repeat(60)}`);
+${"=".repeat(60)}`);
     console.log(`📱 STAGE 4: Mobile Photo Authenticity Processing`);
-    console.log(`${'='.repeat(60)}\n`);
+    console.log(`${"".repeat(60)}\n`);
 
     for (let i = 0; i < this.articles.length; i++) {
       const article = this.articles[i];
 
       if (article.coverImage?.base64) {
         try {
+          // 🔥 SELECT DEVICE DYNAMICALLY based on article emotion!
+          const device = this.selectDeviceForArticle(article);
+          const deviceKey = this.mapDeviceToKey(device.model);
+
           console.log(`\n   🔧 Processing image ${i + 1}/${this.articles.length}...`);
 
           // Get the current buffer (processedBuffer from Canvas or fallback to original)
@@ -414,9 +491,11 @@ ${'='.repeat(60)}`);
             currentBuffer = Buffer.from(base64Data, 'base64');
           }
 
-          // Apply mobile authenticity processing
-          const authenticityResult = await authenticityProcessor.processForMobileAuthenticity(
-            currentBuffer.toString('base64')
+          // Apply mobile authenticity processing with selected device
+          const authenticityResult = await authenticityProcessor.processWithDevice(
+            currentBuffer.toString('base64'),
+            deviceKey,
+            device.year
           );
 
           // Handle result
@@ -433,11 +512,10 @@ ${'='.repeat(60)}`);
             });
             
             console.log(`\n   📊 Authenticity metrics:`);
-            console.log(`      Looks like phone camera: ${authenticityResult.authenticityLevel}/100`);
+            console.log(`      Looks like phone camera: ${authenticityResult.authenticityLevel}`);
+            console.log(`      Device: ${device.model} (${device.year})`);
             console.log(`      Metadata consistency: Removed`);
             console.log(`      Artifact patterns: Mobile-like ✓`);
-            console.log(``);
-            console.log(`   ✅ Mobile authenticity score: ${authenticityResult.authenticityLevel}/100`);
             
             successCount++;
           } else {
@@ -455,7 +533,7 @@ ${'='.repeat(60)}`);
           article.metadata.authenticityLevel = authenticityResult.authenticityLevel;
           article.metadata.appliedAuthenticityEffects = authenticityResult.appliedEffects;
           article.metadata.authenticityError = authenticityResult.errorMessage;
-          article.metadata.mobileCameraEmulated = "Samsung Galaxy A10 (2019)";
+          article.metadata.mobileCameraEmulated = `${device.model} (${device.year})`;  // 🔥 DYNAMIC!
 
         } catch (error) {
           console.error(
@@ -468,8 +546,35 @@ ${'='.repeat(60)}`);
     }
 
     console.log(`
-✅ Stage 4 complete: Image ready as "authentic mobile photo"
+✅ Stage 4 complete: All images processed with DYNAMIC device selection
 `);
+  }
+
+  /**
+   * 🔥 Map device model name to processor key
+   */
+  private mapDeviceToKey(model: string): string {
+    const mapping: Record<string, string> = {
+      'iPhone 15': 'iphone15',
+      'iPhone 13': 'iphone13',
+      'iPhone 11': 'iphone11',
+      'iPhone XS': 'iphone_xs',
+      'iPhone 7': 'iphone_7',
+      'iPhone 6s': 'iphone_6s',
+      'Galaxy S24': 'samsung_s24',
+      'Galaxy S21': 'samsung_s21',
+      'Galaxy S10': 'samsung_s10',
+      'Galaxy S9': 'samsung_s9',
+      'Galaxy A51': 'samsung_a51',
+      'Galaxy A31': 'samsung_a31',
+      'Galaxy A10': 'samsung_a10',
+      'Galaxy J7': 'samsung_j7',
+      'Galaxy J5': 'samsung_j5',
+      'Pixel 8': 'pixel_8',
+      'Pixel 4': 'pixel_4',
+    };
+
+    return mapping[model] || 'samsung_a10'; // Safe fallback
   }
 
   /**
@@ -578,7 +683,7 @@ category: "lifestory"
           const jpgPath = path.join(finalDir, imageFileName);
           fs.writeFileSync(jpgPath, jpegBuffer);
           exportedFiles.push(jpgPath);
-          console.log(`   🗼️  Cover: ${imageFileName} (${source})`);
+          console.log(`   🗼️  Cover: ${imageFileName} (${source}, device: ${article.metadata?.mobileCameraEmulated || 'unknown'})`);
         }
       } catch (error) {
         console.error(`❌ Failed to export article ${i + 1}: ${(error as Error).message}`);
