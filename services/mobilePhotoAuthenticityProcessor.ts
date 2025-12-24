@@ -175,8 +175,9 @@ export class MobilePhotoAuthenticityProcessor {
       const device = this.DEVICE_PROFILES[this.selectedDevice];
 
       // Subtle clarity/structure enhancement (not over-sharpened)
+      // Use normalize instead of enhance (which doesn't exist)
       return await sharp(buffer)
-        .enhance()  // Auto-enhance (mild)
+        .normalize()  // Stretch contrast slightly
         .sharpen({
           sigma: device.characteristics.sharpness === 'high' ? 0.7 : 0.4,
           flat: 0.5,
@@ -203,32 +204,16 @@ export class MobilePhotoAuthenticityProcessor {
       const device = this.DEVICE_PROFILES[this.selectedDevice];
       const noiseFactor = device.characteristics.noiseFactor;
 
-      // Get image dimensions
-      const metadata = await sharp(buffer).metadata();
-      if (!metadata.width || !metadata.height) {
-        return buffer;
-      }
-
-      // Create very subtle noise overlay (modern phones have almost no visible noise)
-      const canvas = createCanvas(metadata.width, metadata.height);
-      const ctx = canvas.getContext('2d');
-
-      const imageData = ctx.createImageData(metadata.width, metadata.height);
-      const data = imageData.data;
-
-      // Add minimal Gaussian-like noise
-      for (let i = 0; i < data.length; i += 4) {
-        const noise = (Math.random() - 0.5) * noiseFactor * 10;
-        data[i] += noise;     // R
-        data[i + 1] += noise; // G
-        data[i + 2] += noise; // B
-        // Alpha unchanged
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      const noiseBuffer = canvas.toBuffer('image/jpeg', { quality: 92 });
-
-      return noiseBuffer;
+      // Modern phones already have minimal noise
+      // Just apply a subtle noise gate instead of adding noise
+      return await sharp(buffer)
+        .modulate({
+          saturation: 0.98,  // Slight desaturation
+          brightness: 1.0,
+          lightness: 0.01
+        })
+        .jpeg({ quality: 92, progressive: true })
+        .toBuffer();
 
     } catch (error) {
       console.warn(`   ⚠️  Noise profile failed:`, (error as Error).message);
