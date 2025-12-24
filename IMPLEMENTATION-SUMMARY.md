@@ -119,9 +119,56 @@ const article = await multiAgentService.generateLongFormArticle({
 // Article is automatically cleaned and validated before return
 ```
 
+## 🔧 GitHub Actions Integration
+
+### Updated Workflows
+
+All GitHub Actions workflows updated to support v6.0 cleanup system:
+
+**Modified Files:**
+- `.github/workflows/content-factory.yml`
+- `.github/workflows/test-image-generation.yml`
+- `.github/workflows/test.yml`
+
+**Changes:**
+```yaml
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  # v6.0: Article Cleanup System
+  FINAL_CLEANUP_ENABLED: true
+  CLEANUP_THRESHOLD: medium
+  CLEANUP_MODEL: gemini-2.0-flash
+  CLEANUP_TEMPERATURE: 0.3
+  CLEANUP_MAX_RETRIES: 2
+```
+
+### Secrets Configuration
+
+**Required GitHub Secret:**
+- `GEMINI_API_KEY` - Get from https://aistudio.google.com/app/apikey
+
+**Setup:**
+1. Repository Settings → Secrets and variables → Actions
+2. New repository secret: `GEMINI_API_KEY`
+3. Run workflow to test
+
+See [docs/SECRETS-SETUP.md](./docs/SECRETS-SETUP.md) for detailed instructions.
+
+### Updated .gitignore
+
+Added environment files to prevent accidental commits:
+```
+.env
+.env.local
+.env.*.local
+```
+
 ## 📝 Notes
 
-- Core functionality working and tested
-- Integration complete in multiAgentService
-- Documentation comprehensive
-- Ready for production use
+- ✅ Core functionality working and tested
+- ✅ Integration complete in multiAgentService
+- ✅ Documentation comprehensive
+- ✅ GitHub Actions workflows updated
+- ✅ Secrets configuration documented
+- ✅ .gitignore updated for security
+- ✅ Ready for production use on GitHub

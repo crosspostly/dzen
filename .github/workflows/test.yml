@@ -27,6 +27,12 @@ jobs:
         run: npm test
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # v6.0: Article Cleanup System
+          FINAL_CLEANUP_ENABLED: true
+          CLEANUP_THRESHOLD: medium
+          CLEANUP_MODEL: gemini-2.0-flash
+          CLEANUP_TEMPERATURE: 0.3
+          CLEANUP_MAX_RETRIES: 2
       
       - name: Check build
         run: npm run build || true
