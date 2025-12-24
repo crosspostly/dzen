@@ -443,63 +443,46 @@ export class ImageGeneratorAgent {
    * 🎬 BUILD STORY-SPECIFIC PROMPT (not generic template!)
    */
   private buildStorySpecificPrompt(context: any): string {
-    // Create a UNIQUE prompt for THIS specific story
-    const prompt = `
-🎬 STORY SCENE - Generate image for this specific story:
+    // 🔥 FORCE SPECIFIC STORY ELEMENTS TO THE TOP - NO GENERIC TEMPLATES!
+    // Short, powerful, impossible-to-ignore instruction
+    return `
+🔥 STORY (${context.mainEvent}):
 
-📖 STORY:
-${context.title}
+VISUAL SCENE TO DEPICT: ${context.location}, ${context.timeContext}
 
-🎭 MAIN EVENT:
-${context.mainEvent}
+HER STATE: ${context.protagonist.state}
+EMOTION: ${context.emotionalArc.primary}
+FOCAL POINT: ${context.focalPoint}
 
-👤 PROTAGONIST:
-${context.protagonist.name}, age ${context.protagonist.age}
-Emotional state: ${context.protagonist.state}
-Relationship context: ${context.protagonist.relationship}
-${context.presenceContext !== 'alone' ? `\nWith: ${context.presenceContext}` : ''}
+VISIBLE DETAILS (INCLUDE ALL):
+${context.visibleDetails.slice(0, 6).map((d: string) => `- ${d}`).join('\n')}
 
-📍 LOCATION & TIME:
-Where: ${context.location}
-When: ${context.timeContext}
+LIGHTING: ${this.getLightingGuide(context.emotionalArc.primary)}
 
-💔 EMOTIONAL TONE:
-Primary emotion: ${context.emotionalArc.primary}
-Secondary emotions: ${context.emotionalArc.secondary.join(', ')}
+🎨 GENERATE:
+1. Candid smartphone photo (no staging)
+2. Natural middle-aged Russian woman
+3. 16:9 horizontal
+4. No text/watermarks
+5. Focus on emotion and story
+`.trim();
+  }
 
-👁️ WHAT WE SEE (VISIBLE DETAILS):
-${context.visibleDetails.map((d: string) => `• ${d}`).join('\n')}
-
-🎯 KEY FOCAL POINT:
-${context.focalPoint}
-
-🎨 VISUAL DIRECTION:
-Don't show generic "woman sitting with tea"
-Show THIS SPECIFIC MOMENT from the story:
-- Capture the EXACT emotion of this scene
-- Include visible details that show WHAT HAPPENED
-- The focal point should draw attention naturally
-- Lighting should match the emotional tone
-- Everything in frame should serve the story
-
-🚫 ABSOLUTE RULES:
-- NO text, captions, watermarks
-- NO filters or Instagram effects
-- NO perfect posing (real moment, not posed)
-- NO ambiguity (image should clearly show THIS story's emotion)
-- NO generic "woman portrait"
-
-✅ SUCCESS:
-When viewer sees this image, they immediately FEEL the emotion
-They understand SOMETHING HAPPENED
-They can sense the CONTEXT without reading
-The image matches EXACTLY what the story describes
-
-🎯 TONE GUIDE by emotion:
-${this.getToneGuide(context.emotionalArc.primary)}
-    `.trim();
-
-    return prompt;
+  /**
+   * 🎨 Get lighting guide based on primary emotion
+   */
+  private getLightingGuide(emotion: string): string {
+    const guides: Record<string, string> = {
+      'grief and pain': 'Cold apartment window light, muted colors',
+      'relief and peace': 'Warm candlelight or soft lamp glow',
+      'triumph and freedom': 'Bright natural light, open spaces',
+      'fear and anxiety': 'Shadowy, uncertain lighting',
+      'anger and rage': 'Sharp contrasts, harsh indoor light',
+      'shame and regret': 'Dim, introspective, muted',
+      'loneliness and emptiness': 'Sparse, grey natural light',
+      'nostalgia and memory': 'Golden hour or filtered window light'
+    };
+    return guides[emotion] || 'Natural window light';
   }
 
   /**
@@ -579,7 +562,7 @@ SHAME scene:
   }
 
   /**
-   * Fallback cover generation - SIMPLIFIED
+   * Fallback cover generation - ULTRA-SIMPLIFIED
    */
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🔄 Fallback: Generating simplified cover...`);
@@ -591,15 +574,14 @@ SHAME scene:
     );
 
     const fallbackPrompt = `
-🎬 STORY IMAGE:
-Title: ${request.title}
-Emotion: ${context.emotionalArc.primary}
-Location: ${context.location}
-Key emotion: Show this emotion clearly
+🔥 STORY (${context.mainEvent}):
 
-Generate realistic candid scene matching the emotional tone.
-No text, no filters, authentic moment.
-    `.trim();
+VISUAL: ${context.location}, ${context.timeContext}
+EMOTION: ${context.emotionalArc.primary}
+FOCUS: ${context.visibleDetails[0] || context.focalPoint}
+
+🎨 GENERATE: Candid photo, middle-aged Russian woman, horizontal, authentic moment
+`.trim();
 
     try {
       return await this.generateWithModel(
