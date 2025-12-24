@@ -3,8 +3,7 @@
  * 
  * Generates authentic mobile phone photos for Zen articles
  * Features:
- * - SMART scene extraction from article content + title
- * - Theme-based diverse image prompts (NOT generic)
+ * - Theme-based diverse image prompts
  * - PlotBible-consistent image prompts
  * - Fallback on generation failure
  * - Image validation (dimensions, size, format)
@@ -49,24 +48,22 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎯 v4.3 FIXED: Generate ONE cover image from title + lede
-   * This is the main entry point for article cover generation
-   * NOW WITH SMART THEME-BASED DIVERSE PROMPTS (merged from generateImagePrompt.ts)
+   * 🎯 v4.3: Generate ONE cover image from title + lede + description
+   * 🆕 Description field is USED IN PROMPT, not replaced by it
    */
-  async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
+  async generateCoverImage(request: CoverImageRequest & { description?: string }): Promise<GeneratedImage> {
     console.log(`🎨 Generating COVER image for article: "${request.title}"`);
 
     try {
-      // 🆕 SMART: Build DIVERSE prompt based on article content
-      const { prompt, sceneElements } = await this.buildSmartCoverImagePrompt(request);
+      // Build prompt with description FROM ARTICLE
+      const prompt = this.buildCoverImagePrompt(request);
       console.log(`📝 Cover prompt built (${prompt.length} chars)`);
 
       // Generate with primary model
       const image = await this.generateWithModel(
         this.primaryModel,
         prompt,
-        request.articleId,
-        sceneElements  // 🆕 Pass scene elements to metadata
+        request.articleId
       );
 
       console.log(`✅ Cover image generated successfully for article ${request.articleId}`);
@@ -87,291 +84,13 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🆕 v4.5 REFACTORED: Build DIVERSE cover image prompt from REAL article content
-   * Analyzes article content (title + lede) and generates UNIQUE prompts
-   * NOT hardcoded scenes - builds from actual story elements!
-   * 
-   * CRITICAL: Generates DIFFERENT scenes based on what's ACTUALLY in the article
-   * NOT generic one-size-fits-all prompts
-   * 
-   * Returns: { prompt, sceneElements } for metadata storage
+   * 🆕 Build cover image prompt USING Description from article
+   * Description is INPUT to image generator, shapes the visual
    */
-  private async buildSmartCoverImagePrompt(request: CoverImageRequest): Promise<{
-    prompt: string;
-    sceneElements: ReturnType<typeof this.extractSceneElementsFromContent>;
-  }> {
-    const { title, ledeText, plotBible } = request;
+  private buildCoverImagePrompt(request: CoverImageRequest & { description?: string }): string {
+    const { title, ledeText, description, plotBible } = request;
 
-    // Extract key theme from title and lede
-    const theme = this.detectArticleTheme(title, ledeText);
-    console.log(`🎯 Detected theme: ${theme}`);
-
-    // 🔥 NEW: Extract REAL scene elements from the article itself
-    const sceneElements = this.extractSceneElementsFromContent(title, ledeText, theme);
-    console.log(`📸 Extracted scene elements:`, sceneElements);
-
-    // Build prompt from REAL content + theme
-    const themeSpecificPrompt = this.buildPromptFromRealContent(
-      theme,
-      sceneElements,
-      title,
-      ledeText,
-      plotBible
-    );
-
-    return {
-      prompt: themeSpecificPrompt,
-      sceneElements  // 🆕 Return scene elements for metadata
-    };
-  }
-
-  /**
-   * 🎯 Extract actual scene elements from article content
-   * Analyzes title + lede to find: characters, settings, actions, emotions
-   * Returns SPECIFIC details from the actual story
-   */
-  private extractSceneElementsFromContent(
-    title: string,
-    ledeText: string,
-    theme: string
-  ): {
-    characters: string[];
-    settings: string[];
-    actions: string[];
-    emotions: string[];
-    objects: string[];
-    timeContext: string;
-  } {
-    const content = `${title} ${ledeText}`.toLowerCase();
-
-    // Character extraction
-    const characters: string[] = [];
-    const characterKeywords: Record<string, string> = {
-      'мама': 'mother',
-      'мать': 'mother',
-      'папа': 'father',
-      'отец': 'father',
-      'сын': 'son',
-      'дочь': 'daughter',
-      'ребенок': 'child',
-      'дети': 'children',
-      'женщина': 'woman',
-      'мужчина': 'man',
-      'подруга': 'girlfriend/friend',
-      'друг': 'friend',
-      'любимый': 'beloved',
-      'супруг': 'husband',
-      'жена': 'wife',
-      'коллег': 'colleague',
-      'начальн': 'boss',
-      'учител': 'teacher',
-      'врач': 'doctor',
-      'бабушк': 'grandmother',
-      'дедушк': 'grandfather',
-      'сестр': 'sister',
-      'брат': 'brother'
-    };
-
-    for (const [keyword, translation] of Object.entries(characterKeywords)) {
-      if (content.includes(keyword)) {
-        characters.push(translation);
-      }
-    }
-
-    // Setting extraction
-    const settings: string[] = [];
-    const settingKeywords: Record<string, string> = {
-      'кухн': 'kitchen',
-      'спальн': 'bedroom',
-      'гостин': 'living room',
-      'офис': 'office',
-      'работ': 'workplace',
-      'улиц': 'street',
-      'парк': 'park',
-      'окн': 'window',
-      'диван': 'couch',
-      'кровать': 'bed',
-      'стол': 'table',
-      'машин': 'car',
-      'поезд': 'train',
-      'самолет': 'airplane',
-      'море': 'sea',
-      'горы': 'mountains',
-      'город': 'city',
-      'дом': 'home',
-      'квартир': 'apartment',
-      'школ': 'school',
-      'больниц': 'hospital',
-      'ресторан': 'restaurant',
-      'метро': 'metro',
-      'вокзал': 'station',
-      'лес': 'forest',
-      'деревн': 'village',
-      'балкон': 'balcony',
-      'веранд': 'porch',
-      'ванн': 'bathroom',
-      'коридор': 'hallway',
-      'лестниц': 'stairs'
-    };
-
-    for (const [keyword, translation] of Object.entries(settingKeywords)) {
-      if (content.includes(keyword)) {
-        settings.push(translation);
-      }
-    }
-
-    // Action extraction
-    const actions: string[] = [];
-    const actionKeywords: Record<string, string> = {
-      'сидел': 'sitting',
-      'стоял': 'standing',
-      'лежал': 'lying',
-      'ходил': 'walking',
-      'бежал': 'running',
-      'смотрел': 'looking',
-      'слушал': 'listening',
-      'говорил': 'talking',
-      'кричал': 'shouting',
-      'плакал': 'crying',
-      'смеялся': 'laughing',
-      'пел': 'singing',
-      'танцевал': 'dancing',
-      'готовил': 'cooking',
-      'ел': 'eating',
-      'пил': 'drinking',
-      'читал': 'reading',
-      'писал': 'writing',
-      'работал': 'working',
-      'спал': 'sleeping',
-      'целовал': 'kissing',
-      'обнимал': 'hugging',
-      'держал': 'holding',
-      'тискал': 'hugging',
-      'ласкал': 'caressing',
-      'вздыхал': 'sighing',
-      'улыбался': 'smiling',
-      'хмурился': 'frowning',
-      'дрожал': 'trembling',
-      'кричал': 'yelling',
-      'молчал': 'silent',
-      'прислушивался': 'listening'
-    };
-
-    for (const [keyword, translation] of Object.entries(actionKeywords)) {
-      if (content.includes(keyword)) {
-        actions.push(translation);
-      }
-    }
-
-    // Emotion extraction
-    const emotions: string[] = [];
-    const emotionKeywords: Record<string, string> = {
-      'люб': 'loving',
-      'радост': 'happy',
-      'счастлив': 'joyful',
-      'благодар': 'grateful',
-      'гордост': 'proud',
-      'печал': 'sad',
-      'грусть': 'melancholy',
-      'сожален': 'regretful',
-      'стыд': 'ashamed',
-      'боял': 'fearful',
-      'страх': 'afraid',
-      'тревож': 'anxious',
-      'гнев': 'angry',
-      'злост': 'furious',
-      'обид': 'hurt',
-      'ревнив': 'jealous',
-      'завист': 'envious',
-      'спокой': 'calm',
-      'мирн': 'peaceful',
-      'тих': 'quiet',
-      'одинок': 'lonely',
-      'потеян': 'lost',
-      'нежн': 'tender',
-      'интим': 'intimate',
-      'волную': 'thrilling',
-      'ошеломл': 'shocked',
-      'разочаров': 'disappointed',
-      'вдохновлен': 'inspired',
-      'измучен': 'exhausted',
-      'отчаян': 'desperate',
-      'вибухаю': 'explosive'
-    };
-
-    for (const [keyword, translation] of Object.entries(emotionKeywords)) {
-      if (content.includes(keyword)) {
-        emotions.push(translation);
-      }
-    }
-
-    // Object extraction (for details)
-    const objects: string[] = [];
-    const objectKeywords: Record<string, string> = {
-      'чай': 'tea',
-      'кофе': 'coffee',
-      'цветы': 'flowers',
-      'фото': 'photo',
-      'книг': 'book',
-      'письм': 'letter',
-      'телефон': 'phone',
-      'часы': 'watch',
-      'кольцо': 'ring',
-      'украшен': 'jewelry',
-      'свеч': 'candle',
-      'лампа': 'lamp',
-      'подушк': 'pillow',
-      'одеял': 'blanket',
-      'ткань': 'fabric',
-      'игрушк': 'toy',
-      'кукол': 'doll',
-      'мячик': 'ball',
-      'рисун': 'drawing',
-      'картин': 'painting',
-      'зеркал': 'mirror',
-      'часы': 'clock',
-      'окно': 'window',
-      'дверь': 'door',
-      'стул': 'chair',
-      'кровать': 'bed',
-      'подарок': 'gift',
-      'букет': 'bouquet'
-    };
-
-    for (const [keyword, translation] of Object.entries(objectKeywords)) {
-      if (content.includes(keyword)) {
-        objects.push(translation);
-      }
-    }
-
-    // Time context
-    let timeContext = 'day';
-    if (content.includes('утр') || content.includes('рассвет')) timeContext = 'morning';
-    else if (content.includes('полден') || content.includes('день')) timeContext = 'daytime';
-    else if (content.includes('веч') || content.includes('закат')) timeContext = 'evening';
-    else if (content.includes('ноч') || content.includes('темн')) timeContext = 'night';
-
-    return {
-      characters: [...new Set(characters)], // Remove duplicates
-      settings: [...new Set(settings)],
-      actions: [...new Set(actions)],
-      emotions: [...new Set(emotions)],
-      objects: [...new Set(objects)],
-      timeContext
-    };
-  }
-
-  /**
-   * 🎯 Build prompt from REAL content elements (NOT hardcoded)
-   * Uses actual story details to create unique, specific image descriptions
-   */
-  private buildPromptFromRealContent(
-    theme: string,
-    sceneElements: ReturnType<typeof this.extractSceneElementsFromContent>,
-    title: string,
-    ledeText: string,
-    plotBible?: PlotBible
-  ): string {
+    // SAFE: Use defaults if plotBible missing
     const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
     const sensoryPalette = plotBible?.sensoryPalette || { 
       details: ['warm', 'intimate', 'quiet', 'domestic'],
@@ -381,91 +100,28 @@ export class ImageGeneratorAgent {
       lightSources: ['window light']
     };
 
-    // Build subject from actual characters + actions
-    let subject = '';
-    if (sceneElements.characters.length > 0) {
-      subject = `${sceneElements.characters.join(' and ')}`;
-      if (sceneElements.actions.length > 0) {
-        subject += ` ${sceneElements.actions[0]}`;
-      }
-    } else {
-      subject = `Woman ${narrator.age} years old`;
-      if (sceneElements.actions.length > 0) {
-        subject += ` ${sceneElements.actions[0]}`;
-      }
-    }
-
-    // Build setting from actual locations
-    let setting = '';
-    if (sceneElements.settings.length > 0) {
-      setting = sceneElements.settings[0];
-      if (sceneElements.settings.length > 1) {
-        setting += ` near ${sceneElements.settings[1]}`;
-      }
-    } else {
-      setting = 'domestic interior';
-    }
-
-    // Build emotion context
-    let emotionContext = '';
-    if (sceneElements.emotions.length > 0) {
-      emotionContext = sceneElements.emotions.slice(0, 2).join(', ');
-    } else {
-      emotionContext = this.getThemeEmotion(theme);
-    }
-
-    // Build lighting based on time context
-    let lightingDescription = '';
-    switch (sceneElements.timeContext) {
-      case 'morning':
-        lightingDescription = 'soft morning light through window, golden and gentle';
-        break;
-      case 'daytime':
-        lightingDescription = 'natural daylight, bright but not harsh';
-        break;
-      case 'evening':
-        lightingDescription = 'warm evening light, golden hour glow';
-        break;
-      case 'night':
-        lightingDescription = 'soft lamp light, subtle shadows, intimate';
-        break;
-      default:
-        lightingDescription = 'natural window light';
-    }
-
-    // Build object details
-    let objectDetails = '';
-    if (sceneElements.objects.length > 0) {
-      objectDetails = `\nDetails: ${sceneElements.objects.slice(0, 3).join(', ')} visible in scene.`;
-    }
+    // 🆕 Description field is the KEY - use it to shape image
+    const descriptionSection = description 
+      ? `\n=== SCENE DESCRIPTION FROM ARTICLE ===\n${description}\n`
+      : '';
 
     const sensoryText = sensoryPalette.details && sensoryPalette.details.length > 0 
       ? sensoryPalette.details.slice(0, 5).join(', ')
       : 'warm, intimate, quiet, domestic';
 
-    // Build final prompt from REAL content
     const finalPrompt = `
 🔥 CRITICAL: NO TEXT ANYWHERE ON THE IMAGE!
 
 AUTHENTIC mobile phone photo for article cover.
 Title: "${title}"
 
-Theme: ${theme}
 Narrator: Woman ${narrator.age} years old, ${narrator.tone} voice
-
-=== SCENE FROM ARTICLE ===
-Subject: ${subject}
-Setting: ${setting}, Russian domestic context
-Emotion: ${emotionContext}
-${objectDetails}
-Time: ${sceneElements.timeContext}
-Lighting: ${lightingDescription}
+${descriptionSection}
+Lede: ${ledeText.substring(0, 300)}
 
 === VISUAL DIRECTION ===
-This is a REAL moment from the story, not staged.
-Capture the actual scene described: ${sceneElements.actions.slice(0, 2).join(', ')}
-The image should feel like it came from the article's world.
-
+Capture this exact scene from the article.
+The image should feel like a real moment from the story.
 SENSORY PALETTE: ${sensoryText}
 
 REQUIREMENTS:
@@ -476,23 +132,20 @@ REQUIREMENTS:
 - Slight digital noise (like real smartphone camera from 2018-2022)
 - Natural colors (NOT oversaturated, NOT filter-heavy)
 - Human emotion visible (real feelings from the story, not fake smile)
-- Specific to this story (not generic - show elements: ${sceneElements.objects.slice(0, 2).join(', ') || 'from scene'})
 
 🚫 MUST AVOID (CRITICAL for Яндекс.Дзен):
 - ANY text, captions, titles, labels, logos, or overlays
 - Watermarks or signatures
-- ANY visible words or symbols
 - Stock photography or glossy look
 - Surrealism or strange proportions
 - Western style (no American kitchens, no English text)
 - Violence, gore, or shocking content
 - Overly beautiful models or professional makeup
 - Perfect posing or studio lighting
-- Fancy interior design or luxury goods
 - AI-art artifacts (uncanny valley, weird hands, wrong anatomy)
 
 STYLE: Like photo from friend's WhatsApp or family group chat - authentic, slightly imperfect, REAL LIFE.
-RESULT: 4K detail but amateur aesthetic, like real home photo taken by friend on old smartphone.
+RESULT: 4K detail but amateur aesthetic, like real home photo taken on old smartphone.
 PURE IMAGE: No text, no captions, no overlays, no logos - JUST THE SCENE.
     `.trim();
 
@@ -500,73 +153,21 @@ PURE IMAGE: No text, no captions, no overlays, no logos - JUST THE SCENE.
   }
 
   /**
-   * Get default emotion for theme
+   * 🎯 Fallback cover generation with simpler prompt
    */
-  private getThemeEmotion(theme: string): string {
-    const themeEmotions: Record<string, string> = {
-      motherhood: 'tender, loving, protective',
-      romance: 'intimate, passionate, affectionate',
-      work: 'focused, determined, professional',
-      travel: 'adventurous, curious, free',
-      loss: 'sorrowful, contemplative, vulnerable',
-      victory: 'joyful, triumphant, proud',
-      conflict: 'tense, angry, raw',
-      healing: 'peaceful, accepting, serene',
-      transformation: 'hopeful, renewed, determined',
-      domestic: 'quiet, intimate, contemplative'
-    };
-    return themeEmotions[theme] || 'contemplative';
-  }
-
-  /**
-   * 🎯 Detect article theme from title and content
-   * Returns one of: motherhood, romance, work, travel, loss, victory, conflict, healing, transformation
-   */
-  private detectArticleTheme(title: string, ledeText: string): string {
-    const content = `${title} ${ledeText}`.toLowerCase();
-
-    // Theme keywords mapping
-    const themes: Record<string, string[]> = {
-      motherhood: ['мама', 'мать', 'ребенок', 'дети', 'сын', 'дочь', 'материнск', 'беременн', 'роды', 'малыш'],
-      romance: ['люб', 'любов', 'мужчина', 'женщина', 'влюб', 'пара', 'встреча', 'целов', 'обнима', 'сердц'],
-      work: ['работ', 'офис', 'начальн', 'коллег', 'проект', 'встреч', 'договор', 'деньг', 'карьер', 'должност'],
-      travel: ['путеш', 'дорог', 'город', 'поезд', 'машин', 'самолет', 'море', 'горы', 'страна', 'чемодан'],
-      loss: ['потер', 'смерт', 'уход', 'разост', 'разлук', 'одинок', 'скорб', 'плач', 'грусть', 'скучаю'],
-      victory: ['побед', 'успех', 'радост', 'счастл', 'достиг', 'преодол', 'смог', 'удалось', 'исполнил', 'мечта'],
-      conflict: ['ссор', 'конфлик', 'спор', 'злост', 'гнев', 'ненав', 'вражд', 'врага', 'боролис', 'военн'],
-      healing: ['исцел', 'выздоров', 'спокой', 'мир', 'прощен', 'принял', 'отпустил', 'свобод', 'облегчен', 'светл'],
-      transformation: ['измени', 'новы', 'перерожд', 'воскресен', 'превращ', 'эволюц', 'развити', 'выросл', 'стала', 'начал']
-    };
-
-    // Count theme keywords
-    const themeCounts: Record<string, number> = {};
-    for (const [theme, keywords] of Object.entries(themes)) {
-      themeCounts[theme] = keywords.filter(kw => content.includes(kw)).length;
-    }
-
-    // Return theme with most matches (or 'domestic' if no clear theme)
-    const detectedTheme = Object.entries(themeCounts)
-      .sort(([, a], [, b]) => b - a)[0]?.[0] || 'domestic';
-
-    return detectedTheme;
-  }
-
-  /**
-   * 🔄 Fallback cover generation with simpler prompt
-   * v4.3: NO-TEXT requirements
-   */
-  private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
+  private async generateCoverImageFallback(request: CoverImageRequest & { description?: string }): Promise<GeneratedImage> {
     console.log(`🔄 Using fallback model for cover: ${this.fallbackModel}`);
 
     // SAFE: Use defaults if plotBible missing
     const narrator = request.plotBible?.narrator || { age: 40, gender: 'female' };
     const sensoryDetails = request.plotBible?.sensoryPalette?.details || ['warm', 'intimate', 'quiet'];
+    const descriptionSection = request.description ? `Scene: ${request.description}\n` : '';
 
     const simplifiedPrompt = `
 🔥 NO TEXT ON IMAGE - CRITICAL!
 
 Russian woman ${narrator.age || 40} years old in apartment, natural light, realistic photo on smartphone.
-Interior: ${sensoryDetails.slice(0, 3).join(', ')}
+${descriptionSection}Mood: ${sensoryDetails.slice(0, 3).join(', ')}
 Domestic scene, everyday moment, warm lighting.
 
 ⚠️  ABSOLUTELY NO TEXT, CAPTIONS, WATERMARKS, OR OVERLAYS!
@@ -734,13 +335,11 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   /**
    * 🤖 Generate image with specified model
    * v4.2: Using Gemini API imageConfig for aspect ratio control
-   * 🆕 v5.5: Accept sceneElements to store in metadata
    */
   private async generateWithModel(
     model: string,
     prompt: string,
-    idForMetadata: string | number,
-    sceneElements?: ReturnType<typeof this.extractSceneElementsFromContent> // 🆕 Optional scene data
+    idForMetadata: string | number
   ): Promise<GeneratedImage> {
     const startTime = Date.now();
 
@@ -788,12 +387,6 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     // We'll add the prefix later when needed
     console.log(`   📦 Received base64 image from Gemini API (${base64Data.length} chars)`);
 
-    // 🆕 Build scene description from extracted elements
-    let sceneDescription = prompt.substring(0, 200) + "...";
-    if (sceneElements) {
-      sceneDescription = `Theme: Article | Characters: ${sceneElements.characters.join(', ') || 'unspecified'} | Settings: ${sceneElements.settings.join(', ') || 'unspecified'} | Emotions: ${sceneElements.emotions.join(', ') || 'unspecified'}`;
-    }
-
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data, // ← CLEAN base64 without data: prefix
@@ -806,7 +399,6 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
       prompt: prompt,
       metadata: {
         articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
-        sceneDescription: sceneDescription, // 🆕 Now includes scene elements
         generationAttempts: 1,
         fallbackUsed: model !== this.primaryModel,
         // Legacy support
