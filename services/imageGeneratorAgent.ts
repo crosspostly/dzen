@@ -58,14 +58,15 @@ export class ImageGeneratorAgent {
 
     try {
       // 🆕 SMART: Build DIVERSE prompt based on article content
-      const prompt = await this.buildSmartCoverImagePrompt(request);
+      const { prompt, sceneElements } = await this.buildSmartCoverImagePrompt(request);
       console.log(`📝 Cover prompt built (${prompt.length} chars)`);
 
       // Generate with primary model
       const image = await this.generateWithModel(
         this.primaryModel,
         prompt,
-        request.articleId
+        request.articleId,
+        sceneElements  // 🆕 Pass scene elements to metadata
       );
 
       console.log(`✅ Cover image generated successfully for article ${request.articleId}`);
@@ -92,8 +93,13 @@ export class ImageGeneratorAgent {
    * 
    * CRITICAL: Generates DIFFERENT scenes based on what's ACTUALLY in the article
    * NOT generic one-size-fits-all prompts
+   * 
+   * Returns: { prompt, sceneElements } for metadata storage
    */
-  private async buildSmartCoverImagePrompt(request: CoverImageRequest): string {
+  private async buildSmartCoverImagePrompt(request: CoverImageRequest): Promise<{
+    prompt: string;
+    sceneElements: ReturnType<typeof this.extractSceneElementsFromContent>;
+  }> {
     const { title, ledeText, plotBible } = request;
 
     // Extract key theme from title and lede
@@ -113,7 +119,10 @@ export class ImageGeneratorAgent {
       plotBible
     );
 
-    return themeSpecificPrompt;
+    return {
+      prompt: themeSpecificPrompt,
+      sceneElements  // 🆕 Return scene elements for metadata
+    };
   }
 
   /**
@@ -261,7 +270,7 @@ export class ImageGeneratorAgent {
       'радост': 'happy',
       'счастлив': 'joyful',
       'благодар': 'grateful',
-      'горд': 'proud',
+      'гордост': 'proud',
       'печал': 'sad',
       'грусть': 'melancholy',
       'сожален': 'regretful',
@@ -278,16 +287,16 @@ export class ImageGeneratorAgent {
       'мирн': 'peaceful',
       'тих': 'quiet',
       'одинок': 'lonely',
-      'потерян': 'lost',
+      'потеян': 'lost',
       'нежн': 'tender',
       'интим': 'intimate',
-      'волнующ': 'thrilling',
+      'волную': 'thrilling',
       'ошеломл': 'shocked',
       'разочаров': 'disappointed',
       'вдохновлен': 'inspired',
       'измучен': 'exhausted',
       'отчаян': 'desperate',
-      'вибухающ': 'explosive'
+      'вибухаю': 'explosive'
     };
 
     for (const [keyword, translation] of Object.entries(emotionKeywords)) {
@@ -725,11 +734,13 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   /**
    * 🤖 Generate image with specified model
    * v4.2: Using Gemini API imageConfig for aspect ratio control
+   * 🆕 v5.5: Accept sceneElements to store in metadata
    */
   private async generateWithModel(
     model: string,
     prompt: string,
-    idForMetadata: string | number // Can be articleId or episodeId
+    idForMetadata: string | number,
+    sceneElements?: ReturnType<typeof this.extractSceneElementsFromContent> // 🆕 Optional scene data
   ): Promise<GeneratedImage> {
     const startTime = Date.now();
 
@@ -777,6 +788,12 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
     // We'll add the prefix later when needed
     console.log(`   📦 Received base64 image from Gemini API (${base64Data.length} chars)`);
 
+    // 🆕 Build scene description from extracted elements
+    let sceneDescription = prompt.substring(0, 200) + "...";
+    if (sceneElements) {
+      sceneDescription = `Theme: Article | Characters: ${sceneElements.characters.join(', ') || 'unspecified'} | Settings: ${sceneElements.settings.join(', ') || 'unspecified'} | Emotions: ${sceneElements.emotions.join(', ') || 'unspecified'}`;
+    }
+
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data, // ← CLEAN base64 without data: prefix
@@ -789,7 +806,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
       prompt: prompt,
       metadata: {
         articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
-        sceneDescription: prompt.substring(0, 200) + "...",
+        sceneDescription: sceneDescription, // 🆕 Now includes scene elements
         generationAttempts: 1,
         fallbackUsed: model !== this.primaryModel,
         // Legacy support
