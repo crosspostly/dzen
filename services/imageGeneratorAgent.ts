@@ -48,14 +48,13 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎯 v4.3: Generate ONE cover image from title + lede + description
-   * 🆕 Description field is USED IN PROMPT, not replaced by it
+   * 🎯 v4.3: Generate ONE cover image from title + lede
    */
-  async generateCoverImage(request: CoverImageRequest & { description?: string }): Promise<GeneratedImage> {
+  async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🎨 Generating COVER image for article: "${request.title}"`);
 
     try {
-      // Build prompt with description FROM ARTICLE
+      // Build prompt from lede
       const prompt = this.buildCoverImagePrompt(request);
       console.log(`📝 Cover prompt built (${prompt.length} chars)`);
 
@@ -84,11 +83,10 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🆕 Build cover image prompt USING Description from article
-   * Description is INPUT to image generator, shapes the visual
+   * Build cover image prompt from lede
    */
-  private buildCoverImagePrompt(request: CoverImageRequest & { description?: string }): string {
-    const { title, ledeText, description, plotBible } = request;
+  private buildCoverImagePrompt(request: CoverImageRequest): string {
+    const { title, ledeText, plotBible } = request;
 
     // SAFE: Use defaults if plotBible missing
     const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
@@ -99,11 +97,6 @@ export class ImageGeneratorAgent {
       textures: [],
       lightSources: ['window light']
     };
-
-    // 🆕 Description field is the KEY - use it to shape image
-    const descriptionSection = description 
-      ? `\n=== SCENE DESCRIPTION FROM ARTICLE ===\n${description}\n`
-      : '';
 
     const sensoryText = sensoryPalette.details && sensoryPalette.details.length > 0 
       ? sensoryPalette.details.slice(0, 5).join(', ')
@@ -116,11 +109,10 @@ AUTHENTIC mobile phone photo for article cover.
 Title: "${title}"
 
 Narrator: Woman ${narrator.age} years old, ${narrator.tone} voice
-${descriptionSection}
 Lede: ${ledeText.substring(0, 300)}
 
 === VISUAL DIRECTION ===
-Capture this exact scene from the article.
+Capture the essence of the story from the title and lede.
 The image should feel like a real moment from the story.
 SENSORY PALETTE: ${sensoryText}
 
@@ -153,21 +145,20 @@ PURE IMAGE: No text, no captions, no overlays, no logos - JUST THE SCENE.
   }
 
   /**
-   * 🎯 Fallback cover generation with simpler prompt
+   * Fallback cover generation
    */
-  private async generateCoverImageFallback(request: CoverImageRequest & { description?: string }): Promise<GeneratedImage> {
+  private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🔄 Using fallback model for cover: ${this.fallbackModel}`);
 
     // SAFE: Use defaults if plotBible missing
     const narrator = request.plotBible?.narrator || { age: 40, gender: 'female' };
     const sensoryDetails = request.plotBible?.sensoryPalette?.details || ['warm', 'intimate', 'quiet'];
-    const descriptionSection = request.description ? `Scene: ${request.description}\n` : '';
 
     const simplifiedPrompt = `
 🔥 NO TEXT ON IMAGE - CRITICAL!
 
 Russian woman ${narrator.age || 40} years old in apartment, natural light, realistic photo on smartphone.
-${descriptionSection}Mood: ${sensoryDetails.slice(0, 3).join(', ')}
+Mood: ${sensoryDetails.slice(0, 3).join(', ')}
 Domestic scene, everyday moment, warm lighting.
 
 ⚠️  ABSOLUTELY NO TEXT, CAPTIONS, WATERMARKS, OR OVERLAYS!
@@ -188,7 +179,7 @@ PURE PHOTOGRAPH ONLY.
 
   /**
    * @deprecated Use generateCoverImage instead. This generates per-episode images (old v4.0)
-   * 🎯 Main entry point: Generate image from episode
+   * Main entry point: Generate image from episode
    */
   async generateImage(request: ImageGenerationRequest): Promise<GeneratedImage> {
     console.log(`🎨 Generating image for episode ${request.episodeId}...`);
@@ -227,16 +218,11 @@ PURE PHOTOGRAPH ONLY.
   }
 
   /**
-   * 🔍 Extract key scene from episode text
-   * Uses AI to identify the most visual/emotional moment
+   * Extract key scene from episode text
    */
   private extractKeyScene(episodeText: string, plotBible: PlotBible): ExtractedScene {
-    // Simple extraction logic (can be enhanced with AI)
-    // Look for sensory details, character actions, and emotional moments
-    
     const lines = episodeText.split('\n').filter(l => l.trim().length > 0);
     
-    // Find paragraph with most sensory words
     let bestParagraph = lines[0] || '';
     let maxSensoryScore = 0;
 
@@ -248,7 +234,6 @@ PURE PHOTOGRAPH ONLY.
       }
     }
 
-    // Extract components
     const who = this.extractWho(bestParagraph, plotBible);
     const what = this.extractWhat(bestParagraph);
     const where = this.extractWhere(bestParagraph, plotBible);
@@ -268,7 +253,7 @@ PURE PHOTOGRAPH ONLY.
   }
 
   /**
-   * 📝 Build authentic mobile phone photo prompt
+   * Build prompt from scene
    */
   private buildImagePrompt(
     scene: ExtractedScene,
@@ -333,8 +318,7 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   }
 
   /**
-   * 🤖 Generate image with specified model
-   * v4.2: Using Gemini API imageConfig for aspect ratio control
+   * Generate image with specified model
    */
   private async generateWithModel(
     model: string,
@@ -354,14 +338,12 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 1024,
-        // 🔥 ASPECT RATIO CONTROL - Using Gemini API imageConfig
         imageConfig: {
-          aspectRatio: "16:9" // Landscape format
+          aspectRatio: "16:9"
         } as any
       }
     });
 
-    // Extract image from response
     if (!response.candidates || response.candidates.length === 0) {
       throw new Error("No candidates in response");
     }
@@ -383,17 +365,15 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
       throw new Error("No image data in response");
     }
 
-    // 🔥 IMPORTANT: base64Data from Gemini is CLEAN (no data: prefix)
-    // We'll add the prefix later when needed
     console.log(`   📦 Received base64 image from Gemini API (${base64Data.length} chars)`);
 
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
-      base64: base64Data, // ← CLEAN base64 without data: prefix
-      mimeType: "image/jpeg",  // ← ALWAYS JPEG for covers
-      width: 1920, // 16:9 standard
+      base64: base64Data,
+      mimeType: "image/jpeg",
+      width: 1920,
       height: 1080,
-      fileSize: Math.ceil(base64Data.length * 0.75), // Approximate size
+      fileSize: Math.ceil(base64Data.length * 0.75),
       generatedAt: Date.now(),
       model: model,
       prompt: prompt,
@@ -401,12 +381,10 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
         articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
         generationAttempts: 1,
         fallbackUsed: model !== this.primaryModel,
-        // Legacy support
         episodeId: typeof idForMetadata === 'number' ? idForMetadata : undefined
       }
     };
 
-    // Validate image
     const validation = this.validateImage(generatedImage);
     if (!validation.valid) {
       throw new Error(`Image validation failed: ${validation.errors.join(', ')}`);
@@ -417,12 +395,11 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   }
 
   /**
-   * 🔄 Fallback generation with simpler prompt
+   * Fallback generation
    */
   private async generateImageFallback(request: ImageGenerationRequest): Promise<GeneratedImage> {
     console.log(`🔄 Using fallback model: ${this.fallbackModel}`);
 
-    // Simplified prompt for fallback
     const simplifiedPrompt = `
 Russian woman ${request.plotBible.narrator.age} years old in apartment, natural light, realistic photo on smartphone.
 Emotion: ${request.emotion || request.plotBible.narrator.tone}
@@ -444,38 +421,33 @@ Amateur photo aesthetic, NOT stock photography.
   }
 
   /**
-   * ✅ Validate generated image
+   * Validate image
    */
   validateImage(image: GeneratedImage): ImageValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // Check dimensions
     const dimensionsOk = image.width === 1920 && image.height === 1080;
     if (!dimensionsOk) {
       errors.push(`Invalid dimensions: ${image.width}x${image.height} (expected 1920x1080)`);
     }
 
-    // Check aspect ratio
     const aspectRatio = image.width / image.height;
     const aspectRatioOk = Math.abs(aspectRatio - (16/9)) < 0.01;
     if (!aspectRatioOk) {
       warnings.push(`Aspect ratio ${aspectRatio.toFixed(2)} not exactly 16:9`);
     }
 
-    // Check file size (should be reasonable)
-    const sizeOk = image.fileSize > 10000 && image.fileSize < 5000000; // 10KB - 5MB
+    const sizeOk = image.fileSize > 10000 && image.fileSize < 5000000;
     if (!sizeOk) {
       warnings.push(`Unusual file size: ${image.fileSize} bytes`);
     }
 
-    // Check format
     const formatOk = image.mimeType === "image/jpeg" || image.mimeType === "image/jpg";
     if (!formatOk) {
       errors.push(`Invalid format: ${image.mimeType}`);
     }
 
-    // Check base64
     if (!image.base64 || image.base64.length < 100) {
       errors.push("Base64 data missing or too short");
     }
@@ -494,14 +466,13 @@ Amateur photo aesthetic, NOT stock photography.
   }
 
   // ============================================================================
-  // Helper methods for scene extraction
+  // Helper methods
   // ============================================================================
 
   private calculateSensoryScore(text: string, palette: PlotBible['sensoryPalette']): number {
     let score = 0;
     const lower = text.toLowerCase();
 
-    // Check for sensory words
     for (const smell of palette.smells || []) {
       if (lower.includes(smell.toLowerCase())) score += 2;
     }
@@ -515,7 +486,6 @@ Amateur photo aesthetic, NOT stock photography.
       if (lower.includes(detail.toLowerCase())) score += 1;
     }
 
-    // Check for visual verbs
     const visualVerbs = ['смотрел', 'видел', 'увидел', 'заметил', 'разглядывал'];
     for (const verb of visualVerbs) {
       if (lower.includes(verb)) score += 1;
@@ -525,19 +495,16 @@ Amateur photo aesthetic, NOT stock photography.
   }
 
   private extractWho(text: string, plotBible: PlotBible): string {
-    // Default to narrator profile
     const age = plotBible.narrator?.age || 40;
     const gender = plotBible.narrator?.gender === "male" ? "Man" : "Woman";
-    
-    return `${gender} ${Math.floor(age / 10) * 10}s`; // "Woman 40s"
+    return `${gender} ${Math.floor(age / 10) * 10}s`;
   }
 
   private extractWhat(text: string): string {
-    // Look for action verbs
     const actions = ['сидел', 'стоял', 'смотрел', 'держал', 'читал', 'писал', 'говорил'];
     for (const action of actions) {
       if (text.toLowerCase().includes(action)) {
-        return action.replace('л', 'ing'); // Simple translation
+        return action.replace('л', 'ing');
       }
     }
     return "in domestic scene";
@@ -564,14 +531,12 @@ Amateur photo aesthetic, NOT stock photography.
   private extractLighting(text: string, palette: PlotBible['sensoryPalette']): string {
     const lower = text.toLowerCase();
     
-    // Check palette light sources first
     for (const light of palette.lightSources || []) {
       if (lower.includes(light.toLowerCase())) {
         return light;
       }
     }
 
-    // Default lighting by time indicators
     if (lower.includes('утр') || lower.includes('morning')) return "morning sunlight from window";
     if (lower.includes('веч') || lower.includes('evening')) return "desk lamp warm light";
     if (lower.includes('ноч') || lower.includes('night')) return "dim lamp light";
@@ -595,20 +560,14 @@ Amateur photo aesthetic, NOT stock photography.
     const details: string[] = [];
     const lower = text.toLowerCase();
 
-    // Collect matching sensory details
     for (const detail of [...(palette.details || []), ...(palette.smells || []), ...(palette.textures || [])]) {
       if (lower.includes(detail.toLowerCase())) {
         details.push(detail);
       }
     }
 
-    // Return top 5 most relevant
     return details.slice(0, 5);
   }
 }
-
-// ============================================================================
-// 🔧 SINGLETON EXPORT: Create and export default instance
-// ============================================================================
 
 export const imageGeneratorAgent = new ImageGeneratorAgent();
