@@ -1,4 +1,4 @@
-# v6.0: 3-Level Article Cleanup System - Implementation Summary
+# v6.1: 3-Level Article Cleanup System + DEEP TEXT RESTORATION
 
 ## 🎯 Objective
 
@@ -23,21 +23,58 @@ Fix article generation quality issues:
 - Explicitly forbid: metadata, markdown, repeated phrases, orphaned fragments
 - Result: 80-90% of problems prevented at generation time
 
-### LEVEL 2: AI Cleanup (FinalArticleCleanupGate)
+### LEVEL 2: AI DEEP TEXT RESTORATION (FinalArticleCleanupGate v6.1)
 
-**New File:** `services/finalArticleCleanupGate.ts`
+**File:** `services/finalArticleCleanupGate.ts` (UPGRADED to v6.1)
+
+**5-Stage Deep Restoration Process:**
+
+```
+STAGE 1: De-noising (Garbage Marker Removal)
+  - Remove [...], [note], [comment], [scene], [pause]
+  - Remove double spaces, random characters
+  - Remove parasite particles in wrong places ("ну и", "да вот", "вот только")
+
+STAGE 2: Syntax Restoration (Structural Reconstruction)
+  - Fix subject + predicate order
+  - Fix dialogues (Russian standard: "— ? — спросил я.")
+  - Split long sentences (>50 words)
+  - Fix broken participial constructions
+
+STAGE 3: Deduplication (Semantic Echo Removal)
+  - Remove "echo phrases" (same idea, different words)
+  - Preserve rhythmic repeats ("Я помню. Помню точно.")
+
+STAGE 4: Paragraph Pacing (Rhythmic Structuring)
+  - Alternation: short → medium → short → long
+  - Strong paragraph beginnings (action, dialogue, sensation)
+  - 5 logical blocks: exposition → rising action → climax → falling action → epilogue
+
+STAGE 5: Voice Preservation (Author Voice Protection)
+  - NEVER change: plot, vocabulary, metaphors, tone, dialogues
+  - ONLY fix: syntax, garbage, rhythm, punctuation
+```
 
 **Features:**
 - `analyzeForIssues(text)` - fast analysis without AI
-- `cleanupAndValidate(article)` - AI cleanup via Gemini if needed
+- `cleanupAndValidate(article)` - 5-stage deep restoration via Gemini if needed
 - `validateClean(text)` - quick validation
 - Configurable via .env (threshold, model, temperature, retries)
+- Restoration report with stages completed, artifacts removed, sentences fixed
 
 **Integration:** `services/multiAgentService.ts` (lines 133-143)
 
+**Example:**
+```
+INPUT:  в горле пересохло [pause] . — Кто это? я,
+OUTPUT: В горле пересохло.
+        — Кто это? — спросил я.
+        ✅ DEEP RESTORATION COMPLETE
+```
+
 ### LEVEL 3: Validation (ArticlePublishGate)
 
-**New File:** `services/articlePublishGate.ts`
+**File:** `services/articlePublishGate.ts`
 
 **Features:**
 - `validateBeforePublish(article)` - final quality check
@@ -165,9 +202,10 @@ Added environment files to prevent accidental commits:
 
 ## 📝 Notes
 
+- ✅ v6.1: **DEEP TEXT RESTORATION** - Complete 5-stage restoration prompt implemented
 - ✅ Core functionality working and tested
 - ✅ Integration complete in multiAgentService
-- ✅ Documentation comprehensive
+- ✅ Documentation comprehensive (docs/v6.0-cleanup-system.md updated)
 - ✅ GitHub Actions workflows updated
 - ✅ Secrets configuration documented
 - ✅ .gitignore updated for security
