@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1766557248111,
+  "generatedAt": 1766558188266,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -14,12 +14,12 @@
     "maxChars": 19000
   },
   "articleCount": 1,
-  "totalCharacters": 19858,
+  "totalCharacters": 19559,
   "totalImages": 1,
   "outputPaths": {
     "articles": [],
     "images": [
-      "articles/women-35-60/2025-12-24/ya-rastvorilas-v-detyah-i-gordilas-etim-teper-ya-z.jpg"
+      "articles/women-35-60/2025-12-24/vpervye-za-gody-moi-ruki-ne-drozhat-ya-priznayus-k.jpg"
     ],
     "report": "articles/women-35-60/2025-12-24/REPORT.md"
   }
