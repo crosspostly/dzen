@@ -3,7 +3,8 @@
  * 
  * Generates authentic mobile phone photos for Zen articles
  * Features:
- * - Scene extraction from episode text
+ * - SMART scene extraction from article content + title
+ * - Theme-based diverse image prompts (NOT generic)
  * - PlotBible-consistent image prompts
  * - Fallback on generation failure
  * - Image validation (dimensions, size, format)
@@ -50,14 +51,14 @@ export class ImageGeneratorAgent {
   /**
    * 🎯 v4.3 FIXED: Generate ONE cover image from title + lede
    * This is the main entry point for article cover generation
-   * NOW WITH STRICT NO-TEXT REQUIREMENTS
+   * NOW WITH SMART THEME-BASED DIVERSE PROMPTS (merged from generateImagePrompt.ts)
    */
   async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🎨 Generating COVER image for article: "${request.title}"`);
 
     try {
-      // Build cover image prompt from title + lede (first paragraph)
-      const prompt = this.buildCoverImagePrompt(request);
+      // 🆕 SMART: Build DIVERSE prompt based on article content
+      const prompt = await this.buildSmartCoverImagePrompt(request);
       console.log(`📝 Cover prompt built (${prompt.length} chars)`);
 
       // Generate with primary model
@@ -85,16 +86,64 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 📝 Build cover image prompt from article title + lede
-   * v4.3: CRITICAL NO-TEXT requirements for Яндекс.Дзен compliance
+   * 🆕 SMART: Build DIVERSE cover image prompt
+   * Analyzes article content and generates UNIQUE prompts for different themes
+   * (Merged from scripts/generateImagePrompt.ts)
+   * 
+   * CRITICAL: Generates DIFFERENT scenes based on article theme
+   * NOT generic one-size-fits-all prompts
    */
-  private buildCoverImagePrompt(request: CoverImageRequest): string {
+  private async buildSmartCoverImagePrompt(request: CoverImageRequest): string {
     const { title, ledeText, plotBible } = request;
 
-    // Extract key visual elements from lede (first paragraph)
-    const visualElements = this.extractVisualElements(ledeText);
+    // Extract key theme from title and lede
+    const theme = this.detectArticleTheme(title, ledeText);
+    console.log(`🎯 Detected theme: ${theme}`);
 
-    // SAFE: Use defaults if plotBible or narrator missing
+    // Build THEME-SPECIFIC prompt with unique visual elements
+    const themeSpecificPrompt = this.buildThemeSpecificPrompt(theme, title, ledeText, plotBible);
+
+    return themeSpecificPrompt;
+  }
+
+  /**
+   * 🎯 Detect article theme from title and content
+   * Returns one of: motherhood, romance, work, travel, loss, victory, conflict, healing, transformation
+   */
+  private detectArticleTheme(title: string, ledeText: string): string {
+    const content = `${title} ${ledeText}`.toLowerCase();
+
+    // Theme keywords mapping
+    const themes: Record<string, string[]> = {
+      motherhood: ['мама', 'мать', 'ребенок', 'дети', 'сын', 'дочь', 'материнск', 'беременн', 'роды', 'малыш'],
+      romance: ['люб', 'любов', 'мужчина', 'женщина', 'влюб', 'пара', 'встреча', 'целов', 'обнима', 'сердц'],
+      work: ['работ', 'офис', 'начальн', 'коллег', 'проект', 'встреч', 'договор', 'деньг', 'карьер', 'должност'],
+      travel: ['путеш', 'дорог', 'город', 'поезд', 'машин', 'самолет', 'море', 'горы', 'страна', 'чемодан'],
+      loss: ['потер', 'смерт', 'уход', 'разост', 'разлук', 'одинок', 'скорб', 'плач', 'грусть', 'скучаю'],
+      victory: ['побед', 'успех', 'радост', 'счастл', 'достиг', 'преодол', 'смог', 'удалось', 'исполнил', 'мечта'],
+      conflict: ['ссор', 'конфлик', 'спор', 'злост', 'гнев', 'ненав', 'вражд', 'врага', 'боролис', 'военн'],
+      healing: ['исцел', 'выздоров', 'спокой', 'мир', 'прощен', 'принял', 'отпустил', 'свобод', 'облегчен', 'светл'],
+      transformation: ['измени', 'новы', 'перерожд', 'воскресен', 'превращ', 'эволюц', 'развити', 'выросл', 'стала', 'начал']
+    };
+
+    // Count theme keywords
+    const themeCounts: Record<string, number> = {};
+    for (const [theme, keywords] of Object.entries(themes)) {
+      themeCounts[theme] = keywords.filter(kw => content.includes(kw)).length;
+    }
+
+    // Return theme with most matches (or 'domestic' if no clear theme)
+    const detectedTheme = Object.entries(themeCounts)
+      .sort(([, a], [, b]) => b - a)[0]?.[0] || 'domestic';
+
+    return detectedTheme;
+  }
+
+  /**
+   * 🎯 Build THEME-SPECIFIC prompt with UNIQUE visual elements
+   * Each theme gets DIFFERENT scene description to avoid repetition
+   */
+  private buildThemeSpecificPrompt(theme: string, title: string, ledeText: string, plotBible?: PlotBible): string {
     const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
     const sensoryPalette = plotBible?.sensoryPalette || { 
       details: ['warm', 'intimate', 'quiet', 'domestic'],
@@ -104,74 +153,173 @@ export class ImageGeneratorAgent {
       lightSources: ['window light']
     };
 
-    const prompt = `
+    let themePrompt = '';
+
+    switch (theme) {
+      case 'motherhood':
+        themePrompt = `
+Mother with child, tender moment. Woman ${narrator.age} years old holding or caring for a young child (2-5 years old).
+Setting: Domestic interior - kitchen, bedroom, or living room. Warm, natural light coming through window.
+Emotion: Deep tenderness, love, protective care. Her face shows unconditional devotion.
+Details: Child's toys visible, soft textures, warm colors (cream, beige, soft pastels).
+Lighting: Golden hour light through window, creating warm glow. Soft shadows.
+Authenticity: Real domestic moment, not posed. Like photo sent to grandmother.
+Feel: Intimate, vulnerable, deeply emotional motherhood.
+        `;
+        break;
+
+      case 'romance':
+        themePrompt = `
+Two people in moment of connection. Woman and man, both ${narrator.age}s, intimate moment.
+Setting: Bedroom, park bench, or cozy interior. Close proximity showing emotional connection.
+Emotion: Love, tenderness, mutual affection. Genuine connection between two people.
+Details: Hand-holding, face-to-face, or embrace. Natural, unposed positioning.
+Lighting: Soft, romantic light - dusk golden hour, bedroom lamp, or moonlight through window.
+Authenticity: Real relationship moment, not fantasy. Like photo from couple's private moment.
+Feel: Passionate yet tender, romantic, deeply human.
+        `;
+        break;
+
+      case 'work':
+        themePrompt = `
+Professional moment in workspace. Woman ${narrator.age} years old at desk, in meeting, or reviewing documents.
+Setting: Modern office, home office, or meeting room. Professional but not sterile.
+Emotion: Focused concentration, determination, or workplace tension.
+Details: Computer, documents, coffee cup, professional clothing. Real work environment.
+Lighting: Natural window light mixed with office lighting. Neutral, professional tones.
+Authenticity: Real workplace moment - not posed corporate photo. Like candid office snapshot.
+Feel: Professional, slightly tense, realistic work environment.
+        `;
+        break;
+
+      case 'travel':
+        themePrompt = `
+Traveler on journey. Woman ${narrator.age} years old outdoors, exploring new place.
+Setting: Street, train station, mountain view, or cityscape. Travel destination.
+Emotion: Wonder, curiosity, freedom, adventure. Sense of exploration.
+Details: Luggage, map, camera, or looking at horizon. Travel gear visible.
+Lighting: Daytime light - natural sun, varied by location (harsh sunlight in south, softer in north).
+Authenticity: Real traveler, not tourist pose. Like candid travel journal photo.
+Feel: Free, adventurous, exploratory, alive.
+        `;
+        break;
+
+      case 'loss':
+        themePrompt = `
+Solitary moment of grief or loneliness. Woman ${narrator.age} years old alone, contemplative.
+Setting: Empty room, window overlooking city, or isolated space. Emotionally sparse.
+Emotion: Deep sadness, grief, loneliness, loss. Introspection and sorrow.
+Details: Sitting quietly, looking away, tears perhaps visible. Minimal background.
+Lighting: Cool, soft light - overcast day through window, or dim lamp. Melancholic.
+Authenticity: Real moment of pain, not dramatized. Like intimate journal entry photo.
+Feel: Heartbreaking, vulnerable, deeply sad yet beautiful.
+        `;
+        break;
+
+      case 'victory':
+        themePrompt = `
+Moment of triumph and joy. Woman ${narrator.age} years old expressing happiness and success.
+Setting: Anywhere outdoors or in bright interior. Energetic, celebratory.
+Emotion: Pure joy, triumph, relief, pride. Genuine happiness and accomplishment.
+Details: Raised hands, smiling face, jumping or dancing. Celebratory body language.
+Lighting: Bright, energetic light - golden hour sunset or strong daytime sun. Vibrant.
+Authenticity: Real celebration moment, unguarded joy. Like candid happy moment from life.
+Feel: Joyful, energetic, victorious, alive.
+        `;
+        break;
+
+      case 'conflict':
+        themePrompt = `
+Moment of tension or confrontation. Woman ${narrator.age} years old in stressed or angry state.
+Setting: Any interior or tense environment. Physically reflects emotional tension.
+Emotion: Anger, frustration, stress, confrontation. Raw emotional intensity.
+Details: Tense face, rigid posture, or in heated moment. Visible emotional turmoil.
+Lighting: Harsh or cold light emphasizing tension. Shadows creating drama.
+Authenticity: Real argument or stressful moment, not theatrical. Like captured raw emotion.
+Feel: Tense, dramatic, emotionally charged.
+        `;
+        break;
+
+      case 'healing':
+        themePrompt = `
+Moment of peace and recovery. Woman ${narrator.age} years old in serene, healing state.
+Setting: Peaceful interior, nature, or meditative space. Calm and safe.
+Emotion: Peace, relief, acceptance, healing. Tranquility and letting go.
+Details: Relaxed posture, peaceful expression, perhaps meditating or in nature. Gentle.
+Lighting: Soft, warm light - morning sun, or dim peaceful lighting. Calming.
+Authenticity: Real moment of peace and recovery, not forced serenity. Like healing milestone.
+Feel: Peaceful, safe, healed, at ease.
+        `;
+        break;
+
+      case 'transformation':
+        themePrompt = `
+Moment of personal change and rebirth. Woman ${narrator.age} years old showing growth and change.
+Setting: Liminal space suggesting transformation - doorway, mirror, or new environment.
+Emotion: Hope, renewal, determination, metamorphosis. Sense of becoming new person.
+Details: Looking forward with hope, or in process of change. Symbolic elements of transformation.
+Lighting: Transitional light - dawn, dusk, or light coming through doorway. Hopeful.
+Authenticity: Real moment of personal transformation, genuine hope. Like milestone moment.
+Feel: Hopeful, transformative, powerful, renewed.
+        `;
+        break;
+
+      default: // domestic
+        themePrompt = `
+Domestic interior scene. Woman ${narrator.age} years old in everyday home moment.
+Setting: Russian apartment - kitchen, bedroom, living room. Ordinary, lived-in space.
+Emotion: Contemplative, quiet, everyday. Moment of domestic life.
+Details: Tea, book, window, simple objects. Real domestic textures.
+Lighting: Natural window light creating warm glow. Comfortable, lived-in.
+Authenticity: Real home moment, not styled. Like candid domestic photo.
+Feel: Intimate, comfortable, quietly powerful.
+        `;
+    }
+
+    const sensoryText = sensoryPalette.details && sensoryPalette.details.length > 0 
+      ? sensoryPalette.details.slice(0, 5).join(', ')
+      : 'warm, intimate, quiet, domestic';
+
+    const finalPrompt = `
 🔥 CRITICAL: NO TEXT ANYWHERE ON THE IMAGE!
 
-AUTHENTIC mobile phone photo for article cover image.
+AUTHENTIC mobile phone photo for article cover.
 Title: "${title}"
 
-Scene from opening paragraph: ${visualElements}
+Theme: ${theme}
+Narrator: Woman ${narrator.age} years old
+${themePrompt}
 
-NARRATOR CONTEXT:
-- Age: ${narrator.age || 40} years old
-- Gender: ${narrator.gender === 'male' ? 'Male' : 'Female'}
-- Tone: ${narrator.tone || 'confessional'}
-
-SENSORY PALETTE:
-${sensoryPalette.details && sensoryPalette.details.length > 0 ? sensoryPalette.details.slice(0, 5).join(', ') : 'warm, intimate, quiet, domestic'}
+SENSORY PALETTE: ${sensoryText}
 
 REQUIREMENTS:
-- Natural lighting ONLY (window light, desk lamp, shadows)
-- Domestic realism (Russian interior, everyday life)
-- Amateur framing (NOT professional composition)
-- Depth of field (slight background blur)
-- Slight digital noise (like real smartphone camera)
-- Natural colors (NOT oversaturated)
+- Natural lighting ONLY (window light, desk lamp, shadows, candlelight)
+- Domestic realism (Russian interior, everyday life, authentic spaces)
+- Amateur framing (NOT professional composition, slightly imperfect)
+- Depth of field (slight background blur, smartphone bokeh)
+- Slight digital noise (like real smartphone camera from 2018-2022)
+- Natural colors (NOT oversaturated, NOT filter-heavy)
+- Human emotion visible (real feelings, not fake smile)
 
 🚫 MUST AVOID (CRITICAL for Яндекс.Дзен):
-- ANY text, captions, titles, labels, or overlays
+- ANY text, captions, titles, labels, logos, or overlays
 - Watermarks or signatures
 - ANY visible words or symbols
 - Stock photography or glossy look
 - Surrealism or strange proportions
-- Western style (no American kitchens)
-- Violence or shocking content
-- Perfect models or professional posing
-- Studio lighting
-- Fancy interior design
+- Western style (no American kitchens, no English text)
+- Violence, gore, or shocking content
+- Overly beautiful models or professional makeup
+- Perfect posing or studio lighting
+- Fancy interior design or luxury goods
+- AI-art artifacts (uncanny valley, weird hands, wrong anatomy)
 
-STYLE: Like a photo from neighbor's WhatsApp - authentic, slightly imperfect, real life.
-RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
-PURE IMAGE: No text, no captions, no overlays - just the scene.
+STYLE: Like photo from friend's WhatsApp or family group chat - authentic, slightly imperfect, REAL LIFE.
+RESULT: 4K detail but amateur aesthetic, like real home photo taken by friend on old smartphone.
+PURE IMAGE: No text, no captions, no overlays, no logos - JUST THE SCENE.
     `.trim();
 
-    return prompt;
-  }
-
-  /**
-   * 🔍 Extract visual elements from lede text (first paragraph)
-   */
-  private extractVisualElements(ledeText: string): string {
-    // Safe: handle empty or undefined lede
-    if (!ledeText || ledeText.trim().length === 0) {
-      return 'domestic interior scene, everyday moment';
-    }
-
-    // Simple extraction: take first 300 chars of lede as visual description
-    const maxLength = 300;
-    if (ledeText.length <= maxLength) {
-      return ledeText;
-    }
-    
-    // Find last complete sentence within maxLength
-    const truncated = ledeText.substring(0, maxLength);
-    const lastPeriod = truncated.lastIndexOf('.');
-    
-    if (lastPeriod > 100) {
-      return truncated.substring(0, lastPeriod + 1);
-    }
-    
-    return truncated + '...';
+    return finalPrompt;
   }
 
   /**
