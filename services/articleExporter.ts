@@ -13,7 +13,7 @@ type ExportOptions = {
   includeJson?: boolean;
   includeText?: boolean;
   includeHtml?: boolean;
-  includeImages?: boolean;  // 🖼️ НОВОЕ: сохранение изображений
+  includeImages?: boolean;  // 🖼️ новое: сохранение изображений
 };
 
 /**
