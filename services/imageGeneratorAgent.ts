@@ -86,11 +86,11 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🆕 SMART: Build DIVERSE cover image prompt
-   * Analyzes article content and generates UNIQUE prompts for different themes
-   * (Merged from scripts/generateImagePrompt.ts)
+   * 🆕 v4.5 REFACTORED: Build DIVERSE cover image prompt from REAL article content
+   * Analyzes article content (title + lede) and generates UNIQUE prompts
+   * NOT hardcoded scenes - builds from actual story elements!
    * 
-   * CRITICAL: Generates DIFFERENT scenes based on article theme
+   * CRITICAL: Generates DIFFERENT scenes based on what's ACTUALLY in the article
    * NOT generic one-size-fits-all prompts
    */
   private async buildSmartCoverImagePrompt(request: CoverImageRequest): string {
@@ -100,10 +100,413 @@ export class ImageGeneratorAgent {
     const theme = this.detectArticleTheme(title, ledeText);
     console.log(`🎯 Detected theme: ${theme}`);
 
-    // Build THEME-SPECIFIC prompt with unique visual elements
-    const themeSpecificPrompt = this.buildThemeSpecificPrompt(theme, title, ledeText, plotBible);
+    // 🔥 NEW: Extract REAL scene elements from the article itself
+    const sceneElements = this.extractSceneElementsFromContent(title, ledeText, theme);
+    console.log(`📸 Extracted scene elements:`, sceneElements);
+
+    // Build prompt from REAL content + theme
+    const themeSpecificPrompt = this.buildPromptFromRealContent(
+      theme,
+      sceneElements,
+      title,
+      ledeText,
+      plotBible
+    );
 
     return themeSpecificPrompt;
+  }
+
+  /**
+   * 🎯 Extract actual scene elements from article content
+   * Analyzes title + lede to find: characters, settings, actions, emotions
+   * Returns SPECIFIC details from the actual story
+   */
+  private extractSceneElementsFromContent(
+    title: string,
+    ledeText: string,
+    theme: string
+  ): {
+    characters: string[];
+    settings: string[];
+    actions: string[];
+    emotions: string[];
+    objects: string[];
+    timeContext: string;
+  } {
+    const content = `${title} ${ledeText}`.toLowerCase();
+
+    // Character extraction
+    const characters: string[] = [];
+    const characterKeywords: Record<string, string> = {
+      'мама': 'mother',
+      'мать': 'mother',
+      'папа': 'father',
+      'отец': 'father',
+      'сын': 'son',
+      'дочь': 'daughter',
+      'ребенок': 'child',
+      'дети': 'children',
+      'женщина': 'woman',
+      'мужчина': 'man',
+      'подруга': 'girlfriend/friend',
+      'друг': 'friend',
+      'любимый': 'beloved',
+      'супруг': 'husband',
+      'жена': 'wife',
+      'коллег': 'colleague',
+      'начальн': 'boss',
+      'учител': 'teacher',
+      'врач': 'doctor',
+      'бабушк': 'grandmother',
+      'дедушк': 'grandfather',
+      'сестр': 'sister',
+      'брат': 'brother'
+    };
+
+    for (const [keyword, translation] of Object.entries(characterKeywords)) {
+      if (content.includes(keyword)) {
+        characters.push(translation);
+      }
+    }
+
+    // Setting extraction
+    const settings: string[] = [];
+    const settingKeywords: Record<string, string> = {
+      'кухн': 'kitchen',
+      'спальн': 'bedroom',
+      'гостин': 'living room',
+      'офис': 'office',
+      'работ': 'workplace',
+      'улиц': 'street',
+      'парк': 'park',
+      'окн': 'window',
+      'диван': 'couch',
+      'кровать': 'bed',
+      'стол': 'table',
+      'машин': 'car',
+      'поезд': 'train',
+      'самолет': 'airplane',
+      'море': 'sea',
+      'горы': 'mountains',
+      'город': 'city',
+      'дом': 'home',
+      'квартир': 'apartment',
+      'школ': 'school',
+      'больниц': 'hospital',
+      'ресторан': 'restaurant',
+      'метро': 'metro',
+      'вокзал': 'station',
+      'лес': 'forest',
+      'деревн': 'village',
+      'балкон': 'balcony',
+      'веранд': 'porch',
+      'ванн': 'bathroom',
+      'коридор': 'hallway',
+      'лестниц': 'stairs'
+    };
+
+    for (const [keyword, translation] of Object.entries(settingKeywords)) {
+      if (content.includes(keyword)) {
+        settings.push(translation);
+      }
+    }
+
+    // Action extraction
+    const actions: string[] = [];
+    const actionKeywords: Record<string, string> = {
+      'сидел': 'sitting',
+      'стоял': 'standing',
+      'лежал': 'lying',
+      'ходил': 'walking',
+      'бежал': 'running',
+      'смотрел': 'looking',
+      'слушал': 'listening',
+      'говорил': 'talking',
+      'кричал': 'shouting',
+      'плакал': 'crying',
+      'смеялся': 'laughing',
+      'пел': 'singing',
+      'танцевал': 'dancing',
+      'готовил': 'cooking',
+      'ел': 'eating',
+      'пил': 'drinking',
+      'читал': 'reading',
+      'писал': 'writing',
+      'работал': 'working',
+      'спал': 'sleeping',
+      'целовал': 'kissing',
+      'обнимал': 'hugging',
+      'держал': 'holding',
+      'тискал': 'hugging',
+      'ласкал': 'caressing',
+      'вздыхал': 'sighing',
+      'улыбался': 'smiling',
+      'хмурился': 'frowning',
+      'дрожал': 'trembling',
+      'кричал': 'yelling',
+      'молчал': 'silent',
+      'прислушивался': 'listening'
+    };
+
+    for (const [keyword, translation] of Object.entries(actionKeywords)) {
+      if (content.includes(keyword)) {
+        actions.push(translation);
+      }
+    }
+
+    // Emotion extraction
+    const emotions: string[] = [];
+    const emotionKeywords: Record<string, string> = {
+      'люб': 'loving',
+      'радост': 'happy',
+      'счастлив': 'joyful',
+      'благодар': 'grateful',
+      'горд': 'proud',
+      'печал': 'sad',
+      'грусть': 'melancholy',
+      'сожален': 'regretful',
+      'стыд': 'ashamed',
+      'боял': 'fearful',
+      'страх': 'afraid',
+      'тревож': 'anxious',
+      'гнев': 'angry',
+      'злост': 'furious',
+      'обид': 'hurt',
+      'ревнив': 'jealous',
+      'завист': 'envious',
+      'спокой': 'calm',
+      'мирн': 'peaceful',
+      'тих': 'quiet',
+      'одинок': 'lonely',
+      'потерян': 'lost',
+      'нежн': 'tender',
+      'интим': 'intimate',
+      'волнующ': 'thrilling',
+      'ошеломл': 'shocked',
+      'разочаров': 'disappointed',
+      'вдохновлен': 'inspired',
+      'измучен': 'exhausted',
+      'отчаян': 'desperate',
+      'вибухающ': 'explosive'
+    };
+
+    for (const [keyword, translation] of Object.entries(emotionKeywords)) {
+      if (content.includes(keyword)) {
+        emotions.push(translation);
+      }
+    }
+
+    // Object extraction (for details)
+    const objects: string[] = [];
+    const objectKeywords: Record<string, string> = {
+      'чай': 'tea',
+      'кофе': 'coffee',
+      'цветы': 'flowers',
+      'фото': 'photo',
+      'книг': 'book',
+      'письм': 'letter',
+      'телефон': 'phone',
+      'часы': 'watch',
+      'кольцо': 'ring',
+      'украшен': 'jewelry',
+      'свеч': 'candle',
+      'лампа': 'lamp',
+      'подушк': 'pillow',
+      'одеял': 'blanket',
+      'ткань': 'fabric',
+      'игрушк': 'toy',
+      'кукол': 'doll',
+      'мячик': 'ball',
+      'рисун': 'drawing',
+      'картин': 'painting',
+      'зеркал': 'mirror',
+      'часы': 'clock',
+      'окно': 'window',
+      'дверь': 'door',
+      'стул': 'chair',
+      'кровать': 'bed',
+      'подарок': 'gift',
+      'букет': 'bouquet'
+    };
+
+    for (const [keyword, translation] of Object.entries(objectKeywords)) {
+      if (content.includes(keyword)) {
+        objects.push(translation);
+      }
+    }
+
+    // Time context
+    let timeContext = 'day';
+    if (content.includes('утр') || content.includes('рассвет')) timeContext = 'morning';
+    else if (content.includes('полден') || content.includes('день')) timeContext = 'daytime';
+    else if (content.includes('веч') || content.includes('закат')) timeContext = 'evening';
+    else if (content.includes('ноч') || content.includes('темн')) timeContext = 'night';
+
+    return {
+      characters: [...new Set(characters)], // Remove duplicates
+      settings: [...new Set(settings)],
+      actions: [...new Set(actions)],
+      emotions: [...new Set(emotions)],
+      objects: [...new Set(objects)],
+      timeContext
+    };
+  }
+
+  /**
+   * 🎯 Build prompt from REAL content elements (NOT hardcoded)
+   * Uses actual story details to create unique, specific image descriptions
+   */
+  private buildPromptFromRealContent(
+    theme: string,
+    sceneElements: ReturnType<typeof this.extractSceneElementsFromContent>,
+    title: string,
+    ledeText: string,
+    plotBible?: PlotBible
+  ): string {
+    const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
+    const sensoryPalette = plotBible?.sensoryPalette || { 
+      details: ['warm', 'intimate', 'quiet', 'domestic'],
+      smells: [],
+      sounds: [],
+      textures: [],
+      lightSources: ['window light']
+    };
+
+    // Build subject from actual characters + actions
+    let subject = '';
+    if (sceneElements.characters.length > 0) {
+      subject = `${sceneElements.characters.join(' and ')}`;
+      if (sceneElements.actions.length > 0) {
+        subject += ` ${sceneElements.actions[0]}`;
+      }
+    } else {
+      subject = `Woman ${narrator.age} years old`;
+      if (sceneElements.actions.length > 0) {
+        subject += ` ${sceneElements.actions[0]}`;
+      }
+    }
+
+    // Build setting from actual locations
+    let setting = '';
+    if (sceneElements.settings.length > 0) {
+      setting = sceneElements.settings[0];
+      if (sceneElements.settings.length > 1) {
+        setting += ` near ${sceneElements.settings[1]}`;
+      }
+    } else {
+      setting = 'domestic interior';
+    }
+
+    // Build emotion context
+    let emotionContext = '';
+    if (sceneElements.emotions.length > 0) {
+      emotionContext = sceneElements.emotions.slice(0, 2).join(', ');
+    } else {
+      emotionContext = this.getThemeEmotion(theme);
+    }
+
+    // Build lighting based on time context
+    let lightingDescription = '';
+    switch (sceneElements.timeContext) {
+      case 'morning':
+        lightingDescription = 'soft morning light through window, golden and gentle';
+        break;
+      case 'daytime':
+        lightingDescription = 'natural daylight, bright but not harsh';
+        break;
+      case 'evening':
+        lightingDescription = 'warm evening light, golden hour glow';
+        break;
+      case 'night':
+        lightingDescription = 'soft lamp light, subtle shadows, intimate';
+        break;
+      default:
+        lightingDescription = 'natural window light';
+    }
+
+    // Build object details
+    let objectDetails = '';
+    if (sceneElements.objects.length > 0) {
+      objectDetails = `\nDetails: ${sceneElements.objects.slice(0, 3).join(', ')} visible in scene.`;
+    }
+
+    const sensoryText = sensoryPalette.details && sensoryPalette.details.length > 0 
+      ? sensoryPalette.details.slice(0, 5).join(', ')
+      : 'warm, intimate, quiet, domestic';
+
+    // Build final prompt from REAL content
+    const finalPrompt = `
+🔥 CRITICAL: NO TEXT ANYWHERE ON THE IMAGE!
+
+AUTHENTIC mobile phone photo for article cover.
+Title: "${title}"
+
+Theme: ${theme}
+Narrator: Woman ${narrator.age} years old, ${narrator.tone} voice
+
+=== SCENE FROM ARTICLE ===
+Subject: ${subject}
+Setting: ${setting}, Russian domestic context
+Emotion: ${emotionContext}
+${objectDetails}
+Time: ${sceneElements.timeContext}
+Lighting: ${lightingDescription}
+
+=== VISUAL DIRECTION ===
+This is a REAL moment from the story, not staged.
+Capture the actual scene described: ${sceneElements.actions.slice(0, 2).join(', ')}
+The image should feel like it came from the article's world.
+
+SENSORY PALETTE: ${sensoryText}
+
+REQUIREMENTS:
+- Natural lighting ONLY (window light, lamp, shadows, candlelight)
+- Domestic realism (Russian interior, lived-in spaces, authentic)
+- Amateur framing (NOT professional composition, slightly imperfect)
+- Depth of field (slight background blur, smartphone bokeh)
+- Slight digital noise (like real smartphone camera from 2018-2022)
+- Natural colors (NOT oversaturated, NOT filter-heavy)
+- Human emotion visible (real feelings from the story, not fake smile)
+- Specific to this story (not generic - show elements: ${sceneElements.objects.slice(0, 2).join(', ') || 'from scene'})
+
+🚫 MUST AVOID (CRITICAL for Яндекс.Дзен):
+- ANY text, captions, titles, labels, logos, or overlays
+- Watermarks or signatures
+- ANY visible words or symbols
+- Stock photography or glossy look
+- Surrealism or strange proportions
+- Western style (no American kitchens, no English text)
+- Violence, gore, or shocking content
+- Overly beautiful models or professional makeup
+- Perfect posing or studio lighting
+- Fancy interior design or luxury goods
+- AI-art artifacts (uncanny valley, weird hands, wrong anatomy)
+
+STYLE: Like photo from friend's WhatsApp or family group chat - authentic, slightly imperfect, REAL LIFE.
+RESULT: 4K detail but amateur aesthetic, like real home photo taken by friend on old smartphone.
+PURE IMAGE: No text, no captions, no overlays, no logos - JUST THE SCENE.
+    `.trim();
+
+    return finalPrompt;
+  }
+
+  /**
+   * Get default emotion for theme
+   */
+  private getThemeEmotion(theme: string): string {
+    const themeEmotions: Record<string, string> = {
+      motherhood: 'tender, loving, protective',
+      romance: 'intimate, passionate, affectionate',
+      work: 'focused, determined, professional',
+      travel: 'adventurous, curious, free',
+      loss: 'sorrowful, contemplative, vulnerable',
+      victory: 'joyful, triumphant, proud',
+      conflict: 'tense, angry, raw',
+      healing: 'peaceful, accepting, serene',
+      transformation: 'hopeful, renewed, determined',
+      domestic: 'quiet, intimate, contemplative'
+    };
+    return themeEmotions[theme] || 'contemplative';
   }
 
   /**
@@ -137,189 +540,6 @@ export class ImageGeneratorAgent {
       .sort(([, a], [, b]) => b - a)[0]?.[0] || 'domestic';
 
     return detectedTheme;
-  }
-
-  /**
-   * 🎯 Build THEME-SPECIFIC prompt with UNIQUE visual elements
-   * Each theme gets DIFFERENT scene description to avoid repetition
-   */
-  private buildThemeSpecificPrompt(theme: string, title: string, ledeText: string, plotBible?: PlotBible): string {
-    const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
-    const sensoryPalette = plotBible?.sensoryPalette || { 
-      details: ['warm', 'intimate', 'quiet', 'domestic'],
-      smells: [],
-      sounds: [],
-      textures: [],
-      lightSources: ['window light']
-    };
-
-    let themePrompt = '';
-
-    switch (theme) {
-      case 'motherhood':
-        themePrompt = `
-Mother with child, tender moment. Woman ${narrator.age} years old holding or caring for a young child (2-5 years old).
-Setting: Domestic interior - kitchen, bedroom, or living room. Warm, natural light coming through window.
-Emotion: Deep tenderness, love, protective care. Her face shows unconditional devotion.
-Details: Child's toys visible, soft textures, warm colors (cream, beige, soft pastels).
-Lighting: Golden hour light through window, creating warm glow. Soft shadows.
-Authenticity: Real domestic moment, not posed. Like photo sent to grandmother.
-Feel: Intimate, vulnerable, deeply emotional motherhood.
-        `;
-        break;
-
-      case 'romance':
-        themePrompt = `
-Two people in moment of connection. Woman and man, both ${narrator.age}s, intimate moment.
-Setting: Bedroom, park bench, or cozy interior. Close proximity showing emotional connection.
-Emotion: Love, tenderness, mutual affection. Genuine connection between two people.
-Details: Hand-holding, face-to-face, or embrace. Natural, unposed positioning.
-Lighting: Soft, romantic light - dusk golden hour, bedroom lamp, or moonlight through window.
-Authenticity: Real relationship moment, not fantasy. Like photo from couple's private moment.
-Feel: Passionate yet tender, romantic, deeply human.
-        `;
-        break;
-
-      case 'work':
-        themePrompt = `
-Professional moment in workspace. Woman ${narrator.age} years old at desk, in meeting, or reviewing documents.
-Setting: Modern office, home office, or meeting room. Professional but not sterile.
-Emotion: Focused concentration, determination, or workplace tension.
-Details: Computer, documents, coffee cup, professional clothing. Real work environment.
-Lighting: Natural window light mixed with office lighting. Neutral, professional tones.
-Authenticity: Real workplace moment - not posed corporate photo. Like candid office snapshot.
-Feel: Professional, slightly tense, realistic work environment.
-        `;
-        break;
-
-      case 'travel':
-        themePrompt = `
-Traveler on journey. Woman ${narrator.age} years old outdoors, exploring new place.
-Setting: Street, train station, mountain view, or cityscape. Travel destination.
-Emotion: Wonder, curiosity, freedom, adventure. Sense of exploration.
-Details: Luggage, map, camera, or looking at horizon. Travel gear visible.
-Lighting: Daytime light - natural sun, varied by location (harsh sunlight in south, softer in north).
-Authenticity: Real traveler, not tourist pose. Like candid travel journal photo.
-Feel: Free, adventurous, exploratory, alive.
-        `;
-        break;
-
-      case 'loss':
-        themePrompt = `
-Solitary moment of grief or loneliness. Woman ${narrator.age} years old alone, contemplative.
-Setting: Empty room, window overlooking city, or isolated space. Emotionally sparse.
-Emotion: Deep sadness, grief, loneliness, loss. Introspection and sorrow.
-Details: Sitting quietly, looking away, tears perhaps visible. Minimal background.
-Lighting: Cool, soft light - overcast day through window, or dim lamp. Melancholic.
-Authenticity: Real moment of pain, not dramatized. Like intimate journal entry photo.
-Feel: Heartbreaking, vulnerable, deeply sad yet beautiful.
-        `;
-        break;
-
-      case 'victory':
-        themePrompt = `
-Moment of triumph and joy. Woman ${narrator.age} years old expressing happiness and success.
-Setting: Anywhere outdoors or in bright interior. Energetic, celebratory.
-Emotion: Pure joy, triumph, relief, pride. Genuine happiness and accomplishment.
-Details: Raised hands, smiling face, jumping or dancing. Celebratory body language.
-Lighting: Bright, energetic light - golden hour sunset or strong daytime sun. Vibrant.
-Authenticity: Real celebration moment, unguarded joy. Like candid happy moment from life.
-Feel: Joyful, energetic, victorious, alive.
-        `;
-        break;
-
-      case 'conflict':
-        themePrompt = `
-Moment of tension or confrontation. Woman ${narrator.age} years old in stressed or angry state.
-Setting: Any interior or tense environment. Physically reflects emotional tension.
-Emotion: Anger, frustration, stress, confrontation. Raw emotional intensity.
-Details: Tense face, rigid posture, or in heated moment. Visible emotional turmoil.
-Lighting: Harsh or cold light emphasizing tension. Shadows creating drama.
-Authenticity: Real argument or stressful moment, not theatrical. Like captured raw emotion.
-Feel: Tense, dramatic, emotionally charged.
-        `;
-        break;
-
-      case 'healing':
-        themePrompt = `
-Moment of peace and recovery. Woman ${narrator.age} years old in serene, healing state.
-Setting: Peaceful interior, nature, or meditative space. Calm and safe.
-Emotion: Peace, relief, acceptance, healing. Tranquility and letting go.
-Details: Relaxed posture, peaceful expression, perhaps meditating or in nature. Gentle.
-Lighting: Soft, warm light - morning sun, or dim peaceful lighting. Calming.
-Authenticity: Real moment of peace and recovery, not forced serenity. Like healing milestone.
-Feel: Peaceful, safe, healed, at ease.
-        `;
-        break;
-
-      case 'transformation':
-        themePrompt = `
-Moment of personal change and rebirth. Woman ${narrator.age} years old showing growth and change.
-Setting: Liminal space suggesting transformation - doorway, mirror, or new environment.
-Emotion: Hope, renewal, determination, metamorphosis. Sense of becoming new person.
-Details: Looking forward with hope, or in process of change. Symbolic elements of transformation.
-Lighting: Transitional light - dawn, dusk, or light coming through doorway. Hopeful.
-Authenticity: Real moment of personal transformation, genuine hope. Like milestone moment.
-Feel: Hopeful, transformative, powerful, renewed.
-        `;
-        break;
-
-      default: // domestic
-        themePrompt = `
-Domestic interior scene. Woman ${narrator.age} years old in everyday home moment.
-Setting: Russian apartment - kitchen, bedroom, living room. Ordinary, lived-in space.
-Emotion: Contemplative, quiet, everyday. Moment of domestic life.
-Details: Tea, book, window, simple objects. Real domestic textures.
-Lighting: Natural window light creating warm glow. Comfortable, lived-in.
-Authenticity: Real home moment, not styled. Like candid domestic photo.
-Feel: Intimate, comfortable, quietly powerful.
-        `;
-    }
-
-    const sensoryText = sensoryPalette.details && sensoryPalette.details.length > 0 
-      ? sensoryPalette.details.slice(0, 5).join(', ')
-      : 'warm, intimate, quiet, domestic';
-
-    const finalPrompt = `
-🔥 CRITICAL: NO TEXT ANYWHERE ON THE IMAGE!
-
-AUTHENTIC mobile phone photo for article cover.
-Title: "${title}"
-
-Theme: ${theme}
-Narrator: Woman ${narrator.age} years old
-${themePrompt}
-
-SENSORY PALETTE: ${sensoryText}
-
-REQUIREMENTS:
-- Natural lighting ONLY (window light, desk lamp, shadows, candlelight)
-- Domestic realism (Russian interior, everyday life, authentic spaces)
-- Amateur framing (NOT professional composition, slightly imperfect)
-- Depth of field (slight background blur, smartphone bokeh)
-- Slight digital noise (like real smartphone camera from 2018-2022)
-- Natural colors (NOT oversaturated, NOT filter-heavy)
-- Human emotion visible (real feelings, not fake smile)
-
-🚫 MUST AVOID (CRITICAL for Яндекс.Дзен):
-- ANY text, captions, titles, labels, logos, or overlays
-- Watermarks or signatures
-- ANY visible words or symbols
-- Stock photography or glossy look
-- Surrealism or strange proportions
-- Western style (no American kitchens, no English text)
-- Violence, gore, or shocking content
-- Overly beautiful models or professional makeup
-- Perfect posing or studio lighting
-- Fancy interior design or luxury goods
-- AI-art artifacts (uncanny valley, weird hands, wrong anatomy)
-
-STYLE: Like photo from friend's WhatsApp or family group chat - authentic, slightly imperfect, REAL LIFE.
-RESULT: 4K detail but amateur aesthetic, like real home photo taken by friend on old smartphone.
-PURE IMAGE: No text, no captions, no overlays, no logos - JUST THE SCENE.
-    `.trim();
-
-    return finalPrompt;
   }
 
   /**
