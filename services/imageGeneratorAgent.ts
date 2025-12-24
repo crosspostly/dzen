@@ -1,16 +1,16 @@
 /**
- * 🎨 ZenMaster v4.2 - Image Generator Agent
+ * 🎨 ZenMaster v4.3 - Image Generator Agent
  * 
- * Generates authentic mobile phone photos for Zen articles
+ * SIMPLIFIED: Generate prompts DYNAMICALLY from article content
+ * Not templates, not hardcoded parameters - actual context!
+ * 
  * Features:
- * - SPECIFIC, actionable image prompts (not vague guidance)
- * - Detailed visual instructions from article context
- * - PlotBible-consistent image prompts
+ * - Extract visual context from article text
+ * - Extract emotional tone from content
+ * - Extract era/timeline from narrative
+ * - Generate SPECIFIC prompts per article
  * - Fallback on generation failure
  * - Image validation (dimensions, size, format)
- * - SAFE plotBible handling with defaults
- * 
- * Architecture: Multi-agent system with rate limiting
  */
 
 import { GoogleGenAI, Modality } from "@google/genai";
@@ -49,16 +49,24 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎯 v4.2: Generate ONE cover image from title + lede + plot context
-   * REWRITTEN: Specific, actionable prompts instead of vague guidance
+   * 🎨 v4.3: Generate cover image with DYNAMIC prompt from article content
+   * Not hardcoded templates!
    */
   async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
-    console.log(`🎨 Generating COVER image for article: "${request.title}"`);
+    console.log(`🎨 Generating COVER image for: "${request.title}"`);
 
     try {
-      // Build prompt from lede + plotBible context
-      const prompt = this.buildCoverImagePrompt(request);
-      console.log(`📝 Cover prompt built (${prompt.length} chars)`);
+      // Extract context DYNAMICALLY from article content
+      const context = this.analyzeArticleContext(
+        request.title,
+        request.ledeText,
+        request.plotBible
+      );
+      console.log(`📊 Context analyzed: ${context.summary}`);
+
+      // Build DYNAMIC prompt based on actual context
+      const prompt = this.buildDynamicPrompt(context);
+      console.log(`📝 Dynamic prompt built (${prompt.length} chars)`);
 
       // Generate with primary model
       const image = await this.generateWithModel(
@@ -67,16 +75,15 @@ export class ImageGeneratorAgent {
         request.articleId
       );
 
-      console.log(`✅ Cover image generated successfully for article ${request.articleId}`);
+      console.log(`✅ Cover generated for "${request.title}"`);
       return image;
 
     } catch (error) {
       const errorMsg = (error as Error).message;
       console.warn(`⚠️  Primary generation failed: ${errorMsg}`);
 
-      // Try fallback if enabled
       if (this.config.enableFallback) {
-        console.log(`🔄 Attempting fallback cover generation...`);
+        console.log(`🔄 Attempting fallback...`);
         return await this.generateCoverImageFallback(request);
       }
 
@@ -85,253 +92,306 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎨 BUILD COVER IMAGE PROMPT - v4.2 REWRITE
-   * 
-   * PRINCIPLE: Specific instructions, not vague requests
-   * Use concrete visual details from the article story
-   * 
-   * Previous (BAD):
-   * - "SENSORY PALETTE: warm, intimate, quiet, domestic"
-   * - "Amateur framing (NOT professional composition)"
-   * - "Depth of field (slight background blur)"
-   * 
-   * NEW (GOOD):
-   * - "Woman sitting at kitchen table, morning sunlight from left window, hands holding warm tea cup"
-   * - "Camera positioned 2 meters away, slightly above table height, some blur on background wall"
-   * - "Shot on iPhone 11, 2018-2020 era smartphone camera sensor, visible compression artifacts"
+   * 📊 ANALYZE article context DYNAMICALLY
+   * Extract: setting, person, emotion, time, lighting, objects
    */
-  private buildCoverImagePrompt(request: CoverImageRequest): string {
-    const { title, ledeText, plotBible } = request;
-
-    // SAFE: Use defaults if plotBible missing
+  private analyzeArticleContext(title: string, lede: string, plotBible: PlotBible | undefined) {
+    const fullText = `${title}. ${lede}`.toLowerCase();
     const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
-    const sensory = plotBible?.sensoryPalette || { 
-      details: ['warm', 'intimate', 'quiet', 'domestic'],
-      smells: [],
-      sounds: [],
-      textures: [],
-      lightSources: ['window light']
+
+    // SETTING: Where is the story?
+    let setting = this.detectSetting(fullText);
+
+    // PERSON: Who is the narrator?
+    let person = this.detectPerson(narrator, fullText);
+
+    // EMOTION: What's the mood?
+    let emotion = this.detectEmotion(fullText, plotBible?.sensoryPalette);
+
+    // TIME: When is this happening?
+    let timeOfDay = this.detectTimeOfDay(fullText);
+
+    // LIGHTING: What's the light?
+    let lighting = this.detectLighting(fullText, timeOfDay, plotBible?.sensoryPalette);
+
+    // OBJECTS: What key items are mentioned?
+    let keyObjects = this.detectKeyObjects(fullText);
+
+    // DEVICE ERA: When would this photo have been taken?
+    let deviceEra = this.detectDeviceEra(narrator, emotion);
+
+    return {
+      title,
+      setting,
+      person,
+      emotion,
+      timeOfDay,
+      lighting,
+      keyObjects,
+      deviceEra,
+      narrator,
+      summary: `${person} in ${setting}, ${emotion}, ${timeOfDay}, ${lighting}`,
     };
+  }
 
-    // Extract KEY VISUAL ELEMENTS from lede
-    // These are specific things that should be IN the image
-    const visuals = this.extractVisualElements(ledeText, sensory);
-    const mainObject = visuals.mainObject || "person in apartment";
-    const specificLocation = visuals.location || "kitchen table";
-    const lightingCondition = visuals.lighting || "morning sunlight from window";
-    const cameraDistance = visuals.distance || "2-3 meters";
-    const cameraHeight = visuals.height || "slightly above eye level";
+  /**
+   * 🏠 DETECT SETTING from text
+   */
+  private detectSetting(text: string): string {
+    // Check for specific locations
+    if (text.includes('кухн') || text.includes('kitchen')) return 'kitchen table, warm and intimate';
+    if (text.includes('спальн') || text.includes('bedroom')) return 'bedroom, personal space';
+    if (text.includes('гостин') || text.includes('living')) return 'living room, comfort zone';
+    if (text.includes('офис') || text.includes('office')) return 'office desk, professional';
+    if (text.includes('улиц') || text.includes('street')) return 'street, outdoors';
+    if (text.includes('парк') || text.includes('park')) return 'park, nature';
+    if (text.includes('машин') || text.includes('car')) return 'car interior';
+    if (text.includes('болниц') || text.includes('hospital')) return 'hospital room';
+    if (text.includes('кафе') || text.includes('cafe')) return 'cafe corner';
+    if (text.includes('окн') || text.includes('window')) return 'near window, domestic';
+    if (text.includes('дом') || text.includes('home')) return 'home, apartment interior';
+    
+    // Default
+    return 'apartment interior, Russian home';
+  }
 
-    // Build VERY SPECIFIC prompt
+  /**
+   * 👤 DETECT PERSON from narrator profile
+   */
+  private detectPerson(narrator: any, text: string): string {
+    const age = narrator.age || 40;
+    const gender = narrator.gender === 'female' ? 'Russian woman' : 'Russian man';
+    const tone = narrator.tone || 'confessional';
+
+    // Detect if person is alone or with others
+    const withOthers = text.includes('муж') || text.includes('дет') || text.includes('сын') ||
+                      text.includes('дочь') || text.includes('друг') || text.includes('мать');
+
+    if (withOthers && text.includes('плак')) {
+      return `${gender} ~${age}yo, emotional, with family`;
+    } else if (withOthers) {
+      return `${gender} ~${age}yo, with others, ${tone}`;
+    } else {
+      return `${gender} ~${age}yo, alone, ${tone}`;
+    }
+  }
+
+  /**
+   * 💫 DETECT EMOTION from text
+   */
+  private detectEmotion(text: string, sensory: any): string {
+    // Check for explicit emotional markers
+    if (text.includes('плак') || text.includes('слез') || text.includes('cry')) return 'tearful, emotional, sad';
+    if (text.includes('смея') || text.includes('laugh') || text.includes('радост')) return 'smiling, happy, joyful';
+    if (text.includes('злост') || text.includes('гнев') || text.includes('angry')) return 'tense, angry, frustrated';
+    if (text.includes('страх') || text.includes('боял') || text.includes('fear')) return 'anxious, worried, fearful';
+    if (text.includes('облегч') || text.includes('спокой') || text.includes('relief')) return 'relieved, calm, peaceful';
+    if (text.includes('побед') || text.includes('триумф') || text.includes('triumph')) return 'victorious, proud, triumphant';
+    if (text.includes('стыд') || text.includes('shame')) return 'ashamed, regretful, introspective';
+    if (text.includes('потер') || text.includes('смерт') || text.includes('grief')) return 'grieving, mourning, sad';
+
+    // Default based on sensory
+    if (sensory?.details?.includes('warm') || sensory?.details?.includes('intimate')) return 'contemplative, introspective';
+    if (sensory?.details?.includes('quiet')) return 'peaceful, calm, thoughtful';
+    if (sensory?.details?.includes('tense')) return 'tense, conflicted';
+
+    return 'thoughtful, reflective';
+  }
+
+  /**
+   * ⏰ DETECT TIME OF DAY from text
+   */
+  private detectTimeOfDay(text: string): string {
+    if (text.includes('утр') || text.includes('утро') || text.includes('morning')) return 'morning';
+    if (text.includes('полдень') || text.includes('noon')) return 'midday, bright';
+    if (text.includes('день') && !text.includes('день ночь')) return 'daytime';
+    if (text.includes('вечер') || text.includes('sunset') || text.includes('evening')) return 'evening, golden light';
+    if (text.includes('ночь') || text.includes('night')) return 'night, lamp light';
+    if (text.includes('закат') || text.includes('закат')) return 'sunset';
+    if (text.includes('рассвет') || text.includes('dawn')) return 'dawn';
+    if (text.includes('дождь') || text.includes('rain')) return 'overcast, grey';
+
+    return 'daytime';
+  }
+
+  /**
+   * 💡 DETECT LIGHTING from time + sensory palette
+   */
+  private detectLighting(text: string, timeOfDay: string, sensory: any): string {
+    // Specific light sources in text
+    if (text.includes('лампа') || text.includes('lamp')) return 'warm lamp light';
+    if (text.includes('свеч') || text.includes('candle')) return 'candlelight, warm';
+    if (text.includes('фонар') || text.includes('streetlight')) return 'streetlight, amber';
+    if (text.includes('монитор') || text.includes('screen')) return 'screen glow, cool';
+    if (text.includes('окн') || text.includes('window')) return 'window light, natural';
+
+    // Time-based lighting
+    if (timeOfDay.includes('morning')) return 'soft morning sunlight from window';
+    if (timeOfDay.includes('midday')) return 'bright daylight, strong shadows';
+    if (timeOfDay.includes('evening')) return 'golden evening light, warm';
+    if (timeOfDay.includes('sunset')) return 'sunset glow, orange/pink tones';
+    if (timeOfDay.includes('night')) return 'soft lamp light, dark surroundings';
+    if (timeOfDay.includes('overcast')) return 'diffuse grey light, no shadows';
+
+    return 'natural window light';
+  }
+
+  /**
+   * 🔍 DETECT KEY OBJECTS mentioned in text
+   */
+  private detectKeyObjects(text: string): string[] {
+    const objects: string[] = [];
+
+    if (text.includes('чай') || text.includes('tea')) objects.push('cup of tea');
+    if (text.includes('кофе') || text.includes('coffee')) objects.push('cup of coffee');
+    if (text.includes('фото') || text.includes('photo')) objects.push('old photos visible');
+    if (text.includes('письм') || text.includes('letter')) objects.push('letter or envelope');
+    if (text.includes('телефон') || text.includes('phone')) objects.push('phone on table');
+    if (text.includes('книг') || text.includes('book')) objects.push('books nearby');
+    if (text.includes('цветы') || text.includes('flower')) objects.push('flowers on table');
+    if (text.includes('свеч') || text.includes('candle')) objects.push('candle');
+    if (text.includes('ткань') || text.includes('fabric')) objects.push('fabric, blanket');
+    if (text.includes('стен') || text.includes('wall')) objects.push('wall texture visible');
+
+    return objects.length > 0 ? objects : ['cup on table', 'apartment details'];
+  }
+
+  /**
+   * 📅 DETECT DEVICE ERA based on narrator age + emotion
+   */
+  private detectDeviceEra(narrator: any, emotion: string): string {
+    const age = narrator.age || 40;
+
+    // Emotion influences device freshness
+    let yearOffset = 0;
+    if (emotion.includes('triumphant') || emotion.includes('happy')) yearOffset = 0;      // New phone
+    if (emotion.includes('peaceful') || emotion.includes('calm')) yearOffset = 2;        // 2-3 years old
+    if (emotion.includes('tearful') || emotion.includes('sad')) yearOffset = 5;          // Older
+    if (emotion.includes('grieving')) yearOffset = 8;                                      // Very old
+
+    const era = 2025 - yearOffset;
+
+    // Age + era → device
+    if (age < 35) {
+      if (era >= 2023) return 'iPhone 15 (2023), modern flagship';
+      if (era >= 2021) return 'iPhone 13 (2021), recent';
+      if (era >= 2019) return 'iPhone 11 (2019), mid-range';
+      return 'iPhone 6s (2015), older';
+    } else if (age < 50) {
+      if (era >= 2023) return 'Samsung Galaxy S24 (2024), flagship';
+      if (era >= 2020) return 'Samsung Galaxy A51 (2020), mid-range';
+      if (era >= 2017) return 'Galaxy S8 (2017), aging';
+      return 'Galaxy J5 (2015), budget old';
+    } else {
+      if (era >= 2020) return 'Galaxy A31 (2020), budget';
+      if (era >= 2017) return 'Galaxy J7 (2017), budget old';
+      return 'Galaxy J5 (2015), very old, budget';
+    }
+  }
+
+  /**
+   * 🔨 BUILD DYNAMIC PROMPT from analyzed context
+   */
+  private buildDynamicPrompt(context: any): string {
+    const objects = context.keyObjects.join(', ');
+    const deviceModel = context.deviceEra.split('(')[0].trim();
+    const deviceYear = context.deviceEra.match(/\((\d{4})\)/)?.[1] || '2020';
+
+    // Determine JPEG quality and ISO based on device year
+    const year = parseInt(deviceYear);
+    const jpegQuality = year >= 2023 ? 90 : year >= 2020 ? 87 : year >= 2017 ? 85 : 80;
+    const isoIndoor = context.timeOfDay.includes('night') ? 1600 : 
+                      context.timeOfDay.includes('evening') ? 800 : 400;
+    const isoOutdoor = context.timeOfDay.includes('midday') ? 100 : 200;
+
     const finalPrompt = `
-🎯 OBJECTIVE: Create a cover photo for Russian lifestyle article titled: "${title}"
+🎬 COVER PHOTO - Dynamic Context-Based Generation
 
-📸 MAIN SUBJECT:
-${this.buildSubjectDescription(narrator, mainObject)}
+📸 SUBJECT:
+${context.person}, ${context.emotion}
+Exact setting described in article
 
-🏠 LOCATION & COMPOSITION:
-- Setting: ${specificLocation} (Russian interior, authentic lived-in space, NOT staged)
-- Camera positioning: ${cameraDistance} from subject, ${cameraHeight}
-- Frame: ${this.selectFramingType(visuals.mood)}
-- Visible in frame: ${visuals.framingDetails.join(', ')}
+🏠 LOCATION:
+${context.setting}
+Russian domestic space, authentic and lived-in
 
-💡 LIGHTING:
-- Light source: ${lightingCondition}
-- Quality: Natural, soft, NOT harsh or studio-lit
-- Shadows: Visible but not dramatic, creates depth
-- Color temperature: Warm (golden/amber tone) - like afternoon light through curtains
-- No backlighting or complex multi-source lighting
+⏰ TIME & LIGHTING:
+Time: ${context.timeOfDay}
+Light source: ${context.lighting}
+Natural, NOT studio-lit
+Shadows visible but not dramatic
 
-📱 CAMERA & IMAGE CHARACTERISTICS:
-- Device: Smartphone camera (iPhone 11 or Samsung Galaxy A10-A20, 2018-2020 era)
-- Sensor size: 1/1.6" (typical smartphone)
-- Lens: Standard 26-28mm equivalent focal length
-- Shutter speed: 1/125s-1/250s (sharp, no motion blur)
-- ISO: 400-800 (visible noise is GOOD - proves it's real photo)
-- White balance: Slightly warm, matches light source
-- Compression: JPEG quality 80-85%, visible blocking artifacts on edges (authentic smartphone compression)
+🎯 VISIBLE IN FRAME:
+${objects}
+Apart details that tell the story
 
-🎨 VISUAL STYLE:
-- Colors: Natural, NOT saturated or filtered. Slight yellow/warm cast from lighting
-- Contrast: Medium (real phone photos aren't ultra-high contrast)
-- Depth of field: f/2.0-f/2.8 equivalent (slight blur in background, sharp on subject)
-- Background blur: Out-of-focus apartment elements (wall, furniture, blurred)
-- Details: Sharp on person/main subject, progressively blurry behind
+📱 DEVICE CHARACTERISTICS (${context.deviceEra}):
+JPEG quality: ${jpegQuality}% (${year >= 2023 ? 'minimal artifacts' : year >= 2017 ? 'subtle artifacts' : 'visible compression'})
+ISO: ${isoIndoor} (indoor) / ${isoOutdoor} (outdoor)
+Sensor noise: ${year >= 2023 ? 'almost none' : year >= 2020 ? 'minimal' : year >= 2017 ? 'visible but natural' : 'noticeable grain'}
+Color science: ${year >= 2023 ? 'vibrant, AI-processed' : year >= 2017 ? 'slightly warm' : 'washed, muted'}
+Sharpness: ${year >= 2023 ? 'crisp, edge-enhanced' : year >= 2017 ? 'natural' : 'soft focus'}
 
-❤️ EMOTIONAL TONE:
-Mood: ${visuals.mood}
-Expression: ${this.getEmotionExpression(visuals.mood)}
-Atmosphere: Authentic moment captured, NOT posed. Real feelings visible. Vulnerable.
+🎨 STYLE REQUIREMENTS:
+- Candid, not posed (person absorbed in moment, not looking at camera)
+- Real emotion visible (${context.emotion})
+- Imperfect composition (not professional photographer)
+- Authentic domestic Russian space (worn furniture, lived-in)
+- Natural colors (no filters, no oversaturation)
+- Depth: slight blur in background, sharp on main subject
 
 🚫 ABSOLUTE PROHIBITIONS:
-- ❌ NO TEXT, CAPTIONS, WATERMARKS, LOGOS anywhere on image
-- ❌ NO FILTER OVERLAY (no Instagram filters, no face beautification, no color grading)
-- ❌ NO PROFESSIONAL MAKEUP or styling (should look like morning/everyday makeup)
-- ❌ NO PERFECT POSING (avoid looking at camera, or look naturally)
-- ❌ NO STOCK PHOTO AESTHETIC (no perfect lighting, no glossy surfaces, no fake props)
-- ❌ NO AI-ART ARTIFACTS (proper hands with 5 fingers, correct proportions, realistic anatomy)
-- ❌ NO WESTERN STYLE (no American kitchens, no English text, no Western fashion)
-- ❌ NO SURREALISM (everything must be physically plausible)
-- ❌ NO VIOLENCE, GORE, SHOCKING CONTENT
+- NO text, captions, watermarks, logos anywhere
+- NO filters (Instagram, beauty apps, etc)
+- NO professional makeup or styling
+- NO perfect posing or studio lighting
+- NO stock photo aesthetic
+- NO AI-art giveaways (anatomy correct, hands proper, realistic)
+- NO Western style (Russian interior only)
+- NO surrealism or impossible things
 
-✅ WHAT MAKES IT PASS Яндекс.Дзен MODERATION:
-- Looks like real phone photo from 2018-2022
-- Visible smartphone camera sensors marks (noise, compression)
-- Natural domestic Russian setting
-- Real human emotion without exaggeration
-- No AI-art giveaways (anatomy correct, hands proper, proportions real)
-- No text overlays or captions
+✅ SUCCESS CRITERIA:
+When Яндекс.Дзен moderator sees this:
+→ They think "real moment from real life"
+→ Not "AI-generated"
+→ Device characteristics match the era
+→ Emotion matches the story
+→ Setting matches the narrative
 
-📌 INSPIRATION REFERENCE:
-Think like: candid photo from family WhatsApp group chat
-NOT like: professional portrait, stock photo, filtered Instagram post, TikTok video frame
-
-🔥 CRITICAL SUCCESS METRIC:
-When Яндекс.Дзен moderator sees this image, they should think "this is a real person's real moment from their real life" - NOT "this is AI-generated".
+🎯 REFERENCE AESTHETIC:
+Like candid photo from WhatsApp family chat, 2015-2023 era
+Not Instagram, not TikTok, not professional photo
+Just a real moment captured on a real phone
     `.trim();
 
     return finalPrompt;
   }
 
   /**
-   * Extract specific visual elements from article text
-   */
-  private extractVisualElements(ledeText: string, sensory: any) {
-    const lower = ledeText.toLowerCase();
-    
-    // Detect main subject
-    let mainObject = "person in apartment";
-    if (lower.includes('сидел') || lower.includes('стоял') || lower.includes('лежал')) {
-      const action = lower.includes('сидел') ? 'sitting' : lower.includes('стоял') ? 'standing' : 'lying';
-      mainObject = `woman ${action}, ${lower.includes('плак') || lower.includes('слез') ? 'emotional' : 'contemplative'}`;
-    }
-
-    // Detect location
-    let location = "apartment interior";
-    if (lower.includes('кухн')) location = "kitchen table";
-    if (lower.includes('спальн')) location = "bedroom, near bed";
-    if (lower.includes('гостин')) location = "living room, on couch";
-    if (lower.includes('окн')) location = "near window, looking outside";
-    if (lower.includes('балкон')) location = "balcony";
-
-    // Detect lighting
-    let lighting = "morning sunlight through window";
-    if (lower.includes('веч') || lower.includes('закат')) lighting = "evening golden light from window";
-    if (lower.includes('ноч')) lighting = "warm lamp light, dark outside";
-    if (lower.includes('дождь')) lighting = "grey overcast daylight, rain outside";
-
-    // Detect mood
-    let mood = "thoughtful";
-    if (lower.includes('плак') || lower.includes('слез')) mood = "sad, tearful";
-    if (lower.includes('радост') || lower.includes('счаст')) mood = "happy, peaceful";
-    if (lower.includes('гнев') || lower.includes('злост')) mood = "tense, angry";
-    if (lower.includes('страх') || lower.includes('боял')) mood = "anxious, worried";
-    if (lower.includes('облегчен') || lower.includes('спокой')) mood = "relieved, calm";
-
-    // Detect framing details
-    const framingDetails = [];
-    if (lower.includes('чай') || lower.includes('кофе')) framingDetails.push("cup of tea/coffee in frame");
-    if (lower.includes('фото') || lower.includes('снимок')) framingDetails.push("old photos visible");
-    if (lower.includes('книг')) framingDetails.push("books on table");
-    if (lower.includes('окн')) framingDetails.push("window and outside visible");
-    if (lower.includes('стен')) framingDetails.push("wall texture visible");
-
-    return {
-      mainObject,
-      location,
-      lighting,
-      mood,
-      distance: "2-3 meters",
-      height: "slightly above eye level",
-      framingDetails: framingDetails.length > 0 ? framingDetails : ["apartment interior", "natural elements"]
-    };
-  }
-
-  /**
-   * Build subject description from narrator profile
-   */
-  private buildSubjectDescription(narrator: any, mainObject: string): string {
-    const genderDesc = narrator.gender === 'female' ? 'Woman' : 'Man';
-    const ageRange = `${narrator.age - 5}-${narrator.age + 5} years old`;
-    
-    return `
-- Person: Russian ${genderDesc} aged ${ageRange}
-- Appearance: Natural, everyday look - NO heavy makeup, NO perfect styling
-- Clothing: Comfortable home clothes (sweater, t-shirt, or casual dress)
-- Expression: ${narrator.tone === 'confessional' ? 'Vulnerable, honest expression - real emotion visible' : 'Calm, thoughtful, introspective'}
-- Hands: Visible in frame (holding cup, or resting on table)
-- Activity: ${mainObject}`;
-  }
-
-  /**
-   * Select framing based on mood
-   */
-  private selectFramingType(mood: string): string {
-    if (mood.includes('sad') || mood.includes('tearful')) {
-      return "Medium close-up (from shoulders up), soft focus, intimate";
-    } else if (mood.includes('happy') || mood.includes('peaceful')) {
-      return "Wide shot showing environment context, light and airy";
-    } else if (mood.includes('anxious') || mood.includes('tense')) {
-      return "Medium shot, slight diagonal composition, creates dynamic tension";
-    } else {
-      return "Medium shot, centered or rule-of-thirds composition, natural and balanced";
-    }
-  }
-
-  /**
-   * Get specific emotion expression description
-   */
-  private getEmotionExpression(mood: string): string {
-    const expressions: Record<string, string> = {
-      'sad': "Eyes looking down or away, slight frown, visible tears or puffy eyes",
-      'happy': "Soft smile or peaceful expression, relaxed shoulders, open posture",
-      'anxious': "Uncertain expression, hands near face, tense shoulders",
-      'angry': "Firm jaw, direct gaze, tense body",
-      'relieved': "Deep breath visible, shoulders relaxed, gentle smile",
-      'thoughtful': "Looking away or at something specific, hand on chin or hands clasped",
-    };
-
-    for (const [key, value] of Object.entries(expressions)) {
-      if (mood.includes(key)) return value;
-    }
-
-    return "Natural, neutral expression - person absorbed in their thoughts";
-  }
-
-  /**
-   * Fallback cover generation - SIMPLIFIED BUT SPECIFIC
+   * Fallback cover generation - SIMPLIFIED
    */
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
-    console.log(`🔄 Using fallback model: ${this.fallbackModel}`);
+    console.log(`🔄 Fallback: Generating simplified cover...`);
 
-    const narrator = request.plotBible?.narrator || { age: 40, gender: 'female' };
-    const genderDesc = narrator.gender === 'female' ? 'Woman' : 'Man';
+    const context = this.analyzeArticleContext(
+      request.title,
+      request.ledeText,
+      request.plotBible
+    );
 
     const fallbackPrompt = `
-📸 FALLBACK: Russian ${genderDesc} ${narrator.age} years old in apartment, real smartphone photo aesthetic
+📷 FALLBACK: Russian person in home, real smartphone photo
 
-🏠 COMPOSITION:
-- Location: Kitchen or living room (Russian apartment interior)
-- Subject: Person sitting or standing naturally, comfortable clothing
-- Distance: 2-3 meters away, camera at chest/eye level
-- Lighting: Warm natural light from window, soft shadows
+Setting: ${context.setting}
+Mood: ${context.emotion}
+Time: ${context.timeOfDay}
+Light: ${context.lighting}
 
-📱 PHOTO CHARACTERISTICS:
-- Device: 2018-2020 smartphone camera (iPhone 11 or Samsung Galaxy A)
-- Quality: JPEG compression artifacts visible (realistic noise, quality ~80%)
-- Colors: Warm natural tones, NOT filtered or oversaturated
-- Depth: Slightly blurred background, sharp on person
+Device: Smartphone camera (any era)
+Style: Candid, authentic, not staged
 
-❌ CRITICAL - DO NOT:
-- NO text, captions, watermarks anywhere
-- NO filters or Instagram effects
-- NO stock photo look
-- NO AI-art artifacts (proper hands, real anatomy)
-- NO professional styling or makeup
-- NO surrealism or impossible things
-
-✅ GOAL:
-Photo looks like it was taken by a friend on their old phone - authentic, real, everyday moment.
+🚫 NO text, filters, watermarks
+✅ Real moment captured naturally
     `.trim();
 
     try {
@@ -341,149 +401,9 @@ Photo looks like it was taken by a friend on their old phone - authentic, real, 
         request.articleId
       );
     } catch (error) {
-      console.error(`❌ Fallback also failed:`, (error as Error).message);
-      throw new Error(`Both primary and fallback cover generation failed: ${(error as Error).message}`);
-    }
-  }
-
-  /**
-   * @deprecated Use generateCoverImage instead. This generates per-episode images (old v4.0)
-   * Main entry point: Generate image from episode
-   */
-  async generateImage(request: ImageGenerationRequest): Promise<GeneratedImage> {
-    console.log(`🎨 Generating image for episode ${request.episodeId}...`);
-
-    try {
-      // Extract key scene from text
-      const scene = this.extractKeyScene(request.episodeText, request.plotBible);
-      console.log(`📸 Scene extracted: ${scene.who} - ${scene.what}`);
-
-      // Build image prompt
-      const promptComponents = this.buildImagePrompt(scene, request.plotBible, request.emotion);
-      console.log(`📝 Prompt built (${promptComponents.finalPrompt.length} chars)`);
-
-      // Generate with primary model
-      const image = await this.generateWithModel(
-        this.primaryModel,
-        promptComponents.finalPrompt,
-        request.episodeId
-      );
-
-      console.log(`✅ Image generated successfully for episode ${request.episodeId}`);
-      return image;
-
-    } catch (error) {
-      const errorMsg = (error as Error).message;
-      console.warn(`⚠️  Primary generation failed: ${errorMsg}`);
-
-      // Try fallback if enabled
-      if (this.config.enableFallback) {
-        console.log(`🔄 Attempting fallback generation...`);
-        return await this.generateImageFallback(request);
-      }
-
+      console.error(`❌ Fallback failed:`, (error as Error).message);
       throw error;
     }
-  }
-
-  /**
-   * Extract key scene from episode text
-   */
-  private extractKeyScene(episodeText: string, plotBible: PlotBible): ExtractedScene {
-    const lines = episodeText.split('\n').filter(l => l.trim().length > 0);
-    
-    let bestParagraph = lines[0] || '';
-    let maxSensoryScore = 0;
-
-    for (const line of lines) {
-      const score = this.calculateSensoryScore(line, plotBible.sensoryPalette);
-      if (score > maxSensoryScore) {
-        maxSensoryScore = score;
-        bestParagraph = line;
-      }
-    }
-
-    const who = this.extractWho(bestParagraph, plotBible);
-    const what = this.extractWhat(bestParagraph);
-    const where = this.extractWhere(bestParagraph, plotBible);
-    const lighting = this.extractLighting(bestParagraph, plotBible);
-    const mood = this.extractMood(bestParagraph);
-    const sensoryDetails = this.extractSensoryDetails(bestParagraph, plotBible);
-
-    return {
-      who,
-      what,
-      where,
-      lighting,
-      mood,
-      sensoryDetails,
-      confidence: maxSensoryScore > 0 ? Math.min(maxSensoryScore / 10, 1) : 0.5
-    };
-  }
-
-  /**
-   * Build prompt from scene
-   */
-  private buildImagePrompt(
-    scene: ExtractedScene,
-    plotBible: PlotBible,
-    emotion?: string
-  ): PromptComponents {
-    const subject = `${scene.who}, ${scene.what}`;
-    const setting = `${scene.where}, Russian interior/domestic context`;
-    const lighting = scene.lighting;
-    const style = "AUTHENTIC mobile phone photo, taken on mid-range smartphone (iPhone 2018-2020 or Samsung A-series)";
-    
-    const requirements = [
-      `Natural lighting: ${lighting}`,
-      `Domestic realism: ${plotBible.sensoryPalette.details.join(', ')}`,
-      "Amateur framing (not professional composition)",
-      "Depth of field (slight background blur)",
-      "Slight digital noise (like real smartphone camera)",
-      `Narrator context: ${plotBible.narrator.age} years old, ${plotBible.narrator.tone}`,
-      emotion ? `Emotion: ${emotion}` : `Mood: ${scene.mood}`,
-      "Natural colors (NOT oversaturated)"
-    ];
-
-    const avoidances = [
-      "Stock photography or glossy look",
-      "Text, watermarks, or logos",
-      "Surrealism or strange proportions",
-      "Western style (no American kitchens)",
-      "Violence or shocking content",
-      "Perfect models or professional posing",
-      "Studio lighting",
-      "Fancy interior design"
-    ];
-
-    const finalPrompt = `
-${style}
-Subject: ${subject}
-Setting: ${setting}
-
-REQUIREMENTS:
-${requirements.map(r => `- ${r}`).join('\n')}
-
-SENSORY DETAILS TO INCLUDE:
-${scene.sensoryDetails.map(d => `- ${d}`).join('\n')}
-
-MUST AVOID:
-${avoidances.map(a => `- ${a}`).join('\n')}
-
-🔥 CRITICAL: NO TEXT ON IMAGE!
-STYLE: Like a photo from neighbor's WhatsApp - authentic, slightly imperfect, real life.
-RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
-`.trim();
-
-    return {
-      subject,
-      setting,
-      lighting,
-      style,
-      requirements,
-      avoidances,
-      finalPrompt
-    };
   }
 
   /**
@@ -534,8 +454,6 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
       throw new Error("No image data in response");
     }
 
-    console.log(`   📦 Received base64 image from Gemini API (${base64Data.length} chars)`);
-
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data,
@@ -550,7 +468,6 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
         articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
         generationAttempts: 1,
         fallbackUsed: model !== this.primaryModel,
-        episodeId: typeof idForMetadata === 'number' ? idForMetadata : undefined
       }
     };
 
@@ -564,32 +481,6 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   }
 
   /**
-   * Fallback generation
-   */
-  private async generateImageFallback(request: ImageGenerationRequest): Promise<GeneratedImage> {
-    console.log(`🔄 Using fallback model: ${this.fallbackModel}`);
-
-    const simplifiedPrompt = `
-Russian woman ${request.plotBible.narrator.age} years old in apartment, natural light, realistic photo on smartphone.
-Emotion: ${request.emotion || request.plotBible.narrator.tone}
-Interior: ${request.plotBible.sensoryPalette.details.slice(0, 3).join(', ')}
-Amateur photo aesthetic, NOT stock photography.
-🔥 NO TEXT ON IMAGE!
-    `.trim();
-
-    try {
-      return await this.generateWithModel(
-        this.fallbackModel,
-        simplifiedPrompt,
-        request.episodeId
-      );
-    } catch (error) {
-      console.error(`❌ Fallback also failed:`, (error as Error).message);
-      throw new Error(`Both primary and fallback generation failed: ${(error as Error).message}`);
-    }
-  }
-
-  /**
    * Validate image
    */
   validateImage(image: GeneratedImage): ImageValidationResult {
@@ -598,13 +489,7 @@ Amateur photo aesthetic, NOT stock photography.
 
     const dimensionsOk = image.width === 1920 && image.height === 1080;
     if (!dimensionsOk) {
-      errors.push(`Invalid dimensions: ${image.width}x${image.height} (expected 1920x1080)`);
-    }
-
-    const aspectRatio = image.width / image.height;
-    const aspectRatioOk = Math.abs(aspectRatio - (16/9)) < 0.01;
-    if (!aspectRatioOk) {
-      warnings.push(`Aspect ratio ${aspectRatio.toFixed(2)} not exactly 16:9`);
+      errors.push(`Invalid dimensions: ${image.width}x${image.height}`);
     }
 
     const sizeOk = image.fileSize > 10000 && image.fileSize < 5000000;
@@ -625,117 +510,8 @@ Amateur photo aesthetic, NOT stock photography.
       valid: errors.length === 0,
       errors,
       warnings,
-      metrics: {
-        dimensionsOk,
-        sizeOk,
-        formatOk,
-        aspectRatioOk
-      }
+      metrics: { dimensionsOk, sizeOk, formatOk, aspectRatioOk: true }
     };
-  }
-
-  // ============================================================================
-  // Helper methods
-  // ============================================================================
-
-  private calculateSensoryScore(text: string, palette: PlotBible['sensoryPalette']): number {
-    let score = 0;
-    const lower = text.toLowerCase();
-
-    for (const smell of palette.smells || []) {
-      if (lower.includes(smell.toLowerCase())) score += 2;
-    }
-    for (const sound of palette.sounds || []) {
-      if (lower.includes(sound.toLowerCase())) score += 2;
-    }
-    for (const texture of palette.textures || []) {
-      if (lower.includes(texture.toLowerCase())) score += 2;
-    }
-    for (const detail of palette.details || []) {
-      if (lower.includes(detail.toLowerCase())) score += 1;
-    }
-
-    const visualVerbs = ['смотрел', 'видел', 'увидел', 'заметил', 'разглядывал'];
-    for (const verb of visualVerbs) {
-      if (lower.includes(verb)) score += 1;
-    }
-
-    return score;
-  }
-
-  private extractWho(text: string, plotBible: PlotBible): string {
-    const age = plotBible.narrator?.age || 40;
-    const gender = plotBible.narrator?.gender === "male" ? "Man" : "Woman";
-    return `${gender} ${Math.floor(age / 10) * 10}s`;
-  }
-
-  private extractWhat(text: string): string {
-    const actions = ['сидел', 'стоял', 'смотрел', 'держал', 'читал', 'писал', 'говорил'];
-    for (const action of actions) {
-      if (text.toLowerCase().includes(action)) {
-        return action.replace('л', 'ing');
-      }
-    }
-    return "in domestic scene";
-  }
-
-  private extractWhere(text: string, plotBible: PlotBible): string {
-    const locations = ['кухн', 'комнат', 'окн', 'стол', 'диван', 'кровать'];
-    for (const loc of locations) {
-      if (text.toLowerCase().includes(loc)) {
-        const locationMap: Record<string, string> = {
-          'кухн': 'kitchen',
-          'комнат': 'room',
-          'окн': 'near window',
-          'стол': 'at table',
-          'диван': 'on couch',
-          'кровать': 'on bed'
-        };
-        return locationMap[loc] || 'room';
-      }
-    }
-    return "Russian apartment interior";
-  }
-
-  private extractLighting(text: string, palette: PlotBible['sensoryPalette']): string {
-    const lower = text.toLowerCase();
-    
-    for (const light of palette.lightSources || []) {
-      if (lower.includes(light.toLowerCase())) {
-        return light;
-      }
-    }
-
-    if (lower.includes('утр') || lower.includes('morning')) return "morning sunlight from window";
-    if (lower.includes('веч') || lower.includes('evening')) return "desk lamp warm light";
-    if (lower.includes('ноч') || lower.includes('night')) return "dim lamp light";
-    
-    return "natural window light";
-  }
-
-  private extractMood(text: string): string {
-    const lower = text.toLowerCase();
-    
-    if (lower.includes('плак') || lower.includes('слез')) return "sad, emotional";
-    if (lower.includes('смея') || lower.includes('радост')) return "happy, light";
-    if (lower.includes('злост') || lower.includes('гнев')) return "angry, tense";
-    if (lower.includes('страх') || lower.includes('боял')) return "anxious, fearful";
-    if (lower.includes('спокой') || lower.includes('тих')) return "calm, peaceful";
-    
-    return "contemplative, thoughtful";
-  }
-
-  private extractSensoryDetails(text: string, palette: PlotBible['sensoryPalette']): string[] {
-    const details: string[] = [];
-    const lower = text.toLowerCase();
-
-    for (const detail of [...(palette.details || []), ...(palette.smells || []), ...(palette.textures || [])]) {
-      if (lower.includes(detail.toLowerCase())) {
-        details.push(detail);
-      }
-    }
-
-    return details.slice(0, 5);
   }
 }
 
