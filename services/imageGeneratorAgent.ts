@@ -1,9 +1,10 @@
 /**
- * 🎨 ZenMaster v4.1 - Image Generator Agent
+ * 🎨 ZenMaster v4.2 - Image Generator Agent
  * 
  * Generates authentic mobile phone photos for Zen articles
  * Features:
- * - Theme-based diverse image prompts
+ * - SPECIFIC, actionable image prompts (not vague guidance)
+ * - Detailed visual instructions from article context
  * - PlotBible-consistent image prompts
  * - Fallback on generation failure
  * - Image validation (dimensions, size, format)
@@ -37,7 +38,7 @@ export class ImageGeneratorAgent {
     this.config = {
       aspectRatio: "16:9",
       quality: "high",
-      format: "jpeg",  // ← CHANGED from png to jpeg
+      format: "jpeg",
       maxRetries: 2,
       retryDelay: 3000,
       rateLimit: 1,
@@ -48,13 +49,14 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎯 v4.3: Generate ONE cover image from title + lede
+   * 🎯 v4.2: Generate ONE cover image from title + lede + plot context
+   * REWRITTEN: Specific, actionable prompts instead of vague guidance
    */
   async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🎨 Generating COVER image for article: "${request.title}"`);
 
     try {
-      // Build prompt from lede
+      // Build prompt from lede + plotBible context
       const prompt = this.buildCoverImagePrompt(request);
       console.log(`📝 Cover prompt built (${prompt.length} chars)`);
 
@@ -83,14 +85,27 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * Build cover image prompt from lede
+   * 🎨 BUILD COVER IMAGE PROMPT - v4.2 REWRITE
+   * 
+   * PRINCIPLE: Specific instructions, not vague requests
+   * Use concrete visual details from the article story
+   * 
+   * Previous (BAD):
+   * - "SENSORY PALETTE: warm, intimate, quiet, domestic"
+   * - "Amateur framing (NOT professional composition)"
+   * - "Depth of field (slight background blur)"
+   * 
+   * NEW (GOOD):
+   * - "Woman sitting at kitchen table, morning sunlight from left window, hands holding warm tea cup"
+   * - "Camera positioned 2 meters away, slightly above table height, some blur on background wall"
+   * - "Shot on iPhone 11, 2018-2020 era smartphone camera sensor, visible compression artifacts"
    */
   private buildCoverImagePrompt(request: CoverImageRequest): string {
     const { title, ledeText, plotBible } = request;
 
     // SAFE: Use defaults if plotBible missing
     const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
-    const sensoryPalette = plotBible?.sensoryPalette || { 
+    const sensory = plotBible?.sensoryPalette || { 
       details: ['warm', 'intimate', 'quiet', 'domestic'],
       smells: [],
       sounds: [],
@@ -98,77 +113,231 @@ export class ImageGeneratorAgent {
       lightSources: ['window light']
     };
 
-    const sensoryText = sensoryPalette.details && sensoryPalette.details.length > 0 
-      ? sensoryPalette.details.slice(0, 5).join(', ')
-      : 'warm, intimate, quiet, domestic';
+    // Extract KEY VISUAL ELEMENTS from lede
+    // These are specific things that should be IN the image
+    const visuals = this.extractVisualElements(ledeText, sensory);
+    const mainObject = visuals.mainObject || "person in apartment";
+    const specificLocation = visuals.location || "kitchen table";
+    const lightingCondition = visuals.lighting || "morning sunlight from window";
+    const cameraDistance = visuals.distance || "2-3 meters";
+    const cameraHeight = visuals.height || "slightly above eye level";
 
+    // Build VERY SPECIFIC prompt
     const finalPrompt = `
-🔥 CRITICAL: NO TEXT ANYWHERE ON THE IMAGE!
+🎯 OBJECTIVE: Create a cover photo for Russian lifestyle article titled: "${title}"
 
-AUTHENTIC mobile phone photo for article cover.
-Title: "${title}"
+📸 MAIN SUBJECT:
+${this.buildSubjectDescription(narrator, mainObject)}
 
-Narrator: Woman ${narrator.age} years old, ${narrator.tone} voice
-Lede: ${ledeText.substring(0, 300)}
+🏠 LOCATION & COMPOSITION:
+- Setting: ${specificLocation} (Russian interior, authentic lived-in space, NOT staged)
+- Camera positioning: ${cameraDistance} from subject, ${cameraHeight}
+- Frame: ${this.selectFramingType(visuals.mood)}
+- Visible in frame: ${visuals.framingDetails.join(', ')}
 
-=== VISUAL DIRECTION ===
-Capture the essence of the story from the title and lede.
-The image should feel like a real moment from the story.
-SENSORY PALETTE: ${sensoryText}
+💡 LIGHTING:
+- Light source: ${lightingCondition}
+- Quality: Natural, soft, NOT harsh or studio-lit
+- Shadows: Visible but not dramatic, creates depth
+- Color temperature: Warm (golden/amber tone) - like afternoon light through curtains
+- No backlighting or complex multi-source lighting
 
-REQUIREMENTS:
-- Natural lighting ONLY (window light, lamp, shadows, candlelight)
-- Domestic realism (Russian interior, lived-in spaces, authentic)
-- Amateur framing (NOT professional composition, slightly imperfect)
-- Depth of field (slight background blur, smartphone bokeh)
-- Slight digital noise (like real smartphone camera from 2018-2022)
-- Natural colors (NOT oversaturated, NOT filter-heavy)
-- Human emotion visible (real feelings from the story, not fake smile)
+📱 CAMERA & IMAGE CHARACTERISTICS:
+- Device: Smartphone camera (iPhone 11 or Samsung Galaxy A10-A20, 2018-2020 era)
+- Sensor size: 1/1.6" (typical smartphone)
+- Lens: Standard 26-28mm equivalent focal length
+- Shutter speed: 1/125s-1/250s (sharp, no motion blur)
+- ISO: 400-800 (visible noise is GOOD - proves it's real photo)
+- White balance: Slightly warm, matches light source
+- Compression: JPEG quality 80-85%, visible blocking artifacts on edges (authentic smartphone compression)
 
-🚫 MUST AVOID (CRITICAL for Яндекс.Дзен):
-- ANY text, captions, titles, labels, logos, or overlays
-- Watermarks or signatures
-- Stock photography or glossy look
-- Surrealism or strange proportions
-- Western style (no American kitchens, no English text)
-- Violence, gore, or shocking content
-- Overly beautiful models or professional makeup
-- Perfect posing or studio lighting
-- AI-art artifacts (uncanny valley, weird hands, wrong anatomy)
+🎨 VISUAL STYLE:
+- Colors: Natural, NOT saturated or filtered. Slight yellow/warm cast from lighting
+- Contrast: Medium (real phone photos aren't ultra-high contrast)
+- Depth of field: f/2.0-f/2.8 equivalent (slight blur in background, sharp on subject)
+- Background blur: Out-of-focus apartment elements (wall, furniture, blurred)
+- Details: Sharp on person/main subject, progressively blurry behind
 
-STYLE: Like photo from friend's WhatsApp or family group chat - authentic, slightly imperfect, REAL LIFE.
-RESULT: 4K detail but amateur aesthetic, like real home photo taken on old smartphone.
-PURE IMAGE: No text, no captions, no overlays, no logos - JUST THE SCENE.
+❤️ EMOTIONAL TONE:
+Mood: ${visuals.mood}
+Expression: ${this.getEmotionExpression(visuals.mood)}
+Atmosphere: Authentic moment captured, NOT posed. Real feelings visible. Vulnerable.
+
+🚫 ABSOLUTE PROHIBITIONS:
+- ❌ NO TEXT, CAPTIONS, WATERMARKS, LOGOS anywhere on image
+- ❌ NO FILTER OVERLAY (no Instagram filters, no face beautification, no color grading)
+- ❌ NO PROFESSIONAL MAKEUP or styling (should look like morning/everyday makeup)
+- ❌ NO PERFECT POSING (avoid looking at camera, or look naturally)
+- ❌ NO STOCK PHOTO AESTHETIC (no perfect lighting, no glossy surfaces, no fake props)
+- ❌ NO AI-ART ARTIFACTS (proper hands with 5 fingers, correct proportions, realistic anatomy)
+- ❌ NO WESTERN STYLE (no American kitchens, no English text, no Western fashion)
+- ❌ NO SURREALISM (everything must be physically plausible)
+- ❌ NO VIOLENCE, GORE, SHOCKING CONTENT
+
+✅ WHAT MAKES IT PASS Яндекс.Дзен MODERATION:
+- Looks like real phone photo from 2018-2022
+- Visible smartphone camera sensors marks (noise, compression)
+- Natural domestic Russian setting
+- Real human emotion without exaggeration
+- No AI-art giveaways (anatomy correct, hands proper, proportions real)
+- No text overlays or captions
+
+📌 INSPIRATION REFERENCE:
+Think like: candid photo from family WhatsApp group chat
+NOT like: professional portrait, stock photo, filtered Instagram post, TikTok video frame
+
+🔥 CRITICAL SUCCESS METRIC:
+When Яндекс.Дзен moderator sees this image, they should think "this is a real person's real moment from their real life" - NOT "this is AI-generated".
     `.trim();
 
     return finalPrompt;
   }
 
   /**
-   * Fallback cover generation
+   * Extract specific visual elements from article text
+   */
+  private extractVisualElements(ledeText: string, sensory: any) {
+    const lower = ledeText.toLowerCase();
+    
+    // Detect main subject
+    let mainObject = "person in apartment";
+    if (lower.includes('сидел') || lower.includes('стоял') || lower.includes('лежал')) {
+      const action = lower.includes('сидел') ? 'sitting' : lower.includes('стоял') ? 'standing' : 'lying';
+      mainObject = `woman ${action}, ${lower.includes('плак') || lower.includes('слез') ? 'emotional' : 'contemplative'}`;
+    }
+
+    // Detect location
+    let location = "apartment interior";
+    if (lower.includes('кухн')) location = "kitchen table";
+    if (lower.includes('спальн')) location = "bedroom, near bed";
+    if (lower.includes('гостин')) location = "living room, on couch";
+    if (lower.includes('окн')) location = "near window, looking outside";
+    if (lower.includes('балкон')) location = "balcony";
+
+    // Detect lighting
+    let lighting = "morning sunlight through window";
+    if (lower.includes('веч') || lower.includes('закат')) lighting = "evening golden light from window";
+    if (lower.includes('ноч')) lighting = "warm lamp light, dark outside";
+    if (lower.includes('дождь')) lighting = "grey overcast daylight, rain outside";
+
+    // Detect mood
+    let mood = "thoughtful";
+    if (lower.includes('плак') || lower.includes('слез')) mood = "sad, tearful";
+    if (lower.includes('радост') || lower.includes('счаст')) mood = "happy, peaceful";
+    if (lower.includes('гнев') || lower.includes('злост')) mood = "tense, angry";
+    if (lower.includes('страх') || lower.includes('боял')) mood = "anxious, worried";
+    if (lower.includes('облегчен') || lower.includes('спокой')) mood = "relieved, calm";
+
+    // Detect framing details
+    const framingDetails = [];
+    if (lower.includes('чай') || lower.includes('кофе')) framingDetails.push("cup of tea/coffee in frame");
+    if (lower.includes('фото') || lower.includes('снимок')) framingDetails.push("old photos visible");
+    if (lower.includes('книг')) framingDetails.push("books on table");
+    if (lower.includes('окн')) framingDetails.push("window and outside visible");
+    if (lower.includes('стен')) framingDetails.push("wall texture visible");
+
+    return {
+      mainObject,
+      location,
+      lighting,
+      mood,
+      distance: "2-3 meters",
+      height: "slightly above eye level",
+      framingDetails: framingDetails.length > 0 ? framingDetails : ["apartment interior", "natural elements"]
+    };
+  }
+
+  /**
+   * Build subject description from narrator profile
+   */
+  private buildSubjectDescription(narrator: any, mainObject: string): string {
+    const genderDesc = narrator.gender === 'female' ? 'Woman' : 'Man';
+    const ageRange = `${narrator.age - 5}-${narrator.age + 5} years old`;
+    
+    return `
+- Person: Russian ${genderDesc} aged ${ageRange}
+- Appearance: Natural, everyday look - NO heavy makeup, NO perfect styling
+- Clothing: Comfortable home clothes (sweater, t-shirt, or casual dress)
+- Expression: ${narrator.tone === 'confessional' ? 'Vulnerable, honest expression - real emotion visible' : 'Calm, thoughtful, introspective'}
+- Hands: Visible in frame (holding cup, or resting on table)
+- Activity: ${mainObject}`;
+  }
+
+  /**
+   * Select framing based on mood
+   */
+  private selectFramingType(mood: string): string {
+    if (mood.includes('sad') || mood.includes('tearful')) {
+      return "Medium close-up (from shoulders up), soft focus, intimate";
+    } else if (mood.includes('happy') || mood.includes('peaceful')) {
+      return "Wide shot showing environment context, light and airy";
+    } else if (mood.includes('anxious') || mood.includes('tense')) {
+      return "Medium shot, slight diagonal composition, creates dynamic tension";
+    } else {
+      return "Medium shot, centered or rule-of-thirds composition, natural and balanced";
+    }
+  }
+
+  /**
+   * Get specific emotion expression description
+   */
+  private getEmotionExpression(mood: string): string {
+    const expressions: Record<string, string> = {
+      'sad': "Eyes looking down or away, slight frown, visible tears or puffy eyes",
+      'happy': "Soft smile or peaceful expression, relaxed shoulders, open posture",
+      'anxious': "Uncertain expression, hands near face, tense shoulders",
+      'angry': "Firm jaw, direct gaze, tense body",
+      'relieved': "Deep breath visible, shoulders relaxed, gentle smile",
+      'thoughtful': "Looking away or at something specific, hand on chin or hands clasped",
+    };
+
+    for (const [key, value] of Object.entries(expressions)) {
+      if (mood.includes(key)) return value;
+    }
+
+    return "Natural, neutral expression - person absorbed in their thoughts";
+  }
+
+  /**
+   * Fallback cover generation - SIMPLIFIED BUT SPECIFIC
    */
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
-    console.log(`🔄 Using fallback model for cover: ${this.fallbackModel}`);
+    console.log(`🔄 Using fallback model: ${this.fallbackModel}`);
 
-    // SAFE: Use defaults if plotBible missing
     const narrator = request.plotBible?.narrator || { age: 40, gender: 'female' };
-    const sensoryDetails = request.plotBible?.sensoryPalette?.details || ['warm', 'intimate', 'quiet'];
+    const genderDesc = narrator.gender === 'female' ? 'Woman' : 'Man';
 
-    const simplifiedPrompt = `
-🔥 NO TEXT ON IMAGE - CRITICAL!
+    const fallbackPrompt = `
+📸 FALLBACK: Russian ${genderDesc} ${narrator.age} years old in apartment, real smartphone photo aesthetic
 
-Russian woman ${narrator.age || 40} years old in apartment, natural light, realistic photo on smartphone.
-Mood: ${sensoryDetails.slice(0, 3).join(', ')}
-Domestic scene, everyday moment, warm lighting.
+🏠 COMPOSITION:
+- Location: Kitchen or living room (Russian apartment interior)
+- Subject: Person sitting or standing naturally, comfortable clothing
+- Distance: 2-3 meters away, camera at chest/eye level
+- Lighting: Warm natural light from window, soft shadows
 
-⚠️  ABSOLUTELY NO TEXT, CAPTIONS, WATERMARKS, OR OVERLAYS!
-PURE PHOTOGRAPH ONLY.
+📱 PHOTO CHARACTERISTICS:
+- Device: 2018-2020 smartphone camera (iPhone 11 or Samsung Galaxy A)
+- Quality: JPEG compression artifacts visible (realistic noise, quality ~80%)
+- Colors: Warm natural tones, NOT filtered or oversaturated
+- Depth: Slightly blurred background, sharp on person
+
+❌ CRITICAL - DO NOT:
+- NO text, captions, watermarks anywhere
+- NO filters or Instagram effects
+- NO stock photo look
+- NO AI-art artifacts (proper hands, real anatomy)
+- NO professional styling or makeup
+- NO surrealism or impossible things
+
+✅ GOAL:
+Photo looks like it was taken by a friend on their old phone - authentic, real, everyday moment.
     `.trim();
 
     try {
       return await this.generateWithModel(
         this.fallbackModel,
-        simplifiedPrompt,
+        fallbackPrompt,
         request.articleId
       );
     } catch (error) {
