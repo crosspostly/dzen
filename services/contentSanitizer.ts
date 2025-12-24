@@ -1,18 +1,26 @@
 /**
  * Очищает текст эпизода от markdown, JSON, метаданных и прочего мусора.
- * v4.4: Усиленная очистка markdown + качественные метрики
+ * v4.5: Усиленная очистка markdown + удаление OCR артефактов
  */
 export class ContentSanitizer {
   /**
    * Основной метод очистки контента.
-   * Удаляет: markdown, JSON, комментарии, метаданные, code fences.
-   * v4.4: АГРЕССИВНАЯ очистка markdown'а
+   * Удаляет: markdown, JSON, комментарии, метаданные, code fences, OCR артефакты.
+   * v4.5: Удаление повторяющихся OCR фраз ("вот в чём дело", "одним словом", etc)
    */
   static cleanEpisodeContent(content: string): string {
     let cleaned = content || "";
 
     // Normalize line endings
     cleaned = cleaned.replace(/\r\n/g, "\n");
+
+    // 🔥 v4.5: REMOVE OCR ARTIFACTS (Gemini parsing errors)
+    // These are repeated fragments that appear as artifacts when text is split incorrectly
+    
+    // Remove orphaned OCR phrases that appear as separate lines or in weird places
+    // Pattern: phrase appears + line break + random word continuation
+    // Examples: "— вот в чём дело..." appearing 50+ times in middle of sentences
+    cleaned = this.removeOcrArtifacts(cleaned);
 
     // Remove markdown code fences markers (keep inner text)
     cleaned = cleaned
@@ -99,6 +107,97 @@ export class ContentSanitizer {
   }
 
   /**
+   * 🔥 v4.5: Remove OCR artifacts from Gemini output
+   * These appear as repeated fragments when text parsing goes wrong
+   */
+  private static removeOcrArtifacts(content: string): string {
+    let cleaned = content;
+
+    // List of known OCR artifacts from Gemini parsing errors
+    // Format: these appear scattered throughout text as errant fragments
+    const ocrArtifactPatterns = [
+      // Russian artifacts that appear repeatedly (50+ times in single article)
+      /— вот в чём дело\.\.\./g,
+      /— одним словом\.\.\./g,
+      /\b— может быть, не совсем точно, но\.\.\.\b/g,
+      /\b— не знаю почему, но\.\.\.\b/g,
+      /\bну и\b/g,
+      /\bда вот\b/g,
+      /\bвот только\b/g,
+      /\bвот это\b/g,
+      /\bвот что\b/g,
+      /\bну да\b/g,
+      /\bи то\b/g,
+      /\bно вот\b/g,
+      /\bведь\b/g,
+      /\bже\b/g,
+      /\bну\b/g,
+    ];
+
+    // Strategy 1: Remove orphaned fragments that appear on their own line
+    // These are clear OCR errors (fragment floating on its own line)
+    ocrArtifactPatterns.forEach((pattern) => {
+      // Match pattern that appears at start of line or after punctuation
+      cleaned = cleaned.replace(new RegExp(`^${pattern.source}\s*$`, 'gm'), '');
+      cleaned = cleaned.replace(new RegExp(`[.!?]\s*${pattern.source}\s+`, 'g'), '$1 ');
+    });
+
+    // Strategy 2: Remove fragments that appear in weird positions
+    // Like in middle of word ("час, — Ты" should be "час. Ты" or "час,\n— Ты")
+    // This pattern: word + comma + fragment + word (no natural break)
+    cleaned = cleaned.replace(
+      /(\w+,)\s*(?:час|ну|да что|вот|ну и|ну да|и то|но вот)[,\s]*—/g,
+      '$1\n—'
+    );
+
+    // Strategy 3: Handle specific multi-word artifact patterns
+    // Remove fragments that interrupt natural sentence flow
+    cleaned = cleaned.replace(
+      /(?:— |—)(?:вот в чём дело|одним словом|может быть|не знаю почему).*?(?=—|[А-Я]|$)/g,
+      ''
+    );
+
+    // Strategy 4: Clean up line breaks that got mangled
+    // If we have: "text\nну и\nmore text" → "text\nmore text"
+    cleaned = cleaned.replace(/\n(?:ну и|да вот|вот|ну|и то|но вот|ведь|же)\s+/g, '\n');
+
+    // Strategy 5: Remove fragments that are clearly dialogue markers floating incorrectly
+    // If "— фраза" appears but фраза is just one word from previous sentence, remove it
+    cleaned = cleaned.replace(
+      /(?:—\s+)?(?:может быть|не знаю почему|вот что|вот в чём)\s*\.\.\.(?!\S)/g,
+      ''
+    );
+
+    // Strategy 6: Clean up dialogue that got fragmented
+    // Pattern: closing quote, then fragment, then opening quote
+    cleaned = cleaned.replace(
+      /([,.!?])\s*(?:ну и|но вот|вот что|и то)\s+([—"])/g,
+      '$1\n$2'
+    );
+
+    // Final cleanup: remove any trailing orphaned fragments
+    cleaned = cleaned
+      .split('\n')
+      .map(line => {
+        // If line is ONLY an OCR fragment (like just "ну и" or "вот только"), remove it
+        const trimmed = line.trim();
+        const fragmentPatterns = [
+          /^(?:ну и|да вот|вот только|вот это|вот что|ну да|и то|но вот|ведь|же|ну)$/,
+          /^— (?:вот в чём дело|одним словом|может быть|не знаю почему)\.\.\.$/,
+        ];
+        
+        const isFragment = fragmentPatterns.some(p => p.test(trimmed));
+        return isFragment ? '' : line;
+      })
+      .join('\n');
+
+    // Remove excessive blank lines created by fragment removal
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+
+    return cleaned;
+  }
+
+  /**
    * 📊 v4.4: Вычисляет метрики качества текста
    */
   static calculateQualityMetrics(
@@ -113,6 +212,7 @@ export class ContentSanitizer {
     hasComplexSentences: boolean;
     sensoryDensity: number; // детали на 1000 символов
     travelSpeed: "slow" | "medium" | "fast";
+    twistCount?: number;
     issues: string[];
   } {
     const cleaned = this.cleanEpisodeContent(content);
@@ -163,9 +263,9 @@ export class ContentSanitizer {
 
     // Complex sentence detection (3+ subordinate clauses)
     const complexSentenceRegex =
-      /[^.!?]*(?:что|который|когда|где|если|хотя|пока|пока|так как)[^.!?]*(?:что|который|когда|где|если|хотя)[^.!?]*/gi;
+      /[^.!?]*(?:что|который|когда|где|если|хотя|пока|так как)[^.!?]*(?:что|который|когда|где|если|хотя)[^.!?]*/gi;
     const complexSentences = cleaned.match(complexSentenceRegex) || [];
-    const hasComplexSentences = complexSentences.length > cleaned.match(/[.!?]/g)!.length * 0.2;
+    const hasComplexSentences = complexSentences.length > (cleaned.match(/[.!?]/g) || []).length * 0.2;
 
     if (hasComplexSentences) {
       issues.push(
@@ -273,7 +373,7 @@ export class ContentSanitizer {
     }
 
     if (/```/.test(cleaned)) {
-      errors.push("❌ Contains code fences (```...```)");
+      errors.push("❌ Contains code fences (```...```)`);
     }
 
     if (/\{[\s\S]*?"[^"]+"\s*:\s*[\s\S]*?\}/.test(cleaned)) {
@@ -355,7 +455,7 @@ export class ContentSanitizer {
     }
 
     if (/```/.test(cleaned)) {
-      errors.push("❌ Contains code fences (```...```)");
+      errors.push("❌ Contains code fences (```...```)`);
     }
 
     if (/\{[\s\S]*?"[^"]+"\s*:\s*[\s\S]*?\}/.test(cleaned)) {
