@@ -138,8 +138,8 @@ export class ContentSanitizer {
     // These are clear OCR errors (fragment floating on its own line)
     ocrArtifactPatterns.forEach((pattern) => {
       // Match pattern that appears at start of line or after punctuation
-      cleaned = cleaned.replace(new RegExp(`^${pattern.source}\s*$`, 'gm'), '');
-      cleaned = cleaned.replace(new RegExp(`[.!?]\s*${pattern.source}\s+`, 'g'), '$1 ');
+      cleaned = cleaned.replace(new RegExp(`^${pattern.source}\\s*$`, 'gm'), '');
+      cleaned = cleaned.replace(new RegExp(`[.!?]\\s*${pattern.source}\\s+`, 'g'), '$1 ');
     });
 
     // Strategy 2: Remove fragments that appear in weird positions
@@ -373,7 +373,7 @@ export class ContentSanitizer {
     }
 
     if (/```/.test(cleaned)) {
-      errors.push("❌ Contains code fences (```...```)`);
+      errors.push("❌ Contains code fences (```...```)");
     }
 
     if (/\{[\s\S]*?"[^"]+"\s*:\s*[\s\S]*?\}/.test(cleaned)) {
@@ -455,7 +455,7 @@ export class ContentSanitizer {
     }
 
     if (/```/.test(cleaned)) {
-      errors.push("❌ Contains code fences (```...```)`);
+      errors.push("❌ Contains code fences (```...```)");
     }
 
     if (/\{[\s\S]*?"[^"]+"\s*:\s*[\s\S]*?\}/.test(cleaned)) {
