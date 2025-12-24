@@ -2,6 +2,48 @@
 
 This repository generates AI-powered articles for Yandex Dzen with automatic RSS feed generation.
 
+## 🚀 Quick Start
+
+### GitHub Actions (Production)
+
+1. **Setup Secrets:**
+   - Go to: Settings → Secrets and variables → Actions
+   - Add: `GEMINI_API_KEY` (get from https://aistudio.google.com/app/apikey)
+   - See: [docs/SECRETS-SETUP.md](./docs/SECRETS-SETUP.md)
+
+2. **Generate Articles:**
+   - Actions → Content Factory → Run workflow
+   - Choose: count, channel, images
+   - Articles auto-commit to repository
+
+3. **Documentation:**
+   - [GitHub Actions Setup](./docs/GITHUB-ACTIONS-SETUP.md) - Complete workflow guide
+   - [v6.0 Cleanup System](./docs/v6.0-cleanup-system.md) - 3-level quality system
+   - [Quick Start Guide](./docs/CLEANUP-SYSTEM-README.md) - TL;DR
+
+### Local Development
+
+```bash
+# 1. Clone
+git clone https://github.com/your-repo/zenmaster.git
+cd zenmaster
+
+# 2. Install
+npm install
+
+# 3. Setup .env (DON'T commit this file!)
+cp .env.example .env
+# Edit .env and add your GEMINI_API_KEY
+
+# 4. Test
+npx tsx test-article-cleanup-system.ts
+
+# 5. Generate
+npm run factory -- --count=1 --images
+```
+
+**⚠️ IMPORTANT:** Never commit `.env` file with real API keys!
+
 ## Structure
 
 - `content/articles/` - Generated articles in markdown format with front-matter

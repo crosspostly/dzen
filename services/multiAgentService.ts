@@ -4,6 +4,8 @@ import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
 import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
+import { FinalArticleCleanupGate } from "./finalArticleCleanupGate";
+import { ArticlePublishGate } from "./articlePublishGate";
 
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
@@ -119,7 +121,7 @@ export class MultiAgentService {
     console.log(`✅ Title (Russian): "${title}"`);
     
     // Assemble full content (including new development, climax, resolution)
-    const fullContent = [
+    let fullContent = [
       lede,
       development,
       ...episodes.map(ep => ep.content),
@@ -127,6 +129,29 @@ export class MultiAgentService {
       resolution,
       finale
     ].join('\n\n');
+    
+    // 🧹 УРОВЕНЬ 2: FINAL ARTICLE CLEANUP GATE (v6.0)
+    console.log('\n🧹 [Уровень 2] Final Article Cleanup Gate...');
+    const cleanupGate = new FinalArticleCleanupGate();
+    const cleanupResult = await cleanupGate.cleanupAndValidate(fullContent);
+    
+    if (cleanupResult.appliedCleanup) {
+      console.log('   ✅ Cleanup applied, quality improved');
+      fullContent = cleanupResult.cleanText;
+    } else {
+      console.log('   ✅ No cleanup needed');
+    }
+    
+    // 🚪 УРОВЕНЬ 3: ARTICLE PUBLISH GATE (v6.0)
+    console.log('\n🚪 [Уровень 3] Article Publish Gate...');
+    const publishValidation = ArticlePublishGate.validateBeforePublish(fullContent);
+    
+    if (!publishValidation.canPublish) {
+      console.error('   ❌ Article failed publish gate validation');
+      throw new Error(`Quality check failed: ${publishValidation.errors.join(', ')}`);
+    }
+    
+    console.log('   ✅ Article passed publish gate validation');
     
     // Create initial article object
     const article: LongFormArticle = {
@@ -755,6 +780,19 @@ ${sensoryHints}
       ❌ "...блядский дождь..." (profanity)
       ✅ "...проклятый дождь..." (literary equivalent)
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 КРИТИЧЕСКИЕ ЗАПРЕТЫ (v6.0 - ANTI-ARTIFACT RULES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  БЕЗ метаданных: [note], [comment], [...] → УДАЛИ!
+⚠️  БЕЗ markdown: **, ##, ___ → УДАЛИ!
+⚠️  БЕЗ повторяющихся фраз > 1-2 раз:
+   ❌ "— вот в чём дело", "— одним словом", "— может быть, не совсем точно, но"
+   ✅ Варьируй речевые обороты!
+⚠️  БЕЗ orphaned фрагментов в начале: "ну и", "да вот", "вот только"
+⚠️  БЕЗ разорванных предложений: "хотя...", "потому что..." в начале
+⚠️  Диалоги ПОЛНЫЕ и правильно отформатированные
+
 🎯 TASK: Write LEDE (opening) - 600-900 RUSSIAN characters:
 
 Hook: "${firstEpisode.hookQuestion}"
@@ -771,6 +809,12 @@ REQUIREMENTS:
 - End with intrigue that makes reader scroll
 - NO "I decided to post this" or "I'm sharing because"
 - Just: raw memory being recalled
+
+⚠️  ПЕРЕД ОТВЕТОМ - ФИНАЛЬНАЯ ПРОВЕРКА:
+Перечитай текст и убедись что НЕТ:
+☐ метаданных [...], ☐ markdown (**, ##), ☐ повторяющихся фраз > 2 раз
+☐ orphaned фрагментов в начале, ☐ разорванных предложений
+Если что-то найдёшь - ПЕРЕДЕЛАЙ СЕЙЧАС!
 
 OUTPUT: Only the text. No title, no metadata.`;
 
@@ -924,6 +968,19 @@ NOT A "HAPPY ENDING" - THIS IS REAL LIFE:
      "Это всё, что я могу рассказать."
      "Может быть, я ошибалась. Но не думаю."
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 КРИТИЧЕСКИЕ ЗАПРЕТЫ (v6.0 - ANTI-ARTIFACT RULES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  БЕЗ метаданных: [note], [comment], [...] → УДАЛИ!
+⚠️  БЕЗ markdown: **, ##, ___ → УДАЛИ!
+⚠️  БЕЗ повторяющихся фраз > 1-2 раз:
+   ❌ "— вот в чём дело", "— одним словом", "— может быть, не совсем точно, но"
+   ✅ Варьируй речевые обороты!
+⚠️  БЕЗ orphaned фрагментов в начале: "ну и", "да вот", "вот только"
+⚠️  БЕЗ разорванных предложений: "хотя...", "потому что..." в начале
+⚠️  Диалоги ПОЛНЫЕ и правильно отформатированные
+
 🎯 TASK: Write FINALE - 1200-1800 RUSSIAN characters:
 
 Theme: "${outline.theme}"
@@ -938,6 +995,12 @@ REQUIREMENTS:
 - ONE specific scene showing aftermath
 - Narrator's insight (what they NOW understand)
 - End with HONEST QUESTION (not instruction/sermon)
+
+⚠️  ПЕРЕД ОТВЕТОМ - ФИНАЛЬНАЯ ПРОВЕРКА:
+Перечитай текст и убедись что НЕТ:
+☐ метаданных [...], ☐ markdown (**, ##), ☐ повторяющихся фраз > 2 раз
+☐ orphaned фрагментов в начале, ☐ разорванных предложений
+Если что-то найдёшь - ПЕРЕДЕЛАЙ СЕЙЧАС!
 
 OUTPUT: Only the text. No title, no metadata.`;
 
