@@ -12,8 +12,8 @@
  *   node scripts/cleanup-published-filenames.js
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const PUBLISHED_DIR = './articles/published';
 const TIMESTAMP_PATTERN = /-\d{10,13}(?=\.)\./; // Matches -1766318654134. before extension
