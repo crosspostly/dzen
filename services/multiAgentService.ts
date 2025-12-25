@@ -1348,7 +1348,16 @@ Respond as JSON:
           topP: 0.95,
         },
       });
-      return response.text || "";
+
+      const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text || typeof text !== 'string') {
+        console.warn(
+          'callGemini: Gemini returned empty/invalid text:',
+          JSON.stringify(response).substring(0, 500)
+        );
+        return "";
+      }
+      return text;
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.warn(`Gemini call failed (${params.model}): ${errorMessage}`);
@@ -1496,7 +1505,16 @@ Output ONLY the episode text. No titles, no metadata.`;
           topP: 0.95,
         },
       });
-      return response.text || "";
+
+      const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text || typeof text !== 'string') {
+        console.warn(
+          `Agent #${this.id} primary returned empty/invalid text:`,
+          JSON.stringify(response).substring(0, 500)
+        );
+        return "";
+      }
+      return text;
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.warn(`Agent #${this.id} primary model failed: ${errorMessage}`);
@@ -1516,7 +1534,17 @@ Output ONLY the episode text. No titles, no metadata.`;
           });
           
           console.log(`Agent #${this.id} fallback successful`);
-          return fallbackResponse.text || "";
+
+          const text = fallbackResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!text || typeof text !== 'string') {
+            console.warn(
+              `Agent #${this.id} fallback returned empty/invalid text:`,
+              JSON.stringify(fallbackResponse).substring(0, 500)
+            );
+            return "";
+          }
+
+          return text;
         } catch (fallbackError) {
           console.error(`Agent #${this.id} fallback also failed:`, (fallbackError as Error).message);
           throw fallbackError;

@@ -80,7 +80,17 @@ export class EpisodeTitleGenerator {
           },
         });
 
-        const title = (response.text || "")
+        const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text || typeof text !== 'string') {
+          console.warn(
+            `   ⚠️  EpisodeTitleGenerator: empty/invalid text from Gemini (model: ${model})`,
+            JSON.stringify(response).substring(0, 500)
+          );
+          if (attempt < this.MAX_RETRIES) continue;
+          return `Часть ${episodeNumber}`;
+        }
+
+        const title = text
           .trim()
           .replace(/^[\s"'`({\[<]+/, "")
           .replace(/[\s"'`)\}\]>]+$/, "")

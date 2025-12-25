@@ -254,7 +254,7 @@ ${content}
         }
       });
 
-      const restoredText = response.response.text()?.trim();
+      const restoredText = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       
       if (restoredText && restoredText.length > content.length * 0.5) {
         improvements.push({

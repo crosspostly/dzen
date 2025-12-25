@@ -37,7 +37,27 @@ export class GeminiService {
       contents: prompt,
       config: { responseMimeType: "application/json" },
     });
-    try { return JSON.parse(response.text); } catch { return ["Ошибка тем"]; }
+
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text || typeof text !== 'string') {
+      console.warn(
+        '⚠️  generateFreshThemes: Gemini returned empty/invalid text:',
+        JSON.stringify(response).substring(0, 500)
+      );
+      return ["Ошибка тем"];
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      console.warn(
+        '⚠️  generateFreshThemes: Failed to parse JSON:',
+        (error as Error).message,
+        '\nRaw text snippet:',
+        text.substring(0, 500)
+      );
+      return ["Ошибка тем"];
+    }
   }
 
   /**
@@ -352,14 +372,23 @@ ${resolutionSection.substring(0, 300)}
         temperature: 0.85,
       });
 
-      try {
-        const parsed = JSON.parse(response);
-        if (Array.isArray(parsed.scenes) && parsed.scenes.length === 3) {
-          console.log('✅ Smart image scenes generated');
-          return parsed.scenes;
+      if (!response || typeof response !== 'string') {
+        console.warn('⚠️  generateImageScenes: callGemini returned empty/invalid response');
+      } else {
+        try {
+          const parsed = JSON.parse(response);
+          if (Array.isArray(parsed.scenes) && parsed.scenes.length === 3) {
+            console.log('✅ Smart image scenes generated');
+            return parsed.scenes;
+          }
+        } catch (e) {
+          console.warn(
+            '⚠️  Failed to parse image scenes JSON, using fallback. Error:',
+            (e as Error).message,
+            '\nResponse snippet:',
+            response.substring(0, 500)
+          );
         }
-      } catch (e) {
-        console.warn('⚠️  Failed to parse image scenes JSON, using fallback');
       }
     } catch (error) {
       console.warn('⚠️  Image scene generation failed:', (error as Error).message);
@@ -437,10 +466,26 @@ ${slices}
         }
       }
     });
-    try { 
-      return JSON.parse(response.text); 
-    } catch { 
-      return { score: 50, tips: ["Не удалось провести анализ"] }; 
+
+    const resultText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!resultText || typeof resultText !== 'string') {
+      console.warn(
+        '⚠️  checkHumanity: Gemini returned empty/invalid text:',
+        JSON.stringify(response).substring(0, 500)
+      );
+      return { score: 50, tips: ["Не удалось провести анализ"] };
+    }
+
+    try {
+      return JSON.parse(resultText);
+    } catch (error) {
+      console.warn(
+        '⚠️  checkHumanity: Failed to parse JSON:',
+        (error as Error).message,
+        '\nRaw text snippet:',
+        resultText.substring(0, 500)
+      );
+      return { score: 50, tips: ["Не удалось провести анализ"] };
     }
   }
 

@@ -198,7 +198,16 @@ RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
         }
       }
 
-      const theme = (response.text || "").trim();
+      const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text || typeof text !== 'string') {
+        console.warn(
+          `${LOG.WARN} generateNewTheme: Gemini returned empty/invalid text:`,
+          JSON.stringify(response).substring(0, 500)
+        );
+        throw new Error("Gemini returned empty/invalid response");
+      }
+
+      const theme = text.trim();
 
       if (!theme || theme.length < 10) {
         throw new Error("Generated theme too short");

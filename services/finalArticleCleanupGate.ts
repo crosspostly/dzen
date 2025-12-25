@@ -332,7 +332,17 @@ ${article}
           topP: 0.95,
         }
       });
-      text = response.text || '';
+
+      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!responseText || typeof responseText !== 'string') {
+        console.warn(
+          `   ⚠️  FinalArticleCleanupGate: primary returned empty/invalid text:`,
+          JSON.stringify(response).substring(0, 500)
+        );
+        text = '';
+      } else {
+        text = responseText;
+      }
     } catch (primaryError) {
       const errorMessage = (primaryError as Error).message;
 
@@ -356,7 +366,18 @@ ${article}
               topP: 0.9,
             }
           });
-          text = fallbackResponse.text || '';
+
+          const fallbackText = fallbackResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!fallbackText || typeof fallbackText !== 'string') {
+            console.warn(
+              `   ⚠️  FinalArticleCleanupGate: fallback returned empty/invalid text:`,
+              JSON.stringify(fallbackResponse).substring(0, 500)
+            );
+            text = '';
+          } else {
+            text = fallbackText;
+          }
+
           console.log(`   ✅ Fallback successful`);
         } catch (fallbackError) {
           console.error(`   ❌ Fallback also failed: ${(fallbackError as Error).message}`);
