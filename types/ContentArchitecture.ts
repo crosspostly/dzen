@@ -22,7 +22,7 @@ export interface Episode {
   }[];
   
   generatedAt: number;
-  stage: "draft" | "montage" | "humanized";
+  stage: "draft" | "montage" | "humanized" | "fallback";
   
   // 🖼️ ИЗОБРАЖЕНИЯ
   imageBuffer?: Buffer;       // Буфер обработанного изображения

@@ -222,6 +222,16 @@ ${"=".repeat(60)}`);
         timestamp: Date.now(),
         recovered: false
       });
+
+      // Don't throw error - allow factory to continue with generated articles
+      console.log(`⚠️  Continuing with ${articles.length} articles generated so far`);
+    }
+
+    // Warn if we didn't get expected number of articles, but continue
+    if (articles.length === 0) {
+      console.warn(`⚠️  No articles generated successfully - this may cause issues later`);
+    } else if (articles.length < this.config.articleCount) {
+      console.warn(`⚠️  Generated ${articles.length}/${this.config.articleCount} articles`);
     }
 
     return articles;
@@ -232,6 +242,14 @@ ${"=".repeat(60)}`);
    * ✅ UPDATED v4.0: Generates ONE cover per article (not 12!)
    */
   private async generateCoverImages(): Promise<void> {
+    // Check if we have articles to generate images for
+    if (this.articles.length === 0) {
+      console.warn(`⚠️  No articles available for image generation`);
+      this.progress.imagesCompleted = 0;
+      this.progress.imagesTotal = 0;
+      return;
+    }
+
     // Extract ledes (first paragraphs) from articles
     const ledes = this.articles.map(article => {
       // Get lede from article (first paragraph after splitting by double newline)
@@ -243,10 +261,23 @@ ${"=".repeat(60)}`);
     this.imageWorkerPool.enqueueArticles(this.articles, ledes);
 
     // Start processing (serial, 1 per minute)
-    const coverImages = await this.imageWorkerPool.start();
+    let coverImages: any[];
+
+    try {
+      coverImages = await this.imageWorkerPool.start();
+    } catch (error) {
+      console.error(`❌ Cover image generation failed: ${(error as Error).message}`);
+      console.log(`⚠️  Continuing without images`);
+      coverImages = [];
+    }
 
     // Attach COVER images to articles (1:1 mapping)
-    this.imageWorkerPool.attachCoverImagesToArticles(this.articles, coverImages);
+    try {
+      this.imageWorkerPool.attachCoverImagesToArticles(this.articles, coverImages);
+    } catch (error) {
+      console.error(`❌ Failed to attach images to articles: ${(error as Error).message}`);
+      console.log(`⚠️  Continuing with articles without images`);
+    }
 
     // Update progress
     this.progress.imagesCompleted = coverImages.length;
@@ -947,6 +978,11 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
       { range: "60-80", count: 0, percentage: 0 },
       { range: "80-100", count: 0, percentage: 0 }
     ];
+
+    // Handle case with no articles
+    if (this.articles.length === 0) {
+      return buckets;
+    }
 
     for (const article of this.articles) {
       const score = article.stats.qualityScore;
