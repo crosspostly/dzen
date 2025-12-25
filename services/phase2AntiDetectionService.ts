@@ -398,13 +398,22 @@ ${content}`;
    */
   private async callGeminiApi(prompt: string): Promise<string> {
     const client = new GoogleGenAI({ apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY });
-    
+
     const response = await client.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
     });
-    
-    return response.text.trim();
+
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text || typeof text !== 'string') {
+      console.warn(
+        '⚠️  Phase2AntiDetectionService.callGeminiApi: empty/invalid text from Gemini:',
+        JSON.stringify(response).substring(0, 500)
+      );
+      return '';
+    }
+
+    return text.trim();
   }
 
   /**

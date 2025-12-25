@@ -145,8 +145,8 @@ ${previousContext ? `Продолжение предыдущего эпизод�
       }
     });
 
-    const text = response.response.text();
-    if (!text) {
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text || typeof text !== 'string') {
       throw new Error('Empty response from Gemini');
     }
 

@@ -185,8 +185,12 @@ export class SimpleArticleGenerator {
       config: { temperature: 0.7 }
     });
 
-    const text = response.response.text();
-    
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text || typeof text !== 'string') {
+      console.warn('Failed to get outline text from Gemini:', JSON.stringify(response).substring(0, 500));
+      return this.createFallbackOutline(params);
+    }
+
     // Parse JSON
     try {
       const data = JSON.parse(text);
@@ -234,7 +238,13 @@ export class SimpleArticleGenerator {
       config: { temperature: 0.85 }
     });
 
-    return response.response.text().trim();
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text || typeof text !== 'string') {
+      console.warn('Failed to generate lede from Gemini:', JSON.stringify(response).substring(0, 500));
+      return "Это моя история. Я долго молчала, но сейчас готова рассказать.";
+    }
+
+    return text.trim();
   }
 
   /**
@@ -268,7 +278,13 @@ export class SimpleArticleGenerator {
       config: { temperature: 0.85 }
     });
 
-    return response.response.text().trim();
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text || typeof text !== 'string') {
+      console.warn('Failed to generate finale from Gemini:', JSON.stringify(response).substring(0, 500));
+      return "Я сидела и молчала. А потом поняла: назад дороги нет. А вы бы как поступили?";
+    }
+
+    return text.trim();
   }
 
   /**
@@ -294,7 +310,13 @@ export class SimpleArticleGenerator {
       config: { temperature: 0.8 }
     });
 
-    return response.response.text().trim().replace(/^["']|["']$/g, '');
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text || typeof text !== 'string') {
+      console.warn('Failed to generate title from Gemini:', JSON.stringify(response).substring(0, 500));
+      return outline.theme.substring(0, 90);
+    }
+
+    return text.trim().replace(/^["']|["']$/g, '');
   }
 
   /**
