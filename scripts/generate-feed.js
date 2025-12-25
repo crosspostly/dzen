@@ -104,20 +104,30 @@ function copyFile(source, destination) {
   fs.copyFileSync(source, destination);
 }
 
-function moveFileToPublished(filePath) {
+function moveFileToPublished(filePath, frontmatter) {
   try {
     if (filePath.includes('published')) return;
 
-    const relativePath = path.relative('./articles', filePath);
-    const publishedPath = path.join('./articles/published', relativePath);
+    // Используем дату из frontmatter для структуры published папки
+    const date = new Date(frontmatter.date);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    const fileName = path.basename(filePath);
+    const publishedPath = path.join('./articles/published', year.toString(), month, day, fileName);
     const publishedDir = path.dirname(publishedPath);
 
+    // Убедимся, что директория существует
     fs.mkdirSync(publishedDir, { recursive: true });
+    
+    // Копируем markdown файл
     copyFile(filePath, publishedPath);
-    console.log(`   📁 Перенесено: ${relativePath}`);
+    console.log(`   📁 Перенесено: published/${year}/${month}/${day}/${fileName}`);
 
+    // Копируем связанные изображения
     const fileDir = path.dirname(filePath);
-    const fileName = path.basename(filePath, path.extname(filePath));
+    const fileName_noExt = path.basename(filePath, path.extname(filePath));
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
     const filesInDir = fs.existsSync(fileDir) ? fs.readdirSync(fileDir) : [];
 
@@ -125,7 +135,8 @@ function moveFileToPublished(filePath) {
       const fileExt = path.extname(file).toLowerCase();
       if (imageExtensions.includes(fileExt)) {
         const baseName = path.basename(file, fileExt);
-        if (baseName.startsWith(fileName) || fileName.startsWith(baseName) || baseName.includes(fileName)) {
+        // Более точное совпадение
+        if (baseName.startsWith(fileName_noExt) || fileName_noExt.startsWith(baseName) || baseName.includes(fileName_noExt)) {
           const imageFile = path.join(fileDir, file);
           const publishedImageFile = path.join(publishedDir, file);
           if (fs.existsSync(imageFile)) copyFile(imageFile, publishedImageFile);
@@ -133,13 +144,15 @@ function moveFileToPublished(filePath) {
       }
     }
 
+    // Удаляем markdown файл после копирования
     try { fs.unlinkSync(filePath); } catch (e) {}
 
+    // Удаляем изображения после копирования
     for (const file of filesInDir) {
       const fileExt = path.extname(file).toLowerCase();
       if (imageExtensions.includes(fileExt)) {
         const baseName = path.basename(file, fileExt);
-        if (baseName.startsWith(fileName) || fileName.startsWith(baseName) || baseName.includes(fileName)) {
+        if (baseName.startsWith(fileName_noExt) || fileName_noExt.startsWith(baseName) || baseName.includes(fileName_noExt)) {
           const imageFile = path.join(fileDir, file);
           if (fs.existsSync(imageFile)) {
             try { fs.unlinkSync(imageFile); } catch (e) {}
@@ -148,6 +161,7 @@ function moveFileToPublished(filePath) {
       }
     }
 
+    // Удаляем пустые директории
     let currentDir = fileDir;
     while (currentDir !== './articles' && currentDir !== '.' && fs.existsSync(currentDir)) {
       try {
@@ -161,7 +175,7 @@ function moveFileToPublished(filePath) {
       } catch (e) { break; }
     }
   } catch (error) {
-    console.error(`❌ Ошибка: ${error.message}`);
+    console.error(`❌ Ошибка при перемещении: ${error.message}`);
   }
 }
 
@@ -312,7 +326,7 @@ function generateFeed() {
 
       // НОВЫЕ файлы переносим в published (ОТКЛИЧАЕМ full)
       if (MODE === 'incremental' && !filePath.includes('published')) {
-        moveFileToPublished(filePath);
+        moveFileToPublished(filePath, frontmatter);
       }
 
     } catch (error) {
