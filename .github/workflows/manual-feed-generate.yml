@@ -1,0 +1,76 @@
+name: Manual Feed Generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Generation mode'
+        required: true
+        default: 'incremental'
+        type: choice
+        options:
+          - full
+          - incremental
+
+jobs:
+  generate-feed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate RSS Feed
+        run: |
+          echo "🚀 Режим: ${{ github.event.inputs.mode }}"
+          node scripts/generate-feed.js ${{ github.event.inputs.mode }}
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          BASE_URL: https://dzen-livid.vercel.app
+
+      - name: Check if there are changes
+        id: verify
+        run: |
+          if git diff --quiet; then
+            echo "status=no-changes" >> $GITHUB_OUTPUT
+            echo "✅ Нет изменений"
+          else
+            echo "status=has-changes" >> $GITHUB_OUTPUT
+            echo "📝 Обнаружены изменения"
+            git diff --stat
+          fi
+
+      - name: Commit and push changes
+        if: steps.verify.outputs.status == 'has-changes'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions"
+          git add -A
+          git commit -m "chore: Update RSS feed and articles [${{ github.event.inputs.mode }} mode]"
+          git push
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 📊 Результаты генерации" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Режим**: \`${{ github.event.inputs.mode }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Статус**: $([ '${{ steps.verify.outputs.status }}' = 'has-changes' ] && echo '✅ Успешно обновлено' || echo 'ℹ️ Нет изменений')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Режимы:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 **full** - полная переген из всех published" >> $GITHUB_STEP_SUMMARY
+          echo "- 📧 **incremental** - только новые статьи + все опубликованные" >> $GITHUB_STEP_SUMMARY
