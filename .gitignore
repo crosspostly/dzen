@@ -55,3 +55,7 @@ docs/.docusaurus/
 *.tmp
 *.temp
 .cache/
+
+# BUT ALLOW public/feed.xml to be tracked!
+public/*
+!public/feed.xml
