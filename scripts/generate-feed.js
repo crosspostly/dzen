@@ -18,7 +18,7 @@ const SITE_URL = process.env.SITE_URL || BASE_URL;
 const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'crosspostly/dzen';
 const MODE = process.argv[2] || 'incremental';
 
-console.log(`\n🚀 Режим: ${MODE === 'full' ? '🔄 ПОЛНАЯ ПЕРЕгЕНЕРАЦИО' : '📥 ИНКРЕМЕНТАЛЬНЫЙ'}`);
+console.log(`\n🚀 Режим: ${MODE === 'full' ? '🔄 ПОЛНАЯ ПЕРЕГЕНЕРАЦИО' : '📥 ИНКРЕМЕНТАЛЬНЫЙ'}`);
 
 /**
  * Получить ВСЕ markdown файлы из папки (рекурсивно)
@@ -76,26 +76,21 @@ function getPublishedMarkdownFiles(dir) {
 }
 
 /**
- * КЛЮЧЕВАЯ ФУНКЦИЯ: Перемещает статью в published с сохранением в GIT
- * (копирует файлы в published, ПОТОМ удаляет из исходной папки)
+ * КЛЮЧЕВАЯ ФУНКЦИЯ: Перемещает статью в published с сохранением труктуры
+ * (копирует файлы, ПОТОМ удаляет из исходной папки)
  */
 function moveArticleToPublished(filePath, frontmatter) {
   try {
     // Пропускаем если уже в published
     if (filePath.includes('/published/')) return;
     
-    // Распарсиваем дату из frontmatter
-    const dateObj = new Date(frontmatter.date);
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    
-    // Получаем имя файла
+    // Получаем исходную релативную пать (такая же, как в women-35-60/2025-12-23/)
+    const relativePath = path.relative('./articles', filePath); // → women-35-60/2025-12-23/file.md
     const fileName = path.basename(filePath);
     const fileNameNoExt = path.basename(filePath, path.extname(filePath));
     
-    // НОВАЯ структура: articles/published/YYYY/MM/DD/
-    const destDirPath = path.join('./articles/published', year.toString(), month, day);
+    // СОХРАНЯЕМ у ПУБЛИКУЕМ: published/women-35-60/2025-12-23/
+    const destDirPath = path.join('./articles/published', relativePath.split(path.sep).slice(0, -1).join(path.sep));
     const destFilePath = path.join(destDirPath, fileName);
     
     // Создаём папку published (GIT отследит)
@@ -106,7 +101,7 @@ function moveArticleToPublished(filePath, frontmatter) {
     // КОПИРУЕМ markdown файл в published
     const fileContent = fs.readFileSync(filePath, 'utf8');
     fs.writeFileSync(destFilePath, fileContent, 'utf8');
-    console.log(`   ✅ Скопировано в published/${year}/${month}/${day}/${fileName}`);
+    console.log(`   ✅ Скопировано в published/${relativePath.split(path.sep).slice(0, -1).join('/')}/${fileName}`);
     
     // КОПИРУЕМ связанные изображения
     const sourceDir = path.dirname(filePath);
