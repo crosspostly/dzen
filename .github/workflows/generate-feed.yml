@@ -1,18 +1,12 @@
-name: Generate RSS Feed
+name: Auto-Generate RSS Feed
 
 on:
   push:
-    branches: [ main, master ]
-    # Теперь правильно отслеживаем ВСЕ изменения в articles (КРОМЕ published и техфайлов)
     paths:
-      - 'articles/**'
-      - '!articles/published/**'
-      - '!articles/REPORT.md'
-      - '!articles/manifest.json'
-  schedule:
-    # Запускать каждый час
-    - cron: '0 * * * *'
-  workflow_dispatch: # Ручной запуск
+      - 'articles/**/*.md'
+      - 'articles/**/*.jpg'
+    branches:
+      - main
 
 jobs:
   generate-feed:
@@ -21,55 +15,85 @@ jobs:
       contents: write
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-    - name: Cache node modules
-      id: cache-node-modules
-      uses: actions/cache@v4
-      with:
-        path: node_modules
-        key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-modules-
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Install dependencies
-      if: steps.cache-node-modules.outputs.cache-hit != 'true'
-      run: npm install
+      - name: 🔍 Check what changed
+        run: |
+          echo ""
+          echo "======================================================"
+          echo "🔍 Files that triggered this workflow:"
+          echo "======================================================"
+          git diff --name-only HEAD~1 HEAD | grep -E '\.(md|jpg)$' | head -10
+          echo ""
 
-    - name: Set environment variables
-      run: |
-        echo "BASE_URL=https://${{ github.repository_owner }}.github.io/dzen" >> $GITHUB_ENV
-        echo "SITE_URL=https://${{ github.repository_owner }}.github.io/dzen" >> $GITHUB_ENV
-        echo "VERCEL_URL=dzen-livid.vercel.app" >> $GITHUB_ENV
-        echo "GITHUB_REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
+      - name: 🚀 Generate RSS Feed (INCREMENTAL mode)
+        run: |
+          echo ""
+          echo "======================================================"
+          echo "🚀 Generating RSS Feed (INCREMENTAL mode)"
+          echo "📝 Only new articles will be added to feed"
+          echo "======================================================"
+          echo ""
+          npm run feed:incremental
+        env:
+          BASE_URL: https://dzen-livid.vercel.app
+          GITHUB_REPOSITORY: crosspostly/dzen
 
-    - name: Generate RSS feed
-      run: node scripts/generate-feed.js
+      - name: ✅ Verify feed.xml
+        run: |
+          echo ""
+          echo "======================================================"
+          echo "✅ Feed Generation Result"
+          echo "======================================================"
+          echo ""
+          
+          if [ -f "public/feed.xml" ]; then
+            echo "✅ Feed created successfully"
+            echo "   📊 Size: $(stat --format=%s public/feed.xml 2>/dev/null || stat -f%z public/feed.xml) bytes"
+            echo ""
+            echo "📊 Items in feed:"
+            ITEM_COUNT=$(grep -c "<item>" public/feed.xml || echo "0")
+            echo "   $ITEM_COUNT articles"
+            echo ""
+            echo "🔗 Sample image URL:"
+            grep -o 'enclosure url="[^"]*' public/feed.xml | head -1 | sed 's/enclosure url="/   /'
+            echo ""
+          else
+            echo "❌ Feed was NOT created!"
+            exit 1
+          fi
 
-    - name: Create public directory and copy feed
-      run: |
-        mkdir -p public
-        cp feed.xml public/ || echo "feed.xml not found"
-        cp index.html public/ || echo "index.html not found"
-
-    - name: Commit and push if changed
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add feed.xml public/ articles/published/
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "Auto-generate RSS feed and move articles to published [skip ci]"
-          git push
-        fi
-      continue-on-error: true
+      - name: 📤 Commit RSS feed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions"
+          
+          git add -f public/feed.xml
+          
+          if ! git diff --cached --quiet; then
+            echo "📝 Committing RSS feed..."
+            git commit -m "chore: auto-update RSS feed [$(date -u +'%Y-%m-%d %H:%M:%S UTC')]"
+            
+            echo "🚀 Pushing..."
+            git push origin main || {
+              git fetch origin main
+              git rebase origin/main
+              git push origin main
+            }
+            echo "✅ Done!"
+          else
+            echo "ℹ️ No changes in feed"
+          fi
+          echo ""
