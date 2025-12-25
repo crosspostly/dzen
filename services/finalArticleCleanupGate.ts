@@ -325,7 +325,7 @@ ${article}
       // First attempt with primary model
       const response = await this.geminiClient.models.generateContent({
         model: this.model,
-        contents: deepRestorationPrompt,
+        contents: finalProofreaderPrompt,
         config: {
           temperature: this.temperature,
           topK: 40,
@@ -349,7 +349,7 @@ ${article}
           // Fallback to gemini-2.5-flash-lite for faster recovery
           const fallbackResponse = await this.geminiClient.models.generateContent({
             model: 'gemini-2.5-flash-lite',
-            contents: deepRestorationPrompt,
+            contents: finalProofreaderPrompt,
             config: {
               temperature: this.temperature,
               topK: 32,
