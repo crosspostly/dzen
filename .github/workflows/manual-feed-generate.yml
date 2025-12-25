@@ -34,6 +34,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Debug - Check articles structure
+        run: |
+          echo "📁 Структура папок articles/:"
+          find articles -maxdepth 3 -type f -name "*.md" 2>/dev/null | head -20 || echo "❌ Нет файлов .md"
+          echo ""
+          echo "📊 Всего .md файлов:"
+          find articles -type f -name "*.md" 2>/dev/null | wc -l || echo "0"
+
       - name: Generate RSS Feed
         run: |
           echo "🚀 Режим: ${{ github.event.inputs.mode }}"
@@ -42,26 +50,50 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           BASE_URL: https://dzen-livid.vercel.app
 
-      - name: Check if there are changes
+      - name: Check if feed.xml was created
         id: verify
+        run: |
+          echo "📋 Проверка наличия feed.xml:"
+          if [ -f "public/feed.xml" ]; then
+            echo "✅ Feed создан в public/feed.xml"
+            echo "status=feed-created" >> $GITHUB_OUTPUT
+            ls -lh public/feed.xml
+            echo ""
+            echo "📊 Размер: $(stat --format=%s public/feed.xml 2>/dev/null || stat -f%z public/feed.xml) bytes"
+            echo ""
+            echo "📝 Первые 500 символов:"
+            head -c 500 public/feed.xml
+          else
+            echo "❌ Feed НЕ создан!"
+            echo "status=no-feed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if there are changes
+        id: changes
         run: |
           if git diff --quiet; then
             echo "status=no-changes" >> $GITHUB_OUTPUT
-            echo "✅ Нет изменений"
+            echo "ℹ️ Нет изменений в git"
           else
             echo "status=has-changes" >> $GITHUB_OUTPUT
-            echo "📝 Обнаружены изменения"
+            echo "📝 Обнаружены изменения:"
             git diff --stat
+            echo ""
+            git diff public/feed.xml | head -50 || echo "(бинарный файл или большие изменения)"
           fi
 
       - name: Commit and push changes
-        if: steps.verify.outputs.status == 'has-changes'
+        if: steps.changes.outputs.status == 'has-changes'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Actions"
           git add -A
-          git commit -m "chore: Update RSS feed and articles [${{ github.event.inputs.mode }} mode]"
-          git push
+          git commit -m "chore: Update RSS feed [${{ github.event.inputs.mode }} mode]"
+          git push origin main || {
+            echo "❌ Push failed, trying to pull first"
+            git pull origin main --rebase
+            git push origin main
+          }
 
       - name: Summary
         if: always()
@@ -69,8 +101,9 @@ jobs:
           echo "## 📊 Результаты генерации" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Режим**: \`${{ github.event.inputs.mode }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Статус**: $([ '${{ steps.verify.outputs.status }}' = 'has-changes' ] && echo '✅ Успешно обновлено' || echo 'ℹ️ Нет изменений')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Feed создан**: $([ '${{ steps.verify.outputs.status }}' = 'feed-created' ] && echo '✅ ДА' || echo '❌ НЕТ')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Изменения**: $([ '${{ steps.changes.outputs.status }}' = 'has-changes' ] && echo '✅ Есть' || echo 'ℹ️ Нет')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Режимы:" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔄 **full** - полная переген из всех published" >> $GITHUB_STEP_SUMMARY
-          echo "- 📧 **incremental** - только новые статьи + все опубликованные" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 **full** - все статьи (articles/women-35-60/* + articles/published/*)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📧 **incremental** - только новые (articles/women-35-60/*, исключая published)" >> $GITHUB_STEP_SUMMARY
