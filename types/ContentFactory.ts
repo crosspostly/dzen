@@ -25,6 +25,12 @@ export interface CoverImage {
 
 /**
  * Factory configuration
+ * 
+ * 🆕 v7.0: Added options for simplified generation mode
+ * - useAntiDetection: false = cleaner output, no Phase 2 processing
+ * - skipCleanupGates: false = no cleanup gates, direct output
+ * 
+ * When both are false: SIMPLE MODE = clean, ready-to-publish articles in one pass
  */
 export interface ContentFactoryConfig {
   articleCount: 1 | 5 | 10 | 25 | 50 | 100;
@@ -34,9 +40,13 @@ export interface ContentFactoryConfig {
   qualityLevel: "standard" | "premium";
   outputFormat: "zen" | "medium" | "all";
   timeoutPerArticle?: number; // ms, default 300000 (5 min)
-  enableAntiDetection?: boolean; // Apply AI detection countermeasures
+  enableAntiDetection?: boolean; // Apply AI detection countermeasures (DEPRECATED in v7.0, use useAntiDetection)
   enablePlotBible?: boolean; // Use PlotBible for consistency
   maxChars?: number; // Character budget for articles, default 19000
+  
+  // 🆕 v7.0: Simplified generation options
+  useAntiDetection?: boolean; // true = apply Phase 2 (default: true for backward compatibility)
+  skipCleanupGates?: boolean; // true = skip cleanup gates (default: false for backward compatibility)
 }
 
 /**

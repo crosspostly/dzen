@@ -17,9 +17,11 @@ This repository generates AI-powered articles for Yandex Dzen with automatic RSS
    - Articles auto-commit to repository
 
 3. **Documentation:**
-   - [GitHub Actions Setup](./docs/GITHUB-ACTIONS-SETUP.md) - Complete workflow guide
-   - [v6.0 Cleanup System](./docs/v6.0-cleanup-system.md) - 3-level quality system
-   - [Quick Start Guide](./docs/CLEANUP-SYSTEM-README.md) - TL;DR
+    - [GitHub Actions Setup](./docs/GITHUB-ACTIONS-SETUP.md) - Complete workflow guide
+    - [v7.0 Simplified Mode](./docs/v7.0-simplified-generation.md) - Clean text, no corruption
+    - [v7.0 Quick Start](./docs/v7.0-quick-start.md) - One-command clean generation
+    - [v6.0 Cleanup System](./docs/v6.0-cleanup-system.md) - 3-level quality system
+    - [Quick Start Guide](./docs/CLEANUP-SYSTEM-README.md) - TL;DR
 
 ### Local Development
 
@@ -39,8 +41,14 @@ cp .env.example .env
 npx tsx test-article-cleanup-system.ts
 
 # 5. Generate
+# Standard mode (full processing)
 npm run factory -- --count=1 --images
+
+# Simplified mode (clean text, no corruption)
+npm run factory -- --count=1 --no-anti-detection --no-cleanup --theme="Your theme"
 ```
+
+**⚡️ TIP:** Use `--no-anti-detection --no-cleanup` for cleaner, faster generation with better text quality.
 
 **⚠️ IMPORTANT:** Never commit `.env` file with real API keys!
 

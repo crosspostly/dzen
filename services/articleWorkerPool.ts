@@ -34,9 +34,16 @@ export class ArticleWorkerPool {
   ): Promise<Article[]> {
     const articles: Article[] = [];
     const maxChars = config.maxChars || CHAR_BUDGET; // ✅ Use config value, fallback to central budget
-    const multiAgentService = new MultiAgentService(this.apiKey, maxChars);
+    
+    // 🆕 v7.0: Support simplified generation mode
+    const multiAgentService = new MultiAgentService(this.apiKey, {
+      maxChars,
+      useAntiDetection: config.useAntiDetection ?? true,
+      skipCleanupGates: config.skipCleanupGates ?? false
+    });
 
-    console.log(`\n📑 Generating ${count} articles (${this.workers} parallel workers) with ${maxChars} char budget...\n`);
+    const mode = (config.useAntiDetection === false || config.skipCleanupGates === false) ? 'SIMPLIFIED' : 'FULL';
+    console.log(`\n📑 Generating ${count} articles (${mode} mode, ${this.workers} parallel workers) with ${maxChars} char budget...\n`);
 
     // Generate articles sequentially (since Gemini API has rate limits)
     for (let i = 1; i <= count; i++) {

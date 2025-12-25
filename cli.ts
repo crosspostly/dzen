@@ -118,6 +118,10 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       const includeImages = getFlag('images');
       const qualityLevel = getArg('quality', 'standard') as 'standard' | 'premium';
       const verbose = getFlag('verbose');
+      
+      // 🆕 v7.0: Simplified generation options
+      const useAntiDetection = getFlag('no-anti-detection') ? false : getFlag('anti-detection') ? true : undefined;
+      const skipCleanupGates = getFlag('no-cleanup') ? true : false;
 
       // Validate count
       const validCounts = [1, 5, 10, 25, 50, 100];
@@ -134,9 +138,18 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
           ...FactoryPresets[preset],
           articleCount: count as any,
           includeImages: includeImages !== undefined ? includeImages : FactoryPresets[preset].includeImages,
-          qualityLevel
+          qualityLevel,
+          // 🆕 v7.0: Simplified generation options
+          useAntiDetection,
+          skipCleanupGates
         };
         console.log(`${LOG.INFO} Using preset: "${preset}"`);
+        if (useAntiDetection === false) {
+          console.log(`${LOG.INFO} 🚫 Anti-detection DISABLED (simplified mode)`);
+        }
+        if (skipCleanupGates) {
+          console.log(`${LOG.INFO} 🚫 Cleanup gates DISABLED (direct output)`);
+        }
       } else {
         config = {
           articleCount: count as any,
@@ -147,8 +160,18 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
           outputFormat: 'zen' as const,
           timeoutPerArticle: 300000,
           enableAntiDetection: true,
-          enablePlotBible: true
+          enablePlotBible: true,
+          // 🆕 v7.0: Simplified generation options
+          useAntiDetection,
+          skipCleanupGates
         };
+        if (useAntiDetection === false) {
+          console.log(`${LOG.INFO} 🚫 Anti-detection DISABLED (simplified mode)`);
+        }
+        if (skipCleanupGates) {
+          console.log(`${LOG.INFO} 🚫 Cleanup gates DISABLED (direct output)`);
+        }
+      }
       }
 
       if (verbose) {
@@ -181,8 +204,8 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
     } else {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
-      console.log(`🚀 ZenMaster v4.0 Commands:`);
-      console.log(`  factory            - 🏭 Content Factory: 1-100 статей + изображения [v4.0]`);
+      console.log(`🚀 ZenMaster v7.0 Commands:`);
+      console.log(`  factory            - 🏭 Content Factory: 1-100 статей + изображения [v7.0]`);
       console.log(``);
       console.log(`⚙️  Options:`);
       console.log(`  --count=N          - Number of articles (1, 5, 10, 25, 50, 100)`);
@@ -192,8 +215,14 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`  --quality=LEVEL    - Quality: standard or premium`);
       console.log(`  --verbose          - Detailed logging`);
       console.log(``);
+      console.log(`🆕 v7.0 Simplified Mode (Clean output, no text corruption):`);
+      console.log(`  --no-anti-detection - Disable Phase 2 anti-detection processing`);
+      console.log(`  --no-cleanup        - Skip cleanup gates, direct output`);
+      console.log(`  ⚡️  Recommended: Use --no-anti-detection --no-cleanup for clean text`);
+      console.log(``);
       console.log(`📝 Examples:`);
       console.log(`  npx ts-node cli.ts factory --count=1 --channel=channel-1 --images`);
+      console.log(`  npx ts-node cli.ts factory --count=1 --no-anti-detection --no-cleanup --theme="Тема"`);
       console.log(`  npx ts-node cli.ts factory --count=5 --channel=women-35-60 --preset=medium-batch`);
       console.log(`  npx ts-node cli.ts factory --count=10 --images --quality=premium --verbose`);
       console.log(``);
