@@ -42,7 +42,8 @@ const args = process.argv.slice(2);
 const allArgs = process.argv.slice(2);
 
 // Find command - can be first or after flags
-const command = allArgs.find(arg => !arg.startsWith('--')) || 'help';
+// DEFAULT: 'both' mode (v7.1+)
+const command = allArgs.find(arg => !arg.startsWith('--')) || 'both';
 
 function getArg(name: string, defaultValue?: string): string | undefined {
   const match = allArgs.find(a => a.startsWith(`--${name}=`));
@@ -200,30 +201,110 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`📊 Average time/article: ${formatTime(duration / articles.length)}`);
       console.log(`${'='.repeat(60)}\n`);
 
+    } else if (command === 'both') {
+      // ============================================================================
+      // 🎭 BOTH MODE v7.1: Generate RAW + RESTORED article pairs (DEFAULT MODE)
+      // Generates 2 articles per request: clean + restored
+      // ============================================================================
+      
+      const { ContentFactoryOrchestrator } = await import('./services/contentFactoryOrchestrator');
+      
+      console.log(`
+${'='.repeat(60)}`);
+      console.log(`🎭 ZenMaster v7.1 - BOTH MODE (DEFAULT)`);
+      console.log(`Generating RAW + RESTORED article pairs`);
+      console.log(`${'='.repeat(60)}\n`);
+
+      // Parse options
+      const count = parseInt(getArg('count', '1') || '1');
+      const channelName = getArg('channel', 'channel-1');
+      const includeImages = getFlag('images');
+      const qualityLevel = getArg('quality', 'standard') as 'standard' | 'premium';
+      const verbose = getFlag('verbose');
+
+      // Validate count
+      const validCounts = [1, 5, 10];
+      if (!validCounts.includes(count)) {
+        console.error(`${LOG.ERROR} Invalid count for BOTH mode: ${count}`);
+        console.error(`${LOG.INFO} Valid values: ${validCounts.join(', ')}`);
+        process.exit(1);
+      }
+
+      const config = {
+        articleCount: count as 1 | 5 | 10,
+        parallelEpisodes: 3,
+        imageGenerationRate: 1,
+        includeImages: includeImages || false,
+        qualityLevel,
+        outputFormat: 'zen' as const,
+        timeoutPerArticle: 300000,
+        enableAntiDetection: false, // Clean mode
+        enablePlotBible: true
+      };
+
+      console.log(`${LOG.INFO} Configuration:`);
+      console.log(`   Articles: ${count} pairs (${count * 2} total)`);
+      console.log(`   Images: ${includeImages ? 'Yes' : 'No'}`);
+      console.log(`   Quality: ${qualityLevel}`);
+      console.log(`   Channel: ${channelName}\n`);
+
+      if (verbose) {
+        console.log(`${LOG.INFO} Full config:`, JSON.stringify(config, null, 2));
+      }
+
+      // Initialize factory
+      const factory = new ContentFactoryOrchestrator();
+      await factory.initialize(config, channelName);
+
+      // Start BOTH mode
+      const startTime = Date.now();
+      const pairs = await factory.startBoth();
+      const duration = Date.now() - startTime;
+
+      // Export articles (both versions)
+      console.log(`\n${LOG.SAVE} Exporting article pairs...`);
+      const exportPath = await factory.exportForZen('./articles');
+
+      // Print summary
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`✅ BOTH MODE COMPLETE`);
+      console.log(`${'='.repeat(60)}`);
+      console.log(`📄 Article pairs: ${pairs.length}`);
+      console.log(`📄 Total articles: ${pairs.length * 2}`);
+      console.log(`   📄 RAW: ${pairs.length} articles`);
+      console.log(`   🔧 RESTORED: ${pairs.length} articles`);
+      console.log(`⏱️  Total time: ${formatTime(duration)}`);
+      console.log(`💾 Output directory: ${exportPath}`);
+      console.log(`${'='.repeat(60)}\n`);
+
     } else {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
-      console.log(`🚀 ZenMaster v7.0 Commands:`);
+      console.log(`🚀 ZenMaster v7.1 Commands (DEFAULT: both):`);
+      console.log(`  both               - 🎭 BOTH MODE: RAW + RESTORED пары статей [DEFAULT v7.1]`);
       console.log(`  factory            - 🏭 Content Factory: 1-100 статей + изображения [v7.0]`);
       console.log(``);
       console.log(`⚙️  Options:`);
-      console.log(`  --count=N          - Number of articles (1, 5, 10, 25, 50, 100)`);
+      console.log(`  --count=N          - Number of articles (both: 1-10, factory: 1-100)`);
       console.log(`  --channel=NAME     - Channel name for folder (default: channel-1)`);
-      console.log(`  --preset=PRESET    - Preset: quick-test, medium-batch, large-batch`);
+      console.log(`  --preset=PRESET    - Preset: quick-test, medium-batch, large-batch (factory only)`);
       console.log(`  --images           - Generate cover images`);
       console.log(`  --quality=LEVEL    - Quality: standard or premium`);
       console.log(`  --verbose          - Detailed logging`);
       console.log(``);
-      console.log(`🆕 v7.0 Simplified Mode (Clean output, no text corruption):`);
-      console.log(`  --no-anti-detection - Disable Phase 2 anti-detection processing`);
-      console.log(`  --no-cleanup        - Skip cleanup gates, direct output`);
-      console.log(`  ⚡️  Recommended: Use --no-anti-detection --no-cleanup for clean text`);
+      console.log(`🆕 v7.1 Clean Generation (DEFAULT MODE):`);
+      console.log(`  Anti-detection DISABLED by default`);
+      console.log(`  Clean prompts in Russian for natural text`);
+      console.log(`  Default command is 'both' (BOTH MODE)`);
       console.log(``);
-      console.log(`📝 Examples:`);
+      console.log(`🎭 BOTH MODE Examples (DEFAULT):`);
+      console.log(`  npx ts-node cli.ts --count=1 --channel=women-35-60 --images`);
+      console.log(`  npx ts-node cli.ts both --count=5 --channel=women-35-60`);
+      console.log(``);
+      console.log(`🏭 Factory Examples:`);
       console.log(`  npx ts-node cli.ts factory --count=1 --channel=channel-1 --images`);
-      console.log(`  npx ts-node cli.ts factory --count=1 --no-anti-detection --no-cleanup --theme="Тема"`);
-      console.log(`  npx ts-node cli.ts factory --count=5 --channel=women-35-60 --preset=medium-batch`);
-      console.log(`  npx ts-node cli.ts factory --count=10 --images --quality=premium --verbose`);
+      console.log(`  npx ts-node cli.ts factory --count=5 --preset=medium-batch`);
+      console.log(`  npx ts-node cli.ts factory --count=10 --images --quality=premium`);
       console.log(``);
     }
 

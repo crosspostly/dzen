@@ -19,7 +19,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     qualityLevel: "standard",
     outputFormat: "zen",
     timeoutPerArticle: 300000,
-    enableAntiDetection: true,
+    enableAntiDetection: false, // v7.1: Disabled by default - causes text corruption
     enablePlotBible: true
   },
 
@@ -32,7 +32,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     qualityLevel: "premium",
     outputFormat: "zen",
     timeoutPerArticle: 300000,
-    enableAntiDetection: true,
+    enableAntiDetection: false, // v7.1: Disabled
     enablePlotBible: true
   },
 
@@ -45,7 +45,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     qualityLevel: "standard",
     outputFormat: "zen",
     timeoutPerArticle: 300000,
-    enableAntiDetection: true,
+    enableAntiDetection: false, // v7.1: Disabled
     enablePlotBible: true
   },
 
@@ -71,7 +71,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     qualityLevel: "premium",
     outputFormat: "zen",
     timeoutPerArticle: 600000, // 10 min timeout
-    enableAntiDetection: true,
+    enableAntiDetection: false, // v7.1: Disabled - causes text corruption
     enablePlotBible: true
   },
 

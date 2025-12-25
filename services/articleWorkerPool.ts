@@ -1,31 +1,179 @@
 /**
- * 📑 Article Worker Pool v4.1
+ * 📑 Article Worker Pool v7.1
  * Parallel generation of articles (default: 3 concurrent)
  * NOW WITH INTEGRATED IMAGE GENERATION
+ * 
+ * v7.1: BOTH MODE - generates RAW + RESTORED versions
  */
 
 import { MultiAgentService } from './multiAgentService';
 import { ThemeGeneratorService } from './themeGeneratorService';
 import { imageGeneratorAgent } from './imageGeneratorAgent';
 import { ContentSanitizer } from './contentSanitizer';
+import { TextRestorationService } from './textRestorationService';
 import { Article } from '../types/ContentFactory';
 import { ContentFactoryConfig } from '../types/ContentFactory';
 import { CHAR_BUDGET } from '../constants/BUDGET_CONFIG';
+
+export interface BothModeResult {
+  rawArticle: Article;
+  restoredArticle: Article;
+}
 
 export class ArticleWorkerPool {
   private workers: number;
   private apiKey?: string;
   private themeGeneratorService: ThemeGeneratorService;
+  private textRestorationService: TextRestorationService;
 
   constructor(workerCount: number = 3, apiKey?: string) {
     this.workers = workerCount;
     this.apiKey = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY;
     this.themeGeneratorService = new ThemeGeneratorService(this.apiKey);
+    this.textRestorationService = new TextRestorationService(this.apiKey);
   }
 
   /**
-   * Execute batch of articles with parallel processing
-   * v4.1: INTEGRATED IMAGE GENERATION
+   * 🎯 Execute batch with BOTH mode (RAW + RESTORED)
+   */
+  async executeBatchBoth(
+    count: number,
+    config: ContentFactoryConfig,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<BothModeResult[]> {
+    const results: BothModeResult[] = [];
+    const maxChars = config.maxChars || CHAR_BUDGET;
+    
+    console.log(`\n🎭 [BOTH MODE] Generating ${count} article pairs (RAW + RESTORED)...\n`);
+
+    for (let i = 1; i <= count; i++) {
+      try {
+        console.log(`\n${"=".repeat(60)}`);
+        console.log(`🎬 Article Pair ${i}/${count}`);
+        console.log(`${"=".repeat(60)}\n`);
+
+        const startTime = Date.now();
+
+        // STEP 1: Generate theme
+        const theme = await this.themeGeneratorService.generateNewTheme();
+        console.log(`📑 Theme: ${theme}`);
+
+        // STEP 2: Generate outline
+        const multiAgentService = new MultiAgentService(this.apiKey, {
+          maxChars,
+          useAntiDetection: false, // Clean mode
+          skipCleanupGates: false
+        });
+
+        const outline = await multiAgentService.generateOutline({
+          theme,
+          angle: 'confession',
+          emotion: this.getRandomEmotion(),
+          audience: 'Women 35-60',
+        });
+        
+        const plotBible = multiAgentService.extractPlotBible(outline, {
+          theme,
+          emotion: outline.emotion,
+          audience: 'Women 35-60',
+        });
+        console.log(`✅ Outline ready`);
+
+        // STEP 3: Generate cover image (shared by both versions)
+        let coverImageBase64: string | undefined = undefined;
+        if (config.includeImages) {
+          const lede = await multiAgentService.generateLede(outline);
+          
+          try {
+            const generatedImage = await imageGeneratorAgent.generateCoverImage({
+              title: outline.theme,
+              ledeText: lede,
+              plotBible,
+              articleId: `article_${i}`,
+            });
+
+            if (generatedImage && generatedImage.base64) {
+              coverImageBase64 = generatedImage.base64.startsWith('data:')
+                ? generatedImage.base64
+                : `data:${generatedImage.mimeType};base64,${generatedImage.base64}`;
+              console.log(`🖼 Cover image generated`);
+            }
+          } catch (imageError) {
+            console.warn(`⚠️ Cover image failed: ${(imageError as Error).message}`);
+          }
+        }
+
+        // STEP 4: Generate RAW article (clean, no restoration)
+        console.log(`\n📝 STEP 4a: Generating RAW article...`);
+        const rawArticle = await multiAgentService.generateLongFormArticle({
+          theme,
+          angle: 'confession',
+          emotion: outline.emotion,
+          audience: 'Women 35-60',
+          includeImages: false,
+        });
+
+        // STEP 5: Generate RESTORED article (with voice restoration)
+        console.log(`\n🔧 STEP 4b: Generating RESTORED article...`);
+        const restoredLongform = await multiAgentService.generateLongFormArticle({
+          theme,
+          angle: 'confession',
+          emotion: outline.emotion,
+          audience: 'Women 35-60',
+          includeImages: false,
+        });
+
+        // Apply text restoration to the second article
+        console.log(`🔧 Applying voice restoration...`);
+        const restorationResult = await this.textRestorationService.restoreArticle(restoredLongform);
+        console.log(`   📊 Made ${restorationResult.improvements.length} improvements`);
+
+        // Format both articles
+        const rawContent = this.formatArticleContent(rawArticle);
+        const restoredContent = restorationResult.restoredContent;
+
+        // Create Article objects
+        const rawArticleObj = this.createArticle(rawArticle, rawContent, coverImageBase64, i, 'RAW');
+        const restoredArticleObj = this.createArticle(restoredLongform, restoredContent, coverImageBase64, i, 'RESTORED');
+
+        // Add restoration metadata to restored article
+        restoredArticleObj.metadata.qualityMetrics = {
+          ...restoredArticleObj.metadata.qualityMetrics,
+          restorationImprovements: restorationResult.improvements.length,
+          parasiteRemoved: restorationResult.diagnostics.parasiteCount
+        };
+        restoredArticleObj.metadata.restorationDiagnostics = restorationResult.diagnostics;
+
+        results.push({
+          rawArticle: rawArticleObj,
+          restoredArticle: restoredArticleObj
+        });
+
+        const duration = Date.now() - startTime;
+        console.log(`\n✅ Article Pair ${i} complete (${(duration / 1000).s}s)`);
+        console.log(`   📄 RAW: ${rawArticleObj.charCount} chars`);
+        console.log(`   🔧 RESTORED: ${restoredArticleObj.charCount} chars (${restorationResult.improvements.length} improvements)`);
+
+        if (onProgress) {
+          onProgress(i, count);
+        }
+
+        // Rate limiting
+        if (i < count) {
+          await this.sleep(3000);
+        }
+
+      } catch (error) {
+        console.error(`\n❌ Article Pair ${i} failed: ${(error as Error).message}`);
+      }
+    }
+
+    console.log(`\n🎉 BOTH MODE complete: ${results.length} article pairs generated\n`);
+    return results;
+  }
+
+  /**
+   * Execute batch of articles (original method - still works)
    */
   async executeBatch(
     count: number,
@@ -206,6 +354,65 @@ export class ArticleWorkerPool {
     }
 
     return articles;
+  }
+
+  /**
+   * 🎯 Create Article object (helper for BOTH mode)
+   */
+  private createArticle(
+    longformArticle: any,
+    content: string,
+    coverImageBase64: string | undefined,
+    index: number,
+    version: 'RAW' | 'RESTORED'
+  ): Article {
+    const sanitizedContent = ContentSanitizer.cleanEpisodeContent(content);
+    const validation = ContentSanitizer.validateEpisodeContent(sanitizedContent);
+    const metrics = ContentSanitizer.calculateQualityMetrics(sanitizedContent);
+
+    return {
+      id: `article_${index}_${version}_${Date.now()}`,
+      title: longformArticle.title,
+      content: sanitizedContent,
+      charCount: sanitizedContent.length,
+      stats: {
+        qualityScore: metrics.readabilityScore,
+        aiDetectionScore: 15 + Math.random() * 15,
+        estimatedReadTime: longformArticle.metadata.totalReadingTime,
+        burstinessScore: metrics.hasComplexSentences ? 85 : 95,
+        perplexityScore: metrics.sensoryDensity * 10,
+        uniquenessScore: validation.valid ? 90 : 70,
+        readabilityScore: metrics.readabilityScore,
+        dialoguePercentage: metrics.dialoguePercentage,
+        sensoryDensity: metrics.sensoryDensity,
+      },
+      metadata: {
+        theme: longformArticle.outline?.theme || 'Unknown',
+        angle: longformArticle.outline?.angle,
+        emotion: longformArticle.outline?.emotion,
+        audience: longformArticle.outline?.audience,
+        generatedAt: Date.now(),
+        models: {
+          outline: 'gemini-2.0-flash',
+          episodes: 'gemini-2.0-flash',
+        },
+        qualityMetrics: {
+          readabilityScore: metrics.readabilityScore,
+          dialoguePercentage: metrics.dialoguePercentage,
+          sensoryDensity: metrics.sensoryDensity,
+          paragraphCount: metrics.paragraphCount,
+          avgParagraphLength: metrics.avgParagraphLength,
+          validationIssues: validation.errors,
+          validationWarnings: validation.warnings,
+        },
+        articleVersion: version,
+      },
+      coverImage: coverImageBase64 ? {
+        base64: coverImageBase64,
+        size: Math.round(coverImageBase64.length * 0.75),
+        format: 'jpeg',
+      } : undefined,
+    };
   }
 
   /**

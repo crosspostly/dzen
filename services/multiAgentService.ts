@@ -29,7 +29,7 @@ export class MultiAgentService {
     this.contextManager = new ContextManager();
     this.maxChars = options?.maxChars || CHAR_BUDGET; // Use central budget as default
     this.phase2Service = new Phase2AntiDetectionService();
-    this.useAntiDetection = options?.useAntiDetection ?? true;
+    this.useAntiDetection = options?.useAntiDetection ?? false; // v7.1: DISABLED by default
     this.skipCleanupGates = options?.skipCleanupGates ?? false;
     
     // Calculate dynamic episode count
@@ -37,7 +37,7 @@ export class MultiAgentService {
     console.log(`📊 Dynamic episode allocation: ${this.episodeCount} episodes for ${this.maxChars} chars`);
     
     if (!this.useAntiDetection) {
-      console.log('🚫 Anti-detection DISABLED - simplified generation mode');
+      console.log('🚫 Anti-detection DISABLED - clean generation mode');
     }
     if (this.skipCleanupGates) {
       console.log('🚫 Cleanup gates DISABLED - direct output');

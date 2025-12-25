@@ -12,7 +12,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { ArticleWorkerPool } from './articleWorkerPool';
+import { ArticleWorkerPool, BothModeResult } from './articleWorkerPool';
 import { ImageWorkerPool } from './imageWorkerPool';
 import { ImageProcessorService } from './imageProcessorService';
 import { MobilePhotoAuthenticityProcessor, AuthenticityResult } from './mobilePhotoAuthenticityProcessor';
@@ -187,9 +187,143 @@ ${"=".repeat(60)}`);
 
       console.error(`
 ❌ Factory failed: ${(error as Error).message}
-`);
+      `);
       throw error;
     }
+  }
+
+  /**
+   * 🎭 START BOTH MODE - Generate RAW + RESTORED article pairs
+   * 
+   * Generates two versions of each article:
+   * 1. RAW: Clean generation without restoration
+   * 2. RESTORED: Voice and drama restored via TextRestorationService
+   * 
+   * Returns: Array of { rawArticle, restoredArticle } pairs
+   */
+  async startBoth(): Promise<BothModeResult[]> {
+    if (this.progress.state !== "running") {
+      throw new Error("Factory not initialized. Call initialize() first.");
+    }
+
+    console.log(`
+${"=".repeat(60)}`);
+    console.log(`🎭 ZENMASTER v7.1 - BOTH MODE`);
+    console.log(`Generating ${this.config.articleCount} article pairs (RAW + RESTORED)`);
+    console.log(`${"=".repeat(60)}\n`);
+
+    try {
+      // Stage 1: Generate article pairs (RAW + RESTORED)
+      console.log(`
+${"=".repeat(60)}`);
+      console.log(`📝 STAGE 1: Article Pair Generation`);
+      console.log(`${"=".repeat(60)}\n`);
+
+      const pairResults = await this.generateArticlePairs();
+      const allArticles = pairResults.flatMap(p => [p.rawArticle, p.restoredArticle]);
+      
+      console.log(`
+✅ Stage 1 complete: ${pairResults.length} article pairs generated (${allArticles.length} total articles)
+      `);
+
+      // Store all articles for export
+      this.articles = allArticles;
+
+      // Stage 2: Process images for both versions (share same image)
+      if (this.config.includeImages && allArticles.length > 0) {
+        console.log(`
+${"=".repeat(60)}`);
+        console.log(`🗼️  STAGE 2: Image Processing (shared cover for both versions)`);
+        console.log(`${"=".repeat(60)}\n`);
+
+        await this.postProcessCoverImages();
+        await this.applyMobileAuthenticityProcessing();
+
+        console.log(`
+✅ Stage 2 complete: All images processed
+        `);
+      }
+
+      // Mark as completed
+      this.progress.state = "completed";
+      this.progress.completedAt = Date.now();
+      this.progress.percentComplete = 100;
+
+      // Print final summary
+      this.printFinalSummaryBoth(pairResults);
+
+      return pairResults;
+
+    } catch (error) {
+      this.progress.state = "failed";
+      const factoryError: FactoryError = {
+        type: "system",
+        error: (error as Error).message,
+        timestamp: Date.now(),
+        recovered: false
+      };
+      this.errors.push(factoryError);
+      this.progress.errors.push(factoryError);
+
+      console.error(`
+❌ BOTH mode failed: ${(error as Error).message}
+      `);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate article pairs (RAW + RESTORED)
+   */
+  private async generateArticlePairs(): Promise<BothModeResult[]> {
+    const results: BothModeResult[] = [];
+    const onProgress = (completed: number, total: number) => {
+      this.progress.articlesCompleted = completed;
+      this.progress.percentComplete = (completed / total) * 100;
+      this.updateEstimatedTime();
+    };
+
+    try {
+      results.push(...await this.articleWorkerPool.executeBatchBoth(
+        this.config.articleCount,
+        this.config,
+        onProgress
+      ));
+    } catch (error) {
+      console.error(`❌ Article pair generation error: ${(error as Error).message}`);
+      this.errors.push({
+        type: "article",
+        error: (error as Error).message,
+        timestamp: Date.now(),
+        recovered: false
+      });
+    }
+
+    return results;
+  }
+
+  /**
+   * Print final summary for BOTH mode
+   */
+  private printFinalSummaryBoth(pairs: BothModeResult[]): void {
+    const rawTotal = pairs.reduce((sum, p) => sum + p.rawArticle.charCount, 0);
+    const restoredTotal = pairs.reduce((sum, p) => sum + p.restoredArticle.charCount, 0);
+    const improvements = pairs.reduce((sum, p) => {
+      const meta = p.restoredArticle.metadata.qualityMetrics;
+      return sum + (meta?.restorationImprovements || 0);
+    }, 0);
+
+    console.log(`
+${"=".repeat(60)}`);
+    console.log(`✅ BOTH MODE COMPLETE`);
+    console.log(`${"=".repeat(60)}`);
+    console.log(`📄 Article pairs: ${pairs.length}`);
+    console.log(`📄 Total articles: ${pairs.length * 2}`);
+    console.log(`   - RAW: ${rawTotal.toLocaleString()} chars`);
+    console.log(`   - RESTORED: ${restoredTotal.toLocaleString()} chars`);
+    console.log(`🔧 Total improvements: ${improvements}`);
+    console.log(`🖼 Images: ${this.progress.imagesCompleted}/${this.progress.imagesTotal}`);
+    console.log(`${"=".repeat(60)}\n`);
   }
 
   /**
@@ -663,20 +797,22 @@ ${"=".repeat(60)}`);
     for (let i = 0; i < this.articles.length; i++) {
       const article = this.articles[i];
       const slug = this.createSlug(article.title); // Convert title to URL-safe slug
-
-      // Remove timestamp from filename
-      const filename = slug;
+      
+      // Add suffix for BOTH mode articles (RAW/RESTORED)
+      const version = (article.metadata as any)?.articleVersion;
+      const filename = version ? `${slug}-${version.toLowerCase()}` : slug;
 
       try {
         // Generate front-matter for the markdown file (compatible with RSS generation)
         const description = this.generateIntriguingDescription(article.content);
-        const imageFileName = `${slug}.jpg`; // Image file without timestamp
+        const imageFileName = `${slug}.jpg`; // Image file without timestamp (shared)
         const frontMatter = `---
 title: "${article.title}"
 date: "${dateStr}"
 description: "${description}"
 image: "${imageFileName}"
 category: "lifestory"
+${version ? `version: "${version}"` : ''}
 ---
 `;
 
