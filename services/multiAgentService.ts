@@ -440,7 +440,7 @@ OUTPUT: Only text`;
   /**
    * 🎭 EXTRACT & VALIDATE plotBible from outline
    */
-  private extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
+  public extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
     // Check if ALL required fields exist in plotBible
     if (outline.plotBible && 
         outline.plotBible.narrator && 
@@ -546,7 +546,7 @@ OUTPUT: Only text`;
    * 🔧 v4.5 FIX: Generate outline structure with MANDATORY plotBible
    * Make all fields required in prompt to force Gemini to generate them
    */
-  private async generateOutline(params: {
+  public async generateOutline(params: {
     theme: string;
     angle: string;
     emotion: string;

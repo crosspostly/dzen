@@ -37,14 +37,14 @@ export class AutoFixOrchestrator {
    * - AI confidence (от uniquenessService.checkUniqueness)
    * - Engagement score (от uniquenessService.analyzeEngagementScore) ← ИЗ TASK 1!
    */
-  private analyzeProblems(article: LongFormArticle): ProblemAnalysis[] {
+  private async analyzeProblems(article: LongFormArticle): Promise<ProblemAnalysis[]> {
     const problems: ProblemAnalysis[] = [];
     
     for (const episode of article.episodes) {
       // ИСПОЛЬЗУЕМ методы из UniquenessService
-      const aiAnalysis = this.uniquenessService.checkUniqueness(episode.content, []);
+      const aiAnalysis = await this.uniquenessService.checkUniqueness(episode.content, []);
       const aiConfidence = aiAnalysis.analysis.ai_detection; // 0-100
-      
+
       // ← НОВОЕ: используем готовый метод из Task 1!
       const engagement = this.uniquenessService.analyzeEngagementScore(episode.content);
       
@@ -110,7 +110,7 @@ export class AutoFixOrchestrator {
     );
     
     // Собираем информацию о проблемах
-    const aiAnalysis = this.uniquenessService.checkUniqueness(episode.content, []);
+    const aiAnalysis = await this.uniquenessService.checkUniqueness(episode.content, []);
     const engagement = this.uniquenessService.analyzeEngagementScore(episode.content);
     
     // Создаём специальный промпт
@@ -139,8 +139,8 @@ export class AutoFixOrchestrator {
     refined: Episode
   ): Promise<ValidationResult> {
     // Переанализируем оба
-    const originalAI = this.uniquenessService.checkUniqueness(original.content, []);
-    const refinedAI = this.uniquenessService.checkUniqueness(refined.content, []);
+    const originalAI = await this.uniquenessService.checkUniqueness(original.content, []);
+    const refinedAI = await this.uniquenessService.checkUniqueness(refined.content, []);
     
     const originalEngagement = this.uniquenessService.analyzeEngagementScore(original.content);
     const refinedEngagement = this.uniquenessService.analyzeEngagementScore(refined.content);
@@ -196,7 +196,7 @@ export class AutoFixOrchestrator {
     };
 
     // ЭТАП 1: Анализируем все эпизоды
-    const problems = this.analyzeProblems(article);
+    const problems = await this.analyzeProblems(article);
     result.analysed = problems.length;
 
     // ЭТАП 2: Классифицируем (LEAVE vs REWRITE)

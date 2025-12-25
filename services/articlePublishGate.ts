@@ -263,4 +263,5 @@ export class ArticlePublishGate {
 }
 
 // Export для использования в других модулях
-export { PublishValidation, VALIDATION_CRITERIA };
+export type { PublishValidation };
+export { VALIDATION_CRITERIA };
