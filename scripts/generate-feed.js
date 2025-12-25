@@ -13,8 +13,6 @@ import path from 'path';
 import matter from 'gray-matter';
 import { Feed } from 'feed';
 
-const BASE_URL = process.env.BASE_URL || 'https://dzen-livid.vercel.app';
-const SITE_URL = process.env.SITE_URL || BASE_URL;
 const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'crosspostly/dzen';
 const MODE = process.argv[2] || 'incremental';
 
@@ -128,15 +126,13 @@ function generateFeed() {
   const feed = new Feed({
     title: 'ZenMaster Articles',
     description: 'AI-generated articles for Yandex Dzen',
-    id: SITE_URL,
-    link: SITE_URL,
+    id: 'https://dzen.ru/zenmaster',
+    link: 'https://dzen.ru/zenmaster',
     language: 'ru',
-    image: `${SITE_URL}/logo.png`,
-    favicon: `${SITE_URL}/favicon.ico`,
     copyright: `All rights reserved ${new Date().getFullYear()}, ZenMaster`,
     updated: new Date(),
     generator: 'ZenMaster RSS Generator v2.1',
-    author: { name: "ZenMaster", email: "info@crosspostly.com", link: SITE_URL }
+    author: { name: "ZenMaster", email: "info@crosspostly.com", link: 'https://dzen.ru/zenmaster' }
   });
 
   const processedIds = new Set();
@@ -167,6 +163,25 @@ function generateFeed() {
     return;
   }
 
+  // Filter out articles older than 1 week
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  
+  allFiles = allFiles.filter(filePath => {
+    try {
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const { data: frontmatter } = matter(fileContent);
+      if (!frontmatter.date) return false;
+      const articleDate = new Date(frontmatter.date);
+      return articleDate >= oneWeekAgo;
+    } catch (error) {
+      console.error(`❌ ОШИБКА при проверке даты: ${path.relative('./articles', filePath)} - ${error.message}`);
+      return false;
+    }
+  });
+
+  stats.total = allFiles.length;
+
   for (const filePath of allFiles) {
     try {
       const fileContent = fs.readFileSync(filePath, 'utf8');
@@ -179,8 +194,7 @@ function generateFeed() {
       }
 
       const fileName = path.basename(filePath, path.extname(filePath));
-      const vercelUrl = `https://${process.env.VERCEL_URL || 'dzen-livid.vercel.app'}`;
-      const articleUrl = `${vercelUrl}/articles/${fileName}`;
+      const articleUrl = `https://dzen.ru/zenmaster/articles/${fileName}`;
       const itemId = `${fileName}::${frontmatter.date}`;
 
       // ДЕДУПЛИКАЦИЯ

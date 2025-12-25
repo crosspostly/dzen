@@ -1,18 +1,16 @@
 name: Generate RSS Feed
 
 on:
-  push:
-    branches: [ main, master ]
-    # Теперь правильно отслеживаем ВСЕ изменения в articles (КРОМЕ published и техфайлов)
-    paths:
-      - 'articles/**'
-      - '!articles/published/**'
-      - '!articles/REPORT.md'
-      - '!articles/manifest.json'
-  schedule:
-    # Запускать каждый час
-    - cron: '0 * * * *'
   workflow_dispatch: # Ручной запуск
+    inputs:
+      mode:
+        description: 'Generation mode'
+        required: true
+        default: 'incremental'
+        type: choice
+        options:
+          - full
+          - incremental
 
 jobs:
   generate-feed:
@@ -47,13 +45,10 @@ jobs:
 
     - name: Set environment variables
       run: |
-        echo "BASE_URL=https://${{ github.repository_owner }}.github.io/dzen" >> $GITHUB_ENV
-        echo "SITE_URL=https://${{ github.repository_owner }}.github.io/dzen" >> $GITHUB_ENV
-        echo "VERCEL_URL=dzen-livid.vercel.app" >> $GITHUB_ENV
         echo "GITHUB_REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
 
     - name: Generate RSS feed
-      run: node scripts/generate-feed.js
+      run: node scripts/generate-feed.js ${{ github.event.inputs.mode }}
 
     - name: Create public directory and copy feed
       run: |
@@ -65,11 +60,11 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add feed.xml public/ articles/published/
+        git add feed.xml public/
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "Auto-generate RSS feed and move articles to published [skip ci]"
+          git commit -m "chore(rss): update feed [${{ github.event.inputs.mode }} mode]"
           git push
         fi
       continue-on-error: true
