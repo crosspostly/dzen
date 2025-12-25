@@ -42,7 +42,8 @@ const args = process.argv.slice(2);
 const allArgs = process.argv.slice(2);
 
 // Find command - can be first or after flags
-const command = allArgs.find(arg => !arg.startsWith('--')) || 'help';
+// DEFAULT: 'both' mode (v7.1+)
+const command = allArgs.find(arg => !arg.startsWith('--')) || 'both';
 
 function getArg(name: string, defaultValue?: string): string | undefined {
   const match = allArgs.find(a => a.startsWith(`--${name}=`));
@@ -202,7 +203,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
 
     } else if (command === 'both') {
       // ============================================================================
-      // 🎭 BOTH MODE v7.1: Generate RAW + RESTORED article pairs
+      // 🎭 BOTH MODE v7.1: Generate RAW + RESTORED article pairs (DEFAULT MODE)
       // Generates 2 articles per request: clean + restored
       // ============================================================================
       
@@ -210,7 +211,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       
       console.log(`
 ${'='.repeat(60)}`);
-      console.log(`🎭 ZenMaster v7.1 - BOTH MODE`);
+      console.log(`🎭 ZenMaster v7.1 - BOTH MODE (DEFAULT)`);
       console.log(`Generating RAW + RESTORED article pairs`);
       console.log(`${'='.repeat(60)}\n`);
 
@@ -279,27 +280,28 @@ ${'='.repeat(60)}`);
     } else {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
-      console.log(`🚀 ZenMaster v7.1 Commands:`);
+      console.log(`🚀 ZenMaster v7.1 Commands (DEFAULT: both):`);
+      console.log(`  both               - 🎭 BOTH MODE: RAW + RESTORED пары статей [DEFAULT v7.1]`);
       console.log(`  factory            - 🏭 Content Factory: 1-100 статей + изображения [v7.0]`);
-      console.log(`  both               - 🎭 BOTH MODE: RAW + RESTORED пары статей [v7.1]`);
       console.log(``);
       console.log(`⚙️  Options:`);
-      console.log(`  --count=N          - Number of articles (factory: 1-100, both: 1-10)`);
+      console.log(`  --count=N          - Number of articles (both: 1-10, factory: 1-100)`);
       console.log(`  --channel=NAME     - Channel name for folder (default: channel-1)`);
-      console.log(`  --preset=PRESET    - Preset: quick-test, medium-batch, large-batch`);
+      console.log(`  --preset=PRESET    - Preset: quick-test, medium-batch, large-batch (factory only)`);
       console.log(`  --images           - Generate cover images`);
       console.log(`  --quality=LEVEL    - Quality: standard or premium`);
       console.log(`  --verbose          - Detailed logging`);
       console.log(``);
-      console.log(`🆕 v7.1 Clean Generation (default):`);
+      console.log(`🆕 v7.1 Clean Generation (DEFAULT MODE):`);
       console.log(`  Anti-detection DISABLED by default`);
       console.log(`  Clean prompts in Russian for natural text`);
+      console.log(`  Default command is 'both' (BOTH MODE)`);
       console.log(``);
-      console.log(`🎭 BOTH MODE Examples:`);
-      console.log(`  npx ts-node cli.ts both --count=1 --channel=women-35-60 --images`);
+      console.log(`🎭 BOTH MODE Examples (DEFAULT):`);
+      console.log(`  npx ts-node cli.ts --count=1 --channel=women-35-60 --images`);
       console.log(`  npx ts-node cli.ts both --count=5 --channel=women-35-60`);
       console.log(``);
-      console.log(`📝 Factory Examples:`);
+      console.log(`🏭 Factory Examples:`);
       console.log(`  npx ts-node cli.ts factory --count=1 --channel=channel-1 --images`);
       console.log(`  npx ts-node cli.ts factory --count=5 --preset=medium-batch`);
       console.log(`  npx ts-node cli.ts factory --count=10 --images --quality=premium`);
