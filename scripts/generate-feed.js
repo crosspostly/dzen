@@ -3,7 +3,7 @@
 /**
  * Генератор RSS для Яндекс Дзен
  * 
- * Версия: 2.1 - ИСПРАВЛЕННАЯ
+ * Версия: 2.2 - ИСПРАВЛЕННАЯ (правильные ссылки на images)
  * РЕЖИМ: node scripts/generate-feed.js incremental (только новые)
  * РЕЖИМ: node scripts/generate-feed.js full (ВСЕ статьи из всех папок)
  */
@@ -135,7 +135,7 @@ function generateFeed() {
     favicon: `${SITE_URL}/favicon.ico`,
     copyright: `All rights reserved ${new Date().getFullYear()}, ZenMaster`,
     updated: new Date(),
-    generator: 'ZenMaster RSS Generator v2.1',
+    generator: 'ZenMaster RSS Generator v2.2',
     author: { name: "ZenMaster", email: "info@crosspostly.com", link: SITE_URL }
   });
 
