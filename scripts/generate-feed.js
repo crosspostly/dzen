@@ -3,9 +3,9 @@
 /**
  * Генератор RSS для Яндекс Дзен
  * 
- * Версия: 2.0 - с корректным перемещением статей в published
- * РЕЖИМ: node scripts/generate-feed.js incremental (новые -> published)
- * РЕЖИМ: node scripts/generate-feed.js full (все из published)
+ * Версия: 2.1 - ИСПРАВЛЕННАЯ
+ * РЕЖИМ: node scripts/generate-feed.js incremental (только новые)
+ * РЕЖИМ: node scripts/generate-feed.js full (ВСЕ статьи из всех папок)
  */
 
 import fs from 'fs';
@@ -18,7 +18,7 @@ const SITE_URL = process.env.SITE_URL || BASE_URL;
 const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'crosspostly/dzen';
 const MODE = process.argv[2] || 'incremental';
 
-console.log(`\n🚀 Режим: ${MODE === 'full' ? '🔄 ПОЛНАЯ ПЕРЕГЕНЕРАЦИО' : '📥 ИНКРЕМЕНТАЛЬНЫЙ'}`);
+console.log(`\n🚀 Режим: ${MODE === 'full' ? '🔄 ПОЛНАЯ ПЕРЕГЕНЕРАЦИЯ (все статьи)' : '📥 ИНКРЕМЕНТАЛЬНЫЙ (только новые)'}\n`);
 
 /**
  * Получить ВСЕ markdown файлы из папки (рекурсивно)
@@ -31,7 +31,11 @@ function getAllMarkdownFiles(dir, excludePublished = false) {
     
     const items = fs.readdirSync(dir);
     for (const item of items) {
-      if (item === 'published' || item === 'REPORT.md' || item === 'manifest.json' || item.startsWith('.')) {
+      // Пропускаем папку published только если EXCLUDE_PUBLISHED = true
+      if (excludePublished && item === 'published') {
+        continue;
+      }
+      if (item === 'REPORT.md' || item === 'manifest.json' || item.startsWith('.')) {
         continue;
       }
       
@@ -48,130 +52,6 @@ function getAllMarkdownFiles(dir, excludePublished = false) {
   
   traverse(dir);
   return files;
-}
-
-/**
- * Получить ВСЕ markdown из published
- */
-function getPublishedMarkdownFiles(dir) {
-  const files = [];
-  if (!fs.existsSync(dir)) return files;
-  
-  function traverse(dir) {
-    const items = fs.readdirSync(dir);
-    for (const item of items) {
-      if (item.startsWith('.')) continue;
-      const fullPath = path.join(dir, item);
-      const stat = fs.statSync(fullPath);
-      if (stat.isDirectory()) {
-        traverse(fullPath);
-      } else if (path.extname(item).toLowerCase() === '.md') {
-        files.push(fullPath);
-      }
-    }
-  }
-  
-  traverse(dir);
-  return files;
-}
-
-/**
- * КЛЮЧЕВАЯ ФУНКЦИЯ: Перемещает статью в published с сохранением труктуры
- * (копирует файлы, ПОТОМ удаляет из исходной папки)
- */
-function moveArticleToPublished(filePath, frontmatter) {
-  try {
-    // Пропускаем если уже в published
-    if (filePath.includes('/published/')) return;
-    
-    // Получаем исходную релативную пать (такая же, как в women-35-60/2025-12-23/)
-    const relativePath = path.relative('./articles', filePath); // → women-35-60/2025-12-23/file.md
-    const fileName = path.basename(filePath);
-    const fileNameNoExt = path.basename(filePath, path.extname(filePath));
-    
-    // СОХРАНЯЕМ у ПУБЛИКУЕМ: published/women-35-60/2025-12-23/
-    const destDirPath = path.join('./articles/published', relativePath.split(path.sep).slice(0, -1).join(path.sep));
-    const destFilePath = path.join(destDirPath, fileName);
-    
-    // Создаём папку published (GIT отследит)
-    if (!fs.existsSync(destDirPath)) {
-      fs.mkdirSync(destDirPath, { recursive: true });
-    }
-    
-    // КОПИРУЕМ markdown файл в published
-    const fileContent = fs.readFileSync(filePath, 'utf8');
-    fs.writeFileSync(destFilePath, fileContent, 'utf8');
-    console.log(`   ✅ Скопировано в published/${relativePath.split(path.sep).slice(0, -1).join('/')}/${fileName}`);
-    
-    // КОПИРУЕМ связанные изображения
-    const sourceDir = path.dirname(filePath);
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-    
-    if (fs.existsSync(sourceDir)) {
-      const sourceFiles = fs.readdirSync(sourceDir);
-      
-      for (const file of sourceFiles) {
-        const fileExt = path.extname(file).toLowerCase();
-        if (imageExtensions.includes(fileExt)) {
-          const baseName = path.basename(file, fileExt);
-          
-          // Проверяем, относится ли это изображение к статье
-          if (baseName.startsWith(fileNameNoExt) || 
-              fileNameNoExt.startsWith(baseName) || 
-              baseName.includes(fileNameNoExt) ||
-              baseName.length < 20) { // Если имя короткое - скорее всего cover image
-            
-            const sourceImagePath = path.join(sourceDir, file);
-            const destImagePath = path.join(destDirPath, file);
-            
-            const imageContent = fs.readFileSync(sourceImagePath);
-            fs.writeFileSync(destImagePath, imageContent);
-            console.log(`   🖼️  Изображение скопировано: ${file}`);
-          }
-        }
-      }
-    }
-    
-    // ===== ЭТАП 2: УДАЛЯЕМ ИЗ ИСХОДНОЙ ПАПКИ (GIT отследит удаление) =====
-    try {
-      fs.unlinkSync(filePath);
-      console.log(`   🗑️  Удалено из источника: ${filePath}`);
-    } catch (e) {}
-    
-    // Удаляем изображения из исходной папки
-    if (fs.existsSync(sourceDir)) {
-      const sourceFiles = fs.readdirSync(sourceDir);
-      for (const file of sourceFiles) {
-        const fileExt = path.extname(file).toLowerCase();
-        if (imageExtensions.includes(fileExt)) {
-          const baseName = path.basename(file, fileExt);
-          if (baseName.startsWith(fileNameNoExt) || fileNameNoExt.startsWith(baseName) || baseName.includes(fileNameNoExt)) {
-            const sourceImagePath = path.join(sourceDir, file);
-            try {
-              fs.unlinkSync(sourceImagePath);
-            } catch (e) {}
-          }
-        }
-      }
-    }
-    
-    // Очищаем пустые папки
-    let currentDir = sourceDir;
-    while (currentDir !== './articles' && currentDir !== '.' && fs.existsSync(currentDir)) {
-      try {
-        const files = fs.readdirSync(currentDir);
-        if (files.length === 0) {
-          fs.rmdirSync(currentDir);
-          currentDir = path.dirname(currentDir);
-        } else {
-          break;
-        }
-      } catch (e) { break; }
-    }
-    
-  } catch (error) {
-    console.error(`❌ ОШИБКА при перемещении ${filePath}: ${error.message}`);
-  }
 }
 
 /**
@@ -198,7 +78,7 @@ function validateImagePath(filePath, imageName) {
     }
   }
 
-  console.warn(`⚠️  НЕ НАЙДЕНО: ${imageName}`);
+  console.warn(`⚠️  НЕ НАЙДЕНО ИЗОБРАЖЕНИЕ: ${imageName}`);
   return null;
 }
 
@@ -208,7 +88,7 @@ function markdownToHtml(md) {
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
     .replace(/^# (.*$)/gim, '<h1>$1</h1>')
     .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-    .replace(/__(.*?)__/gim, '<strong>$1</strong>')
+    .replace(/__(.+?)__/gim, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/gim, '<em>$1</em>')
     .replace(/_(.*?)_/gim, '<em>$1</em>')
     .replace(/\n\n/gim, '</p><p>')
@@ -243,7 +123,7 @@ function getImageUrl(filePath, imageName) {
 }
 
 function generateFeed() {
-  console.log(`\n🚀 Начинаю генерацию RSS...\n`);
+  console.log(`🚀 Начинаю генерацию RSS...\n`);
 
   const feed = new Feed({
     title: 'ZenMaster Articles',
@@ -255,27 +135,37 @@ function generateFeed() {
     favicon: `${SITE_URL}/favicon.ico`,
     copyright: `All rights reserved ${new Date().getFullYear()}, ZenMaster`,
     updated: new Date(),
-    generator: 'ZenMaster RSS Generator v2.0',
+    generator: 'ZenMaster RSS Generator v2.1',
     author: { name: "ZenMaster", email: "info@crosspostly.com", link: SITE_URL }
   });
 
   const processedIds = new Set();
-  let stats = { total: 0, skipped: 0, processed: 0, imageErrors: 0, moved: 0 };
+  let stats = { total: 0, skipped: 0, processed: 0, imageErrors: 0 };
   let allFiles = [];
 
   if (MODE === 'full') {
-    const publishedFiles = getPublishedMarkdownFiles('./articles/published');
-    console.log(`📡 Найдено ${publishedFiles.length} статей в published\n`);
-    allFiles = publishedFiles;
+    // ✅ FULL MODE: ИЩЕМ ВО ВСЕХ ПАПКАХ (и women-35-60, и published)
+    console.log(`📡 FULL MODE: Ищу ВСЕ статьи во всех папках...`);
+    allFiles = getAllMarkdownFiles('./articles', false); // false = включить published
+    console.log(`📡 Найдено ${allFiles.length} статей\n`);
   } else {
-    // INCREMENTAL: новые + все опубликованные
-    const newFiles = getAllMarkdownFiles('./articles', true);
-    const publishedFiles = getPublishedMarkdownFiles('./articles/published');
-    console.log(`📥 Новых: ${newFiles.length}, Опубликованных: ${publishedFiles.length}\n`);
-    allFiles = [...newFiles, ...publishedFiles];
+    // INCREMENTAL: только новые (исключить published)
+    console.log(`📥 INCREMENTAL MODE: Ищу только новые статьи...`);
+    allFiles = getAllMarkdownFiles('./articles', true); // true = исключить published
+    console.log(`📥 Найдено ${allFiles.length} новых статей\n`);
   }
 
   stats.total = allFiles.length;
+
+  if (allFiles.length === 0) {
+    console.warn(`\n⚠️  ⚠️  ⚠️  НЕ НАЙДЕНО НИ ОДНОЙ СТАТЬИ! ⚠️  ⚠️  ⚠️`);
+    console.warn(`\nПроверьте структуру папок:`);
+    console.warn(`  articles/`);
+    console.warn(`    └─ women-35-60/`);
+    console.warn(`        └─ 2025-12-XX/`);
+    console.warn(`            └─ название-статьи.md ← ДОЛЖНО БЫТЬ ЗДЕСЬ\n`);
+    return;
+  }
 
   for (const filePath of allFiles) {
     try {
@@ -335,12 +225,6 @@ function generateFeed() {
       if (imageUrl) console.log(`   🖼️  ${imageUrl}`);
       stats.processed++;
 
-      // ПЕРЕМЕЩАЕМ в published если incremental режим и файл не из published
-      if (MODE === 'incremental' && !filePath.includes('/published/')) {
-        moveArticleToPublished(filePath, frontmatter);
-        stats.moved++;
-      }
-
     } catch (error) {
       console.error(`❌ ОШИБКА: ${path.relative('./articles', filePath)} - ${error.message}`);
       stats.skipped++;
@@ -348,15 +232,14 @@ function generateFeed() {
   }
 
   const feedXml = feed.rss2();
-  fs.writeFileSync('./feed.xml', feedXml, 'utf8');
+  fs.writeFileSync('./public/feed.xml', feedXml, 'utf8');
 
   console.log(`\n===== СТАТИСТИКА =====${MODE === 'full' ? ' [🔄 FULL]' : ' [📥 INCREMENTAL]'}`);
   console.log(`📊 Всего файлов: ${stats.total}`);
   console.log(`✅ Обработано: ${stats.processed}`);
-  console.log(`📤 Перемещено: ${stats.moved}`);
   console.log(`⚠️  Пропущено: ${stats.skipped}`);
   console.log(`🖼️  Ошибки изображений: ${stats.imageErrors}`);
-  console.log(`\n📋 RSS-лента сохранена: feed.xml (${feed.items.length} статей)\n`);
+  console.log(`\n📋 RSS-лента сохранена: public/feed.xml (${feed.items.length} статей)\n`);
 }
 
 generateFeed();
