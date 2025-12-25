@@ -495,7 +495,31 @@ ${slices}
           topP: 0.95,
         },
       });
-      return response.text;
+
+      // ✅ Проверка ответа Gemini
+      if (!response) {
+        console.error('❌ Gemini returned empty response (undefined)');
+        throw new Error('Empty response from Gemini API');
+      }
+
+      if (!response.candidates || response.candidates.length === 0) {
+        console.error('❌ Gemini returned no candidates:', JSON.stringify(response).substring(0, 500));
+        throw new Error('No candidates in Gemini response');
+      }
+
+      const candidate = response.candidates[0];
+      if (!candidate.content || !candidate.content.parts || !candidate.content.parts[0]) {
+        console.error('❌ Gemini response has no content parts:', JSON.stringify(response).substring(0, 500));
+        throw new Error('No content parts in Gemini response');
+      }
+
+      const text = candidate.content.parts[0].text;
+      if (!text || typeof text !== 'string') {
+        console.error('❌ Gemini response text is empty or invalid:', text);
+        throw new Error('Text property is empty or invalid in Gemini response');
+      }
+
+      return text;
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.error(`Ошибка вызова ${model}:`, errorMessage);
@@ -503,7 +527,7 @@ ${slices}
       // 🔄 ФОЛБЕК: если модель перегружена, используем gemini-2.5-flash-lite
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
         console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
-        
+
         try {
           const fallbackResponse = await this.ai.models.generateContent({
             model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
@@ -514,15 +538,38 @@ ${slices}
               topP: 0.95,
             },
           });
-          
+
+          // ✅ Проверка fallback ответа Gemini
+          if (!fallbackResponse) {
+            console.error('❌ Fallback returned empty response');
+            throw new Error('Empty fallback response from Gemini API');
+          }
+
+          if (!fallbackResponse.candidates || fallbackResponse.candidates.length === 0) {
+            console.error('❌ Fallback returned no candidates');
+            throw new Error('No candidates in fallback response');
+          }
+
+          const fallbackCandidate = fallbackResponse.candidates[0];
+          if (!fallbackCandidate.content || !fallbackCandidate.content.parts || !fallbackCandidate.content.parts[0]) {
+            console.error('❌ Fallback response has no content parts');
+            throw new Error('No content parts in fallback response');
+          }
+
+          const fallbackText = fallbackCandidate.content.parts[0].text;
+          if (!fallbackText || typeof fallbackText !== 'string') {
+            console.error('❌ Fallback text is empty or invalid');
+            throw new Error('Text property is empty or invalid in fallback response');
+          }
+
           console.log(`✅ Fallback successful`);
-          return fallbackResponse.text;
+          return fallbackText;
         } catch (fallbackError) {
           console.error(`❌ Fallback also failed:`, (fallbackError as Error).message);
           throw fallbackError;
         }
       }
-      
+
       throw error;
     }
   }

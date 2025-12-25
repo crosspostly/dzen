@@ -31,15 +31,16 @@ export class ImageGeneratorAgent {
   private config: ImageGenerationConfig;
   private fallbackModel = "gemini-2.5-flash-lite";
   private primaryModel = "gemini-2.5-flash-image";
+  private usedPrompts: Set<string> = new Set();
 
   constructor(apiKey?: string, config?: Partial<ImageGenerationConfig>) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
-    
+
     this.config = {
       aspectRatio: "16:9",
       quality: "high",
-      format: "jpeg",
+      format: "jpg",
       maxRetries: 2,
       retryDelay: 3000,
       rateLimit: 1,
@@ -48,6 +49,301 @@ export class ImageGeneratorAgent {
       ...config
     };
   }
+
+  // ============================================
+  // 🎨 METHODS FOR IMAGE PROMPT VARIATION
+  // ============================================
+
+  /**
+   * 🏠 Vary location based on base type
+   * Add diversity to avoid repetitive "apartment interior" images
+   */
+  private varyLocation(base: string, plotBible?: PlotBible): string {
+    const locationVariations: Record<string, string[]> = {
+      'apartment interior': [
+        'bedroom with soft morning light',
+        'kitchen with steam from kettle',
+        'living room with worn sofa',
+        'balcony with potted plants',
+        'narrow hallway with coat rack',
+        'bathroom with mirror reflection',
+        'home office corner with laptop',
+        'staircase landing',
+        'old bedroom with nostalgic items',
+        'small kitchen table with tea'
+      ],
+      'intimate cafe with candlelight': [
+        'cozy corner cafe with warm lighting',
+        'window seat in quiet coffee shop',
+        'outdoor terrace with evening lights',
+        'vintage bakery with pastries',
+        'modern minimalist coffee place'
+      ],
+      'bridge over river, evening light': [
+        'riverside walkway at sunset',
+        'old stone bridge with patina',
+        'wooden dock by calm water',
+        'city bridge with traffic lights',
+        'seaside promenade at dusk'
+      ],
+      'kitchen with table': [
+        'family kitchen with warm lighting',
+        'small kitchen with breakfast prep',
+        'rustic kitchen with herbs',
+        'modern kitchen with island',
+        'grandmother\'s traditional kitchen'
+      ],
+      'office building': [
+        'corporate office with city view',
+        'lawyer\'s office with files',
+        'reception area with plants',
+        'meeting room with big table',
+        'desk with scattered papers'
+      ],
+      'park bench': [
+        'autumn park with fallen leaves',
+        'summer bench under trees',
+        'winter bench with snow',
+        'children\'s playground nearby',
+        'quiet path bench with lamp'
+      ],
+      'street in rain': [
+        'wet cobblestone street',
+        'neon lights reflection on pavement',
+        'busy intersection at rush hour',
+        'quiet alley with shop windows',
+        'suburban road with houses'
+      ],
+      'high window overlooking city': [
+        'tower window with skyline view',
+        'attic window with sunrise',
+        'skyscraper glass wall',
+        'balcony with panoramic view',
+        'rooftop overlooking rooftops'
+      ],
+      'transit station': [
+        'subway platform with train arriving',
+        'train station hall with clock',
+        'airport terminal with departures',
+        'metro station with posters',
+        'bus stop with shelter'
+      ],
+      'artist studio': [
+        'messy creative studio with paints',
+        'well-organized workshop',
+        'pottery studio with clay',
+        'photography studio with lights',
+        'craft room with materials'
+      ]
+    };
+
+    // If PlotBible has sensory palette, use it for variety
+    if (plotBible?.sensoryPalette && Object.keys(plotBible.sensoryPalette).length > 0) {
+      // Look through all sensory arrays for location-like items
+      const allSensory = [
+        ...(plotBible.sensoryPalette.smells || []),
+        ...(plotBible.sensoryPalette.details || []),
+        ...(plotBible.sensoryPalette.lightSources || [])
+      ];
+      const sensoryLocation = allSensory.find(p =>
+        p.toLowerCase().includes('кухн') || p.toLowerCase().includes('дом') ||
+        p.toLowerCase().includes('квартир') || p.toLowerCase().includes('улиц') ||
+        p.toLowerCase().includes('комнат') || p.toLowerCase().includes('окон')
+      );
+      if (sensoryLocation) return sensoryLocation;
+    }
+
+    const variations = locationVariations[base] || [base];
+    return variations[Math.floor(Math.random() * variations.length)];
+  }
+
+  /**
+   * 💡 Vary lighting based on emotion
+   * Different emotions need different lighting atmospheres
+   */
+  private varyLighting(emotion: string): string {
+    const lightingOptions: Record<string, string[]> = {
+      'grief and pain': [
+        'cold harsh overhead lighting',
+        'dim corner with shadows',
+        'grey daylight from window',
+        'single lamp with weak bulb',
+        'blinds creating stripe shadows'
+      ],
+      'joy and relief': [
+        'golden hour warm sunlight',
+        'candlelight with soft glow',
+        'soft diffused window light',
+        'festive string lights',
+        'bright morning light'
+      ],
+      'relief and peace': [
+        'soft dawn light',
+        'gentle evening lamp',
+        'warm fireplace glow',
+        'sunset orange hues',
+        'natural window light'
+      ],
+      'triumph and freedom': [
+        'dramatic backlighting',
+        'bright expansive window light',
+        'high contrast sunlight',
+        'clear midday clarity',
+        'crisp winter light'
+      ],
+      'fear and anxiety': [
+        'uncertain flickering light',
+        'shadowy corner lighting',
+        'harsh fluorescent light',
+        'dim hallway illumination',
+        'creeping shadows from door'
+      ],
+      'anger and rage': [
+        'sharp high contrast',
+        'harsh side lighting',
+        'intense directional spotlight',
+        'electric cold light',
+        'stark black and white contrast'
+      ],
+      'shame and regret': [
+        'subdued soft shadows',
+        'intimate dim corner',
+        'looking-down-from-above light',
+        'soft window curtain light',
+        'moody atmospheric glow'
+      ],
+      'loneliness and emptiness': [
+        'isolated single light source',
+        'wide empty space shadows',
+        'long corridor perspective',
+        'single chair in empty room',
+        'distant city light through window'
+      ],
+      'nostalgia and memory': [
+        'warm vintage tones',
+        'soft focus nostalgic glow',
+        'memory-like soft edges',
+        'soft sepia undertones',
+        'gentle misty light'
+      ]
+    };
+
+    const options = lightingOptions[emotion] || ['natural daylight', 'soft ambient light'];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  /**
+   * 📐 Vary composition for visual diversity
+   */
+  private varyComposition(): string {
+    const options = [
+      'close-up portrait focusing on face',
+      'medium shot showing upper body',
+      'wide environmental shot with context',
+      'over-the-shoulder perspective',
+      'profile view from side',
+      'point of view from character\'s eyes',
+      'high angle looking down',
+      'low angle looking up',
+      'rule of thirds composition',
+      'centered composition with negative space'
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  /**
+   * 🎭 Vary art style for uniqueness
+   */
+  private varyArtStyle(): string {
+    const options = [
+      'cinematic documentary style',
+      'artistic photograph',
+      'raw candid snapshot',
+      'emotional portrait photography',
+      'dramatic photojournalism',
+      'intimate fine art photography',
+      'authentically unposed moment',
+      'lifestyle documentary aesthetic',
+      'emotive editorial style',
+      'raw emotional documentation'
+    ];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  /**
+   * 🎭 Vary mood based on emotion
+   */
+  private varyMood(emotion: string): string {
+    const moodOptions: Record<string, string[]> = {
+      'grief and pain': ['devastated', 'shattered', 'frozen in shock', 'numb', 'broken'],
+      'joy and relief': ['radiant', 'lighter', 'warm', 'free', 'peaceful'],
+      'relief and peace': ['calm', 'healing', 'serene', ' ACCEPTING', 'gentle'],
+      'triumph and freedom': ['powerful', 'defiant', 'radiant', 'triumphant', 'bold'],
+      'fear and anxiety': ['uneasy', 'tense', 'vulnerable', 'uncertain', 'guarded'],
+      'anger and rage': ['intense', 'explosive', 'confrontational', 'ferocious', 'charged'],
+      'shame and regret': ['subdued', 'introspective', 'heavy', 'contemplative', 'burdened'],
+      'loneliness and emptiness': ['isolated', 'hollow', 'quiet', 'deserted', 'echoing'],
+      'nostalgia and memory': ['bittersweet', 'wistful', 'tender', 'soft-focus memory', 'cherished']
+    };
+
+    const options = moodOptions[emotion] || ['emotional', 'authentic', 'genuine'];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  /**
+   * 🌈 Use sensory palette from PlotBible
+   */
+  private varySensoryPalette(plotBible?: PlotBible): string {
+    if (!plotBible?.sensoryPalette || Object.keys(plotBible.sensoryPalette).length === 0) {
+      return '';
+    }
+
+    // Collect all sensory elements into one array
+    const allSensory = [
+      ...(plotBible.sensoryPalette.smells || []),
+      ...(plotBible.sensoryPalette.sounds || []),
+      ...(plotBible.sensoryPalette.textures || []),
+      ...(plotBible.sensoryPalette.details || []),
+      ...(plotBible.sensoryPalette.lightSources || [])
+    ];
+
+    if (allSensory.length === 0) {
+      return '';
+    }
+
+    // Take 2-3 random sensory elements
+    const shuffled = allSensory.sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 3);
+
+    return selected.map(s => `- ${s}`).join('\n');
+  }
+
+  /**
+   * 🔄 Avoid repeating similar prompts
+   */
+  private isPromptTooSimilar(newPrompt: string): boolean {
+    // Create a simplified hash
+    const hash = newPrompt.substring(0, 100).toLowerCase()
+      .replace(/[^a-zа-я0-9]/g, '')
+      .substring(0, 50);
+
+    if (this.usedPrompts.has(hash)) {
+      return true;
+    }
+
+    this.usedPrompts.add(hash);
+    // Keep only last 50 prompts to avoid memory bloat
+    if (this.usedPrompts.size > 50) {
+      const first = this.usedPrompts.values().next().value;
+      this.usedPrompts.delete(first);
+    }
+
+    return false;
+  }
+
+  // ============================================
+  // 🎨 END OF VARIATION METHODS
+  // ============================================
 
   /**
    * 🎨 v4.3: Generate cover image with ACTUAL STORY from article
@@ -66,7 +362,7 @@ export class ImageGeneratorAgent {
       console.log(`📖 Story context extracted: ${storyContext.summary}`);
 
       // 🔥 Build SPECIFIC scene description from story
-      const prompt = this.buildStorySpecificPrompt(storyContext);
+      const prompt = this.buildStorySpecificPrompt(storyContext, request.plotBible);
       console.log(`🎬 Story-specific prompt built (${prompt.length} chars)`);
 
       // Generate with primary model
@@ -441,8 +737,17 @@ export class ImageGeneratorAgent {
 
   /**
    * 🎬 BUILD STORY-SPECIFIC PROMPT (not generic template!)
+   * Uses variation methods to ensure unique images
    */
-  private buildStorySpecificPrompt(context: any): string {
+  private buildStorySpecificPrompt(context: any, plotBible?: PlotBible): string {
+    // 🎨 Apply variations for diversity
+    const variedLocation = this.varyLocation(context.location, plotBible);
+    const variedLighting = this.varyLighting(context.emotionalArc.primary);
+    const variedComposition = this.varyComposition();
+    const variedArtStyle = this.varyArtStyle();
+    const variedMood = this.varyMood(context.emotionalArc.primary);
+    const sensoryDetails = this.varySensoryPalette(plotBible);
+
     // Create a UNIQUE prompt for THIS specific story
     const prompt = `
 🎬 STORY SCENE - Generate image for this specific story:
@@ -459,19 +764,28 @@ Emotional state: ${context.protagonist.state}
 Relationship context: ${context.protagonist.relationship}
 ${context.presenceContext !== 'alone' ? `\nWith: ${context.presenceContext}` : ''}
 
-📍 LOCATION & TIME:
-Where: ${context.location}
+📍 LOCATION & TIME (VARIED):
+Where: ${variedLocation}
 When: ${context.timeContext}
+Lighting: ${variedLighting}
 
 💔 EMOTIONAL TONE:
 Primary emotion: ${context.emotionalArc.primary}
+Mood: ${variedMood}
 Secondary emotions: ${context.emotionalArc.secondary.join(', ')}
 
 👁️ WHAT WE SEE (VISIBLE DETAILS):
 ${context.visibleDetails.map((d: string) => `• ${d}`).join('\n')}
+${sensoryDetails ? '\n' + sensoryDetails : ''}
 
 🎯 KEY FOCAL POINT:
 ${context.focalPoint}
+
+📐 COMPOSITION:
+${variedComposition}
+
+🎭 ART STYLE:
+${variedArtStyle}
 
 🎨 VISUAL DIRECTION:
 Don't show generic "woman sitting with tea"
@@ -481,6 +795,7 @@ Show THIS SPECIFIC MOMENT from the story:
 - The focal point should draw attention naturally
 - Lighting should match the emotional tone
 - Everything in frame should serve the story
+- Make this image VISUALLY DISTINCT from previous images
 
 🚫 ABSOLUTE RULES:
 - NO text, captions, watermarks
@@ -664,7 +979,7 @@ No text, no filters, authentic moment.
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data,
-      mimeType: "image/jpeg",
+      mimeType: "image/jpg",
       width: 1920,
       height: 1080,
       fileSize: Math.ceil(base64Data.length * 0.75),
@@ -673,6 +988,7 @@ No text, no filters, authentic moment.
       prompt: prompt,
       metadata: {
         articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
+        sceneDescription: prompt.substring(0, 200), // Store first 200 chars as description
         generationAttempts: 1,
         fallbackUsed: model !== this.primaryModel,
       }
@@ -704,7 +1020,7 @@ No text, no filters, authentic moment.
       warnings.push(`Unusual file size: ${image.fileSize} bytes`);
     }
 
-    const formatOk = image.mimeType === "image/jpeg" || image.mimeType === "image/jpg";
+    const formatOk = image.mimeType === "image/jpg" || image.mimeType === "image/png";
     if (!formatOk) {
       errors.push(`Invalid format: ${image.mimeType}`);
     }
