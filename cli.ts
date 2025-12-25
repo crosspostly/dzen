@@ -277,12 +277,60 @@ ${'='.repeat(60)}`);
       console.log(`💾 Output directory: ${exportPath}`);
       console.log(`${'='.repeat(60)}\n`);
 
+    } else if (command === 'publish') {
+      // ============================================================================
+      // 🚀 DZEN PUBLISHER: Publish articles to Yandex.Dzen
+      // ============================================================================
+      
+      const { createDzenPublisherFromEnv } = await import('./services/dzenPublisherService');
+      
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`🚀 ZenMaster Dzen Publisher`);
+      console.log(`${'='.repeat(60)}\n`);
+
+      // Parse options
+      const channelName = getArg('channel', 'women-35-60');
+      const articleDir = getArg('dir', `./articles/${channelName}/${new Date().toISOString().split('T')[0]}`);
+      const dryRun = getFlag('dry-run');
+      const maxArticles = parseInt(getArg('max', '100') || '100');
+      const verbose = getFlag('verbose');
+
+      console.log(`📁 Channel: ${channelName}`);
+      console.log(`📂 Directory: ${articleDir}`);
+      console.log(`🔍 Mode: ${dryRun ? 'DRY RUN (validation only)' : 'LIVE PUBLISHING'}`);
+      console.log(`📄 Max articles: ${maxArticles}\n`);
+
+      try {
+        // Create publisher
+        const publisher = createDzenPublisherFromEnv(channelName, dryRun);
+        
+        // Publish articles
+        const result = await publisher.publishArticlesFromDirectory(articleDir);
+        
+        if (result.success) {
+          console.log(`\n✅ Publishing completed successfully!`);
+          console.log(`📊 Published: ${result.summary.published}/${result.summary.totalArticles}`);
+        } else {
+          console.log(`\n⚠️  Publishing completed with errors`);
+          console.log(`📊 Published: ${result.summary.published}/${result.summary.totalArticles}`);
+          console.log(`❌ Failed: ${result.summary.failed}`);
+        }
+        
+      } catch (error) {
+        console.error(`\n❌ Publishing failed:`, error);
+        if (verbose) {
+          console.error(error);
+        }
+        process.exit(1);
+      }
+
     } else {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
       console.log(`🚀 ZenMaster v7.1 Commands (DEFAULT: both):`);
       console.log(`  both               - 🎭 BOTH MODE: RAW + RESTORED пары статей [DEFAULT v7.1]`);
       console.log(`  factory            - 🏭 Content Factory: 1-100 статей + изображения [v7.0]`);
+      console.log(`  publish            - 🚀 DZEN PUBLISHER: Publish articles to Yandex.Dzen [NEW]`);
       console.log(``);
       console.log(`⚙️  Options:`);
       console.log(`  --count=N          - Number of articles (both: 1-10, factory: 1-100)`);
@@ -291,6 +339,11 @@ ${'='.repeat(60)}`);
       console.log(`  --images           - Generate cover images`);
       console.log(`  --quality=LEVEL    - Quality: standard or premium`);
       console.log(`  --verbose          - Detailed logging`);
+      console.log(``);
+      console.log(`🚀 Dzen Publisher Options:`);
+      console.log(`  --dir=PATH         - Directory with articles to publish (default: ./articles/{channel}/{date})`);
+      console.log(`  --dry-run          - Validate articles without publishing`);
+      console.log(`  --max=N            - Maximum articles to publish (default: 100)`);
       console.log(``);
       console.log(`🆕 v7.1 Clean Generation (DEFAULT MODE):`);
       console.log(`  Anti-detection DISABLED by default`);
@@ -305,6 +358,11 @@ ${'='.repeat(60)}`);
       console.log(`  npx ts-node cli.ts factory --count=1 --channel=channel-1 --images`);
       console.log(`  npx ts-node cli.ts factory --count=5 --preset=medium-batch`);
       console.log(`  npx ts-node cli.ts factory --count=10 --images --quality=premium`);
+      console.log(``);
+      console.log(`🚀 Dzen Publisher Examples:`);
+      console.log(`  npx ts-node cli.ts publish --channel=women-35-60 --dry-run`);
+      console.log(`  npx ts-node cli.ts publish --channel=women-35-60 --max=5`);
+      console.log(`  npx ts-node cli.ts publish --dir=./articles/women-35-60/2025-12-25`);
       console.log(``);
     }
 
