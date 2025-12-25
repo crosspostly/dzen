@@ -3,8 +3,9 @@
 /**
  * Генератор RSS для Яндекс Дзен
  * 
- * НАПОЛНи: node scripts/generate-feed.js full
- * или:   node scripts/generate-feed.js incremental
+ * Версия: 2.0 - с корректным перемещением статей в published
+ * РЕЖИМ: node scripts/generate-feed.js incremental (новые -> published)
+ * РЕЖИМ: node scripts/generate-feed.js full (все из published)
  */
 
 import fs from 'fs';
@@ -15,45 +16,51 @@ import { Feed } from 'feed';
 const BASE_URL = process.env.BASE_URL || 'https://dzen-livid.vercel.app';
 const SITE_URL = process.env.SITE_URL || BASE_URL;
 const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'crosspostly/dzen';
-const MODE = process.argv[2] || 'incremental'; // 'full' или 'incremental'
+const MODE = process.argv[2] || 'incremental';
 
-console.log(`\n🚀 Режим: ${MODE === 'full' ? '🔄 ПОЛНАЯ ПЕРЕгЕНЕРАЦИО' : '📥 ПОЛНО НОВЫМ'}`);
+console.log(`\n🚀 Режим: ${MODE === 'full' ? '🔄 ПОЛНАЯ ПЕРЕГЕНЕРАЦИО' : '📥 ИНКРЕМЕНТАЛЬНЫЙ'}`);
 
 /**
- * Получить все markdown файлы из нОВЫХ (НЕ в published)
+ * Получить ВСЕ markdown файлы из папки (рекурсивно)
  */
-function getNewMarkdownFiles(dir) {
+function getAllMarkdownFiles(dir, excludePublished = false) {
   const files = [];
-  const items = fs.readdirSync(dir);
-
-  for (const item of items) {
-    if (item === 'published' || item === 'REPORT.md' || item === 'manifest.json' || item.startsWith('.')) {
-      continue;
-    }
-    const fullPath = path.join(dir, item);
-    const stat = fs.statSync(fullPath);
-    if (stat.isDirectory()) {
-      files.push(...getNewMarkdownFiles(fullPath));
-    } else if (path.extname(item).toLowerCase() === '.md') {
-      if (path.basename(item, path.extname(item)) !== 'REPORT') {
+  
+  function traverse(dir) {
+    if (!fs.existsSync(dir)) return;
+    
+    const items = fs.readdirSync(dir);
+    for (const item of items) {
+      if (item === 'published' || item === 'REPORT.md' || item === 'manifest.json' || item.startsWith('.')) {
+        continue;
+      }
+      
+      const fullPath = path.join(dir, item);
+      const stat = fs.statSync(fullPath);
+      
+      if (stat.isDirectory()) {
+        traverse(fullPath);
+      } else if (path.extname(item).toLowerCase() === '.md' && item !== 'REPORT.md') {
         files.push(fullPath);
       }
     }
   }
+  
+  traverse(dir);
   return files;
 }
 
 /**
- * Получить ВСЕ маркдаун из published (для full режима)
+ * Получить ВСЕ markdown из published
  */
-function getAllPublishedMarkdownFiles(dir) {
+function getPublishedMarkdownFiles(dir) {
   const files = [];
   if (!fs.existsSync(dir)) return files;
   
   function traverse(dir) {
     const items = fs.readdirSync(dir);
     for (const item of items) {
-      if (item === '.gitkeep' || item.startsWith('.')) continue;
+      if (item.startsWith('.')) continue;
       const fullPath = path.join(dir, item);
       const stat = fs.statSync(fullPath);
       if (stat.isDirectory()) {
@@ -63,92 +70,93 @@ function getAllPublishedMarkdownFiles(dir) {
       }
     }
   }
+  
   traverse(dir);
   return files;
 }
 
 /**
- * Проверить истинность и существование изображения
+ * КЛЮЧЕВАЯ ФУНКЦИЯ: Перемещает статью в published с сохранением труктуры
+ * (копирует файлы, ПОТОМ удаляет из исходной папки)
  */
-function validateImagePath(filePath, imageName) {
-  if (!imageName) return null;
-  if (imageName.startsWith('http')) return imageName; // Уже полный URL
-
-  const articleDir = path.dirname(filePath);
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-  const filesInDir = fs.existsSync(articleDir) ? fs.readdirSync(articleDir) : [];
-
-  // Пытаемся найти точное имя файла (u0441 timestamp)
-  for (const file of filesInDir) {
-    const fileExt = path.extname(file).toLowerCase();
-    if (imageExtensions.includes(fileExt)) {
-      const baseName = path.basename(file, fileExt);
-      const expectedBaseName = path.basename(imageName, path.extname(imageName));
-      
-      // Проверяем равнопоносность базовых имен
-      if (baseName.includes(expectedBaseName) || baseName === expectedBaseName) {
-        return file; // Найден в том же директории
-      }
-    }
-  }
-
-  console.warn(`⚠️  НЕ НАЙДЕНО изображение: ${imageName} для ${path.relative('./articles', filePath)}`);
-  return null;
-}
-
-function copyFile(source, destination) {
-  const destDir = path.dirname(destination);
-  if (!fs.existsSync(destDir)) {
-    fs.mkdirSync(destDir, { recursive: true });
-  }
-  fs.copyFileSync(source, destination);
-}
-
-function moveFileToPublished(filePath) {
+function moveArticleToPublished(filePath, frontmatter) {
   try {
-    if (filePath.includes('published')) return;
-
-    const relativePath = path.relative('./articles', filePath);
-    const publishedPath = path.join('./articles/published', relativePath);
-    const publishedDir = path.dirname(publishedPath);
-
-    fs.mkdirSync(publishedDir, { recursive: true });
-    copyFile(filePath, publishedPath);
-    console.log(`   📁 Перенесено: ${relativePath}`);
-
-    const fileDir = path.dirname(filePath);
-    const fileName = path.basename(filePath, path.extname(filePath));
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
-    const filesInDir = fs.existsSync(fileDir) ? fs.readdirSync(fileDir) : [];
-
-    for (const file of filesInDir) {
-      const fileExt = path.extname(file).toLowerCase();
-      if (imageExtensions.includes(fileExt)) {
-        const baseName = path.basename(file, fileExt);
-        if (baseName.startsWith(fileName) || fileName.startsWith(baseName) || baseName.includes(fileName)) {
-          const imageFile = path.join(fileDir, file);
-          const publishedImageFile = path.join(publishedDir, file);
-          if (fs.existsSync(imageFile)) copyFile(imageFile, publishedImageFile);
-        }
-      }
+    // Пропускаем если уже в published
+    if (filePath.includes('/published/')) return;
+    
+    // Получаем исходную релативную пать (такая же, как в women-35-60/2025-12-23/)
+    const relativePath = path.relative('./articles', filePath); // → women-35-60/2025-12-23/file.md
+    const fileName = path.basename(filePath);
+    const fileNameNoExt = path.basename(filePath, path.extname(filePath));
+    
+    // СОХРАНЯЕМ у ПУБЛИКУЕМ: published/women-35-60/2025-12-23/
+    const destDirPath = path.join('./articles/published', relativePath.split(path.sep).slice(0, -1).join(path.sep));
+    const destFilePath = path.join(destDirPath, fileName);
+    
+    // Создаём папку published (GIT отследит)
+    if (!fs.existsSync(destDirPath)) {
+      fs.mkdirSync(destDirPath, { recursive: true });
     }
-
-    try { fs.unlinkSync(filePath); } catch (e) {}
-
-    for (const file of filesInDir) {
-      const fileExt = path.extname(file).toLowerCase();
-      if (imageExtensions.includes(fileExt)) {
-        const baseName = path.basename(file, fileExt);
-        if (baseName.startsWith(fileName) || fileName.startsWith(baseName) || baseName.includes(fileName)) {
-          const imageFile = path.join(fileDir, file);
-          if (fs.existsSync(imageFile)) {
-            try { fs.unlinkSync(imageFile); } catch (e) {}
+    
+    // КОПИРУЕМ markdown файл в published
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    fs.writeFileSync(destFilePath, fileContent, 'utf8');
+    console.log(`   ✅ Скопировано в published/${relativePath.split(path.sep).slice(0, -1).join('/')}/${fileName}`);
+    
+    // КОПИРУЕМ связанные изображения
+    const sourceDir = path.dirname(filePath);
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+    
+    if (fs.existsSync(sourceDir)) {
+      const sourceFiles = fs.readdirSync(sourceDir);
+      
+      for (const file of sourceFiles) {
+        const fileExt = path.extname(file).toLowerCase();
+        if (imageExtensions.includes(fileExt)) {
+          const baseName = path.basename(file, fileExt);
+          
+          // Проверяем, относится ли это изображение к статье
+          if (baseName.startsWith(fileNameNoExt) || 
+              fileNameNoExt.startsWith(baseName) || 
+              baseName.includes(fileNameNoExt) ||
+              baseName.length < 20) { // Если имя короткое - скорее всего cover image
+            
+            const sourceImagePath = path.join(sourceDir, file);
+            const destImagePath = path.join(destDirPath, file);
+            
+            const imageContent = fs.readFileSync(sourceImagePath);
+            fs.writeFileSync(destImagePath, imageContent);
+            console.log(`   🖼️  Изображение скопировано: ${file}`);
           }
         }
       }
     }
-
-    let currentDir = fileDir;
+    
+    // ===== ЭТАП 2: УДАЛЯЕМ ИЗ ИСХОДНОЙ ПАПКИ (GIT отследит удаление) =====
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`   🗑️  Удалено из источника: ${filePath}`);
+    } catch (e) {}
+    
+    // Удаляем изображения из исходной папки
+    if (fs.existsSync(sourceDir)) {
+      const sourceFiles = fs.readdirSync(sourceDir);
+      for (const file of sourceFiles) {
+        const fileExt = path.extname(file).toLowerCase();
+        if (imageExtensions.includes(fileExt)) {
+          const baseName = path.basename(file, fileExt);
+          if (baseName.startsWith(fileNameNoExt) || fileNameNoExt.startsWith(baseName) || baseName.includes(fileNameNoExt)) {
+            const sourceImagePath = path.join(sourceDir, file);
+            try {
+              fs.unlinkSync(sourceImagePath);
+            } catch (e) {}
+          }
+        }
+      }
+    }
+    
+    // Очищаем пустые папки
+    let currentDir = sourceDir;
     while (currentDir !== './articles' && currentDir !== '.' && fs.existsSync(currentDir)) {
       try {
         const files = fs.readdirSync(currentDir);
@@ -160,9 +168,38 @@ function moveFileToPublished(filePath) {
         }
       } catch (e) { break; }
     }
+    
   } catch (error) {
-    console.error(`❌ Ошибка: ${error.message}`);
+    console.error(`❌ ОШИБКА при перемещении ${filePath}: ${error.message}`);
   }
+}
+
+/**
+ * Валидация изображения
+ */
+function validateImagePath(filePath, imageName) {
+  if (!imageName) return null;
+  if (imageName.startsWith('http')) return imageName;
+
+  const articleDir = path.dirname(filePath);
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+  
+  if (!fs.existsSync(articleDir)) return null;
+  
+  const filesInDir = fs.readdirSync(articleDir);
+  for (const file of filesInDir) {
+    const fileExt = path.extname(file).toLowerCase();
+    if (imageExtensions.includes(fileExt)) {
+      const baseName = path.basename(file, fileExt);
+      const expectedBaseName = path.basename(imageName, path.extname(imageName));
+      if (baseName.includes(expectedBaseName) || baseName === expectedBaseName) {
+        return file;
+      }
+    }
+  }
+
+  console.warn(`⚠️  НЕ НАЙДЕНО: ${imageName}`);
+  return null;
 }
 
 function markdownToHtml(md) {
@@ -187,12 +224,8 @@ function markdownToHtml(md) {
 function getImageMimeType(imagePath) {
   const ext = path.extname(imagePath).toLowerCase();
   const mimeTypes = {
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.png': 'image/png',
-    '.gif': 'image/gif',
-    '.webp': 'image/webp',
-    '.svg': 'image/svg+xml'
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+    '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml'
   };
   return mimeTypes[ext] || 'image/jpeg';
 }
@@ -222,28 +255,22 @@ function generateFeed() {
     favicon: `${SITE_URL}/favicon.ico`,
     copyright: `All rights reserved ${new Date().getFullYear()}, ZenMaster`,
     updated: new Date(),
-    generator: 'ZenMaster RSS Generator',
-    author: {
-      name: "ZenMaster",
-      email: "info@crosspostly.com",
-      link: SITE_URL
-    }
+    generator: 'ZenMaster RSS Generator v2.0',
+    author: { name: "ZenMaster", email: "info@crosspostly.com", link: SITE_URL }
   });
 
-  const processedIds = new Set(); // Для дедупликации
-  let stats = { total: 0, skipped: 0, processed: 0, imageErrors: 0 };
-
+  const processedIds = new Set();
+  let stats = { total: 0, skipped: 0, processed: 0, imageErrors: 0, moved: 0 };
   let allFiles = [];
 
   if (MODE === 'full') {
-    // ПОЛНАЯ ПЕРЕГЕНЕРАЦИО: используем ВСЕ из published
-    const publishedFiles = getAllPublishedMarkdownFiles('./articles/published');
-    console.log(`📡 Найдено ${publishedFiles.length} пропубликованных статей\n`);
+    const publishedFiles = getPublishedMarkdownFiles('./articles/published');
+    console.log(`📡 Найдено ${publishedFiles.length} статей в published\n`);
     allFiles = publishedFiles;
   } else {
-    // ПОЛНО НОВЫМ: новые + старые
-    const newFiles = getNewMarkdownFiles('./articles');
-    const publishedFiles = getAllPublishedMarkdownFiles('./articles/published');
+    // INCREMENTAL: новые + все опубликованные
+    const newFiles = getAllMarkdownFiles('./articles', true);
+    const publishedFiles = getPublishedMarkdownFiles('./articles/published');
     console.log(`📥 Новых: ${newFiles.length}, Опубликованных: ${publishedFiles.length}\n`);
     allFiles = [...newFiles, ...publishedFiles];
   }
@@ -253,9 +280,7 @@ function generateFeed() {
   for (const filePath of allFiles) {
     try {
       const fileContent = fs.readFileSync(filePath, 'utf8');
-      const parsed = matter(fileContent);
-      const frontmatter = parsed.data;
-      const content = parsed.content;
+      const { data: frontmatter, content } = matter(fileContent);
 
       if (!frontmatter.title || !frontmatter.date) {
         console.warn(`⚠️  Отсутствует title/date: ${path.relative('./articles', filePath)}`);
@@ -268,7 +293,7 @@ function generateFeed() {
       const articleUrl = `${vercelUrl}/articles/${fileName}`;
       const itemId = `${fileName}::${frontmatter.date}`;
 
-      // ДЕДУПЛИКАЦИОН
+      // ДЕДУПЛИКАЦИЯ
       if (processedIds.has(itemId)) {
         console.warn(`⚠️  ДУБЛОКАТ: ${fileName}`);
         stats.skipped++;
@@ -276,7 +301,7 @@ function generateFeed() {
       }
       processedIds.add(itemId);
 
-      // Проверка изображения
+      // ИЗОБРАЖЕНИЕ
       let imageUrl = '';
       let actualImageName = null;
       if (frontmatter.image) {
@@ -310,9 +335,10 @@ function generateFeed() {
       if (imageUrl) console.log(`   🖼️  ${imageUrl}`);
       stats.processed++;
 
-      // НОВЫЕ файлы переносим в published (ОТКЛИЧАЕМ full)
-      if (MODE === 'incremental' && !filePath.includes('published')) {
-        moveFileToPublished(filePath);
+      // ПЕРЕМЕЩАЕМ в published если incremental режим и файл не из published
+      if (MODE === 'incremental' && !filePath.includes('/published/')) {
+        moveArticleToPublished(filePath, frontmatter);
+        stats.moved++;
       }
 
     } catch (error) {
@@ -324,9 +350,10 @@ function generateFeed() {
   const feedXml = feed.rss2();
   fs.writeFileSync('./feed.xml', feedXml, 'utf8');
 
-  console.log(`\n===== СТАТНСТИКА =====${MODE === 'full' ? ' [🔄 FULL]' : ' [📥 INCREMENTAL]'}`);
+  console.log(`\n===== СТАТИСТИКА =====${MODE === 'full' ? ' [🔄 FULL]' : ' [📥 INCREMENTAL]'}`);
   console.log(`📊 Всего файлов: ${stats.total}`);
   console.log(`✅ Обработано: ${stats.processed}`);
+  console.log(`📤 Перемещено: ${stats.moved}`);
   console.log(`⚠️  Пропущено: ${stats.skipped}`);
   console.log(`🖼️  Ошибки изображений: ${stats.imageErrors}`);
   console.log(`\n📋 RSS-лента сохранена: feed.xml (${feed.items.length} статей)\n`);
