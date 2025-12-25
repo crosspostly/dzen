@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 /**
- * 🧹 FINAL ARTICLE CLEANUP GATE (v6.1 - DEEP TEXT RESTORATION)
+ * 🧹 FINAL ARTICLE CLEANUP GATE (v7.0 - STRICT ANTI-ARTIFACT RULES)
  *
  * Полная реализация 5-этапной глубокой реставрации текста:
  * - Этап 1: De-noising (удаление мусорных маркеров)
@@ -9,6 +9,14 @@ import { GoogleGenAI } from "@google/genai";
  * - Этап 3: Deduplication (устранение смыслового дублирования)
  * - Этап 4: Paragraph Pacing (ритмическое структурирование)
  * - Этап 5: Voice Preservation (сохранение авторского голоса)
+ *
+ * v7.0 CHANGES - STRENGTHENED PROOFREADER PROMPT:
+ * - ✅ ENHANCED orphaned fragment detection with specific examples
+ * - ✅ STRICT phrase repetition limits (MAX 1 time per phrase)
+ * - ✅ EXPLICIT space insertion rules for merged words
+ * - ✅ DETAILED before/after examples from actual corrupted text
+ * - ✅ IMPROVED dialogue formatting instructions
+ * - ✅ CLEARED instruction structure with numbered rules
  */
 
 interface IssueAnalysis {
@@ -40,7 +48,13 @@ const REPEATED_PHRASES = [
   '— одним словом',
   '— вот что я хочу сказать',
   '— не знаю почему, но',
-  '— может быть, не совсем точно, но'
+  '— может быть, не совсем точно, но',
+  'вот только',
+  'вот это',
+  'да вот',
+  'ну и',
+  'и то',
+  'же'
 ];
 
 export class FinalArticleCleanupGate {
@@ -68,12 +82,12 @@ export class FinalArticleCleanupGate {
     let metadataComments = 0;
     let markdownCount = 0;
 
-    // Check repeated phrases
+    // Check repeated phrases (v7.0: MAX 1 repetition allowed)
     REPEATED_PHRASES.forEach(phrase => {
       const count = (text.match(new RegExp(phrase, 'gi')) || []).length;
-      if (count > 2) {
+      if (count > 1) {
         repeatedPhrases.push({ phrase, count });
-        issues.push(`Repeated phrase "${phrase}" found ${count} times`);
+        issues.push(`Repeated phrase "${phrase}" found ${count} times (max 1 allowed)`);
       }
     });
 
@@ -97,10 +111,46 @@ export class FinalArticleCleanupGate {
       }
     });
 
+    // Check for merged words (v7.0: new check)
+    const mergedWordsPatterns = [
+      /\.[а-яА-ЯёЁ]{3,}(?=\s|$)/g,  // Word starts mid-sentence after period: ".ивот", ".дачто"
+      /[а-яА-ЯёЁ]{8,}(?=\s[а-яА-ЯёЁ]{3,})/g,  // Two long words possibly merged
+    ];
+    mergedWordsPatterns.forEach(pattern => {
+      const matches = text.match(pattern);
+      if (matches && matches.length > 0) {
+        issues.push(`Possible merged words found: ${matches.length} instances`);
+      }
+    });
+
+    // Check for orphaned fragments at paragraph starts (v7.0: new check)
+    const paragraphStartPatterns = [
+      /^\s*[.]\s*(и|но|а|да|же|вот|что|ну|если|хотя|потому|пусть)\b/gim,
+      /^\s*[а-яА-ЯёЁ]{1,2}[.]\s*/gim,  // Single letters with period at start
+    ];
+    const paragraphs = text.split(/\n\s*\n/);
+    let orphanedCount = 0;
+    paragraphs.forEach(para => {
+      paragraphStartPatterns.forEach(pattern => {
+        if (pattern.test(para)) {
+          orphanedCount++;
+        }
+      });
+    });
+    if (orphanedCount > 0) {
+      issues.push(`Orphaned fragments at paragraph starts: ${orphanedCount} instances`);
+    }
+
     let severity: 'low' | 'medium' | 'critical' = 'low';
-    if (metadataComments > 0 || markdownCount > 3 || repeatedPhrases.some(p => p.count > 10)) {
+    if (
+      metadataComments > 0 ||
+      markdownCount > 3 ||
+      repeatedPhrases.some(p => p.count > 5) ||
+      orphanedCount > 2 ||
+      issues.some(i => i.includes('merged words') && parseInt(i.match(/\d+/)?.[0] || '0') > 3)
+    ) {
       severity = 'critical';
-    } else if (repeatedPhrases.length > 0) {
+    } else if (repeatedPhrases.length > 0 || orphanedCount > 0) {
       severity = 'medium';
     }
 
@@ -108,7 +158,7 @@ export class FinalArticleCleanupGate {
       hasIssues: issues.length > 0,
       issues,
       severity,
-      metadata: { repeatedPhrases, metadataComments, markdownCount }
+      metadata: { repeatedPhrases, metadataComments, markdownCount, orphanedFragments: orphanedCount }
     };
   }
 
@@ -150,6 +200,14 @@ export class FinalArticleCleanupGate {
       console.log(`      Sentences fixed: ${sentencesFixed}`);
       console.log(`      Paragraphs restructured: ${paragraphsRestructured}`);
       console.log(`      Duplicates removed: ${duplicatesRemoved}`);
+
+      // Log v7.0 specific improvements
+      const orphanedBefore = analysis.metadata?.orphanedFragments || 0;
+      const orphanedAfter = cleanAnalysis.metadata?.orphanedFragments || 0;
+      const mergedBefore = analysis.issues.filter(i => i.includes('merged words')).length || 0;
+      const mergedAfter = cleanAnalysis.issues.filter(i => i.includes('merged words')).length || 0;
+      console.log(`      Orphaned fragments fixed: ${orphanedBefore - orphanedAfter}`);
+      console.log(`      Merged words fixed: ${mergedBefore - mergedAfter}`);
 
       return {
         cleanText,
@@ -276,44 +334,112 @@ export class FinalArticleCleanupGate {
    * 🎯 FINAL PROOFREADER - финальная вычитка для Яндекс Дзен
    */
   private async callGeminiForCleanup(article: string, analysis: IssueAnalysis): Promise<string> {
-    const finalProofreaderPrompt = `Финальная вычитка статьи перед публикацией.
+    const finalProofreaderPrompt = `╔════════════════════════════════════════════════════════════════════════╗
+    ║  ФИНАЛЬНАЯ ПОДГОТОВКА СТАТЬИ ДЛЯ ПУБЛИКАЦИИ (Яндекс Дзен)              ║
+    ╚════════════════════════════════════════════════════════════════════════╝
 
-ЗАДАЧА: Сделай текст ГОТОВЫМ для копирования в Яндекс Дзен. Только вычитка, НЕ переписывай!
+    🎯 ГЛАВНАЯ ЗАДАЧА: Текст должен быть ГОТОВЫМ для копирования в редактор.
+    Не переписывай историю - только чисти и выравнивай!
 
-✂️ ЧТО ИСПРАВИТЬ:
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    🚫 КРИТИЧЕСКИЕ ОШИБКИ (обязательны к исправлению)
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. ТЕХНИЧЕСКИЙ МУСОР (удалить):
-   - [pause], [note], [scene], [comment], [action]
-   - (текст в скобках - если это не диалоги)
-   - **жирный текст**, ##заголовки
-   - Двойные пробелы
+    1. ❌ СЛИТНЫЕ СЛОВА В НАЧАЛЕ АБЗАЦЕВ (объедини с предыдущим или удали):
+    ❌ "Марина сидела напротив.и недоступным,"
+    ✅ "Марина сидела напротив. Она казалась далёкой и недоступной."
 
-2. ДИАЛОГИ (исправить формат):
-   ❌ — Кто это? я,
-   ✅ — Кто это? — спросил я.
+    ❌ "— Ты не изменилась, — мягко сказала она.— Врёшь ведь, — я да"
+    ✅ "— Ты не изменилась, — мягко сказала она. — Врёшь ведь, — я..."
 
-3. ДЛИННЫЕ ПРЕДЛОЖЕНИЯ (разбить если >60 слов):
-   Разбей на 2-3 коротких с точками.
+    ❌ "ну и", "да вот", "вот только", "вот это", "и то", "же" в начале строки
+    ✅ Эти слова относятся к предыдущему предложению - объедини их!
 
-4. ПОВТОРЫ (убрать если >2 раз):
-   - "— вот в чём дело" → максимум 1-2 раза
-   - "— одним словом" → максимум 1 раз
-   
-5. ПРОВЕРИТЬ ДЛИНУ:
-   - Если <3000 знаков → добавь 1-2 абзаца с деталями
-   - Если >6500 знаков → сократи воду и повторы
+    2. ❌ ПОВТОРЯЮЩИЕСЯ ФРАЗЫ (максимум 1 раз на ВЕСЬ текст):
+    ❌ "— вот что я хочу сказать..." (если встречается 5+ раз)
+    ✅ Оставь только 1-2 раза. Остальные удали или замени!
 
-✅ СОХРАНИ:
-- Сюжет, диалоги, стиль, эмоции
+    ❌ "— одним словом...", "— вот в чём дело..."
+    ✅ Максимум по 1 разу каждая фраза. Удали излишние повторы!
 
-РЕЗУЛЬТАТ: Только готовый текст статьи.
-Последняя строка: ✅ READY TO PUBLISH
+    3. ❌ ОБОРВАННЫЕ ПРЕДЛОЖЕНИЯ (допиши или удали):
+    ❌ "странная штука, Я смотрела на свои руки и думала, что жизнь —."
+    ✅ "Странная штука. Я смотрела на свои руки и думала, что жизнь — загадка."
 
----
-${article}
----
+    ❌ "...одним словом..."
+    ✅ "...одним словом, это было ужасно."
 
-ВЫПОЛНИ ФИНАЛЬНУЮ ВЫЧИТКУ:`;
+    4. ❌ НЕДОСТАЮЩИЕ ПРОБЕЛЫ (добавь между всеми словами!):
+    ❌ "Маринасиделанапротив.инедоступным,"
+    ✅ "Марина сидела напротив. Она казалась недоступным."
+
+    5. ❌ ДИАЛОГИ РАЗОРВАНЫ (соедини в один блок):
+    ❌ "— Кто это? я,"
+     "она улыбнулась."
+     "— Я, конечно."
+
+    ✅ "— Кто это? — спросила я.
+      Она улыбнулась.
+      — Я, конечно."
+
+    6. ❌ ТЕХНИЧЕСКИЙ МУСОР (удали всё):
+    - [pause], [note], [scene], [comment], [action], [TODO], [EDITOR]
+    - (текст в скобках - если это не диалоги)
+    - **жирный текст**, ##заголовки, ___ разделители
+    - Двойные/тройные пробелы (оставь только один)
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ✅ ЧТО СОХРАНИТЬ БЕЗ ИЗМЕНЕНИЙ
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    ✅ Сюжет, события, финал
+    ✅ Диалоги (только исправь форматирование)
+    ✅ Стиль повествования
+    ✅ Эмоции и описания
+    ✅ Персональный голос рассказчика
+
+    ❌ НЕ МЕНЯЙ: события, порядок действий, персонажей, концовку
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    📏 ПРОВЕРКА ДЛИНЫ
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    - Если текст <3000 знаков → добавь 1-2 абзаца с сенсорными деталями
+    - Если текст >8000 знаков → сократи повторы, но не сюжет
+    - Идеальная длина: 4000-7000 знаков
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    🎬 ПРИМЕР ИСПРАВЛЕНИЯ
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    ❌ ДО (с ошибками):
+    "Марина сидела напротив.и недоступным, ну и От неё пахло дорогим парфюмом.
+    — Ты не изменилась, — мягко сказала она.— Врёшь ведь, — я да — Десять лет прошло, Марин.вот это
+    — Ты не изменилась, — мягко сказала она.— Врёшь ведь, — я да
+    — Ерунда.да вот Глаза те же.Только взгляд стал тяжёлым.
+    вот только Она всегда была королевой школы, потом — самой завидной невестой города."
+
+    ✅ ПОСЛЕ (чистый текст):
+    "Марина сидела напротив. Она казалась далёкой и недоступной. От неё пахло дорогим парфюмом, чем-то пудровым и цветочным.
+
+    — Ты не изменилась, — мягко сказала она.
+    — Врёшь ведь. Десять лет прошло, Марин. Я за это время успела поседеть и дважды сменить работу.
+
+    — Ерунда. Глаза те же. Только взгляд стал тяжёлым, остывающим.
+
+    Она всегда была королевой школы, потом — самой завидной невестой города."
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    📤 ВЫПОЛНИ ЧИСТКУ ТЕКСТА:
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    ${article}
+
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ✅ ГОТОВЫЙ ТЕКС СТАТЬИ:
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    `;
 
     // 🎬 v6.1: DEEP TEXT RESTORATION with fallback and validation
     console.log(`   🚀 Sending to Gemini (${this.model})...`);
