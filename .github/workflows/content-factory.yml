@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # 🔄 Fetch full history to avoid conflicts
+          fetch-depth: 0
       
       - uses: actions/setup-node@v4
         with:
@@ -54,20 +54,20 @@ jobs:
       
       - run: npm install
       
-      - name: Generate articles
+      - name: 🏭 Generate articles
         run: |
           COUNT="${{ inputs.count }}"
           CHANNEL="${{ inputs.channel }}"
           IMAGES="${{ inputs.images }}"
           
-          echo "====================================================="
-          echo "Content Factory - Batch Generation"
-          echo "====================================================="
-          echo "Articles:      $COUNT"
-          echo "Topic:         $CHANNEL"
-          echo "Images:        $IMAGES"
-          echo "Output:        articles/$CHANNEL/$(date +%Y-%m-%d)/"
-          echo "====================================================="
+          echo "======================================================"
+          echo "🏭 Content Factory - Batch Generation"
+          echo "======================================================"
+          echo "📄 Articles:      $COUNT"
+          echo "📁 Channel:       $CHANNEL"
+          echo "📸 Images:        $IMAGES"
+          echo "📍 Output:        articles/$CHANNEL/$(date +%Y-%m-%d)/"
+          echo "======================================================"
           echo ""
           
           CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
@@ -76,35 +76,112 @@ jobs:
             CMD="$CMD --images"
           fi
           
-          echo "Running: $CMD"
+          echo "🚀 Running: $CMD"
           echo ""
           
           eval "$CMD"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # v6.0: Article Cleanup System
           FINAL_CLEANUP_ENABLED: true
           CLEANUP_THRESHOLD: medium
           CLEANUP_MODEL: gemini-2.0-flash
           CLEANUP_TEMPERATURE: 0.3
           CLEANUP_MAX_RETRIES: 2
       
-      - name: Count results
-        if: always()
+      - name: 🔍 Check generated files structure
         run: |
-          ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
-          IMAGE_COUNT=$(find ./articles -name "*.jpg" 2>/dev/null | xargs wc -l | tail -1 | awk '{print $1}' || find ./articles -name "*.png" 2>/dev/null | wc -l)
-          
           echo ""
-          echo "Generation Summary:"
-          echo "====================================================="
-          echo "Articles generated: $ARTICLE_COUNT"
-          echo "Images generated:   $IMAGE_COUNT (JPEG + PNG)"
-          echo "====================================================="
+          echo "======================================================"
+          echo "🔍 Generated Files Structure Check"
+          echo "======================================================"
+          echo ""
+          
+          CHANNEL="${{ inputs.channel }}"
+          TODAY=$(date +%Y-%m-%d)
+          OUTPUT_DIR="articles/$CHANNEL/$TODAY"
+          
+          echo "📁 Output directory: $OUTPUT_DIR"
+          echo ""
+          
+          if [ -d "$OUTPUT_DIR" ]; then
+            echo "✅ Directory exists"
+            echo ""
+            echo "📄 Files in directory:"
+            ls -lh "$OUTPUT_DIR" | grep -v "^total" | grep -v "^d"
+            echo ""
+            echo "📊 Statistics:"
+            MD_COUNT=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.md" -type f | wc -l)
+            JPG_COUNT=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.jpg" -type f | wc -l)
+            echo "   .md files:  $MD_COUNT"
+            echo "   .jpg files: $JPG_COUNT"
+            echo ""
+          else
+            echo "❌ Directory does not exist!"
+            echo ""
+            echo "📁 Available directories:"
+            find articles -maxdepth 3 -type d | head -20
+            exit 1
+          fi
+      
+      - name: ⚠️ Validate NO timestamp in filenames
+        run: |
+          echo ""
+          echo "======================================================"
+          echo "⚠️ Timestamp Validation Check"
+          echo "======================================================"
+          echo ""
+          
+          CHANNEL="${{ inputs.channel }}"
+          TODAY=$(date +%Y-%m-%d)
+          OUTPUT_DIR="articles/$CHANNEL/$TODAY"
+          
+          # Check for files with timestamp pattern
+          BAD_FILES=$(find "$OUTPUT_DIR" -maxdepth 1 -type f -regex '.*-[0-9]\{10,13\}\.*' 2>/dev/null)
+          
+          if [ -n "$BAD_FILES" ]; then
+            echo "❌ ERROR: Found files with timestamp suffix!"
+            echo ""
+            echo "Bad files:"
+            echo "$BAD_FILES"
+            echo ""
+            echo "This should NOT happen! Files should be:"
+            echo "  ✅ article-slug.md"
+            echo "  ✅ article-slug.jpg"
+            echo ""
+            echo "NOT:"
+            echo "  ❌ article-slug-1766318654134.md"
+            echo "  ❌ article-slug-1766318654134.jpg"
+            echo ""
+            exit 1
+          else
+            echo "✅ All files have clean names (no timestamp)!"
+            echo ""
+            
+            # Show actual filenames
+            echo "📋 Generated files:"
+            find "$OUTPUT_DIR" -maxdepth 1 -type f -name "*.md" -o -name "*.jpg" 2>/dev/null | sort | sed 's|.*/||' | while read f; do
+              echo "   ✅ $f"
+            done
+          fi
           echo ""
       
-      - name: Upload artifacts
+      - name: 📊 Count results
+        if: always()
+        run: |
+          ARTICLE_COUNT=$(find ./articles -name "*.md" 2>/dev/null | wc -l)
+          IMAGE_COUNT=$(find ./articles -name "*.jpg" 2>/dev/null | wc -l)
+          
+          echo ""
+          echo "======================================================"
+          echo "📊 Generation Summary"
+          echo "======================================================"
+          echo "📄 Total .md files: $ARTICLE_COUNT"
+          echo "📸 Total .jpg files: $IMAGE_COUNT"
+          echo "======================================================"
+          echo ""
+      
+      - name: 📤 Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -127,54 +204,38 @@ jobs:
             const { execSync } = require('child_process');
             
             const maxRetries = 3;
-            const retryDelay = 2000; // 2 seconds
+            const retryDelay = 2000;
             
             async function pushWithRetry() {
               for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
                   console.log(`\n🔄 Push attempt ${attempt}/${maxRetries}...`);
                   
-                  // Step 1: Sync with remote
                   console.log('📥 Fetching latest changes from remote...');
-                  execSync('git fetch origin ${{ github.ref_name }}', { 
-                    stdio: 'inherit'
-                  });
+                  execSync('git fetch origin ${{ github.ref_name }}', { stdio: 'inherit' });
                   
-                  // Step 2: Rebase if needed
                   console.log('⚙️  Rebasing local changes...');
-                  execSync('git rebase origin/${{ github.ref_name }}', { 
-                    stdio: 'inherit' 
-                  });
+                  execSync('git rebase origin/${{ github.ref_name }}', { stdio: 'inherit' });
                   
-                  // Step 3: Add files
                   console.log('📂 Adding articles...');
-                  execSync('git add articles/', { 
-                    stdio: 'inherit' 
-                  });
+                  execSync('git add articles/', { stdio: 'inherit' });
                   
-                  // Step 4: Check if there are changes
                   try {
                     execSync('git diff --cached --quiet');
                     console.log('⚠️  No changes to commit');
                     return true;
                   } catch (e) {
-                    // Changes exist, continue with commit
+                    // Changes exist, continue
                   }
                   
-                  // Step 5: Commit
                   console.log('💾 Committing...');
                   const timestamp = new Date().toISOString().split('T')[0];
                   const channel = '${{ inputs.channel }}';
                   const count = '${{ inputs.count }}';
-                  execSync(`git commit -m "📝 Generated articles: ${timestamp} - ${count} articles (${channel})"`, { 
-                    stdio: 'inherit' 
-                  });
+                  execSync(`git commit -m "📝 Generated articles: ${timestamp} - ${count} articles (${channel})"`, { stdio: 'inherit' });
                   
-                  // Step 6: Push
                   console.log('🚀 Pushing to remote...');
-                  execSync('git push origin ${{ github.ref_name }}', { 
-                    stdio: 'inherit' 
-                  });
+                  execSync('git push origin ${{ github.ref_name }}', { stdio: 'inherit' });
                   
                   console.log('✅ Push successful!');
                   return true;
@@ -185,17 +246,15 @@ jobs:
                     console.error(error.message);
                     throw error;
                   } else {
-                    console.log(`⚠️  Attempt ${attempt} failed. Retrying in ${retryDelay}ms...`);
-                    console.log(`📋 Error: ${error.message}\n`);
+                    console.log(`⚠️  Attempt ${attempt} failed. Retrying...`);
+                    console.log(`Error: ${error.message}\n`);
                     
-                    // Reset to clean state for retry
                     try {
                       execSync('git reset --hard HEAD', { stdio: 'pipe' });
                     } catch (e) {
-                      // Ignore reset errors
+                      // Ignore
                     }
                     
-                    // Wait before retry
                     await new Promise(resolve => setTimeout(resolve, retryDelay));
                   }
                 }
