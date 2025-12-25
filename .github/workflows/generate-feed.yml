@@ -48,7 +48,7 @@ jobs:
           echo ""
           npm run feed:incremental
         env:
-          BASE_URL: https://dzen-livid.vercel.app
+          BASE_URL: https://raw.githubusercontent.com/crosspostly/dzen/main
           GITHUB_REPOSITORY: crosspostly/dzen
 
       - name: ✅ Verify feed.xml
