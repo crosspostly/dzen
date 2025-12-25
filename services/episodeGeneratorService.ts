@@ -5,38 +5,26 @@ import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
 
 /**
-   * 🎬 Episode Generator Service v6.0 (SIMPLIFIED GENERATION)
-   *
-   * Generates episodes with INTELLIGENT CHARACTER BUDGETING:
-   * - Total budget: ${CHAR_BUDGET} chars (v4.6: REDUCED from 29K to 19K)
-   * - Lede: ~600 chars
-   * - Finale: ~1200 chars
-   * - Remaining divided equally among episodes initially
-   * - Each episode gets specific char limit in prompt
-   * - If episode exceeds limit: account for actual size, adjust next episode budget
-   * - NO RETRIES for oversized - just continue with recalculated pool
-   *
-   * v6.0 CHANGES - SIMPLIFIED PROMPT (FIX FOR TEXT CORRUPTION):
-   * - ✅ REPLACED overcomplicated prompt with simplified version
-   * - ✅ LOWERED temperature from 0.9 to 0.8 (for stability)
-   * - ✅ REDUCED quality guidelines from 5000 lines to 1000 lines
-   * - ✅ FOCUSED on: 6-part structure, dialogue percentage, sensory, twists
-   * - ✅ REMOVED nested/contradictory requirements
-   * - ✅ REMOVED excessive formatting examples
-   * - ✅ RESULT: 90-95% successful generations vs 50-60% previously
-   *
-   * Previous v4.5 features remain:
-   * - ✅ MOVED platform context to INSTRUCTIONS ONLY
-   * - ✅ Story remains CLEAN (no 4th wall breaks about publishing)
-   * - ✅ Character perspective: pure narrative, not aware of audience
-   * 
-   * v5.0 FIX: Single Source of Truth via constants/BUDGET_CONFIG.ts
-   * - Removed hardcoded TOTAL_BUDGET
-   * - Now accepts maxChars via constructor parameter
-   * - Falls back to CHAR_BUDGET from central config
-   */
+ * 🎬 Episode Generator Service v7.1 (CLEAN GENERATION)
+ *
+ * Generates episodes with INTELLIGENT CHARACTER BUDGETING:
+ * - Total budget: ${CHAR_BUDGET} chars
+ * - Lede: ~600 chars
+ * - Finale: ~1200 chars
+ * - Remaining divided equally among episodes initially
+ * - Each episode gets specific char limit in prompt
+ * - NO RETRIES for oversized - just continue with recalculated pool
+ *
+ * v7.1 CHANGES - CLEAN PROMPT (FIX FOR TEXT CORRUPTION):
+ * - ✅ NO platform/revenue meta-commentary - just pure storytelling
+ * - ✅ NO anti-detection instructions - write naturally
+ * - ✅ Complete sentences ONLY - no fragments or orphaned phrases
+ * - ✅ Stronger examples of good writing in Russian
+ * - ✅ Clearer structure with emotional depth
+ * - ✅ DISABLED by default: anti-detection corrupts text
+ */
 export interface EpisodeGeneratorOptions {
-  useAntiDetection?: boolean; // 🆕 v7.0: Disable anti-detection for simpler, cleaner output
+  useAntiDetection?: boolean; // v7.1: DISABLED by default
   maxChars?: number;
 }
 
@@ -45,24 +33,24 @@ export class EpisodeGeneratorService {
   private titleGenerator: EpisodeTitleGenerator;
   private phase2Service: Phase2AntiDetectionService;
   private TOTAL_BUDGET: number; // Use single source of truth
-  private LEDE_BUDGET = 600;  // Adjusted for tighter budget
-  private FINALE_BUDGET = 1200; // Adjusted for tighter budget
+  private LEDE_BUDGET = 600;
+  private FINALE_BUDGET = 1200;
   private MAX_RETRIES = 2; // Only for API failures or too-short content
   private CONTEXT_LENGTH = 1200; // Context from previous episode
-  private temperature = 0.8; // v6.0: LOWERED from 0.9 for stability
-  private topK = 30; // v6.0: LOWERED from 40
-  private useAntiDetection: boolean; // 🆕 v7.0: Control anti-detection
+  private temperature = 0.85; // v7.1: Higher for better creativity
+  private topK = 40;
+  private useAntiDetection: boolean;
 
   constructor(apiKey?: string, options?: EpisodeGeneratorOptions) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.titleGenerator = new EpisodeTitleGenerator(key);
     this.phase2Service = new Phase2AntiDetectionService();
-    this.TOTAL_BUDGET = options?.maxChars || CHAR_BUDGET; // Use central budget as default
-    this.useAntiDetection = options?.useAntiDetection ?? true; // Default to true for backward compatibility
+    this.TOTAL_BUDGET = options?.maxChars || CHAR_BUDGET;
+    this.useAntiDetection = options?.useAntiDetection ?? false; // v7.1: DISABLED by default
     
     if (!this.useAntiDetection) {
-      console.log('🚫 Anti-detection DISABLED - using simplified generation');
+      console.log('🚫 Anti-detection DISABLED - clean generation mode');
     }
   }
 
@@ -85,8 +73,6 @@ export class EpisodeGeneratorService {
 
   /**
    * 🎯 Generate episodes sequentially with DYNAMIC EPISODE COUNT
-   * 
-   * v6.0: Simplified logic, fewer processing steps
    */
   async generateEpisodesSequentially(
     episodeOutlines: EpisodeOutline[],
@@ -112,7 +98,6 @@ export class EpisodeGeneratorService {
     let remainingPool = budget.remaining;
     let episodeIndex = 0;
 
-    // Dynamic episode generation: while budget allows
     while (remainingPool > MIN_EPISODE_SIZE && episodeIndex < episodeOutlines.length) {
       const outline = episodeOutlines[episodeIndex];
       const episodesLeft = episodeOutlines.length - episodeIndex;
@@ -166,8 +151,6 @@ export class EpisodeGeneratorService {
       } catch (error) {
         console.error(`   ❌ Episode #${outline.id} failed:`, error);
         console.log(`   ⚠️  Continuing with remaining episodes to avoid blocking generation`);
-        // Don't throw error - continue with other episodes
-        // Better to have incomplete article than complete failure
       }
     }
     
@@ -182,7 +165,6 @@ export class EpisodeGeneratorService {
 
   /**
    * 🎨 Generate single episode with SPECIFIC CHAR LIMIT
-   * v6.0: Simplified, faster generation
    */
   private async generateSingleEpisode(
     outline: EpisodeOutline,
@@ -210,7 +192,7 @@ export class EpisodeGeneratorService {
       const response = await this.callGemini({
         prompt,
         model,
-        temperature: this.temperature, // v6.0: 0.8
+        temperature: this.temperature,
       });
 
       let content = response.trim();
@@ -246,22 +228,19 @@ export class EpisodeGeneratorService {
         } else {
           console.log(`      ⚠️  Accepting short episode: ${content.length}/${charLimit} chars`);
           console.log(`      ⚠️  Continuing with short content to avoid blocking generation`);
-          // ACCEPT SHORT EPISODE instead of throwing error
-          // Quality over quantity - better to finish article than fail completely
         }
       }
       
       if (content.length > charLimit * 1.1) {
-        console.log(`      ℹ️  Episode length: ${content.charCount}/${charLimit} (oversized)`);
+        console.log(`      ℹ️  Episode length: ${content.length}/${charLimit} (oversized)`);
         console.log(`      ℹ️  Pool will adjust for remaining episodes`);
       } else {
         console.log(`      ✅ Episode ${episodeNum}: ${content.length} chars (perfect)`);
       }
 
-      // 🆕 v7.0: Skip Phase 2 if anti-detection is disabled
+      // v7.1: Skip Phase 2 if anti-detection is disabled
       let phase2Result = null;
       if (this.useAntiDetection) {
-        // Phase 2: Anti-Detection processing
         console.log(`\n   📋 [Phase 2] Processing episode ${episodeNum}...`);
         phase2Result = await this.phase2Service.processEpisodeContent(
           content,
@@ -306,62 +285,62 @@ export class EpisodeGeneratorService {
         } : undefined
       };
     } catch (error) {
-    const errorMessage = (error as Error).message;
-    console.warn(`      ❌ Generation failed (attempt ${attempt}): ${errorMessage}`);
+      const errorMessage = (error as Error).message;
+      console.warn(`      ❌ Generation failed (attempt ${attempt}): ${errorMessage}`);
 
-    if (attempt < this.MAX_RETRIES && (errorMessage.includes('503') || errorMessage.includes('overloaded'))) {
-      console.log(`      🔄 API overloaded, retrying in 5s...`);
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      return this.generateSingleEpisode(
-        outline,
-        previousEpisodes,
-        charLimit,
-        episodeNum,
-        totalEpisodes,
-        attempt + 1,
-        useFallbackModel,
-        plotBible
-      );
-    }
+      if (attempt < this.MAX_RETRIES && (errorMessage.includes('503') || errorMessage.includes('overloaded'))) {
+        console.log(`      🔄 API overloaded, retrying in 5s...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        return this.generateSingleEpisode(
+          outline,
+          previousEpisodes,
+          charLimit,
+          episodeNum,
+          totalEpisodes,
+          attempt + 1,
+          useFallbackModel,
+          plotBible
+        );
+      }
 
-    // CREATE FALLBACK EPISODE instead of throwing error
-    // This ensures article generation always completes
-    console.log(`      ⚠️  Creating fallback episode to continue generation`);
-    const fallbackContent = `${outline.hookQuestion}
+      // CREATE FALLBACK EPISODE instead of throwing error
+      console.log(`      ⚠️  Creating fallback episode to continue generation`);
+      const fallbackContent = `${outline.hookQuestion}
 
-    ${outline.externalConflict}. Я помню этот момент так, будто он был вчера.
+${outline.externalConflict}. Я помню этот момент так, будто он был вчера.
 
-    ${outline.internalConflict}. Это чувство не покидало меня долгое время.
+${outline.internalConflict}. Это чувство не покидало меня долгое время.
 
-    ${outline.keyTurning}. В тот день всё изменилось.
+${outline.keyTurning}. В тот день всё изменилось.
 
-    ${outline.openLoop}...`;
+${outline.openLoop}...`;
 
-    return {
-      id: outline.id,
-      title: `Эпизод ${outline.id}`,
-      content: fallbackContent,
-      charCount: fallbackContent.length,
-      openLoop: outline.openLoop,
-      turnPoints: [outline.keyTurning],
-      emotions: [outline.internalConflict],
-      keyScenes: [],
-      characters: [],
-      generatedAt: Date.now(),
-      stage: "fallback",
-      phase2Metrics: undefined
-    };
+      return {
+        id: outline.id,
+        title: `Эпизод ${outline.id}`,
+        content: fallbackContent,
+        charCount: fallbackContent.length,
+        openLoop: outline.openLoop,
+        turnPoints: [outline.keyTurning],
+        emotions: [outline.internalConflict],
+        keyScenes: [],
+        characters: [],
+        generatedAt: Date.now(),
+        stage: "fallback",
+        phase2Metrics: undefined
+      };
     }
   }
 
   /**
-   * 📝 Build the SIMPLIFIED prompt (v6.0)
+   * 📝 Build the CLEAN PROMPT (v7.1)
    * 
-   * Key changes from v4.5:
-   * - Removed 5000+ lines of examples
-   * - Simplified to core requirements only
-   * - Cleaner formatting for Gemini to parse
-   * - More straightforward instructions
+   * Key changes from v6.0:
+   * - NO platform/revenue meta-commentary - just pure storytelling
+   * - NO anti-detection instructions - write naturally
+   * - Complete sentences ONLY - no fragments or orphaned phrases
+   * - Stronger examples of good writing
+   * - Clearer structure with emotional depth
    */
   private buildPrompt(
     outline: EpisodeOutline, 
@@ -372,159 +351,136 @@ export class EpisodeGeneratorService {
     attempt: number = 1,
     plotBible?: any
   ): string {
-    const retryNote = attempt > 1 ? `\n⚠️  RETRY ATTEMPT #${attempt}\n` : '';
-    const minChars = Math.floor(charLimit * 0.7);
+    const retryNote = attempt > 1 ? `\n⚠️  ПЕРЕГЕНЕРАЦИЯ #${attempt} - улучши качество\n` : '';
+    const minChars = Math.floor(charLimit * 0.75);
     const maxChars = charLimit;
     
     const plotBibleSection = this.buildPlotBibleSection(plotBible);
 
-    return `📖 EPISODE #${outline.id} of ${totalEpisodes}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONTEXT FOR YOU (NOT in story)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Platform: Yandex.Zen (serialized content, Russian women 35-60)
-Revenue: High quality → \$1.50+ per reader | Poor quality → \$0.05 per reader
-Your role: Write confessional narrative that's SO GRIPPING reader can't stop scrolling
-
-⚠️  CHARACTER AWARENESS:
-- Narrator does NOT know they're writing for publication
-- NO meta-commentary about online posting
-- Just: raw, honest memory being recalled
-- As if confiding to trusted friend at 3 AM
+    return `Напиши художественный эпизод от первого лица.
 
 ${plotBibleSection}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STORY STRUCTURE (6 parts)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+СЮЖЕТ ЭПИЗОДА #${outline.id}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1️⃣  Hook (3-4 sentences):
-   First sentence = question/shock/intrigue
-   Set emotional tone immediately
-   Example: "Почему я была такая слепая? Пять лет прошло, а я каждое утро спрашиваю себя."
+Вопрос, который мучает героиню: "${outline.hookQuestion}"
 
-2️⃣  Background (4-5 sentences):
-   Context and history
-   Concrete details: names, places, numbers
-   Dialogue begins here
+Внешний конфликт: ${outline.externalConflict}
+Внутренний конфликт: ${outline.internalConflict}
+Поворотный момент: ${outline.keyTurning}
+Открытый вопрос для следующего эпизода: "${outline.openLoop}"
 
-3️⃣  Development 1 (4-5 sentences):
-   Plot moves forward
-   More dialogue, sensory details
-   Visual descriptions
+${previousContext ? `ПРОДОЛЖЕНИЕ ИСТОРИИ:
+${previousContext}
 
-4️⃣  Development 2 (4-5 sentences):
-   Continue escalation
-   Emotional stakes rising
-   Multiple sensory details (see, hear, feel, smell)
+Начинай СРАЗУ с нового действия или диалога. Не повторяй концовку выше.
+Не начинай с "И тогда" или "После этого".` : 'НАЧАЛО ИСТОРИИ:'}
 
-5️⃣  Climax (3-4 sentences):
-   Unexpected turn or revelation
-   Emotional peak
-   Shorter, punchier sentences
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+СТРУКТУРА (6 частей)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-6️⃣  Resolution (4-5 sentences):
-   How narrator dealt with it
-   Final reflection or realization
-   Ending that makes reader want next episode
+1. ЗАВЯЗКА (3-4 предложения)
+   Первые слова должны ЗАХВАТЫВАТЬ. Вопрос, шок, интрига.
+   НЕЛЬЗЯ: "Я хочу рассказать...", "Это случилось когда...", "В тот день я..."
+   МОЖНО: "Почему я молчала десять лет?", "Она посмотрела на меня и я всё поняла.", "Только вчера я узнала правду."
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-QUALITY METRICS (Your episode MUST have these)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. КОНТЕКСТ (4-5 предложений)
+   Где? Когда? Кто? Конкретные детали. Имена. Места.
+   Начинаются диалоги.
 
-✅ METRIC 1: READABILITY
-   - Paragraphs max 300 chars each
-   - Sentences max 15 words (vary length!)
-   - NO "которая", "при этом", "более того", "к сожалению"
-   - Simple, direct language (urban Russian, modern)
+3. РАЗВИТИЕ 1 (4-5 предложений)
+   Сюжет движется вперёд. Диалоги. Сенсорные детали.
+   Что видит? Слышит? Чувствует?
 
-✅ METRIC 2: DIALOGUE (Target 35-40%)
-   - 6-8 dialogue exchanges per episode
-   - Format: "— Вопрос? — спросила я."
-   - Natural, conversational
-   - Intersperse with narrative (don't block-dialogue)
+4. РАЗВИТИЕ 2 (4-5 предложений)
+   Напряжение нарастает. Эмоции обостряются.
+   Минимум 2-3 сенсорные детали (зрение, слух, осязание, запах).
 
-✅ METRIC 3: PLOT TWISTS (Minimum 2)
-   - One expectation-vs-reality turn
-   - One character-behavior subversion
-   - Each should make reader say "wait, really?"
+5. КУЛЬМИНАЦИЯ (3-4 предложения)
+   Неожиданный поворот. Эмоциональный пик.
+   КОРОТКИЕ предложения для силы. Тизер на следующий эпизод.
 
-✅ METRIC 4: SENSORY DETAILS (Target 10+)
-   - Mix: visual, audio, touch, smell/taste
-   - Examples: "холодный чай", "голос дрожал", "пахло духами", "острая боль"
-   - Spread throughout, not bunched
+6. РАЗВЯЗКА (4-5 предложений)
+   Как героиня справилась? Размышление.
+   Оставь интризу - вопрос для читателя.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FORBIDDEN ELEMENTS (CRITICAL)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+КАЧЕСТВО ПИСЬМА
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-❌ NO metadata/comments: [note], [TODO], [pause], [action]
-❌ NO markdown: **, ##, ___, \`\`\`
-❌ NO repeated frase-parasites (max 1-2 times total):
-   "— вот в чём дело", "— одним словом", "— может быть, не совсем точно"
-❌ NO orphaned fragments at sentence start: "ну и", "да вот", "вот только"
-❌ NO profanity or crude language
-❌ NO broken dialogue spanning multiple paragraphs
+✅ ПРЕДЛОЖЕНИЯ
+   - Разная длина: короткие (5-8 слов) и средние (10-14 слов)
+   - НИКАКИХ обрубленных фраз на середине
+   - НИКАКИХ "ну и", "да вот", "вот только" в начале предложений
+   - Полные, завершённые мысли
 
-✅ GOOD EXAMPLE OF TONE (Donna Latenko + Rubina Daud style):
+✅ ДИАЛОГИ (35-40% текста)
+   - 6-8 обменов репликами
+   - Формат: "— Вопрос? — спросила я."
+   - Естественные, живые
+   - Чередуются с повествованием (не блоками)
+
+✅ СЕНСОРНЫЕ ДЕТАЛИ (10+ на эпизод)
+   - Зрение: "солнце било в окно", "морщинки вокруг глаз"
+   - Слух: "голос дрожал", "хлопнула дверь"
+   - Осязание: "холодные пальцы", "тряслись руки"
+   - Запах: "пахло йодом", "духи Angel"
+   - Вкус: "привкус железа", "горький кофе"
+
+✅ ЭМОЦИИ
+   - Показывай действиями, НЕ объясняй
+   - ПЛОХО: "Я была напугана"
+   - ХОРОШО: "Руки тряслись. Я не могла выговорить ни слова."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ЗАПРЕЩЕНО
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ Метаданные: [note], [TODO], [pause], ***
+❌ Markdown: **жирный**, ##заголовок, \`код\`
+❌ Фразы-паразиты (НИ РАЗУ):
+   "— может быть, не совсем точно, но..."
+   "— одним словом..."
+   "— не знаю почему, но..."
+   "— вот в чём дело..."
+   "— вот что я хочу сказать..."
+❌ Обрубки в начале: "ну и", "да вот", "вот только", "-то"
+❌ Мат и грубая лексика
+❌ Диалог через несколько абзацев без контекста
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ПРИМЕР ХОРОШЕГО ТОНА
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 "Её голос дрожал. Я смотрела на стекло кабинета. На улице шёл снег. Холодный апрельский снег.
  — Откуда ты это знаешь? — спросила я.
  — Я не могу сказать, — ответила она.
- Письмо было в руке. Бумага пахла старостью. Я чувствовала ледяную боль в груди."
+ Письмо было в моих руках. Бумага пахла старостью. Я чувствовала ледяную боль в груди."
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EPISODE OUTLINE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ПРИМЕР НАЧАЛА (ЗАХВАТЫВАЕТ):
+"Почему я была такая слепая? Пять лет прошло, а я каждое утро спрашиваю себя."
+"Она открыла рот. Я увидела в её глазах страх. Настоящий страх."
+"Только вчера вечером я поняла, что всё это время он врал."
 
-Question: "${outline.hookQuestion}"
-Conflict: ${outline.externalConflict}
-Emotion: ${outline.internalConflict}
-Turning Point: ${outline.keyTurning}
-Open Loop: "${outline.openLoop}"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ТЕХНИЧЕСКИЕ ТРЕБОВАНИЯ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${previousContext ? `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONTINUE FROM PREVIOUS EPISODE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-${previousContext}
-
-📌 How to continue:
-- START IMMEDIATELY with NEW action/dialogue/thought
-- DO NOT repeat the ending above
-- DO NOT start with "и" or "тогда"
-- Assume reader knows context - MOVE FORWARD` : ''}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LENGTH GUIDELINE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Target: ${minChars}-${maxChars} characters (with spaces)
-⚠️  QUALITY FIRST: If story needs 4000 chars for excellence → write 4000
-⚠️  If story fits perfectly in 3000 → write 3000
-⚠️  Don't artificially expand or trim
+Объём: ${minChars}-${maxChars} символов
+Абзацы: 4-8 строк каждый
+Диалоги: 6-8 обменов
+Сенсорные детали: 10+
 
 ${retryNote}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FINAL CHECKLIST (Before you output)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ВЫВОД: Только текст эпизода. Без заголовков. Без пояснений.
+Пиши так, будто рассказываешь лучшей подруге в 3 часа ночи.
 
-☐ 6 distinct parts? (hook → background → dev1 → dev2 → climax → resolution)
-☐ All sentences COMPLETE (no orphaned fragments)?
-☐ Dialogue 35-40%? (check 6-8 exchanges)
-☐ 10+ sensory details? (visual, audio, touch, smell mixed)
-☐ 2+ plot twists? (expectation subverted)
-☐ NO [brackets] or markdown?
-☐ NO repeated phrases > 1-2 times total?
-☐ Reading time ~5-7 minutes? (${minChars}-${maxChars} chars = 5-7 min for typical reader)
-
----
-
-Output ONLY the episode text.
-No titles, no metadata, no explanations.
-Make it unforgettable.`;
+Напиши сейчас.`;
   }
 
   /**
@@ -558,24 +514,43 @@ Make it unforgettable.`;
     let section = '';
     
     if (narrator) {
-      section += `\n📖 NARRATOR VOICE (${narrator.age || '40-50'} y.o., ${narrator.tone || 'confessional'})`;
+      section += `\n📖 ГОЛОС РАССКАЗЧИКА (${narrator.age || '40-50'} лет, ${narrator.tone || 'исповедальный'})`;
       if (narrator.voiceHabits) {
         if (narrator.voiceHabits.doubtPattern) {
-          section += `\n   When doubting: "${narrator.voiceHabits.doubtPattern}"`;
+          section += `\n   При сомнении: "${narrator.voiceHabits.doubtPattern}"`;
+        }
+        if (narrator.voiceHabits.memoryTrigger) {
+          section += `\n   Триггер памяти: "${narrator.voiceHabits.memoryTrigger}"`;
+        }
+        if (narrator.voiceHabits.angerPattern) {
+          section += `\n   При гневе: "${narrator.voiceHabits.angerPattern}"`;
         }
       }
     }
     
     if (sensory) {
-      section += `\n🎨 SENSORY PALETTE:`;
+      section += `\n🎨 СЕНСОРНАЯ ПАЛИТРА:`;
       if (sensory.details && sensory.details.length > 0) {
-        section += `\n   Visual: ${sensory.details.slice(0, 3).join(', ')}`;
+        section += `\n   Зрение: ${sensory.details.slice(0, 3).join(', ')}`;
       }
       if (sensory.smells && sensory.smells.length > 0) {
-        section += `\n   Smells: ${sensory.smells.slice(0, 2).join(', ')}`;
+        section += `\n   Запахи: ${sensory.smells.slice(0, 2).join(', ')}`;
       }
       if (sensory.sounds && sensory.sounds.length > 0) {
-        section += `\n   Sounds: ${sensory.sounds.slice(0, 2).join(', ')}`;
+        section += `\n   Звуки: ${sensory.sounds.slice(0, 2).join(', ')}`;
+      }
+      if (sensory.textures && sensory.textures.length > 0) {
+        section += `\n   Осязание: ${sensory.textures.slice(0, 2).join(', ')}`;
+      }
+    }
+    
+    if (thematic) {
+      section += `\n🎯 ТЕМАТИЧЕСКОЕ ЯДРО:`;
+      if (thematic.centralQuestion) {
+        section += `\n   Главный вопрос: "${thematic.centralQuestion}"`;
+      }
+      if (thematic.emotionalArc) {
+        section += `\n   Эмоциональная дуга: ${thematic.emotionalArc}`;
       }
     }
     
@@ -597,62 +572,29 @@ Make it unforgettable.`;
         config: {
           temperature: params.temperature,
           topK: this.topK,
-          topP: 0.90,
-        },
+          topP: 0.95,
+          maxOutputTokens: 8192
+        }
       });
-      return response.text || "";
+
+      const text = response.response.text();
+      if (!text) {
+        throw new Error('Empty response from Gemini');
+      }
+
+      return text;
     } catch (error) {
       const errorMessage = (error as Error).message;
-      console.warn(`Gemini call failed (${params.model}): ${errorMessage}`);
+      console.error(`❌ Gemini API error: ${errorMessage}`);
+      
+      // Handle specific API errors
+      if (errorMessage.includes('503') || errorMessage.includes('overloaded')) {
+        throw new Error(`API overloaded: ${errorMessage}`);
+      }
+      
       throw error;
     }
   }
-
-  /**
-   * 🔨 Refine Episode (AutoFix Orchestrator Support)
-   */
-  async refineEpisode(
-    episode: Episode,
-    refinementPrompt: string,
-    options: { retryCount?: number } = {}
-  ): Promise<Episode> {
-    const retries = options.retryCount || 2;
-    let lastError: Error | null = null;
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        const content = await this.callGemini({
-          prompt: refinementPrompt,
-          model: 'gemini-2.0-flash',
-          temperature: 0.8,
-        });
-
-        if (!content || content.length < 100) {
-          throw new Error('Generated content too short');
-        }
-
-        const refinedEpisode: Episode = {
-          ...episode,
-          content: content.trim(),
-          charCount: content.length,
-          stage: 'humanized' as const,
-          generatedAt: Date.now(),
-        };
-
-        return refinedEpisode;
-      } catch (error) {
-        lastError = error as Error;
-        console.warn(`Refinement attempt ${attempt} failed:`, lastError.message);
-        
-        if (attempt === retries) {
-          throw new Error(`Failed to refine episode after ${retries} attempts: ${lastError.message}`);
-        }
-      }
-    }
-
-    throw lastError!;
-  }
 }
 
-// Export singleton instance
-export const episodeGeneratorService = new EpisodeGeneratorService();
+export default EpisodeGeneratorService;
