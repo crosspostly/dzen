@@ -34,96 +34,179 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Debug - Check articles structure
+      - name: 🔍 Debug - Check articles structure (FULL listing)
         run: |
-          echo "🗂️  Структура папок articles/:"
-          find articles -maxdepth 3 -type f -name "*.md" 2>/dev/null | head -20 || echo "❌ Нет файлов .md"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🗂️  Структура articles/:" 
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          find articles -type f \( -name "*.md" -o -name "*.jpg" \) | sort | head -30
           echo ""
-          echo "📊 Всего .md файлов:"
-          find articles -type f -name "*.md" 2>/dev/null | wc -l || echo "0"
+          echo "📊 СТАТИСТИКА:"
+          echo "  .md файлы: $(find articles -type f -name '*.md' 2>/dev/null | wc -l)"
+          echo "  .jpg файлы: $(find articles -type f -name '*.jpg' 2>/dev/null | wc -l)"
+          echo ""
+          echo "📁 СТРУКТУРА ПАПОК:"
+          tree -L 4 -d articles/ 2>/dev/null || find articles -type d | head -20
 
-      - name: Generate RSS Feed (FULL mode)
+      - name: 🔍 Debug - Check for timestamp suffixes in filenames
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "⚠️  Проверка файлов с timestamp в имени:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          # Check for files with timestamp pattern (-1766318654134 or similar)
+          TIMESTAMP_FILES=$(find articles -type f \( -name "*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*" \) 2>/dev/null | wc -l)
+          
+          if [ "$TIMESTAMP_FILES" -gt 0 ]; then
+            echo "❌ НАЙДЕНО файлов с timestamp в имени: $TIMESTAMP_FILES"
+            find articles -type f -name "*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*" 2>/dev/null | head -10
+            echo ""
+            echo "⚠️  Эти файлы нужно очистить от timestamp!"
+          else
+            echo "✅ Все файлы чистые (без timestamp)!"
+          fi
+          echo ""
+
+      - name: 🔍 Debug - Detailed path analysis
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📍 АНАЛИЗ ПУТЕЙ ДЛЯ RSS ГЕНЕРАТОРА:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          
+          echo "1️⃣  ЖЕНЩИНЫ 35-60 (draft):" 
+          find articles/women-35-60 -type f -name "*.md" 2>/dev/null | head -3 | while read f; do
+            DIR=$(dirname "$f")
+            REL_DIR=$(echo "$DIR" | sed 's|^articles/||')
+            echo "   ✅ $REL_DIR/$(basename "$f")"
+          done
+          echo ""
+          
+          echo "2️⃣  PUBLISHED (уже опубликовано):"
+          find articles/published -type f -name "*.md" 2>/dev/null | head -3 | while read f; do
+            DIR=$(dirname "$f")
+            REL_DIR=$(echo "$DIR" | sed 's|^articles/||')
+            echo "   ✅ $REL_DIR/$(basename "$f")"
+          done
+          echo ""
+
+      - name: 🚀 Generate RSS Feed (FULL mode)
         if: github.event.inputs.mode == 'full'
         run: |
-          echo "🚀 Режим: full"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 Режим: FULL (все статьи)"
+          echo "   Включает: articles/women-35-60/* + articles/published/*"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
           npm run feed:full
         env:
           BASE_URL: https://dzen-livid.vercel.app
+          GITHUB_REPOSITORY: crosspostly/dzen
 
-      - name: Generate RSS Feed (INCREMENTAL mode)
+      - name: 🚀 Generate RSS Feed (INCREMENTAL mode)
         if: github.event.inputs.mode == 'incremental'
         run: |
-          echo "🚀 Режим: incremental"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🚀 Режим: INCREMENTAL (только новые)"
+          echo "   Включает: articles/women-35-60/* (исключая published)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
           npm run feed:incremental
         env:
           BASE_URL: https://dzen-livid.vercel.app
+          GITHUB_REPOSITORY: crosspostly/dzen
 
-      - name: Check if feed.xml was created
+      - name: ✅ Verify feed.xml created
         id: verify
         run: |
-          echo "📋 Проверка наличия feed.xml:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📋 Проверка результата генерации"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          
           if [ -f "public/feed.xml" ]; then
             echo "✅ Feed создан в public/feed.xml"
             echo "status=feed-created" >> $GITHUB_OUTPUT
+            echo ""
+            echo "📊 Статистика файла:"
             ls -lh public/feed.xml
+            echo "   Размер: $(stat --format=%s public/feed.xml 2>/dev/null || stat -f%z public/feed.xml) bytes"
             echo ""
-            echo "📊 Размер: $(stat --format=%s public/feed.xml 2>/dev/null || stat -f%z public/feed.xml) bytes"
+            
+            echo "📝 Проверка содержимого (первые 1000 символов):"
+            head -c 1000 public/feed.xml
             echo ""
-            echo "📝 Первые 500 символов:"
-            head -c 500 public/feed.xml
+            echo ""
+            
+            echo "🔗 Проверка URL'ов на изображения:"
+            grep -o 'enclosure url="[^"]*' public/feed.xml | head -5 | while read line; do
+              echo "   $line"
+            done
+            echo ""
+            
+            echo "📊 Количество статей в RSS:"
+            ITEM_COUNT=$(grep -c "<item>" public/feed.xml)
+            echo "   Всего статей: $ITEM_COUNT"
+            echo ""
           else
-            echo "❌ Feed НЕ создан!"
+            echo "❌ Feed НЕ создан! Проверь логи выше."
             echo "status=no-feed" >> $GITHUB_OUTPUT
             echo ""
             echo "🔍 Содержимое public/:"
             ls -la public/ 2>/dev/null || echo "Папка public не существует"
           fi
 
-      - name: Force add feed.xml to git tracking
+      - name: 📤 Commit and push changes
         if: steps.verify.outputs.status == 'feed-created'
         run: |
-          echo "🔐 Заставляем git отслеживать feed.xml (игнорируя .gitignore)..."
-          git add -f public/feed.xml
-          echo "✅ Feed.xml добавлен в git (force)"
-
-      - name: Check git status
-        run: |
-          echo "📝 Git статус:"
-          git status
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📤 Закрепляем изменения в Git"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo ""
-          echo "📊 Git diff --stat:"
-          git diff --cached --stat || echo "Нет изменений в индексе"
-
-      - name: Commit and push changes
-        if: steps.verify.outputs.status == 'feed-created'
-        run: |
-          echo "📌 Проверяем есть ли что коммитить..."
+          
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions"
+          
+          # Force add feed.xml (ignoring .gitignore if needed)
+          git add -f public/feed.xml
+          echo "✅ Feed.xml добавлен в индекс"
+          echo ""
+          
+          # Check if there are actual changes
           if git diff --cached --quiet; then
             echo "ℹ️  Нет новых изменений для коммита"
           else
             echo "📝 Коммитим изменения..."
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Actions"
-            git commit -m "chore: Update RSS feed [${{ github.event.inputs.mode }} mode]"
+            git commit -m "chore: Update RSS feed [${{ github.event.inputs.mode }} mode] - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
             echo "✅ Коммит создан"
+            echo ""
             
             echo "🚀 Пушим в main..."
             git push origin main || {
-              echo "⚠️  Push failed, trying to pull first"
-              git pull origin main --rebase
+              echo "⚠️  First push failed, syncing with remote first..."
+              git fetch origin main
+              git rebase origin/main
               git push origin main
             }
             echo "✅ Успешно запушено!"
           fi
+          echo ""
 
-      - name: Summary
+      - name: 📊 Final Summary
         if: always()
         run: |
-          echo "## 📊 Результаты генерации" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Режим**: \`${{ github.event.inputs.mode }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Feed создан**: $([ '${{ steps.verify.outputs.status }}' = 'feed-created' ] && echo '✅ ДА' || echo '❌ НЕТ')" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Режимы:" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔄 **full** - все статьи (articles/women-35-60/* + articles/published/*)" >> $GITHUB_STEP_SUMMARY
-          echo "- 📧 **incremental** - только новые (articles/women-35-60/*, исключая published)" >> $GITHUB_STEP_SUMMARY
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ ИТОГОВЫЙ ОТЧЕТ"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+          echo "📋 Параметры генерации:"
+          echo "   Режим: ${{ github.event.inputs.mode }}"
+          echo "   Feed создан: $([ '${{ steps.verify.outputs.status }}' = 'feed-created' ] && echo '✅ ДА' || echo '❌ НЕТ')"
+          echo ""
+          echo "📍 Варианты использования режимов:"
+          echo "   🔄 full       - Регенерирует все статьи (articles/women-35-60 + published)"
+          echo "   📧 incremental - Только новые статьи (articles/women-35-60, без published)"
+          echo ""
+          echo "🔗 RSS Feed URL:"
+          echo "   https://raw.githubusercontent.com/crosspostly/dzen/main/public/feed.xml"
+          echo ""
