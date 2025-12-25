@@ -1,0 +1,26 @@
+{
+  "version": "4.0",
+  "generatedAt": 1766643600831,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000
+  },
+  "articleCount": 1,
+  "totalCharacters": 17779,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2025-12-25/ya-do-boli-zavidovala-eyo-yarkomu-kino-poka-ne-uzn.jpg"
+    ],
+    "report": "articles/women-35-60/2025-12-25/REPORT.md"
+  }
+}
