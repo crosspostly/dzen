@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * Скрипт генерации RSS-ленты для Яндекс Дзен
- * Исправлена структура XML и MIME-типы
+ * Генератор RSS для Яндекс Дзен
+ * 
+ * НАПОЛНи: node scripts/generate-feed.js full
+ * или:   node scripts/generate-feed.js incremental
  */
 
 import fs from 'fs';
@@ -13,11 +15,14 @@ import { Feed } from 'feed';
 const BASE_URL = process.env.BASE_URL || 'https://dzen-livid.vercel.app';
 const SITE_URL = process.env.SITE_URL || BASE_URL;
 const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'crosspostly/dzen';
+const MODE = process.argv[2] || 'incremental'; // 'full' или 'incremental'
+
+console.log(`\n🚀 Режим: ${MODE === 'full' ? '🔄 ПОЛНАЯ ПЕРЕгЕНЕРАЦИО' : '📥 ПОЛНО НОВЫМ'}`);
 
 /**
- * Получить все markdown файлы
+ * Получить все markdown файлы из нОВЫХ (НЕ в published)
  */
-function getMarkdownFiles(dir) {
+function getNewMarkdownFiles(dir) {
   const files = [];
   const items = fs.readdirSync(dir);
 
@@ -28,7 +33,7 @@ function getMarkdownFiles(dir) {
     const fullPath = path.join(dir, item);
     const stat = fs.statSync(fullPath);
     if (stat.isDirectory()) {
-      files.push(...getMarkdownFiles(fullPath));
+      files.push(...getNewMarkdownFiles(fullPath));
     } else if (path.extname(item).toLowerCase() === '.md') {
       if (path.basename(item, path.extname(item)) !== 'REPORT') {
         files.push(fullPath);
@@ -38,22 +43,57 @@ function getMarkdownFiles(dir) {
   return files;
 }
 
-function getPublishedMarkdownFiles(dir) {
+/**
+ * Получить ВСЕ маркдаун из published (для full режима)
+ */
+function getAllPublishedMarkdownFiles(dir) {
   const files = [];
   if (!fs.existsSync(dir)) return files;
-  const items = fs.readdirSync(dir);
-
-  for (const item of items) {
-    if (item === '.gitkeep' || item.startsWith('.')) continue;
-    const fullPath = path.join(dir, item);
-    const stat = fs.statSync(fullPath);
-    if (stat.isDirectory()) {
-      files.push(...getPublishedMarkdownFiles(fullPath));
-    } else if (path.extname(item).toLowerCase() === '.md') {
-      files.push(fullPath);
+  
+  function traverse(dir) {
+    const items = fs.readdirSync(dir);
+    for (const item of items) {
+      if (item === '.gitkeep' || item.startsWith('.')) continue;
+      const fullPath = path.join(dir, item);
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory()) {
+        traverse(fullPath);
+      } else if (path.extname(item).toLowerCase() === '.md') {
+        files.push(fullPath);
+      }
     }
   }
+  traverse(dir);
   return files;
+}
+
+/**
+ * Проверить истинность и существование изображения
+ */
+function validateImagePath(filePath, imageName) {
+  if (!imageName) return null;
+  if (imageName.startsWith('http')) return imageName; // Уже полный URL
+
+  const articleDir = path.dirname(filePath);
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+  const filesInDir = fs.existsSync(articleDir) ? fs.readdirSync(articleDir) : [];
+
+  // Пытаемся найти точное имя файла (u0441 timestamp)
+  for (const file of filesInDir) {
+    const fileExt = path.extname(file).toLowerCase();
+    if (imageExtensions.includes(fileExt)) {
+      const baseName = path.basename(file, fileExt);
+      const expectedBaseName = path.basename(imageName, path.extname(imageName));
+      
+      // Проверяем равнопоносность базовых имен
+      if (baseName.includes(expectedBaseName) || baseName === expectedBaseName) {
+        return file; // Найден в том же директории
+      }
+    }
+  }
+
+  console.warn(`⚠️  НЕ НАЙДЕНО изображение: ${imageName} для ${path.relative('./articles', filePath)}`);
+  return null;
 }
 
 function copyFile(source, destination) {
@@ -74,6 +114,7 @@ function moveFileToPublished(filePath) {
 
     fs.mkdirSync(publishedDir, { recursive: true });
     copyFile(filePath, publishedPath);
+    console.log(`   📁 Перенесено: ${relativePath}`);
 
     const fileDir = path.dirname(filePath);
     const fileName = path.basename(filePath, path.extname(filePath));
@@ -92,11 +133,7 @@ function moveFileToPublished(filePath) {
       }
     }
 
-    try {
-      fs.unlinkSync(filePath);
-    } catch (err) {
-      console.warn(`⚠️ Не удалось удалить ${relativePath}: ${err.message}`);
-    }
+    try { fs.unlinkSync(filePath); } catch (e) {}
 
     for (const file of filesInDir) {
       const fileExt = path.extname(file).toLowerCase();
@@ -121,16 +158,13 @@ function moveFileToPublished(filePath) {
         } else {
           break;
         }
-      } catch (err) { break; }
+      } catch (e) { break; }
     }
   } catch (error) {
-    console.error(`❌ Ошибка перемещения ${filePath}:`, error.message);
+    console.error(`❌ Ошибка: ${error.message}`);
   }
 }
 
-/**
- * Исправленный конвертер HTML
- */
 function markdownToHtml(md) {
   let html = md
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -141,24 +175,19 @@ function markdownToHtml(md) {
     .replace(/\*(.*?)\*/gim, '<em>$1</em>')
     .replace(/_(.*?)_/gim, '<em>$1</em>')
     .replace(/\n\n/gim, '</p><p>')
-    .replace(/\n/gim, '<br>') // Оставляем переносы внутри параграфов
-    .replace(/^<p><br>/, '<p>') // Убираем BR в начале первого параграфа
-    .replace(/<p><br>/g, '<p>') // Убираем BR в начале остальных параграфов
+    .replace(/\n/gim, '<br>')
+    .replace(/^<p><br>/, '<p>')
+    .replace(/<p><br>/g, '<p>')
     .replace(/^<br>/, '')
     .replace(/^<p>/, '')
     .replace(/<p>$/, '');
-
-  html = `<p>${html}</p>`;
-  return html;
+  return `<p>${html}</p>`;
 }
 
-/**
- * Правильный MIME тип (image/jpg -> image/jpeg)
- */
 function getImageMimeType(imagePath) {
   const ext = path.extname(imagePath).toLowerCase();
   const mimeTypes = {
-    '.jpg': 'image/jpeg',  // ВАЖНО: исправлено для RSS валидаторов
+    '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.png': 'image/png',
     '.gif': 'image/gif',
@@ -181,7 +210,7 @@ function getImageUrl(filePath, imageName) {
 }
 
 function generateFeed() {
-  console.log('🚀 Генерация RSS-ленты...');
+  console.log(`\n🚀 Начинаю генерацию RSS...\n`);
 
   const feed = new Feed({
     title: 'ZenMaster Articles',
@@ -194,10 +223,6 @@ function generateFeed() {
     copyright: `All rights reserved ${new Date().getFullYear()}, ZenMaster`,
     updated: new Date(),
     generator: 'ZenMaster RSS Generator',
-    // Добавляем namespaces, которые любит Дзен
-    feedLinks: {
-      rss: `${SITE_URL}/feed.xml`
-    },
     author: {
       name: "ZenMaster",
       email: "info@crosspostly.com",
@@ -205,13 +230,25 @@ function generateFeed() {
     }
   });
 
-  // Добавляем кастомные namespaces вручную через опции (библиотека feed это поддерживает ограниченно,
-  // но основные добавляет сама. Главное - content).
-  // content:encoded добавляется библиотекой автоматически.
+  const processedIds = new Set(); // Для дедупликации
+  let stats = { total: 0, skipped: 0, processed: 0, imageErrors: 0 };
 
-  const markdownFiles = getMarkdownFiles('./articles');
-  const publishedFiles = getPublishedMarkdownFiles('./articles/published');
-  const allFiles = [...markdownFiles, ...publishedFiles];
+  let allFiles = [];
+
+  if (MODE === 'full') {
+    // ПОЛНАЯ ПЕРЕГЕНЕРАЦИО: используем ВСЕ из published
+    const publishedFiles = getAllPublishedMarkdownFiles('./articles/published');
+    console.log(`📡 Найдено ${publishedFiles.length} пропубликованных статей\n`);
+    allFiles = publishedFiles;
+  } else {
+    // ПОЛНО НОВЫМ: новые + старые
+    const newFiles = getNewMarkdownFiles('./articles');
+    const publishedFiles = getAllPublishedMarkdownFiles('./articles/published');
+    console.log(`📥 Новых: ${newFiles.length}, Опубликованных: ${publishedFiles.length}\n`);
+    allFiles = [...newFiles, ...publishedFiles];
+  }
+
+  stats.total = allFiles.length;
 
   for (const filePath of allFiles) {
     try {
@@ -220,15 +257,35 @@ function generateFeed() {
       const frontmatter = parsed.data;
       const content = parsed.content;
 
-      if (!frontmatter.title || !frontmatter.date) continue;
+      if (!frontmatter.title || !frontmatter.date) {
+        console.warn(`⚠️  Отсутствует title/date: ${path.relative('./articles', filePath)}`);
+        stats.skipped++;
+        continue;
+      }
 
       const fileName = path.basename(filePath, path.extname(filePath));
       const vercelUrl = `https://${process.env.VERCEL_URL || 'dzen-livid.vercel.app'}`;
       const articleUrl = `${vercelUrl}/articles/${fileName}`;
+      const itemId = `${fileName}::${frontmatter.date}`;
 
+      // ДЕДУПЛИКАЦИОН
+      if (processedIds.has(itemId)) {
+        console.warn(`⚠️  ДУБЛОКАТ: ${fileName}`);
+        stats.skipped++;
+        continue;
+      }
+      processedIds.add(itemId);
+
+      // Проверка изображения
       let imageUrl = '';
+      let actualImageName = null;
       if (frontmatter.image) {
-        imageUrl = getImageUrl(filePath, frontmatter.image);
+        actualImageName = validateImagePath(filePath, frontmatter.image);
+        if (actualImageName) {
+          imageUrl = getImageUrl(filePath, actualImageName);
+        } else {
+          stats.imageErrors++;
+        }
       }
 
       const date = new Date(frontmatter.date);
@@ -244,23 +301,35 @@ function generateFeed() {
         category: frontmatter.category ? [{ name: frontmatter.category }] : [],
         enclosure: imageUrl ? {
           url: imageUrl,
-          type: getImageMimeType(frontmatter.image || ''),
+          type: getImageMimeType(actualImageName || frontmatter.image || ''),
           size: 0
         } : undefined
       });
 
-      if (!filePath.includes('published')) {
+      console.log(`✅ ${frontmatter.title}`);
+      if (imageUrl) console.log(`   🖼️  ${imageUrl}`);
+      stats.processed++;
+
+      // НОВЫЕ файлы переносим в published (ОТКЛИЧАЕМ full)
+      if (MODE === 'incremental' && !filePath.includes('published')) {
         moveFileToPublished(filePath);
       }
 
     } catch (error) {
-      console.error(`❌ Ошибка обработки ${filePath}:`, error.message);
+      console.error(`❌ ОШИБКА: ${path.relative('./articles', filePath)} - ${error.message}`);
+      stats.skipped++;
     }
   }
 
   const feedXml = feed.rss2();
   fs.writeFileSync('./feed.xml', feedXml, 'utf8');
-  console.log(`\n✅ RSS-лента создана: feed.xml (${feed.items.length} статей)`);
+
+  console.log(`\n===== СТАТНСТИКА =====${MODE === 'full' ? ' [🔄 FULL]' : ' [📥 INCREMENTAL]'}`);
+  console.log(`📊 Всего файлов: ${stats.total}`);
+  console.log(`✅ Обработано: ${stats.processed}`);
+  console.log(`⚠️  Пропущено: ${stats.skipped}`);
+  console.log(`🖼️  Ошибки изображений: ${stats.imageErrors}`);
+  console.log(`\n📋 RSS-лента сохранена: feed.xml (${feed.items.length} статей)\n`);
 }
 
 generateFeed();
