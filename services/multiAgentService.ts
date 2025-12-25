@@ -7,6 +7,12 @@ import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
 import { FinalArticleCleanupGate } from "./finalArticleCleanupGate";
 import { ArticlePublishGate } from "./articlePublishGate";
 
+export interface MultiAgentOptions {
+  maxChars?: number;
+  useAntiDetection?: boolean; // 🆕 v7.0: Disable anti-detection for simpler generation
+  skipCleanupGates?: boolean; // 🆕 v7.0: Skip cleanup gates
+}
+
 export class MultiAgentService {
   private geminiClient: GoogleGenAI;
   private agents: ContentAgent[] = [];
@@ -14,17 +20,28 @@ export class MultiAgentService {
   private phase2Service: Phase2AntiDetectionService;
   private maxChars: number;
   private episodeCount: number = 12;
+  private useAntiDetection: boolean; // 🆕 v7.0
+  private skipCleanupGates: boolean; // 🆕 v7.0
 
-  constructor(apiKey?: string, maxChars?: number) {
+  constructor(apiKey?: string, options?: MultiAgentOptions) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.contextManager = new ContextManager();
-    this.maxChars = maxChars || CHAR_BUDGET; // Use central budget as default
+    this.maxChars = options?.maxChars || CHAR_BUDGET; // Use central budget as default
     this.phase2Service = new Phase2AntiDetectionService();
+    this.useAntiDetection = options?.useAntiDetection ?? true;
+    this.skipCleanupGates = options?.skipCleanupGates ?? false;
     
     // Calculate dynamic episode count
     this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
     console.log(`📊 Dynamic episode allocation: ${this.episodeCount} episodes for ${this.maxChars} chars`);
+    
+    if (!this.useAntiDetection) {
+      console.log('🚫 Anti-detection DISABLED - simplified generation mode');
+    }
+    if (this.skipCleanupGates) {
+      console.log('🚫 Cleanup gates DISABLED - direct output');
+    }
     
     this.initializeAgents(this.episodeCount);
   }
@@ -130,28 +147,33 @@ export class MultiAgentService {
       finale
     ].join('\n\n');
     
-    // 🧹 УРОВЕНЬ 2: FINAL ARTICLE CLEANUP GATE (v6.0)
-    console.log('\n🧹 [Уровень 2] Final Article Cleanup Gate...');
-    const cleanupGate = new FinalArticleCleanupGate();
-    const cleanupResult = await cleanupGate.cleanupAndValidate(fullContent);
-    
-    if (cleanupResult.appliedCleanup) {
-      console.log('   ✅ Cleanup applied, quality improved');
-      fullContent = cleanupResult.cleanText;
+    // 🆕 v7.0: Optionally skip cleanup gates for simplified generation
+    if (!this.skipCleanupGates) {
+      // 🧹 УРОВЕНЬ 2: FINAL ARTICLE CLEANUP GATE (v6.0)
+      console.log('\n🧹 [Уровень 2] Final Article Cleanup Gate...');
+      const cleanupGate = new FinalArticleCleanupGate();
+      const cleanupResult = await cleanupGate.cleanupAndValidate(fullContent);
+      
+      if (cleanupResult.appliedCleanup) {
+        console.log('   ✅ Cleanup applied, quality improved');
+        fullContent = cleanupResult.cleanText;
+      } else {
+        console.log('   ✅ No cleanup needed');
+      }
+      
+      // 🚪 УРОВЕНЬ 3: ARTICLE PUBLISH GATE (v6.0)
+      console.log('\n🚪 [Уровень 3] Article Publish Gate...');
+      const publishValidation = ArticlePublishGate.validateBeforePublish(fullContent);
+      
+      if (!publishValidation.canPublish) {
+        console.error('   ❌ Article failed publish gate validation');
+        throw new Error(`Quality check failed: ${publishValidation.errors.join(', ')}`);
+      }
+      
+      console.log('   ✅ Article passed publish gate validation');
     } else {
-      console.log('   ✅ No cleanup needed');
+      console.log('\n🚫 Skipping cleanup gates (simplified mode)');
     }
-    
-    // 🚪 УРОВЕНЬ 3: ARTICLE PUBLISH GATE (v6.0)
-    console.log('\n🚪 [Уровень 3] Article Publish Gate...');
-    const publishValidation = ArticlePublishGate.validateBeforePublish(fullContent);
-    
-    if (!publishValidation.canPublish) {
-      console.error('   ❌ Article failed publish gate validation');
-      throw new Error(`Quality check failed: ${publishValidation.errors.join(', ')}`);
-    }
-    
-    console.log('   ✅ Article passed publish gate validation');
     
     // Create initial article object
     const article: LongFormArticle = {
@@ -661,11 +683,15 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
    * Stage 1: Sequential episode generation
    * 
    * 🆕 v5.3 (Issue #78): Now passes plotBible to episode generator
+   * 🆕 v7.0: Pass anti-detection option for simplified generation
    */
   private async generateEpisodesSequentially(outline: OutlineStructure): Promise<Episode[]> {
     const episodeGenerator = new EpisodeGeneratorService(
       process.env.GEMINI_API_KEY || process.env.API_KEY,
-      this.maxChars // ✅ PASS the budget so episodeGenerator knows the same budget
+      {
+        maxChars: this.maxChars, // ✅ PASS the budget so episodeGenerator knows the same budget
+        useAntiDetection: this.useAntiDetection // 🆕 v7.0: Pass anti-detection option
+      }
     );
 
     return await episodeGenerator.generateEpisodesSequentially(

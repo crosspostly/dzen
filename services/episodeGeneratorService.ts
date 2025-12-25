@@ -35,6 +35,11 @@ import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
    * - Now accepts maxChars via constructor parameter
    * - Falls back to CHAR_BUDGET from central config
    */
+export interface EpisodeGeneratorOptions {
+  useAntiDetection?: boolean; // 🆕 v7.0: Disable anti-detection for simpler, cleaner output
+  maxChars?: number;
+}
+
 export class EpisodeGeneratorService {
   private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
@@ -46,13 +51,19 @@ export class EpisodeGeneratorService {
   private CONTEXT_LENGTH = 1200; // Context from previous episode
   private temperature = 0.8; // v6.0: LOWERED from 0.9 for stability
   private topK = 30; // v6.0: LOWERED from 40
+  private useAntiDetection: boolean; // 🆕 v7.0: Control anti-detection
 
-  constructor(apiKey?: string, maxChars?: number) {
+  constructor(apiKey?: string, options?: EpisodeGeneratorOptions) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
     this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.titleGenerator = new EpisodeTitleGenerator(key);
     this.phase2Service = new Phase2AntiDetectionService();
-    this.TOTAL_BUDGET = maxChars || CHAR_BUDGET; // Use central budget as default
+    this.TOTAL_BUDGET = options?.maxChars || CHAR_BUDGET; // Use central budget as default
+    this.useAntiDetection = options?.useAntiDetection ?? true; // Default to true for backward compatibility
+    
+    if (!this.useAntiDetection) {
+      console.log('🚫 Anti-detection DISABLED - using simplified generation');
+    }
   }
 
   /**
@@ -243,21 +254,26 @@ export class EpisodeGeneratorService {
         console.log(`      ✅ Episode ${episodeNum}: ${content.length} chars (perfect)`);
       }
 
-      // Phase 2: Anti-Detection processing
-      console.log(`\n   📋 [Phase 2] Processing episode ${episodeNum}...`);
-      const phase2Result = await this.phase2Service.processEpisodeContent(
-        content,
-        episodeNum,
-        charLimit,
-        {
-          applyPerplexity: true,
-          applyBurstiness: true,
-          applySkazNarrative: true,
-          verbose: true
-        }
-      );
-      
-      content = phase2Result.processedContent;
+      // 🆕 v7.0: Skip Phase 2 if anti-detection is disabled
+      let phase2Result = null;
+      if (this.useAntiDetection) {
+        // Phase 2: Anti-Detection processing
+        console.log(`\n   📋 [Phase 2] Processing episode ${episodeNum}...`);
+        phase2Result = await this.phase2Service.processEpisodeContent(
+          content,
+          episodeNum,
+          charLimit,
+          {
+            applyPerplexity: true,
+            applyBurstiness: true,
+            applySkazNarrative: true,
+            verbose: true
+          }
+        );
+        content = phase2Result.processedContent;
+      } else {
+        console.log(`   🚫 Skipping Phase 2 (anti-detection disabled)`);
+      }
 
       // Generate title
       const episodeTitle = await this.titleGenerator.generateEpisodeTitle(
@@ -278,12 +294,12 @@ export class EpisodeGeneratorService {
         characters: [],
         generatedAt: Date.now(),
         stage: "draft",
-        phase2Metrics: {
+        phase2Metrics: phase2Result ? {
           adversarialScore: phase2Result.adversarialScore,
           breakdown: phase2Result.breakdown,
           modificationStats: phase2Result.modificationStats,
           suggestion: phase2Result.suggestion
-        }
+        } : undefined
       };
     } catch (error) {
       const errorMessage = (error as Error).message;
