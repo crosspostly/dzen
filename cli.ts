@@ -172,7 +172,6 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
           console.log(`${LOG.INFO} 🚫 Cleanup gates DISABLED (direct output)`);
         }
       }
-      }
 
       if (verbose) {
         console.log(`${LOG.INFO} Configuration:`, JSON.stringify(config, null, 2));
