@@ -107,7 +107,13 @@ Examples:
 
       // Process image (resize to 16:9, clean metadata)
       if (verbose) console.log(`       🔄 Processing (16:9 1280x720)...`);
-      const processedBuffer = await imageProcessor.processImage(base64Image);
+      const processResult = await imageProcessor.processImage(base64Image);
+
+      if (!processResult.success || !processResult.buffer) {
+        throw new Error(`Image processing failed: ${processResult.errorMessage || 'Unknown error'}`);
+      }
+
+      const processedBuffer = processResult.buffer;
 
       if (verbose) console.log(`       ✅ Processed (${(processedBuffer.length / 1024).toFixed(1)} KB)`);
 

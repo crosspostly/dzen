@@ -137,6 +137,15 @@ export interface ArticleMetadata {
     validationIssues: string[];
     validationWarnings: string[];
   };
+  // Image processing status
+  imageProcessingStatus?: string;
+  imageProcessingError?: string;
+  // Mobile authenticity processing
+  mobileAuthenticityApplied?: boolean;
+  authenticityLevel?: string;
+  appliedAuthenticityEffects?: string[];
+  authenticityError?: string;
+  mobileCameraEmulated?: string;
 }
 
 export interface ArticleStats {
