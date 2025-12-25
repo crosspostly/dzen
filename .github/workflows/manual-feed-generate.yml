@@ -36,18 +36,26 @@ jobs:
 
       - name: Debug - Check articles structure
         run: |
-          echo "📁 Структура папок articles/:"
+          echo "🗂️  Структура папок articles/:"
           find articles -maxdepth 3 -type f -name "*.md" 2>/dev/null | head -20 || echo "❌ Нет файлов .md"
           echo ""
           echo "📊 Всего .md файлов:"
           find articles -type f -name "*.md" 2>/dev/null | wc -l || echo "0"
 
-      - name: Generate RSS Feed
+      - name: Generate RSS Feed (FULL mode)
+        if: github.event.inputs.mode == 'full'
         run: |
-          echo "🚀 Режим: ${{ github.event.inputs.mode }}"
-          node scripts/generate-feed.js ${{ github.event.inputs.mode }}
+          echo "🚀 Режим: full"
+          npm run feed:full
         env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
+          BASE_URL: https://dzen-livid.vercel.app
+
+      - name: Generate RSS Feed (INCREMENTAL mode)
+        if: github.event.inputs.mode == 'incremental'
+        run: |
+          echo "🚀 Режим: incremental"
+          npm run feed:incremental
+        env:
           BASE_URL: https://dzen-livid.vercel.app
 
       - name: Check if feed.xml was created
@@ -66,6 +74,9 @@ jobs:
           else
             echo "❌ Feed НЕ создан!"
             echo "status=no-feed" >> $GITHUB_OUTPUT
+            echo ""
+            echo "🔍 Содержимое public/:"
+            ls -la public/ 2>/dev/null || echo "Папка public не существует"
           fi
 
       - name: Check if there are changes
@@ -73,13 +84,13 @@ jobs:
         run: |
           if git diff --quiet; then
             echo "status=no-changes" >> $GITHUB_OUTPUT
-            echo "ℹ️ Нет изменений в git"
+            echo "ℹ️  Нет изменений в git"
           else
             echo "status=has-changes" >> $GITHUB_OUTPUT
             echo "📝 Обнаружены изменения:"
             git diff --stat
             echo ""
-            git diff public/feed.xml | head -50 || echo "(бинарный файл или большие изменения)"
+            git diff public/feed.xml 2>/dev/null | head -50 || echo "(бинарный файл или большие изменения)"
           fi
 
       - name: Commit and push changes
@@ -102,7 +113,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Режим**: \`${{ github.event.inputs.mode }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Feed создан**: $([ '${{ steps.verify.outputs.status }}' = 'feed-created' ] && echo '✅ ДА' || echo '❌ НЕТ')" >> $GITHUB_STEP_SUMMARY
-          echo "- **Изменения**: $([ '${{ steps.changes.outputs.status }}' = 'has-changes' ] && echo '✅ Есть' || echo 'ℹ️ Нет')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Изменения**: $([ '${{ steps.changes.outputs.status }}' = 'has-changes' ] && echo '✅ Есть' || echo 'ℹ️  Нет')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Режимы:" >> $GITHUB_STEP_SUMMARY
           echo "- 🔄 **full** - все статьи (articles/women-35-60/* + articles/published/*)" >> $GITHUB_STEP_SUMMARY
