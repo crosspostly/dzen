@@ -16,7 +16,10 @@
     "validate": "node --import tsx cli.ts validate",
     "list-projects": "node --import tsx cli.ts list-projects",
     "test": "node --import tsx cli.ts test",
-    "test:full": "npm run test && npm run validate && npm run list-projects"
+    "test:full": "npm run test && npm run validate && npm run list-projects",
+    "feed:full": "node scripts/generate-feed.js full",
+    "feed:incremental": "node scripts/generate-feed.js incremental",
+    "feed:generate": "node scripts/generate-feed.js incremental"
   },
   "dependencies": {
     "@google/genai": "^1.33.0",
