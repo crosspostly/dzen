@@ -793,11 +793,13 @@ ${"=".repeat(60)}`);
 
     const exportedFiles: string[] = [];
 
+    const githubRepo = process.env.GITHUB_REPOSITORY || 'crosspostly/dzen';
+
     // Export each article with FLAT structure (no article-1/, article-2/ folders)
     for (let i = 0; i < this.articles.length; i++) {
       const article = this.articles[i];
       const slug = this.createSlug(article.title); // Convert title to URL-safe slug
-      
+
       // Add suffix for BOTH mode articles (RAW/RESTORED)
       const version = (article.metadata as any)?.articleVersion;
       const filename = version ? `${slug}-${version.toLowerCase()}` : slug;
@@ -806,11 +808,13 @@ ${"=".repeat(60)}`);
         // Generate front-matter for the markdown file (compatible with RSS generation)
         const description = this.generateIntriguingDescription(article.content);
         const imageFileName = `${slug}.jpg`; // Image file without timestamp (shared)
+        const imageUrl = `https://raw.githubusercontent.com/${githubRepo}/main/articles/${this.channelName}/${dateStr}/${imageFileName}`;
+
         const frontMatter = `---
 title: "${article.title}"
 date: "${dateStr}"
 description: "${description}"
-image: "${imageFileName}"
+image: "${imageUrl}"
 category: "lifestory"
 ${version ? `version: "${version}"` : ''}
 ---

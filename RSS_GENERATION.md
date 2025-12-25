@@ -1,114 +1,209 @@
-# RSS Лента - Генерация и Утверждение
+# 🔥 RSS Feed Generation for Yandex Dzen
 
-Функционал: твой RSS нынеш не нужен черюч временных репозиториев, а настоящие версии статей находятся в `articles/published`.
+## Overview
 
-## Моды генерации
+This system generates RSS feeds compatible with Yandex Dzen, featuring **full HTML content** in `<content:encoded>` CDATA blocks.
 
-### 1. **🔄 FULL (Полная Перегенерация)**
+## Key Features
 
-Сканирует **ВСЕ** маркдаун файлы из `articles/published` и обновляет рафс сі чистыма доска.
+✅ **Full HTML content** in `<content:encoded>` (not article links)  
+✅ **RAW GitHub URLs** for images  
+✅ **Markdown to HTML conversion** (bold, italic, underline, links)  
+✅ **CDATA-wrapped content** for Yandex Dzen compatibility  
+✅ **No article links** - just pure content delivery
 
-**Когда использовать:**
-- После донастройки драйва (исправление путей к фото)
-- При обнаружении критических ошибок в рафс
-- Еженедельная синхронизация (мантенанс)
+## Workflow
 
-```bash
-node scripts/generate-feed.js full
-```
-
-**Лог ответа:**
-```
-🚀 Режим: 🔄 ПОЛНАЯ ПЕРЕГЕНЕРАЦИО
-📡 Найдено 47 пропубликованных статей
-```
-
-### 2. **📥 INCREMENTAL (Полно НОВЫМ)**
-
-Сканирует **новые** статьи (в `articles/` текащая версия) гласно добавляет опубликованные на диск.
-
-**Когда использовать:**
-- Добывают новые статьи (content-factory)
-- ежедневная автоматическая генерация
-- После шенционирования контента
+### Step 1: Generate Articles
 
 ```bash
-node scripts/generate-feed.js incremental
+npx ts-node cli.ts both --count=1 --channel=women-35-60 --images
 ```
 
-**Лог ответа:**
+**Output:**
 ```
-🚀 Режим: 📥 ПОЛНО НОВЫМ
-📥 Новых: 3, Опубликованных: 47
-```
-
-## Проверки в обоих режимах
-
-### ✅ Проверка дубликатов
-
-Каждый процесс по Контоль артикулю `filename::date` для эвита дубликатов в одной ленте.
-
-```text
-⚠️  ДУБЛОКАТ: ya-dumala-chto-schastliva-no-pustota-za-idealnym-f-1766318654130
+articles/women-35-60/2025-12-25/
+├── article-slug.md (markdown with frontmatter)
+└── article-slug.jpg (cover photo)
 ```
 
-### 🖼️ Проверка Патей к изображениям
-
-Для каждого артикуля `frontmatter.image` валидируется и используется **локальный текст файла**:
-
-```javascript
-// Прверка хаши
- const actualImageName = validateImagePath(filePath, frontmatter.image);
- if (actualImageName) {
-   imageUrl = getImageUrl(filePath, actualImageName);
- } else {
-   stats.imageErrors++; // ІАГНАНО РЕГИСТРИРОВАНо
- }
-```
-
-**Пример выхода:**
-```text
-🖼️  https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/2025/12/21/odno-plate-i-ya-ne-znayu-kak-zhit-s-etoy-vinoy-i-t-1766318654134-cover.jpg
-```
-
-Не найдено:
-```text
-⚠️  НЕ НАЙДЕНО изображение: missing-image.jpg для articles/published/2025/12/21/article.md
-```
-
-## Ручное запускание по GitHub
-
-1. Пойдите в **Actions** вкладце 
-2. Выберите **Manual Feed Generation**
-3. Нажмите **Run workflow** желтая кнопка
-4. Выберите режим: **full** или **incremental**
-5. Нажмите **Run**
-
+### Step 2: Generate RSS Feed
 
 ```bash
-# Локально (досторим)
- npm run feed:full        # ПОЛНАЯ
- npm run feed:incremental # НОВЫМ
+node scripts/generate-feed.js
 ```
 
-
-## РЕЗУЛЬТАТЫ
-
-Статистика при завершении:
-
+**Output:**
 ```
-===== СТАТНСТИКА ===== [🔄 FULL]
-📊 Всего файлов: 47
-✅ Обработано: 47
-⚠️  Пропущено: 0
-🖼️  Ошибки изображений: 0
-
-📋 RSS-лента сохранена: feed.xml (47 статей)
+articles/articles.rss (RSS 2.0 with <content:encoded>)
 ```
 
+### Step 3: Commit to GitHub
 
-## Модификация на будущее
+```bash
+git add articles/
+git commit -m "Add new stories for Yandex Dzen"
+git push origin main
+```
 
-- [ ] Настроить данные **GitHub Pages** для `feed.xml`
-- [ ] Настроить данные приьемчика яндекс.дзен для авто-фида
-- [ ] Добавить сконфиграцию фида для ВК / Одноклассники
+### Step 4: Add to Yandex Dzen
+
+1. Open Yandex Creator Studio
+2. Add RSS feed URL:
+   ```
+   https://raw.githubusercontent.com/crosspostly/dzen/main/articles/articles.rss
+   ```
+3. Yandex Dzen will:
+   - Parse `<content:encoded>` for full article content
+   - Download images from `<enclosure>` URLs
+   - Publish articles automatically
+
+## Article Structure
+
+### Markdown File (Example)
+
+```markdown
+---
+title: "Article Title"
+date: "2025-12-25"
+description: "Short teaser for the article"
+image: "https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/article-slug.jpg"
+category: "lifestory"
+---
+
+**Bold text**
+
+*Italic text*
+
+__Underlined text__
+
+Normal paragraph with [link](https://example.com).
+
+Another paragraph.
+```
+
+### RSS Item (Generated)
+
+```xml
+<item>
+  <title>Article Title</title>
+  <description>Short teaser for the article</description>
+  <pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate>
+  <guid>women-35-60-2025-12-25-article-slug</guid>
+  
+  <!-- 🔥 FULL HTML CONTENT -->
+  <content:encoded><![CDATA[
+    <p><strong>Bold text</strong></p>
+    <p><em>Italic text</em></p>
+    <p><u>Underlined text</u></p>
+    <p>Normal paragraph with <a href="https://example.com">link</a>.</p>
+    <p>Another paragraph.</p>
+  ]]></content:encoded>
+  
+  <!-- IMAGE -->
+  <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/article-slug.jpg" type="image/jpeg" />
+  <image>
+    <url>https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/article-slug.jpg</url>
+    <title>Article Title</title>
+  </image>
+  
+  <category>lifestory</category>
+</item>
+```
+
+## Technical Details
+
+### RSS Structure
+
+- **NO `<link>`** element pointing to article pages
+- **YES `<content:encoded>`** with full HTML content
+- **YES `<enclosure>`** with image URL
+- **YES `<image>`** as alternative image format
+- **Namespace**: `xmlns:content="http://purl.org/rss/1.0/modules/content/"`
+
+### Markdown to HTML Conversion
+
+| Markdown | HTML |
+|----------|------|
+| `**text**` | `<strong>text</strong>` |
+| `*text*` | `<em>text</em>` |
+| `__text__` | `<u>text</u>` |
+| `[text](url)` | `<a href="url">text</a>` |
+| Double newline | `</p><p>` (paragraph breaks) |
+| Single newline | `<br>` (line breaks) |
+
+### Image URLs
+
+All images use **RAW GitHub URLs**:
+```
+https://raw.githubusercontent.com/crosspostly/dzen/main/articles/{channel}/{date}/{filename}.jpg
+```
+
+**NOT Vercel URLs** - Yandex Dzen needs direct access to image files.
+
+## Environment Variables
+
+```bash
+GITHUB_REPOSITORY=crosspostly/dzen  # Default if not set
+```
+
+## File Locations
+
+```
+articles/                              # Article storage
+├── women-35-60/                       # Channel folder
+│   └── 2025-12-25/                   # Date folder
+│       ├── article-slug.md           # Article with frontmatter
+│       ├── article-slug.jpg          # Cover image
+│       └── ...
+└── articles.rss                       # Generated RSS feed
+```
+
+## Yandex Dzen Compatibility
+
+✅ **Compatible with:**
+- Yandex Dzen RSS import
+- WordPress RSS feeds
+- Feedly
+- Any RSS reader supporting `<content:encoded>`
+
+❌ **Not compatible with:**
+- RSS readers that only support `<description>` (they'll see the short teaser)
+- Systems that don't support CDATA in RSS
+
+## Troubleshooting
+
+### No articles found
+
+**Problem:** `⚠️  No articles found in ./articles`
+
+**Solution:** Run article generation first:
+```bash
+npx ts-node cli.ts both --count=1 --channel=women-35-60 --images
+```
+
+### Images not showing
+
+**Problem:** Images not appearing in Yandex Dzen
+
+**Solutions:**
+1. Check image URLs are **RAW GitHub URLs** (not Vercel)
+2. Ensure images are committed to GitHub
+3. Verify images are publicly accessible
+4. Check file extensions are `.jpg` (not `.png` or `.webp`)
+
+### Content not appearing
+
+**Problem:** Articles appear in Dzen but content is missing
+
+**Solutions:**
+1. Verify `<content:encoded>` contains HTML (not markdown)
+2. Check CDATA wrapping is correct
+3. Ensure no `]]>` sequences in content (they're auto-escaped)
+
+## Next Steps
+
+- [ ] Set up GitHub Actions to auto-generate RSS on push
+- [ ] Add RSS validation in CI/CD
+- [ ] Monitor Yandex Dzen import status
+- [ ] Add analytics tracking
