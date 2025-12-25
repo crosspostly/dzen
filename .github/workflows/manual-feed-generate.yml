@@ -50,6 +50,7 @@ jobs:
 
       - name: 🔍 Debug - Check for timestamp suffixes in filenames
         run: |
+          echo ""
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "⚠️  Проверка файлов с timestamp в имени:"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -100,7 +101,7 @@ jobs:
           echo ""
           npm run feed:full
         env:
-          BASE_URL: https://dzen-livid.vercel.app
+          BASE_URL: https://raw.githubusercontent.com/crosspostly/dzen/main
           GITHUB_REPOSITORY: crosspostly/dzen
 
       - name: 🚀 Generate RSS Feed (INCREMENTAL mode)
@@ -113,7 +114,7 @@ jobs:
           echo ""
           npm run feed:incremental
         env:
-          BASE_URL: https://dzen-livid.vercel.app
+          BASE_URL: https://raw.githubusercontent.com/crosspostly/dzen/main
           GITHUB_REPOSITORY: crosspostly/dzen
 
       - name: ✅ Verify feed.xml created
