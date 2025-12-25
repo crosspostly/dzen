@@ -79,32 +79,42 @@ jobs:
             ls -la public/ 2>/dev/null || echo "Папка public не существует"
           fi
 
-      - name: Check if there are changes
-        id: changes
+      - name: Force add feed.xml to git tracking
+        if: steps.verify.outputs.status == 'feed-created'
         run: |
-          if git diff --quiet; then
-            echo "status=no-changes" >> $GITHUB_OUTPUT
-            echo "ℹ️  Нет изменений в git"
-          else
-            echo "status=has-changes" >> $GITHUB_OUTPUT
-            echo "📝 Обнаружены изменения:"
-            git diff --stat
-            echo ""
-            git diff public/feed.xml 2>/dev/null | head -50 || echo "(бинарный файл или большие изменения)"
-          fi
+          echo "🔐 Заставляем git отслеживать feed.xml (игнорируя .gitignore)..."
+          git add -f public/feed.xml
+          echo "✅ Feed.xml добавлен в git (force)"
+
+      - name: Check git status
+        run: |
+          echo "📝 Git статус:"
+          git status
+          echo ""
+          echo "📊 Git diff --stat:"
+          git diff --cached --stat || echo "Нет изменений в индексе"
 
       - name: Commit and push changes
-        if: steps.changes.outputs.status == 'has-changes'
+        if: steps.verify.outputs.status == 'feed-created'
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Actions"
-          git add -A
-          git commit -m "chore: Update RSS feed [${{ github.event.inputs.mode }} mode]"
-          git push origin main || {
-            echo "❌ Push failed, trying to pull first"
-            git pull origin main --rebase
-            git push origin main
-          }
+          echo "📌 Проверяем есть ли что коммитить..."
+          if git diff --cached --quiet; then
+            echo "ℹ️  Нет новых изменений для коммита"
+          else
+            echo "📝 Коммитим изменения..."
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Actions"
+            git commit -m "chore: Update RSS feed [${{ github.event.inputs.mode }} mode]"
+            echo "✅ Коммит создан"
+            
+            echo "🚀 Пушим в main..."
+            git push origin main || {
+              echo "⚠️  Push failed, trying to pull first"
+              git pull origin main --rebase
+              git push origin main
+            }
+            echo "✅ Успешно запушено!"
+          fi
 
       - name: Summary
         if: always()
@@ -113,7 +123,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Режим**: \`${{ github.event.inputs.mode }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Feed создан**: $([ '${{ steps.verify.outputs.status }}' = 'feed-created' ] && echo '✅ ДА' || echo '❌ НЕТ')" >> $GITHUB_STEP_SUMMARY
-          echo "- **Изменения**: $([ '${{ steps.changes.outputs.status }}' = 'has-changes' ] && echo '✅ Есть' || echo 'ℹ️  Нет')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Режимы:" >> $GITHUB_STEP_SUMMARY
           echo "- 🔄 **full** - все статьи (articles/women-35-60/* + articles/published/*)" >> $GITHUB_STEP_SUMMARY
