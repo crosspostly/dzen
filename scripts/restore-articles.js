@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * 🔧 Article Restoration Script
+ * 🔧 Article Restoration Script - FIXED PROMPT VERSION
  * Использует Gemini 2.5 Flash Lite для автоматической реставрации статей
+ * 
+ * ИЗМЕНЕНИЯ:
+ * - Новый промпт который СОХРАНЯЕТ 100% контента (не сокращает)
+ * - Сохранены все полезные валидации из v1
+ * - Добавлена проверка что текст не был сокращён более чем на 15%
  */
 
 import fs from 'fs';
@@ -18,51 +23,61 @@ if (!GEMINI_API_KEY) {
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 /**
- * Улучшенный промпт для реставрации с жесткой структуризацией
+ * 🆕 НОВЫЙ ПРОМПТ: Сохраняет ВСЕ содержимое без сокращений
+ * Только улучшает структуру и форматирование
  */
-const RESTORATION_PROMPT = `Ты — главный редактор литературного журнала. Твоя задача: полностью переписать текст, сохранив все сюжетные элементы, но создав идеальную структуру.
+const RESTORATION_PROMPT = `Ты — профессиональный редактор. Твоя ЕДИНСТВЕННАЯ задача: улучшить структуру и форматирование текста, СОХРАНИВ ВСЕ СОДЕРЖИМОЕ ПОЛНОСТЬЮ.
 
-ТЕКСТ СЕРЬЕЗНО ПОВРЕЖДЕН. Необходимо:
+✅ ЧТО НУЖНО СОХРАНИТЬ:
+✓ Каждую сцену
+✓ Каждого персонажа
+✓ Каждый диалог
+✓ Каждое описание
+✓ Все детали сюжета
+✓ ВСЮ информацию целиком
+✓ 100% исходного текста по объёму
 
-1. ПОЛНАЯ ПЕРЕРАБОТКА СТРУКТУРЫ:
-   - Проанализируй ВЕСЬ текст и выдели единственную, последовательную линию повествования
-   - УНИЧТОЖИ все повторы, дубли и пересказы одних и тех же событий
-   - Сохрани ТОЛЬКО уникальные детали, без единого повторения
+❌ ЧТО ЗАПРЕЩЕНО:
+✗ Сокращать текст
+✗ Пропускать части
+✗ Убирать как "повторение"
+✗ Уменьшать количество слов
+✗ Переписывать (только улучшать форматирование)
 
-2. СТРУКТУРА ПОВЕСТВОВАНИЯ:
-   - Вступление (завязка): что произошло, где и когда
-   - Развитие: как персонажи действуют и что открывается
-   - Кульминация: главный конфликт или открытие
-   - Развязка: последствия и финальное состояние
+🎯 ЧТО НУЖНО СДЕЛАТЬ:
 
-3. АБЗАЦНАЯ ОРГАНИЗАЦИЯ:
-   - Каждый абзац = ОДНА мысль или событие
+1️⃣ СТРУКТУРА:
+   - Раздели текст на логические абзацы
+   - Каждый абзац = одна сцена или идея
+   - Между абзацами пустая строка
+   - Каждый абзац на новой строке
    - Минимум 3-4 предложения в абзаце
-   - Раздели абзацы пустой строкой
-   - Логическая связность между абзацами
 
-4. СТИЛЕВАЯ РЕДАКЦИЯ:
-   - Удали все разговорные вставки: "ну", "да", "вот", "же", "как бы", "понимаешь"
-   - Исправь пунктуацию и орфографию
-   - Сделай речь литературной, но живой
+2️⃣ ФОРМАТИРОВАНИЕ (только техническое):
+   - Исправь орфографические ошибки
+   - Исправь пунктуацию
+   - Убери только случайные двойные пробелы
+   - Оставь авторский стиль и тон
 
-5. ОБРАБОТКА ПЕРСОНАЖЕЙ:
-   - Главная героиня (вдова, нашла письмо)
-   - Андрей (покойный муж)
-   - Элен (загадочная женщина из прошлого)
-   - Марина (связь с прошлым Андрея)
-   - Риэлтор Светлана (второстепенный персонаж)
+3️⃣ СТИЛЬ:
+   - Оставь ВСЕ авторские повторы (они намеренные!)
+   - Оставь ВСЕ разговорные вставки если они в оригинале
+   - Оставь ВСЕ эмоциональные моменты
+   - Оставь ВСЕ описания
 
-6. ПРОВЕРКА КАЧЕСТВА:
-   - Текст должен быть РАЗНООБРАЗНЫМ (не одинаковые фразы подряд)
-   - Короткие и длинные предложения должны чередоваться
-   - Должно быть ВИДИМО развитие сюжета
+4️⃣ КОНТРОЛЬ КАЧЕСТВА:
+   - Финальный текст должен быть ≈100% от исходного объёма
+   - Если текст сокращён более чем на 15%, это ОШИБКА
+   - Все сцены должны быть на месте
+   - Все персонажи должны упоминаться
+   - Весь диалог должен быть сохранён
 
-ВАЖНО: ВЫВЕДИ ТОЛЬКО ГОТОВЫЙ ТЕКСТ БЕЗ ВСТУПЛЕНИЙ, КОММЕНТАРИЕВ ИЛИ ОБЪЯСНЕНИЙ!
+⚠️ ВАЖНО:
+   - ВЫВЕДИ ТОЛЬКО ГОТОВЫЙ ТЕКСТ БЕЗ КОММЕНТАРИЕВ
+   - НЕ ДОБАВЛЯЙ объяснения
+   - НАЧНИ СРАЗУ С ПЕРВОГО ПРЕДЛОЖЕНИЯ
 
-НАЧНИ СРАЗУ С ТЕКСТА СТАТЬИ.
-
-ВХОДНОЙ ТЕКСТ:`;
+ИСХОДНЫЙ ТЕКСТ:`;
 
 /**
  * Проверить структуру frontmatter
@@ -105,38 +120,29 @@ function validateFrontmatter(content) {
 }
 
 /**
- * Проверить качество восстановленного текста
+ * 🆕 НОВАЯ ВАЛИДАЦИЯ: Проверяет что текст не был сокращён
  */
-function validateRestoration(text) {
-  // Проверка 1: Текст не должен быть пустым
-  if (!text || text.trim().length < 100) {
+function validateRestoration(originalText, restoredText) {
+  if (!restoredText || restoredText.trim().length < 100) {
     return { valid: false, reason: 'Text too short (< 100 chars)' };
   }
 
-  // Проверка 2: Должны быть абзацы (не одна стена текста)
-  const paragraphs = text.split('\n\n').filter(p => p.trim().length > 0);
-  if (paragraphs.length < 3) {
-    return { valid: false, reason: `Too few paragraphs (${paragraphs.length})` };
+  const originalLength = originalText.trim().length;
+  const restoredLength = restoredText.trim().length;
+  const ratio = restoredLength / originalLength;
+
+  // 🚨 КРИТИЧНО: текст не должен быть сокращён более чем на 15%
+  if (ratio < 0.85) {
+    return { 
+      valid: false, 
+      reason: `❌ SHORTENING DETECTED: ${originalLength} → ${restoredLength} (${(ratio * 100).toFixed(1)}% of original)` 
+    };
   }
 
-  // Проверка 3: Проверка на очевидные повторы
-  const lines = text.split('\n').filter(line => line.trim().length > 50);
-  if (lines.length >= 2) {
-    for (let i = 0; i < lines.length - 1; i++) {
-      // Если строка повторяется с толерантностью 80%
-      const similarity = calculateSimilarity(lines[i], lines[i + 1]);
-      if (similarity > 0.8) {
-        return { valid: false, reason: 'Obvious line repetition detected' };
-      }
-    }
-  }
-
-  // Проверка 4: Проверка на повторение целых предложений
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-  const uniqueSentences = new Set(sentences.map(s => s.trim().substring(0, 50)));
-  
-  if (sentences.length > 10 && uniqueSentences.size < sentences.length * 0.7) {
-    return { valid: false, reason: 'Too many similar sentences (likely repetitions)' };
+  // Проверка на минимальное количество абзацев
+  const paragraphs = restoredText.split('\n\n').filter(p => p.trim().length > 0);
+  if (paragraphs.length < 2) {
+    return { valid: false, reason: 'Too few paragraphs' };
   }
 
   return { valid: true };
@@ -187,6 +193,22 @@ function levenshteinDistance(str1, str2) {
 }
 
 /**
+ * 🆕 Функция для проверки что текст не имеет очевидных дублей
+ */
+function validateNoDuplicateLines(text) {
+  const lines = text.split('\n').filter(line => line.trim().length > 50);
+  if (lines.length >= 2) {
+    for (let i = 0; i < lines.length - 1; i++) {
+      const similarity = calculateSimilarity(lines[i], lines[i + 1]);
+      if (similarity > 0.85) {
+        return { valid: false, reason: 'Obvious line repetition detected' };
+      }
+    }
+  }
+  return { valid: true };
+}
+
+/**
  * Отправить текст на Gemini для реставрации
  */
 async function restoreArticle(articleText) {
@@ -202,21 +224,25 @@ async function restoreArticle(articleText) {
     const restoredText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const trimmedText = restoredText.trim();
 
-    // Валидация результата
-    const validation = validateRestoration(trimmedText);
-    if (!validation.valid) {
-      console.log(`⚠️  Restoration quality check failed: ${validation.reason}`);
-      
-      // Попытка с более мощной моделью
+    // 🆕 Валидация: проверяем что текст не был сокращён
+    const lengthValidation = validateRestoration(articleText, trimmedText);
+    if (!lengthValidation.valid) {
+      console.log(`⚠️  ${lengthValidation.reason}`);
       console.log('🤖 Trying fallback with gemini-2.5-flash...');
+      
       const fallbackResponse = await genAI.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `${RESTORATION_PROMPT}\n\n${articleText}`,
         config: { responseMimeType: "text/plain" }
       });
       const fallbackText = fallbackResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
       return fallbackText.trim();
+    }
+
+    // Проверка на дубли
+    const dupeValidation = validateNoDuplicateLines(trimmedText);
+    if (!dupeValidation.valid) {
+      console.log(`⚠️  ${dupeValidation.reason}`);
     }
 
     return trimmedText;
@@ -230,7 +256,7 @@ async function restoreArticle(articleText) {
  * Обработать один файл
  */
 async function restoreArticleFile(filePath) {
-  console.log(`\n📄 Processing: ${filePath}`);
+  console.log(`\n📄 Processing: ${path.basename(filePath)}`);
 
   try {
     // Читаем файл
@@ -266,9 +292,9 @@ description: Article from auto-restore
     const restoredBody = await restoreArticle(validation.body);
 
     // Финальная валидация перед записью
-    const bodyValidation = validateRestoration(restoredBody);
+    const bodyValidation = validateRestoration(validation.body, restoredBody);
     if (!bodyValidation.valid) {
-      console.log(`❌ Failed final quality check: ${bodyValidation.reason}`);
+      console.log(`❌ FAILED: ${bodyValidation.reason}`);
       console.log('   Article will NOT be saved. Manual review required.');
       return false;
     }
@@ -277,11 +303,11 @@ description: Article from auto-restore
     const restored = `---\n${validation.frontmatter}\n---\n\n${restoredBody}`;
 
     fs.writeFileSync(filePath, restored, 'utf8');
-    console.log(`✅ Restored: ${path.relative(process.cwd(), filePath)}`);
+    console.log(`✅ Successfully restored`);
     return true;
 
   } catch (error) {
-    console.error(`❌ Error restoring ${filePath}:`, error.message);
+    console.error(`❌ Error:`, error.message);
     return false;
   }
 }
@@ -292,7 +318,7 @@ description: Article from auto-restore
 async function main() {
   console.log('');
   console.log('╔═══════════════════════════════════════════════════╗');
-  console.log('║  🔧 Article Restoration - Gemini 2.5 Flash Lite   ║');
+  console.log('║  🔧 Article Restoration - PRESERVE ALL CONTENT   ║');
   console.log('╚═══════════════════════════════════════════════════╝');
   console.log('');
 
@@ -304,8 +330,7 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(`📋 Files to restore: ${files.length}`);
-  console.log('');
+  console.log(`📋 Files to restore: ${files.length}\n`);
 
   let successCount = 0;
   let failCount = 0;
@@ -314,7 +339,7 @@ async function main() {
   for (const file of files) {
     // Пропускаем если это не .md файл в articles/
     if (!file.endsWith('.md') || !file.includes('articles/')) {
-      console.log(`⏭️  Skipping: ${file} (not a markdown article)`);
+      console.log(`⏭️  Skipping: ${file}`);
       continue;
     }
 
@@ -332,12 +357,8 @@ async function main() {
   // Итоговый отчёт
   console.log('');
   console.log('╔═══════════════════════════════════════════════════╗');
-  console.log('║  📊 Restoration Summary                           ║');
+  console.log(`║  ✅ Restored: ${successCount} │ ❌ Failed: ${failCount}`);
   console.log('╚═══════════════════════════════════════════════════╝');
-  console.log('');
-  console.log(`✅ Restored: ${successCount}`);
-  console.log(`❌ Failed: ${failCount}`);
-  console.log(`📊 Total: ${files.length}`);
   console.log('');
 
   if (failCount > 0) {
