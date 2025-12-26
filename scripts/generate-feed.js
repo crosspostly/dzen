@@ -1,259 +1,395 @@
 #!/usr/bin/env node
 
 /**
- * Генератор RSS для Яндекс Дзен
+ * 📡 RSS Feed Generator for Yandex Dzen
+ * 
+ * Генерирует RSS фид из статей в папке articles/
+ * с правильными URL'ами для Dzen канала и GitHub изображений
  * 
  * Версия: 2.1 - ИСПРАВЛЕННАЯ
  * РЕЖИМ: node scripts/generate-feed.js incremental (только новые)
  * РЕЖИМ: node scripts/generate-feed.js full (ВСЕ статьи из всех папок)
  */
 
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
-import { Feed } from 'feed';
+const fs = require('fs');
+const path = require('path');
+const matter = require('front-matter');
+
+// ═══════════════════════════════════════════════════════════════
+// ⚙️ КОНФИГУРАЦИЯ
+// ═══════════════════════════════════════════════════════════════
 
 const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'crosspostly/dzen';
 const MODE = process.argv[2] || 'incremental';
+const BASE_URL = process.env.BASE_URL || `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
+const DZEN_CHANNEL = 'https://dzen.ru/potemki';  // ✅ ТВОЙ РЕАЛЬНЫЙ КАНАЛ!
 
-console.log(`\n🚀 Режим: ${MODE === 'full' ? '🔄 ПОЛНАЯ ПЕРЕГЕНЕРАЦИЯ (все статьи)' : '📥 ИНКРЕМЕНТАЛЬНЫЙ (только новые)'}\n`);
+const STATS = {
+  total: 0,
+  processed: 0,
+  failed: 0,
+  skipped: 0
+};
+
+// ═══════════════════════════════════════════════════════════════
+// 📂 ФУНКЦИИ
+// ═══════════════════════════════════════════════════════════════
 
 /**
- * Получить ВСЕ markdown файлы из папки (рекурсивно)
+ * Получить все файлы статей из папки articles/
  */
-function getAllMarkdownFiles(dir, excludePublished = false) {
-  const files = [];
+function getArticleFiles(mode) {
+  const articlesDir = path.join(process.cwd(), 'articles');
   
-  function traverse(dir) {
-    if (!fs.existsSync(dir)) return;
-    
-    const items = fs.readdirSync(dir);
-    for (const item of items) {
-      // Пропускаем папку published только если EXCLUDE_PUBLISHED = true
-      if (excludePublished && item === 'published') {
-        continue;
-      }
-      if (item === 'REPORT.md' || item === 'manifest.json' || item.startsWith('.')) {
-        continue;
-      }
-      
-      const fullPath = path.join(dir, item);
-      const stat = fs.statSync(fullPath);
-      
-      if (stat.isDirectory()) {
-        traverse(fullPath);
-      } else if (path.extname(item).toLowerCase() === '.md' && item !== 'REPORT.md') {
-        files.push(fullPath);
-      }
+  if (!fs.existsSync(articlesDir)) {
+    console.error('❌ ERROR: articles/ folder not found!');
+    process.exit(1);
+  }
+
+  let files = [];
+
+  // FULL mode: все статьи (women-35-60 + published)
+  if (mode === 'full') {
+    console.log('🔄 FULL mode: collecting ALL articles (women-35-60 + published)...');
+    files = getAllMdFiles(articlesDir);
+  }
+  
+  // INCREMENTAL mode: только женщины-35-60 (новые)
+  else if (mode === 'incremental') {
+    console.log('📧 INCREMENTAL mode: collecting NEW articles only...');
+    const womenDir = path.join(articlesDir, 'women-35-60');
+    if (fs.existsSync(womenDir)) {
+      files = getAllMdFiles(womenDir);
     }
   }
   
-  traverse(dir);
+  else {
+    console.error(`❌ Unknown mode: ${mode}`);
+    process.exit(1);
+  }
+
+  return files.filter(f => f.endsWith('.md'));
+}
+
+/**
+ * Рекурсивно получить все .md файлы из папки
+ */
+function getAllMdFiles(dir) {
+  let files = [];
+  
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    
+    // Пропускаем специальные папки
+    if (entry.name.startsWith('.') || entry.name === 'REPORT.md' || entry.name === 'manifest.json') {
+      continue;
+    }
+    
+    if (entry.isDirectory()) {
+      // Рекурсия в подпапки
+      files = files.concat(getAllMdFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      files.push(fullPath);
+    }
+  }
+  
   return files;
 }
 
 /**
- * Валидация изображения
+ * Проверить что изображение существует
  */
-function validateImagePath(filePath, imageName) {
-  if (!imageName) return null;
-  if (imageName.startsWith('http')) return imageName;
-
-  const articleDir = path.dirname(filePath);
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+function imageExists(articlePath) {
+  const dir = path.dirname(articlePath);
+  const name = path.basename(articlePath, '.md');
+  const imagePath = path.join(dir, `${name}.jpg`);
   
-  if (!fs.existsSync(articleDir)) return null;
+  return fs.existsSync(imagePath);
+}
+
+/**
+ * Построить URL изображения на GitHub
+ */
+function getImageUrl(articlePath) {
+  // Пример: /home/user/dzen/articles/women-35-60/2025-12-25/ya-vsyu-zhizn.md
+  // Нужно: https://raw.githubusercontent.com/.../articles/women-35-60/2025-12-25/ya-vsyu-zhizn.jpg
   
-  const filesInDir = fs.readdirSync(articleDir);
-  for (const file of filesInDir) {
-    const fileExt = path.extname(file).toLowerCase();
-    if (imageExtensions.includes(fileExt)) {
-      const baseName = path.basename(file, fileExt);
-      const expectedBaseName = path.basename(imageName, path.extname(imageName));
-      if (baseName.includes(expectedBaseName) || baseName === expectedBaseName) {
-        return file;
-      }
-    }
-  }
-
-  console.warn(`⚠️  НЕ НАЙДЕНО ИЗОБРАЖЕНИЕ: ${imageName}`);
-  return null;
-}
-
-function markdownToHtml(md) {
-  let html = md
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-    .replace(/__(.+?)__/gim, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    .replace(/_(.*?)_/gim, '<em>$1</em>')
-    .replace(/\n\n/gim, '</p><p>')
-    .replace(/\n/gim, '<br>')
-    .replace(/^<p><br>/, '<p>')
-    .replace(/<p><br>/g, '<p>')
-    .replace(/^<br>/, '')
-    .replace(/^<p>/, '')
-    .replace(/<p>$/, '');
-  return `<p>${html}</p>`;
-}
-
-function getImageMimeType(imagePath) {
-  const ext = path.extname(imagePath).toLowerCase();
-  const mimeTypes = {
-    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
-    '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml'
-  };
-  return mimeTypes[ext] || 'image/jpeg';
-}
-
-function getImageUrl(filePath, imageName) {
-  if (!imageName) return '';
-  if (imageName.startsWith('http')) return imageName;
-
-  const articleDir = path.dirname(filePath);
-  let relativeDirPath = path.relative('./articles', articleDir);
-  relativeDirPath = relativeDirPath.replace(/\\/g, '/');
+  const articlesDir = path.join(process.cwd(), 'articles');
+  const relativePath = path.relative(articlesDir, articlePath);
   
-  const githubRawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
-  return `${githubRawUrl}/articles/${relativeDirPath}/${imageName}`;
+  // Заменяем .md на .jpg и строим URL
+  const imageRelative = relativePath.replace(/\.md$/, '.jpg').replace(/\\/g, '/');
+  const imageUrl = `${BASE_URL}/articles/${imageRelative}`;
+  
+  return imageUrl;
 }
 
-function generateFeed() {
-  console.log(`🚀 Начинаю генерацию RSS...\n`);
-
-  const feed = new Feed({
-    title: 'Potemki Articles',
-    description: 'AI-generated articles for Yandex Dzen',
-    id: 'https://dzen.ru/potemki',
-    link: 'https://dzen.ru/potemki',
-    language: 'ru',
-    copyright: `All rights reserved ${new Date().getFullYear()}, Potemki`,
-    updated: new Date(),
-    generator: 'Potemki RSS Generator v2.1',
-    author: { name: "Potemki", email: "info@crosspostly.com", link: 'https://dzen.ru/potemki' }
-  });
-
-  const processedIds = new Set();
-  let stats = { total: 0, skipped: 0, processed: 0, imageErrors: 0 };
-  let allFiles = [];
-
-  if (MODE === 'full') {
-    // ✅ FULL MODE: ИЩЕМ ВО ВСЕХ ПАПКАХ (и women-35-60, и published)
-    console.log(`📡 FULL MODE: Ищу ВСЕ статьи во всех папках...`);
-    allFiles = getAllMarkdownFiles('./articles', false); // false = включить published
-    console.log(`📡 Найдено ${allFiles.length} статей\n`);
-  } else {
-    // INCREMENTAL: только новые (исключить published)
-    console.log(`📥 INCREMENTAL MODE: Ищу только новые статьи...`);
-    allFiles = getAllMarkdownFiles('./articles', true); // true = исключить published
-    console.log(`📥 Найдено ${allFiles.length} новых статей\n`);
-  }
-
-  stats.total = allFiles.length;
-
-  if (allFiles.length === 0) {
-    console.warn(`\n⚠️  ⚠️  ⚠️  НЕ НАЙДЕНО НИ ОДНОЙ СТАТЬИ! ⚠️  ⚠️  ⚠️`);
-    console.warn(`\nПроверьте структуру папок:`);
-    console.warn(`  articles/`);
-    console.warn(`    └─ women-35-60/`);
-    console.warn(`        └─ 2025-12-XX/`);
-    console.warn(`            └─ название-статьи.md ← ДОЛЖНО БЫТЬ ЗДЕСЬ\n`);
-    return;
-  }
-
-  // Filter out articles older than 1 week
+/**
+ * Фильтровать статьи старше 7 дней
+ */
+function filterByWeek(articles) {
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   
-  allFiles = allFiles.filter(filePath => {
+  return articles.filter(article => {
     try {
-      const fileContent = fs.readFileSync(filePath, 'utf8');
-      const { data: frontmatter } = matter(fileContent);
-      if (!frontmatter.date) return false;
-      const articleDate = new Date(frontmatter.date);
+      const articleDate = new Date(article.date);
       return articleDate >= oneWeekAgo;
-    } catch (error) {
-      console.error(`❌ ОШИБКА при проверке даты: ${path.relative('./articles', filePath)} - ${error.message}`);
+    } catch (e) {
       return false;
     }
   });
-
-  stats.total = allFiles.length;
-
-  for (const filePath of allFiles) {
-    try {
-      const fileContent = fs.readFileSync(filePath, 'utf8');
-      const { data: frontmatter, content } = matter(fileContent);
-
-      if (!frontmatter.title || !frontmatter.date) {
-        console.warn(`⚠️  Отсутствует title/date: ${path.relative('./articles', filePath)}`);
-        stats.skipped++;
-        continue;
-      }
-
-      const fileName = path.basename(filePath, path.extname(filePath));
-      const articleUrl = `https://dzen.ru/potemki/articles/${fileName}`;
-      const itemId = `${fileName}::${frontmatter.date}`;
-
-      // ДЕДУПЛИКАЦИЯ
-      if (processedIds.has(itemId)) {
-        console.warn(`⚠️  ДУБЛОКАТ: ${fileName}`);
-        stats.skipped++;
-        continue;
-      }
-      processedIds.add(itemId);
-
-      // ИЗОБРАЖЕНИЕ
-      let imageUrl = '';
-      let actualImageName = null;
-      if (frontmatter.image) {
-        actualImageName = validateImagePath(filePath, frontmatter.image);
-        if (actualImageName) {
-          imageUrl = getImageUrl(filePath, actualImageName);
-        } else {
-          stats.imageErrors++;
-        }
-      }
-
-      const date = new Date(frontmatter.date);
-
-      feed.addItem({
-        title: frontmatter.title,
-        id: articleUrl,
-        link: articleUrl,
-        description: frontmatter.description || content.substring(0, 200) + '...',
-        content: markdownToHtml(content),
-        image: imageUrl,
-        date: date,
-        category: frontmatter.category ? [{ name: frontmatter.category }] : [],
-        enclosure: imageUrl ? {
-          url: imageUrl,
-          type: getImageMimeType(actualImageName || frontmatter.image || ''),
-          size: 0
-        } : undefined
-      });
-
-      console.log(`✅ ${frontmatter.title}`);
-      if (imageUrl) console.log(`   🖼️  ${imageUrl}`);
-      stats.processed++;
-
-    } catch (error) {
-      console.error(`❌ ОШИБКА: ${path.relative('./articles', filePath)} - ${error.message}`);
-      stats.skipped++;
-    }
-  }
-
-  const feedXml = feed.rss2();
-  fs.writeFileSync('./public/feed.xml', feedXml, 'utf8');
-
-  console.log(`\n===== СТАТИСТИКА =====${MODE === 'full' ? ' [🔄 FULL]' : ' [📥 INCREMENTAL]'}`);
-  console.log(`📊 Всего файлов: ${stats.total}`);
-  console.log(`✅ Обработано: ${stats.processed}`);
-  console.log(`⚠️  Пропущено: ${stats.skipped}`);
-  console.log(`🖼️  Ошибки изображений: ${stats.imageErrors}`);
-  console.log(`\n📋 RSS-лента сохранена: public/feed.xml (${feed.items.length} статей)\n`);
 }
 
-generateFeed();
+/**
+ * Экранировать спецсимволы для XML
+ */
+function escapeXml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * Конвертировать дату в RFC822 формат
+ */
+function toRFC822(dateStr) {
+  try {
+    const date = new Date(dateStr);
+    return date.toUTCString();
+  } catch (e) {
+    return new Date().toUTCString();
+  }
+}
+
+/**
+ * Почистить HTML для description (первые 200 символов)
+ */
+function getDescription(content) {
+  // Убираем HTML теги и берём первые 200 символов
+  const text = content
+    .replace(/<[^>]*>/g, '')           // Удаляем теги
+    .replace(/\n+/g, ' ')              // Переносы в пробелы
+    .trim()
+    .substring(0, 200);
+  
+  return text + (text.length >= 200 ? '...' : '');
+}
+
+/**
+ * Генерировать RSS фид
+ */
+function generateRssFeed(articles) {
+  const now = new Date().toUTCString();
+  
+  let rssContent = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Potemki Articles</title>
+    <link>${DZEN_CHANNEL}</link>
+    <description>AI-generated articles for Yandex Dzen</description>
+    <lastBuildDate>${now}</lastBuildDate>
+    <language>ru</language>
+    <generator>Potemki RSS Generator v2.1</generator>
+    <author>Potemki</author>
+`;
+
+  // Добавляем каждую статью
+  for (const article of articles) {
+    const {
+      title,
+      description,
+      content,
+      date,
+      imageUrl,
+      itemId
+    } = article;
+
+    const pubDate = toRFC822(date);
+    const escapedTitle = escapeXml(title);
+    const escapedDescription = escapeXml(description);
+    
+    rssContent += `
+    <item>
+      <title><![CDATA[${escapedTitle}]]></title>
+      <description><![CDATA[${escapedDescription}]]></description>
+      <link>${DZEN_CHANNEL}</link>
+      <pubDate>${pubDate}</pubDate>
+      <guid isPermaLink="false">${DZEN_CHANNEL}/${itemId}</guid>
+      
+      <content:encoded><![CDATA[
+${content}
+      ]]></content:encoded>
+      
+      <enclosure 
+        url="${imageUrl}" 
+        type="image/jpeg" 
+      />
+    </item>
+`;
+  }
+
+  rssContent += `
+  </channel>
+</rss>`;
+
+  return rssContent;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🚀 ОСНОВНОЙ ПРОЦЕСС
+// ═══════════════════════════════════════════════════════════════
+
+async function main() {
+  try {
+    console.log('');
+    console.log('╔════════════════════════════════════════════════════╗');
+    console.log('║  📡 RSS Feed Generator for Yandex Dzen            ║');
+    console.log('╚════════════════════════════════════════════════════╝');
+    console.log('');
+    console.log(`📋 Mode: ${MODE}`);
+    console.log(`🎯 Dzen Channel: ${DZEN_CHANNEL}`);
+    console.log(`📦 Base URL: ${BASE_URL}`);
+    console.log('');
+
+    // Получаем список файлов
+    const articleFiles = getArticleFiles(MODE);
+    STATS.total = articleFiles.length;
+
+    if (STATS.total === 0) {
+      console.error('❌ ERROR: No .md files found in articles/');
+      process.exit(1);
+    }
+
+    console.log(`📚 Found ${STATS.total} article(s)\n`);
+
+    // Обрабатываем каждый файл
+    const processedIds = new Set();
+    let articles = [];
+
+    for (const filePath of articleFiles) {
+      try {
+        // Читаем файл
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const { attributes: frontmatter, body } = matter(fileContent);
+
+        // Проверяем обязательные поля
+        if (!frontmatter.title || !frontmatter.date) {
+          console.log(`⏭️  SKIP (no title/date): ${path.relative(process.cwd(), filePath)}`);
+          STATS.skipped++;
+          continue;
+        }
+
+        // Проверяем что изображение существует
+        if (!imageExists(filePath)) {
+          console.log(`⏭️  SKIP (no image): ${path.relative(process.cwd(), filePath)}`);
+          STATS.skipped++;
+          continue;
+        }
+
+        // Генерируем ID статьи
+        const fileName = path.basename(filePath, '.md');
+        const itemId = `${fileName}::${frontmatter.date}`;
+
+        // Пропускаем если уже обработали
+        if (processedIds.has(itemId)) {
+          console.log(`⏭️  SKIP (duplicate): ${fileName}`);
+          STATS.skipped++;
+          continue;
+        }
+
+        // Получаем URL изображения
+        const imageUrl = getImageUrl(filePath);
+
+        // Получаем описание
+        const description = frontmatter.description || getDescription(body);
+
+        // Добавляем в массив
+        articles.push({
+          title: frontmatter.title,
+          description: description,
+          content: body,
+          date: frontmatter.date,
+          imageUrl: imageUrl,
+          itemId: itemId
+        });
+
+        processedIds.add(itemId);
+        STATS.processed++;
+
+        console.log(`✅ ADDED: ${fileName}`);
+
+      } catch (error) {
+        console.error(`❌ ERROR processing ${path.relative(process.cwd(), filePath)}: ${error.message}`);
+        STATS.failed++;
+      }
+    }
+
+    // Фильтруем по 7-дневному окну
+    console.log('');
+    console.log('🔄 Filtering by 7-day window...');
+    const beforeFilter = articles.length;
+    articles = filterByWeek(articles);
+    const filtered = beforeFilter - articles.length;
+    if (filtered > 0) {
+      console.log(`   Filtered out ${filtered} old articles`);
+    }
+
+    // Генерируем RSS
+    console.log('');
+    console.log('🔄 Generating RSS feed...');
+    
+    const rssFeed = generateRssFeed(articles);
+
+    // Создаём папку public если нужно
+    const publicDir = path.join(process.cwd(), 'public');
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+      console.log('📁 Created public/ directory');
+    }
+
+    // Пишем файл ПРЯМО В public/feed.xml
+    const feedPath = path.join(publicDir, 'feed.xml');
+    fs.writeFileSync(feedPath, rssFeed, 'utf8');
+
+    console.log(`✅ RSS feed generated: ${feedPath}`);
+    console.log(`   Size: ${fs.statSync(feedPath).size} bytes`);
+
+    // Статистика
+    console.log('');
+    console.log('╔════════════════════════════════════════════════════╗');
+    console.log('║  📊 Statistics                                     ║');
+    console.log('╚════════════════════════════════════════════════════╝');
+    console.log(`📚 Total files: ${STATS.total}`);
+    console.log(`✅ Processed: ${STATS.processed}`);
+    console.log(`⏭️  Skipped: ${STATS.skipped}`);
+    console.log(`❌ Failed: ${STATS.failed}`);
+    console.log(`📋 In feed: ${articles.length}`);
+    console.log('');
+
+    // Проверяем что хотя бы что-то обработалось
+    if (articles.length === 0) {
+      console.error('❌ ERROR: No articles in the final feed!');
+      process.exit(1);
+    }
+
+    console.log('✅ RSS feed generation completed successfully!');
+    console.log('');
+
+  } catch (error) {
+    console.error('❌ FATAL ERROR:', error.message);
+    console.error(error.stack);
+    process.exit(1);
+  }
+}
+
+// Запускаем
+main().catch(error => {
+  console.error('❌ Unexpected error:', error);
+  process.exit(1);
+});
