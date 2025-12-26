@@ -167,17 +167,63 @@ function toRFC822(dateStr) {
 }
 
 /**
+ * Конвертировать markdown контент в HTML для Dzen
+ */
+function markdownToHtml(markdown) {
+  let html = markdown;
+  
+  // Конвертируем заголовки
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  
+  // Конвертируем жирный текст
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  
+  // Конвертируем курсив
+  html = html.replace(/\*([^*]+)\*/g, '<i>$1</i>');
+  
+  // Конвертируем ссылки
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  
+  // Разбиваем на параграфы (двойные переносы строк)
+  const paragraphs = html.split(/\n\n+/);
+  
+  html = paragraphs
+    .map(p => {
+      p = p.trim();
+      // Если уже есть HTML-тег в начале, не оборачиваем в <p>
+      if (p.match(/^<(h[1-6]|ul|ol|blockquote)/)) {
+        return p;
+      }
+      // Пустые параграфы пропускаем
+      if (!p) {
+        return '';
+      }
+      // Оборачиваем в <p>
+      return `<p>${p}</p>`;
+    })
+    .filter(p => p) // Убираем пустые строки
+    .join('\n');
+  
+  return html;
+}
+
+/**
  * Генерировать RSS фид
  */
 function generateRssFeed(articles) {
   const now = new Date().toUTCString();
   
   let rssContent = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<rss version="2.0" 
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:media="http://search.yahoo.com/mrss/"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>Yandex Dzen Feed</title>
+    <title>Потёмки - Истории из жизни</title>
     <link>${DZEN_CHANNEL}</link>
-    <description>Content Feed</description>
+    <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.1</generator>
@@ -198,22 +244,25 @@ function generateRssFeed(articles) {
     const escapedTitle = escapeXml(title);
     const escapedDescription = escapeXml(description);
     
+    // Создаём уникальный URL статьи
+    const articleLink = `${DZEN_CHANNEL}/${itemId}`;
+    
     rssContent += `
     <item>
-      <title><![CDATA[${escapedTitle}]]></title>
+      <title>${escapedTitle}</title>
       <description><![CDATA[${escapedDescription}]]></description>
-      <link>${DZEN_CHANNEL}</link>
+      <link>${articleLink}</link>
+      <guid isPermaLink="false">${itemId}</guid>
       <pubDate>${pubDate}</pubDate>
-      <guid isPermaLink="false">${DZEN_CHANNEL}/${itemId}</guid>
+      <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <content:encoded><![CDATA[
-${content}
-      ]]></content:encoded>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <enclosure 
-        url="${imageUrl}" 
-        type="image/jpeg" 
-      />
+      <enclosure url="${imageUrl}" type="image/jpeg"/>
+      
+      <content:encoded><![CDATA[${content}]]></content:encoded>
     </item>
 `;
   }
@@ -293,11 +342,14 @@ async function main() {
         // Получаем описание
         const description = frontmatter.description || getDescription(body);
 
+        // Конвертируем markdown в HTML
+        const htmlContent = markdownToHtml(body);
+
         // Добавляем в массив
         articles.push({
           title: frontmatter.title,
           description: description,
-          content: body,
+          content: htmlContent,
           date: frontmatter.date,
           imageUrl: imageUrl,
           itemId: itemId
