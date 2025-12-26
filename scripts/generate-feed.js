@@ -10,10 +10,6 @@
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // ═══════════════════════════════════════════════════════════════
 // ⚙️ КОНФИГУРАЦИЯ
@@ -264,7 +260,7 @@ async function main() {
       try {
         // Читаем файл
         const fileContent = fs.readFileSync(filePath, 'utf8');
-        const { data: frontmatter, content: body } = matter(fileContent);
+        const { attributes: frontmatter, body } = matter(fileContent);
 
         // Проверяем обязательные поля
         if (!frontmatter.title || !frontmatter.date) {
