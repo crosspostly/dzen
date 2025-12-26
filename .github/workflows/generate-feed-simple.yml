@@ -1,0 +1,56 @@
+name: Generate RSS Feed (Simple)
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'articles/women-35-60/**'
+  schedule:
+    - cron: '0 * * * *'  # Every hour
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Generate RSS (WITHOUT dependencies)
+      run: |
+        cd ${{ github.workspace }}
+        BASE_URL=https://raw.githubusercontent.com/crosspostly/dzen/main node scripts/generate-feed-final.js incremental
+        echo "Exit code: $?"
+
+    - name: Verify feed.xml
+      run: |
+        if [ -f "public/feed.xml" ]; then
+          echo "✅ Feed file exists"
+          echo "File size: $(wc -c < public/feed.xml) bytes"
+          echo "Item count: $(grep -c '<item>' public/feed.xml || echo '0')"
+          head -20 public/feed.xml
+        else
+          echo "❌ Feed file NOT found!"
+          exit 1
+        fi
+
+    - name: Commit and push
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add public/feed.xml
+        if git diff --staged --quiet; then
+          echo "No changes"
+        else
+          git commit -m "Auto: Generate RSS feed [skip ci]"
+          git push || echo "Push failed (may be normal if no changes)"
+        fi
+      continue-on-error: true
