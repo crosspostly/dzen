@@ -9,7 +9,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import matter from 'front-matter';
+import matter from 'gray-matter';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -264,7 +264,7 @@ async function main() {
       try {
         // Читаем файл
         const fileContent = fs.readFileSync(filePath, 'utf8');
-        const { attributes: frontmatter, body } = matter(fileContent);
+        const { data: frontmatter, content: body } = matter(fileContent);
 
         // Проверяем обязательные поля
         if (!frontmatter.title || !frontmatter.date) {
