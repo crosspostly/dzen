@@ -65,7 +65,7 @@ jobs:
         run: |
           echo "🚀 Starting restoration..."
           echo ""
-          node scripts/restore-articles.js ${{ steps.files.outputs.files }}
+          node scripts/restore-articles.cjs ${{ steps.files.outputs.files }}
 
       - name: 📤 Commit restored articles
         run: |
