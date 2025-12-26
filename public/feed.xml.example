@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Yandex Dzen Feed</title>
+    <!-- ✅ ПРАВИЛЬНО: Ссылка на ТВ ОЙ Dzen канал -->
+    <link>https://dzen.ru/potemki</link>
+    <description>Content Feed</description>
+    <lastBuildDate>Fri, 26 Dec 2025 06:01:54 GMT</lastBuildDate>
+    <language>ru</language>
+    <generator>ZenMaster RSS Generator v2.1</generator>
+
+    <!-- ✅ ПРИМЕР 1: Статья с полным HTML контентом -->
+    <item>
+      <title><![CDATA[Одно платье, и я не знаю, как жить с этой виной и тайной]]></title>
+      <description><![CDATA[Неужели одно платье может стать началом конца моей прежней жизни? Я до сих пор помню тот день...]]></description>
+      <!-- ✅ ПРАВИЛЬНО: Item ссылка на Dzen канал -->
+      <link>https://dzen.ru/potemki</link>
+      <pubDate>Sun, 21 Dec 2025 00:00:00 GMT</pubDate>
+      <guid isPermaLink="false">https://dzen.ru/potemki/odno-plate-i-ya-ne-znayu-kak-zhit::2025-12-21</guid>
+      
+      <!-- ✅ ГЛАВНОЕ: Полный HTML контент в CDATA -->
+      <content:encoded><![CDATA[
+<p>Неужели одно платье может стать началом конца моей прежней жизни? Я до сих пор помню тот день. Солнечный, обычный четверг. Ничего не предвещало беды.</p>
+<p>Мне просто захотелось чего-то нового, чего-то, что заставит меня почувствовать себя другой. И вот оно – висело на манекене, черное, с открытой спиной, невероятно красивое.</p>
+<p>Моя рука не дрогнула, когда я протянула кредитку. Оно было дорогим, даже слишком. "Я заслужила!" – наивно подумала я тогда, что это просто покупка.</p>
+      ]]></content:encoded>
+      
+      <!-- ✅ ПРАВИЛЬНО: Изображение с GitHub RAW URL -->
+      <enclosure 
+        url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-21/odno-plate-i-ya-ne-znayu-kak-zhit.jpg" 
+        type="image/jpeg" 
+      />
+    </item>
+
+    <!-- ✅ ПРИМЕР 2: Ещё одна статья -->
+    <item>
+      <title><![CDATA[Я молчала тридцать лет. Сегодня этот белый конверт принес мне право снова дышать]]></title>
+      <description><![CDATA[Ты когда-нибудь боялась обычного белого конверта? Я стояла в тёмном подъезде, и пальцы внезапно онемели...]]></description>
+      <!-- ✅ ПРАВИЛЬНО: Item ссылка на Dzen канал -->
+      <link>https://dzen.ru/potemki</link>
+      <pubDate>Thu, 25 Dec 2025 00:00:00 GMT</pubDate>
+      <guid isPermaLink="false">https://dzen.ru/potemki/ya-molchala-tridtsat-let::2025-12-25</guid>
+      
+      <!-- ✅ Полный HTML контент -->
+      <content:encoded><![CDATA[
+<p>Ты когда-нибудь боялась обычного белого конверта? Я стояла в тёмном подъезде, и пальцы внезапно онемели.</p>
+<p>Тридцать лет тишины. Тридцать лет я жила с этой тайной, как с острым камнем в ботинке.</p>
+<p>И вот он пришёл. Просто так. Как будто время решило, что хватит.</p>
+      ]]></content:encoded>
+      
+      <!-- ✅ ПРАВИЛЬНО: Изображение с GitHub RAW URL -->
+      <enclosure 
+        url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-molchala-tridtsat-let.jpg" 
+        type="image/jpeg" 
+      />
+    </item>
+
+  </channel>
+</rss>
