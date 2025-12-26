@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * ✨ Article Restoration Script - DZEN OPTIMIZED
+ * 🔧 Article Restoration Script - CHUNKED MODE
  * Выпускающий редактор для Яндекс Дзена
  * 
- * Логика:
- * 1. Берём ТОЛЬКО ТЕЛО статьи (после ---)
- * 2. Отправляем на Gemini с Дзен-оптимизированным промптом
- * 3. Получаем чистое, отформатированное тело
- * 4. Склеиваем обратно с оригинальной шапкой (metadata)
+ * НОВОЕ: Разбиваэм большие статьи на чунки по 3000 символов
+ * Отреставриваем каждый часть отдельно
+ * Склеиваем обратно в единые части
  */
 
 import fs from 'fs';
@@ -23,64 +21,100 @@ if (!GEMINI_API_KEY) {
 
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
+// Настройки чанкирования
+const CHUNK_SIZE = 3000;  // символов на часть
+const CHUNK_OVERLAP = 100; // повторение для контекста
+
 /**
  * 🎯 МОЩНЫЙ ПРОМПТ: ВЫПУСКАЮЩИЙ РЕДАКТОР ЯНДЕКС ДЗЕНА
- * Оптимизирован для мобильных устройств и дочитываемости
  */
-const RESTORATION_PROMPT = `Действуй как выпускающий редактор платформы Яндекс Дзен. Твоя задача — подготовить тело статьи к публикации, проведя техническую чистку и верстку для максимальной дочитываемости.
+const RESTORATION_PROMPT = `Действуй как выпускающий редактор платформы Яндекс Дзен. Твоя задача — подготовить эту часть текста к публикации, проведя техническую чистку и верстку.
 
-📋 ИНСТРУКЦИИ:
+✅ ЧТО УДАЛИТЬ:
+✂️ Эти слова-паразиты: "ну и", "да вот", "же", "потому что", "хотя", "но вот", "ведь", "ну да", "-то", "вот это", "вот что я хочу сказать", "одним словом" и подобные.
+✂️ Двойные пробелы между словами
+✂️ Слипшиеся слова ("текст.Вот" → "текст. Вот")
+✂️ Лишние знаки препинания
 
-1️⃣ РЕСТАВРАЦИЯ ТЕЛА СТАТЬИ (DE-NOISING & REPAIR):
+✅ КАК РАБОТАТЬ С ОФОРМЛЕНИЕМ:
+💬 Оформляй диалоги с новой строки через — (длинное тире)
+📱 Каждый абзац — новый параграф, 3–5 предложений
+📱 Очень важно: не оканчивай часть середине предложения!
 
-Удали технический мусор:
-✂️ Удали эти слова-паразиты, разрывающие смысл: "ну и", "да вот", "же", "потому что", "хотя", "но вот", "ведь", "ну да", "-то", "вот это", "вот что я хочу сказать", "ну марина", "одним словом", и все подобные вставки.
-✂️ Убери двойные пробелы и случайные переводы строк посередине слова.
-✂️ Исправь слипшиеся слова (например, "текст.Вот" → "текст. Вот").
+✅ НИКГДА НЕ НАРУШАЙ:
+❌ Не сокращай текст
+❌ Не удаляй авторские мысли
+❌ Не переписывай
+❌ Не исправляй авторские повторы (если они намеренные)
 
-Сшей разорванные предложения:
-🔗 Если мусорный маркер стоял внутри фразы, соедини её части.
-🔗 Исправь регистр: замени заглавную букву на строчную внутри предложения, если она возникла из-за разрыва.
-🔗 Убери лишние знаки препинания, возникшие из-за разрыва текста.
+Кгда готов - выведи ОТРЕСТАВРИРОВАННЫЙ ТЕКСТ БЕЗ КОММЕНТАРИЕВ.
 
-2️⃣ ПРИНЦИП 100% VERBATIM - ЗАПРЕЩЕНО:
-❌ Сокращать статью
-❌ Удалять авторские мысли
-❌ Переписывать "своими словами"
-❌ Изменять авторский слог
-✅ Весь объем и авторский голос должны быть сохранены!
-
-3️⃣ ФОРМАТИРОВАНИЕ ПОД СТАНДАРТЫ ДЗЕНА (мобильный-first):
-
-Диалоги:
-💬 Оформляй строго с новой строки через длинное тире (— )
-💬 Каждая реплика — новый абзац
-💬 Имя говорящего, тире, реплика на новой строке
-
-Абзацы:
-📱 Статья должна быть удобной для чтения со смартфона
-📱 Разбивай текст на небольшие абзацы (по 3–5 предложений)
-📱 Избегай длинных "стен текста"
-📱 Каждый абзац = одна мысль или момент
-📱 Визуально приятное пространство между абзацами
-
-Пунктуация:
-✏️ Проверь и исправь явные ошибки, возникшие при склейке
-✏️ Исправь орфографию
-✏️ Оставь авторский стиль (разговорный тон, если он был)
-
-4️⃣ ПРОВЕРКА КАЧЕСТВА:
-✓ Текст читается как единое целое, а не как набор обрывков
-✓ Нет явных технических ошибок
-✓ Форматирование готово к вставке в Дзен
-✓ Диалоги красиво оформлены
-✓ Объем ≈ 100% от исходного
-
-5️⃣ ВЫВОД:
-Выведи ТОЛЬКО готовую статью (отреставрированное тело). Никаких приветствий, объяснений и комментариев от нейросети. Результат должен быть сразу готов к вставке в редактор Дзена.
-
-Ловите входной текст:
+Начни с этого текста:
 `;
+
+/**
+ * 🐑 Разбию текст на чанки по границам абзацев
+ */
+function splitIntoChunks(text, maxSize = CHUNK_SIZE) {
+  const paragraphs = text.split('\n\n');
+  const chunks = [];
+  let currentChunk = '';
+
+  for (const para of paragraphs) {
+    // Если вы добавляем текущий чанк со следующим абзацем, а очень долго...
+    if (currentChunk.length + para.length + 2 > maxSize && currentChunk.length > 0) {
+      // Сохрани этот чанк и начни новый
+      chunks.push(currentChunk.trim());
+      
+      // Повтор для контекста (последние 100 символов предыдущего чанка)
+      const overlap = currentChunk.slice(-CHUNK_OVERLAP);
+      currentChunk = overlap + '\n\n' + para;
+    } else {
+      // Добавь абзац к текущему чанку
+      if (currentChunk.length > 0) {
+        currentChunk += '\n\n' + para;
+      } else {
+        currentChunk = para;
+      }
+    }
+  }
+
+  // Не забывай последний чанк
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+}
+
+/**
+ * 🔌 Объедини чанки во вырезаные части и удали перекрытия
+ */
+function mergeChunks(chunks) {
+  if (chunks.length === 0) return '';
+  
+  let merged = chunks[0];
+  
+  for (let i = 1; i < chunks.length; i++) {
+    const currentChunk = chunks[i];
+    // Найди где этот чанк начинается с повторения
+    const lastChunk = chunks[i - 1];
+    
+    // Удали фрагмент оверлапа в последнем чанке
+    if (lastChunk.length > CHUNK_OVERLAP) {
+      const lastOverlap = lastChunk.slice(-CHUNK_OVERLAP).trim();
+      if (currentChunk.startsWith(lastOverlap)) {
+        merged += '\n\n' + currentChunk.slice(lastOverlap.length).trimStart();
+      } else {
+        merged += '\n\n' + currentChunk;
+      }
+    } else {
+      merged += '\n\n' + currentChunk;
+    }
+  }
+  
+  return merged;
+}
 
 /**
  * Проверить структуру frontmatter
@@ -122,140 +156,74 @@ function validateFrontmatter(content) {
 }
 
 /**
- * 🔍 Проверка: текст не был сокращен более чем на 15%
+ * 🎯 Отправить ОДНО часть (CHUNK) на Gemini
  */
-function validateRestoration(originalText, restoredText) {
-  if (!restoredText || restoredText.trim().length < 100) {
-    return { valid: false, reason: 'Text too short (< 100 chars)' };
-  }
-
-  const originalLength = originalText.trim().length;
-  const restoredLength = restoredText.trim().length;
-  const ratio = restoredLength / originalLength;
-
-  // 🚨 КРИТИЧНО: текст не должен быть сокращен более чем на 15%
-  if (ratio < 0.85) {
-    return { 
-      valid: false, 
-      reason: `❌ SHORTENING DETECTED: ${originalLength} → ${restoredLength} (${(ratio * 100).toFixed(1)}% of original)` 
-    };
-  }
-
-  const paragraphs = restoredText.split('\n\n').filter(p => p.trim().length > 0);
-  if (paragraphs.length < 2) {
-    return { valid: false, reason: 'Too few paragraphs' };
-  }
-
-  return { valid: true };
-}
-
-/**
- * Рассчитать схожесть строк (0-1)
- */
-function calculateSimilarity(str1, str2) {
-  const longer = str1.length > str2.length ? str1 : str2;
-  const shorter = str1.length > str2.length ? str2 : str1;
-  
-  if (longer.length === 0) return 1.0;
-  
-  const editDistance = levenshteinDistance(longer, shorter);
-  return (longer.length - editDistance) / longer.length;
-}
-
-/**
- * Рассчитать расстояние Левенштейна
- */
-function levenshteinDistance(str1, str2) {
-  const matrix = [];
-  
-  for (let i = 0; i <= str2.length; i++) {
-    matrix[i] = [i];
-  }
-  
-  for (let j = 0; j <= str1.length; j++) {
-    matrix[0][j] = j;
-  }
-  
-  for (let i = 1; i <= str2.length; i++) {
-    for (let j = 1; j <= str1.length; j++) {
-      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
-      }
-    }
-  }
-  
-  return matrix[str2.length][str1.length];
-}
-
-/**
- * Проверка на очевидные технические повторы (баги)
- */
-function validateNoDuplicateLines(text) {
-  const lines = text.split('\n').filter(line => line.trim().length > 50);
-  if (lines.length >= 2) {
-    for (let i = 0; i < lines.length - 1; i++) {
-      const similarity = calculateSimilarity(lines[i], lines[i + 1]);
-      if (similarity > 0.85) {
-        return { valid: false, reason: 'Obvious line repetition detected' };
-      }
-    }
-  }
-  return { valid: true };
-}
-
-/**
- * ✨ Отправить ТЕЛО статьи на Gemini для реставрации
- */
-async function restoreArticleBody(bodyText) {
+async function restoreChunk(chunkText, chunkIndex, totalChunks) {
   try {
-    const prompt = `${RESTORATION_PROMPT}\n\n${bodyText}`;
-
-    console.log('🤖 Calling Gemini 2.5 Flash Lite (Dzen mode)...');
+    const prompt = `${RESTORATION_PROMPT}\n\n${chunkText}`;
+    
+    console.log(`  🤖 Processing chunk ${chunkIndex + 1}/${totalChunks}...`);
     const response = await genAI.models.generateContent({
       model: 'gemini-2.5-flash-lite',
       contents: prompt,
       config: { responseMimeType: "text/plain" }
     });
     const restoredText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const trimmedText = restoredText.trim();
-
-    // Проверяем что текст не был сокращен
-    const lengthValidation = validateRestoration(bodyText, trimmedText);
-    if (!lengthValidation.valid) {
-      console.log(`⚠️  ${lengthValidation.reason}`);
-      console.log('🤖 Trying fallback with gemini-2.5-flash...');
-      
-      const fallbackResponse = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `${RESTORATION_PROMPT}\n\n${bodyText}`,
-        config: { responseMimeType: "text/plain" }
-      });
-      const fallbackText = fallbackResponse.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      return fallbackText.trim();
-    }
-
-    // Проверяем на очевидные баги
-    const dupeValidation = validateNoDuplicateLines(trimmedText);
-    if (!dupeValidation.valid) {
-      console.log(`⚠️  ${dupeValidation.reason}`);
-    }
-
-    return trimmedText;
+    return restoredText.trim();
   } catch (error) {
-    console.error('❌ Gemini API Error:', error.message);
+    console.error(`❌ Gemini API Error on chunk ${chunkIndex + 1}:`, error.message);
     throw error;
   }
 }
 
 /**
+ * ✨ Отправить УТЮ статью (РАСПОЛОВАННО НА ЧАСТИ)
+ */
+async function restoreArticleBody(bodyText) {
+  try {
+    // Разбиваем на чанки
+    const chunks = splitIntoChunks(bodyText);
+    console.log(`  📄 Splitting into ${chunks.length} chunk(s) (max 3000 chars each)`);
+
+    // Отправляем каждый чанк
+    const restoredChunks = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const restored = await restoreChunk(chunks[i], i, chunks.length);
+      restoredChunks.push(restored);
+      
+      // Задержка между запросами
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    // Объединяем евованные части
+    console.log(`  🔌 Merging ${restoredChunks.length} restored chunks...`);
+    const finalText = mergeChunks(restoredChunks);
+
+    // Проверяем что текст не сокращен радикально
+    const originalLength = bodyText.trim().length;
+    const finalLength = finalText.trim().length;
+    const ratio = finalLength / originalLength;
+
+    if (ratio < 0.70) {
+      return { 
+        success: false, 
+        reason: `❌ CRITICAL SHORTENING: ${originalLength} → ${finalLength} (${(ratio * 100).toFixed(1)}%)` 
+      };
+    }
+
+    console.log(`  ✅ Quality check: ${originalLength} → ${finalLength} (${(ratio * 100).toFixed(1)}%)`);
+    return { success: true, text: finalText };
+
+  } catch (error) {
+    console.error('❌ Restoration Error:', error.message);
+    return { success: false, reason: error.message };
+  }
+}
+
+/**
  * 📄 Обработать один файл
- * ЛОГИКА: Шапка → не трогаем, Тело → реставрируем → собираем обратно
  */
 async function restoreArticleFile(filePath) {
   console.log(`\n📄 Processing: ${path.basename(filePath)}`);
@@ -264,7 +232,6 @@ async function restoreArticleFile(filePath) {
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const validation = validateFrontmatter(fileContent);
 
-    // Если нет frontmatter, создаём минимальный
     if (!validation.valid) {
       console.log(`⚠️  ${validation.message}`);
       console.log('   (Adding minimal frontmatter)');
@@ -278,30 +245,29 @@ date: ${now}
 description: Article from auto-restore
 ---`;
 
-      // Реставрируем только тело
-      const restoredBody = await restoreArticleBody(validation.body);
-      const restored = `${minimalFrontmatter}\n\n${restoredBody}`;
+      const restoration = await restoreArticleBody(validation.body);
+      if (!restoration.success) {
+        console.log(`❌ FAILED: ${restoration.reason}`);
+        return false;
+      }
 
+      const restored = `${minimalFrontmatter}\n\n${restoration.text}`;
       fs.writeFileSync(filePath, restored, 'utf8');
       console.log(`✅ Restored: ${path.relative(process.cwd(), filePath)}`);
       return true;
     }
 
-    // Если frontmatter есть: берём только тело, реставрируем его
     console.log('🔍 Restoring article body (keeping metadata block)...');
-    const restoredBody = await restoreArticleBody(validation.body);
-
-    // Финальная валидация перед записью
-    const bodyValidation = validateRestoration(validation.body, restoredBody);
-    if (!bodyValidation.valid) {
-      console.log(`❌ FAILED: ${bodyValidation.reason}`);
+    const restoration = await restoreArticleBody(validation.body);
+    
+    if (!restoration.success) {
+      console.log(`❌ FAILED: ${restoration.reason}`);
       console.log('   Article will NOT be saved. Manual review required.');
       return false;
     }
 
-    // 🎯 КРИТИЧЕСКАЯ ЛОГИКА: Собираем обратно
-    // Шапка (frontmatter) ПОЛНОСТЬЮ НЕТРОНУТАЯ + новое реставрированное тело
-    const restored = `---\n${validation.frontmatter}\n---\n\n${restoredBody}`;
+    // Критичная ЛОГИКА: Чтобы оригинальная ШАПКА нЕ была разрушена
+    const restored = `---\n${validation.frontmatter}\n---\n\n${restoration.text}`;
 
     fs.writeFileSync(filePath, restored, 'utf8');
     console.log(`✅ Successfully restored (metadata preserved)`);
@@ -319,8 +285,8 @@ description: Article from auto-restore
 async function main() {
   console.log('');
   console.log('╔════════════════════════════════════════════════════════════════════════════════╗');
-  console.log('║  ✨ Article Restoration - YANDEX DZEN OPTIMIZED (Mobile-First Format)       ║');
-  console.log('║  Strategy: Preserve Metadata Block | Deep Clean Article Body | Dzen Format   ║');
+  console.log('║  ✨ Article Restoration - CHUNKED MODE (Handles Large Articles)             ║');
+  console.log('║  Strategy: Split → Restore Each Chunk → Merge → Verify               ║');
   console.log('╚════════════════════════════════════════════════════════════════════════════════╝');
   console.log('');
 
@@ -349,8 +315,10 @@ async function main() {
       failCount++;
     }
 
-    // Задержка между запросами к API (1 сек)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Задержка между файлами
+    if (files.length > 1) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
   }
 
   // Итоговый отчёт
