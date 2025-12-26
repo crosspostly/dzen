@@ -64,14 +64,17 @@ jobs:
 
       - name: 🤖 Restore articles with Gemini
         if: steps.files.outputs.files != ''
+        id: restore
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           echo "🚀 Starting restoration..."
           echo ""
           node scripts/restore-articles.js ${{ steps.files.outputs.files }}
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
 
       - name: 📤 Commit restored articles
+        if: steps.files.outputs.files != '' && steps.restore.outputs.exit_code == '0'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -94,11 +97,20 @@ jobs:
         run: |
           echo ""
           echo "╔════════════════════════════════════════════════════════╗"
-          echo "║  ✅ ARTICLE RESTORATION COMPLETE                       ║"
-          echo "╚════════════════════════════════════════════════════════╝"
-          echo ""
-          echo "📊 Summary:"
-          echo "   Files processed: $(echo '${{ steps.files.outputs.files }}' | tr ' ' '\n' | grep -c .)"
-          echo "   Mode: NEW & MODIFIED articles only"
-          echo "   Status: ✅ Restored and committed"
+          if [ "${{ steps.restore.outputs.exit_code }}" == "0" ]; then
+            echo "║  ✅ ARTICLE RESTORATION COMPLETE                       ║"
+            echo "╚════════════════════════════════════════════════════════╝"
+            echo ""
+            echo "📊 Summary:"
+            echo "   Files processed: $(echo '${{ steps.files.outputs.files }}' | tr ' ' '\n' | grep -c .)"
+            echo "   Mode: NEW & MODIFIED articles only"
+            echo "   Status: ✅ Restored and committed"
+          else
+            echo "║  ❌ ARTICLE RESTORATION FAILED                         ║"
+            echo "╚════════════════════════════════════════════════════════╝"
+            echo ""
+            echo "⚠️  Some articles failed quality checks"
+            echo "   Manual review required for:"
+            echo "   ${{ steps.files.outputs.files }}"
+          fi
           echo ""
