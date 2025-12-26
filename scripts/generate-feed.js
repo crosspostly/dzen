@@ -260,7 +260,7 @@ async function main() {
       try {
         // Читаем файл
         const fileContent = fs.readFileSync(filePath, 'utf8');
-        const { attributes: frontmatter, body } = matter(fileContent);
+        const { data: frontmatter, content: body } = matter(fileContent);
 
         // Проверяем обязательные поля
         if (!frontmatter.title || !frontmatter.date) {
