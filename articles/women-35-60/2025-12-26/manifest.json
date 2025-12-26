@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1766729357431,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 17041,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2025-12-26/mne-do-sih-por-stydno-za-ego-taynu-ya-nashla-to-pi.jpg"
+    ],
+    "report": "articles/women-35-60/2025-12-26/REPORT.md"
+  }
+}
