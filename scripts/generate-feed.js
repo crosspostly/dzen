@@ -5,10 +5,6 @@
  * 
  * Генерирует RSS фид из статей в папке articles/
  * с правильными URL'ами для Dzen канала и GitHub изображений
- * 
- * Версия: 2.1 - ИСПРАВЛЕННАЯ
- * РЕЖИМ: node scripts/generate-feed.js incremental (только новые)
- * РЕЖИМ: node scripts/generate-feed.js full (ВСЕ статьи из всех папок)
  */
 
 const fs = require('fs');
@@ -19,10 +15,9 @@ const matter = require('front-matter');
 // ⚙️ КОНФИГУРАЦИЯ
 // ═══════════════════════════════════════════════════════════════
 
-const GITHUB_REPO = process.env.GITHUB_REPOSITORY || 'crosspostly/dzen';
 const MODE = process.argv[2] || 'incremental';
-const BASE_URL = process.env.BASE_URL || `https://raw.githubusercontent.com/${GITHUB_REPO}/main`;
-const DZEN_CHANNEL = 'https://dzen.ru/potemki';  // ✅ ТВОЙ РЕАЛЬНЫЙ КАНАЛ!
+const BASE_URL = process.env.BASE_URL || 'https://raw.githubusercontent.com/crosspostly/dzen/main';
+const DZEN_CHANNEL = 'https://dzen.ru/potemki';  // ✅ ТВОЙ КАНАЛ!
 
 const STATS = {
   total: 0,
@@ -50,13 +45,13 @@ function getArticleFiles(mode) {
 
   // FULL mode: все статьи (women-35-60 + published)
   if (mode === 'full') {
-    console.log('🔄 FULL mode: collecting ALL articles (women-35-60 + published)...');
+    console.log('🔄 FULL mode: collecting all articles...');
     files = getAllMdFiles(articlesDir);
   }
   
   // INCREMENTAL mode: только женщины-35-60 (новые)
   else if (mode === 'incremental') {
-    console.log('📧 INCREMENTAL mode: collecting NEW articles only...');
+    console.log('📧 INCREMENTAL mode: collecting new articles...');
     const womenDir = path.join(articlesDir, 'women-35-60');
     if (fs.existsSync(womenDir)) {
       files = getAllMdFiles(womenDir);
@@ -81,11 +76,6 @@ function getAllMdFiles(dir) {
   
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-    
-    // Пропускаем специальные папки
-    if (entry.name.startsWith('.') || entry.name === 'REPORT.md' || entry.name === 'manifest.json') {
-      continue;
-    }
     
     if (entry.isDirectory()) {
       // Рекурсия в подпапки
@@ -120,27 +110,36 @@ function getImageUrl(articlePath) {
   const relativePath = path.relative(articlesDir, articlePath);
   
   // Заменяем .md на .jpg и строим URL
-  const imageRelative = relativePath.replace(/\.md$/, '.jpg').replace(/\\/g, '/');
+  const imageRelative = relativePath.replace(/\.md$/, '.jpg');
   const imageUrl = `${BASE_URL}/articles/${imageRelative}`;
   
   return imageUrl;
 }
 
 /**
- * Фильтровать статьи старше 7 дней
+ * Получить папку канала из пути (например "women-35-60")
  */
-function filterByWeek(articles) {
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+function getChannel(articlePath) {
+  const articlesDir = path.join(process.cwd(), 'articles');
+  const relativePath = path.relative(articlesDir, articlePath);
+  const parts = relativePath.split(path.sep);
   
-  return articles.filter(article => {
-    try {
-      const articleDate = new Date(article.date);
-      return articleDate >= oneWeekAgo;
-    } catch (e) {
-      return false;
-    }
-  });
+  // Первая часть это канал
+  return parts[0] || 'unknown';
+}
+
+/**
+ * Почистить HTML для description (первые 200 символов)
+ */
+function getDescription(content) {
+  // Убираем HTML теги и берём первые 200 символов
+  const text = content
+    .replace(/<[^>]*>/g, '')           // Удаляем теги
+    .replace(/\n+/g, ' ')              // Переносы в пробелы
+    .trim()
+    .substring(0, 200);
+  
+  return text + (text.length >= 200 ? '...' : '');
 }
 
 /**
@@ -168,20 +167,6 @@ function toRFC822(dateStr) {
 }
 
 /**
- * Почистить HTML для description (первые 200 символов)
- */
-function getDescription(content) {
-  // Убираем HTML теги и берём первые 200 символов
-  const text = content
-    .replace(/<[^>]*>/g, '')           // Удаляем теги
-    .replace(/\n+/g, ' ')              // Переносы в пробелы
-    .trim()
-    .substring(0, 200);
-  
-  return text + (text.length >= 200 ? '...' : '');
-}
-
-/**
  * Генерировать RSS фид
  */
 function generateRssFeed(articles) {
@@ -190,13 +175,12 @@ function generateRssFeed(articles) {
   let rssContent = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>Potemki Articles</title>
+    <title>Yandex Dzen Feed</title>
     <link>${DZEN_CHANNEL}</link>
-    <description>AI-generated articles for Yandex Dzen</description>
+    <description>Content Feed</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>Potemki RSS Generator v2.1</generator>
-    <author>Potemki</author>
+    <generator>ZenMaster RSS Generator v2.1</generator>
 `;
 
   // Добавляем каждую статью
@@ -253,7 +237,7 @@ async function main() {
     console.log('╚════════════════════════════════════════════════════╝');
     console.log('');
     console.log(`📋 Mode: ${MODE}`);
-    console.log(`🎯 Dzen Channel: ${DZEN_CHANNEL}`);
+    console.log(`🔗 Dzen Channel: ${DZEN_CHANNEL}`);
     console.log(`📦 Base URL: ${BASE_URL}`);
     console.log('');
 
@@ -270,7 +254,7 @@ async function main() {
 
     // Обрабатываем каждый файл
     const processedIds = new Set();
-    let articles = [];
+    const articles = [];
 
     for (const filePath of articleFiles) {
       try {
@@ -298,7 +282,7 @@ async function main() {
 
         // Пропускаем если уже обработали
         if (processedIds.has(itemId)) {
-          console.log(`⏭️  SKIP (duplicate): ${fileName}`);
+          console.log(`⏭️  SKIP (already processed): ${fileName}`);
           STATS.skipped++;
           continue;
         }
@@ -330,16 +314,6 @@ async function main() {
       }
     }
 
-    // Фильтруем по 7-дневному окну
-    console.log('');
-    console.log('🔄 Filtering by 7-day window...');
-    const beforeFilter = articles.length;
-    articles = filterByWeek(articles);
-    const filtered = beforeFilter - articles.length;
-    if (filtered > 0) {
-      console.log(`   Filtered out ${filtered} old articles`);
-    }
-
     // Генерируем RSS
     console.log('');
     console.log('🔄 Generating RSS feed...');
@@ -353,7 +327,7 @@ async function main() {
       console.log('📁 Created public/ directory');
     }
 
-    // Пишем файл ПРЯМО В public/feed.xml
+    // Пишем файл
     const feedPath = path.join(publicDir, 'feed.xml');
     fs.writeFileSync(feedPath, rssFeed, 'utf8');
 
@@ -369,12 +343,11 @@ async function main() {
     console.log(`✅ Processed: ${STATS.processed}`);
     console.log(`⏭️  Skipped: ${STATS.skipped}`);
     console.log(`❌ Failed: ${STATS.failed}`);
-    console.log(`📋 In feed: ${articles.length}`);
     console.log('');
 
     // Проверяем что хотя бы что-то обработалось
-    if (articles.length === 0) {
-      console.error('❌ ERROR: No articles in the final feed!');
+    if (STATS.processed === 0) {
+      console.error('❌ ERROR: No articles were processed!');
       process.exit(1);
     }
 
