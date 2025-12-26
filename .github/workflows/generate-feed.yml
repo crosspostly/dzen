@@ -1,7 +1,7 @@
 name: Generate RSS Feed
 
 on:
-  workflow_dispatch: # Ручной запуск
+  workflow_dispatch: # Поднимаю ручной пуск
     inputs:
       mode:
         description: 'Generation mode'
@@ -50,17 +50,11 @@ jobs:
     - name: Generate RSS feed
       run: node scripts/generate-feed.js ${{ github.event.inputs.mode }}
 
-    - name: Create public directory and copy feed
-      run: |
-        mkdir -p public
-        cp feed.xml public/ || echo "feed.xml not found"
-        cp index.html public/ || echo "index.html not found"
-
     - name: Commit and push if changed
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add feed.xml public/
+        git add public/feed.xml
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
