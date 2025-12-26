@@ -94,7 +94,7 @@ jobs:
           echo "╚════════════════════════════════════════════════════════╝"
           echo ""
           echo "📊 Summary:"
-          echo "   Files processed: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
+          echo "   Files processed: $(echo '${{ steps.files.outputs.files }}' | tr ' ' '\n' | grep -c .)"
           echo "   Mode: NEW & MODIFIED articles only"
           echo "   Status: ✅ Restored and committed"
           echo ""

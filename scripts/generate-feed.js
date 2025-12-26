@@ -7,9 +7,9 @@
  * с правильными URL'ами для Dzen канала и GitHub изображений
  */
 
-const fs = require('fs');
-const path = require('path');
-const matter = require('front-matter');
+import fs from 'fs';
+import path from 'path';
+import matter from 'gray-matter';
 
 // ═══════════════════════════════════════════════════════════════
 // ⚙️ КОНФИГУРАЦИЯ
