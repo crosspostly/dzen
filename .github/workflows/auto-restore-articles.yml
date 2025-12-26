@@ -27,46 +27,74 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Get changed files
+      - name: 🔍 Get NEW and MODIFIED files only
         id: files
-        uses: tj-actions/changed-files@v41
-        with:
-          files: 'articles/women-35-60/**/*.md'
-
-      - name: 🔍 Debug - Show changed files
         run: |
-          echo "Changed files:"
-          echo "${{ steps.files.outputs.all_changed_files }}"
+          echo "📊 Detecting changed files..."
+          echo ""
+          
+          # Если это первый коммит (нет HEAD~1)
+          if git rev-parse --verify HEAD~1 &> /dev/null; then
+            # Сравниваем с предыдущим коммитом
+            # -A = Added (новые)
+            # -M = Modified (изменённые)
+            CHANGED=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- 'articles/women-35-60/**/*.md')
+          else
+            # Если это первый коммит - берём все файлы из этого коммита
+            CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- 'articles/women-35-60/**/*.md')
+          fi
+          
+          if [ -z "$CHANGED" ]; then
+            echo "✅ No NEW or MODIFIED articles found - nothing to restore"
+            echo "files=" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Found files to restore:"
+            echo "$CHANGED" | while read file; do
+              echo "   - $file"
+            done
+            echo ""
+            # Преобразуем в строку для передачи в скрипт
+            FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
+            echo "files=$FILES_STR" >> $GITHUB_OUTPUT
+          fi
 
       - name: 🤖 Restore articles with Gemini
-        if: steps.files.outputs.all_changed_files != ''
+        if: steps.files.outputs.files != ''
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          node scripts/restore-articles.js ${{ steps.files.outputs.all_changed_files }}
+          echo "🚀 Starting restoration..."
+          echo ""
+          node scripts/restore-articles.js ${{ steps.files.outputs.files }}
 
       - name: 📤 Commit restored articles
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Check if there are changes
-          if ! git diff --cached --quiet; then
-            git add -A
-            git commit -m "🔧 Auto-restore: Fixed article formatting and structure" || echo "No changes to commit"
-            git push origin main || echo "Nothing to push"
+          # Проверяем есть ли изменения
+          if git diff --quiet; then
+            echo "✅ No changes after restoration - articles were already clean"
           else
-            echo "✅ No changes needed - articles are clean"
+            echo "📝 Committing restored articles..."
+            git add articles/
+            git commit -m "🔧 Auto-restore: Fixed article formatting and structure" 
+            
+            echo "🚀 Pushing to main..."
+            git push origin main
+            echo "✅ Successfully pushed"
           fi
 
       - name: ✅ Restore Complete
+        if: always()
         run: |
           echo ""
           echo "╔════════════════════════════════════════════════════════╗"
-          echo "║  ✅ ARTICLE RESTORATION COMPLETE                      ║"
+          echo "║  ✅ ARTICLE RESTORATION COMPLETE                       ║"
           echo "╚════════════════════════════════════════════════════════╝"
           echo ""
           echo "📊 Summary:"
-          echo "   Files processed: $(echo '${{ steps.files.outputs.all_changed_files }}' | wc -w)"
+          echo "   Files processed: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
+          echo "   Mode: NEW & MODIFIED articles only"
           echo "   Status: ✅ Restored and committed"
           echo ""
