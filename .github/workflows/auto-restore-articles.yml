@@ -1,0 +1,72 @@
+name: 🔧 Auto Restore Articles
+
+on:
+  push:
+    paths:
+      - 'articles/women-35-60/**/*.md'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  restore-articles:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Get changed files
+        id: files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: 'articles/women-35-60/**/*.md'
+
+      - name: 🔍 Debug - Show changed files
+        run: |
+          echo "Changed files:"
+          echo "${{ steps.files.outputs.all_changed_files }}"
+
+      - name: 🤖 Restore articles with Gemini
+        if: steps.files.outputs.all_changed_files != ''
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          node scripts/restore-articles.js ${{ steps.files.outputs.all_changed_files }}
+
+      - name: 📤 Commit restored articles
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Check if there are changes
+          if ! git diff --cached --quiet; then
+            git add -A
+            git commit -m "🔧 Auto-restore: Fixed article formatting and structure" || echo "No changes to commit"
+            git push origin main || echo "Nothing to push"
+          else
+            echo "✅ No changes needed - articles are clean"
+          fi
+
+      - name: ✅ Restore Complete
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════╗"
+          echo "║  ✅ ARTICLE RESTORATION COMPLETE                      ║"
+          echo "╚════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "📊 Summary:"
+          echo "   Files processed: $(echo '${{ steps.files.outputs.all_changed_files }}' | wc -w)"
+          echo "   Status: ✅ Restored and committed"
+          echo ""
