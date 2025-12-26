@@ -124,15 +124,15 @@ function generateFeed() {
   console.log(`🚀 Начинаю генерацию RSS...\n`);
 
   const feed = new Feed({
-    title: 'ZenMaster Articles',
+    title: 'Potemki Articles',
     description: 'AI-generated articles for Yandex Dzen',
-    id: 'https://dzen.ru/zenmaster',
-    link: 'https://dzen.ru/zenmaster',
+    id: 'https://dzen.ru/potemki',
+    link: 'https://dzen.ru/potemki',
     language: 'ru',
-    copyright: `All rights reserved ${new Date().getFullYear()}, ZenMaster`,
+    copyright: `All rights reserved ${new Date().getFullYear()}, Potemki`,
     updated: new Date(),
-    generator: 'ZenMaster RSS Generator v2.1',
-    author: { name: "ZenMaster", email: "info@crosspostly.com", link: 'https://dzen.ru/zenmaster' }
+    generator: 'Potemki RSS Generator v2.1',
+    author: { name: "Potemki", email: "info@crosspostly.com", link: 'https://dzen.ru/potemki' }
   });
 
   const processedIds = new Set();
@@ -194,7 +194,7 @@ function generateFeed() {
       }
 
       const fileName = path.basename(filePath, path.extname(filePath));
-      const articleUrl = `https://dzen.ru/zenmaster/articles/${fileName}`;
+      const articleUrl = `https://dzen.ru/potemki/articles/${fileName}`;
       const itemId = `${fileName}::${frontmatter.date}`;
 
       // ДЕДУПЛИКАЦИЯ
