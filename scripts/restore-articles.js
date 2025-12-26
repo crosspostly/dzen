@@ -5,9 +5,9 @@
  * Использует Gemini 2.5 Flash Lite для автоматической реставрации статей
  */
 
-const fs = require('fs');
-const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+import fs from 'fs';
+import path from 'path';
+import { GoogleGenAI } from '@google/genai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
@@ -15,7 +15,7 @@ if (!GEMINI_API_KEY) {
   process.exit(1);
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 /**
  * Золотой промпт для реставрации
@@ -81,13 +81,15 @@ function validateFrontmatter(content) {
  */
 async function restoreArticle(articleText) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-
     const prompt = `${RESTORATION_PROMPT}\n\n${articleText}`;
 
     console.log('🤖 Calling Gemini 2.5 Flash Lite...');
-    const result = await model.generateContent(prompt);
-    const restoredText = result.response.text();
+    const response = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: prompt,
+      config: { responseMimeType: "text/plain" }
+    });
+    const restoredText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     return restoredText.trim();
   } catch (error) {
