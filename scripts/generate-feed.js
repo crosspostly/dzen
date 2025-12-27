@@ -155,14 +155,32 @@ function escapeXml(str) {
 }
 
 /**
- * Конвертировать дату в RFC822 формат
+ * Конвертировать дату в RFC822 формат с часовым поясом +0300 (Москва)
  */
 function toRFC822(dateStr) {
   try {
     const date = new Date(dateStr);
-    return date.toUTCString();
+    // Конвертируем в московское время +0300
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    const dayName = days[date.getDay()];
+    const dayNum = String(date.getDate()).padStart(2, '0');
+    const monthName = months[date.getMonth()];
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${dayName}, ${dayNum} ${monthName} ${year} ${hours}:${minutes}:${seconds} +0300`;
   } catch (e) {
-    return new Date().toUTCString();
+    // Fallback с правильным форматом
+    const now = new Date();
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${days[now.getDay()]}, ${String(now.getDate()).padStart(2, '0')} ${months[now.getMonth()]} ${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} +0300`;
   }
 }
 
@@ -205,7 +223,23 @@ function markdownToHtml(markdown) {
     })
     .filter(p => p) // Убираем пустые строки
     .join('\n');
-  
+
+  return validateHtml(html);
+}
+
+/**
+ * Валидация HTML тегов (простая проверка на закрытость)
+ */
+function validateHtml(html) {
+  const tags = ['b', 'i', 'p', 'h1', 'h2', 'h3', 'a'];
+  for (const tag of tags) {
+    const openCount = (html.match(new RegExp(`<${tag}[^>]*>`, 'g')) || []).length;
+    const closeCount = (html.match(new RegExp(`</${tag}>`, 'g')) || []).length;
+    
+    if (openCount !== closeCount) {
+      console.warn(`⚠️ Warning: Unclosed <${tag}> tag detected! (${openCount} open, ${closeCount} closed)`);
+    }
+  }
   return html;
 }
 
@@ -213,7 +247,7 @@ function markdownToHtml(markdown) {
  * Генерировать RSS фид
  */
 function generateRssFeed(articles) {
-  const now = new Date().toUTCString();
+  const now = toRFC822(new Date());
   
   let rssContent = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" 
@@ -261,6 +295,10 @@ function generateRssFeed(articles) {
       <category>comment-all</category>
       
       <enclosure url="${imageUrl}" type="image/jpeg"/>
+      <media:content type="image/jpeg" medium="image" width="900" height="300" url="${imageUrl}">
+        <media:description type="plain">${escapedDescription}</media:description>
+        <media:copyright>© ZenMaster Articles</media:copyright>
+      </media:content>
       
       <content:encoded><![CDATA[${content}]]></content:encoded>
     </item>
@@ -327,7 +365,8 @@ async function main() {
 
         // Генерируем ID статьи
         const fileName = path.basename(filePath, '.md');
-        const itemId = `${fileName}::${frontmatter.date}`;
+        const dateClean = frontmatter.date.replace(/[^\d]/g, '');
+        const itemId = `${fileName}-${dateClean}`;
 
         // Пропускаем если уже обработали
         if (processedIds.has(itemId)) {
