@@ -3,14 +3,10 @@ name: 🔧 Auto Restore Articles
 on:
   push:
     paths:
-      - 'articles/women-35-60/**/*.md'
+      - 'articles/**/*.md'
     branches:
       - main
   workflow_dispatch:
-  workflow_run:
-    workflows: ['🤖 Generate Articles']  # ← СЛУШАЕМ другой workflow!
-    types: [completed]
-    branches: [main]
 
 jobs:
   restore-articles:
@@ -23,7 +19,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 50  # Больше истории для анализа
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
@@ -35,115 +31,55 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: 🔍 Get NEW and MODIFIED files (ANY source)
+      - name: 🔍 Get changed files
         id: files
         run: |
           echo "📊 Detecting changed articles..."
-          echo ""
           
-          # ═══════════════════════════════════════════════════════════
-          # МЕТОД 1: Если это workflow_run (от другого экшна)
-          # ═══════════════════════════════════════════════════════════
-          if [ "${{ github.event_name }}" == "workflow_run" ]; then
-            echo "📌 Mode: WORKFLOW_RUN (от другого генератора)"
-            
-            # Смотрим последние 50 коммитов и берём файлы что ЕСТЬ в articles/
-            CHANGED=$(find articles/women-35-60 -name "*.md" -type f 2>/dev/null | sort)
-            
-            if [ -z "$CHANGED" ]; then
-              echo "✅ No articles found"
-              echo "files=" >> $GITHUB_OUTPUT
-            else
-              echo "📝 Found articles to restore:"
-              echo "$CHANGED" | while read file; do
-                echo "   - $file"
-              done
-              FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
-              echo "files=$FILES_STR" >> $GITHUB_OUTPUT
-            fi
-          
-          # ═══════════════════════════════════════════════════════════
-          # МЕТОД 2: Если это обычный push (с фильтром paths)
-          # ═══════════════════════════════════════════════════════════
+          if git rev-parse --verify HEAD~1 &> /dev/null; then
+            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'articles/**/*.md')
           else
-            echo "📌 Mode: PUSH (прямой push)"
-            
-            # Проверяем есть ли HEAD~1
-            if git rev-parse --verify HEAD~1 &> /dev/null; then
-              # Используем больший фильтр: A, M, T (Added, Modified, Type change)
-              CHANGED=$(git diff --name-only --diff-filter=AMT HEAD~1 HEAD -- 'articles/women-35-60/**/*.md')
-            else
-              # Первый коммит
-              CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- 'articles/women-35-60/**/*.md')
-            fi
-            
-            if [ -z "$CHANGED" ]; then
-              echo "✅ No new/modified articles found"
-              echo "files=" >> $GITHUB_OUTPUT
-            else
-              echo "📝 Found changed files:"
-              echo "$CHANGED" | while read file; do
-                echo "   - $file"
-              done
-              FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
-              echo "files=$FILES_STR" >> $GITHUB_OUTPUT
-            fi
+            CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- 'articles/**/*.md')
+          fi
+          
+          if [ -z "$CHANGED" ]; then
+            echo "✅ No articles found"
+            echo "files=" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Found files:"
+            echo "$CHANGED" | while read file; do
+              echo "   ✓ $file"
+            done
+            FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
+            echo "files=$FILES_STR" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🤖 Restore articles with Gemini
+      - name: 🤖 Restore articles
         if: steps.files.outputs.files != ''
         id: restore
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          echo "🚀 Starting restoration..."
-          echo ""
-          FILES="${{ steps.files.outputs.files }}"
-          
-          if [ -z "$FILES" ]; then
-            echo "No files to process"
-            echo "exit_code=0" >> $GITHUB_OUTPUT
-          else
-            node scripts/restore-articles.js $FILES
-            echo "exit_code=$?" >> $GITHUB_OUTPUT
-          fi
+          echo "🚀 Restoring..."
+          node scripts/restore-articles.js ${{ steps.files.outputs.files }}
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
 
-      - name: 📤 Commit restored articles
+      - name: 📤 Commit if changed
         if: steps.files.outputs.files != '' && steps.restore.outputs.exit_code == '0'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Проверяем есть ли изменения
-          if git diff --quiet; then
-            echo "✅ No changes after restoration - articles were already clean"
-          else
-            echo "📝 Committing restored articles..."
+          if ! git diff --quiet; then
             git add articles/
-            git commit -m "🔧 Auto-restore: Fixed article formatting and structure" || true
-            
-            echo "🚀 Pushing to main..."
-            git push origin main || echo "⚠️  Push skipped (no new commits)"
-            echo "✅ Committed and pushed"
+            git commit -m "🔧 Auto-restore: Fixed formatting" || true
+            git push origin main || true
+            echo "✅ Pushed"
           fi
 
-      - name: ✅ Restore Complete
+      - name: ✅ Done
         if: always()
         run: |
           echo ""
-          echo "╔════════════════════════════════════════════════════════╗"
-          if [ "${{ steps.restore.outputs.exit_code }}" == "0" ]; then
-            echo "║  ✅ ARTICLE RESTORATION COMPLETE                       ║"
-            echo "╚════════════════════════════════════════════════════════╝"
-            echo ""
-            echo "📊 Summary:"
-            echo "   Source: ${{ github.event_name }}"
-            echo "   Files processed: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
-            echo "   Status: ✅ Restored and committed"
-          else
-            echo "║  ⚠️  ARTICLE RESTORATION SKIPPED                        ║"
-            echo "╚════════════════════════════════════════════════════════╝"
-            echo ""
-            echo "No articles to process or restoration not needed"
-          fi
-          echo ""
+          echo "✅ Auto-restore complete"
+          echo "Files: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
