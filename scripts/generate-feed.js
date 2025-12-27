@@ -143,15 +143,78 @@ function getDescription(content) {
 }
 
 /**
+ * 🧹 Очистить контент для безопасного CDATA
+ * Убирает ANSI коды, управляющие символы, нормализует UTF-8
+ */
+function sanitizeForCdata(content) {
+  if (!content) return '';
+  
+  content = String(content);
+  
+  // 1️⃣ Удалить ANSI escape коды (все варианты)
+  // ESC[...m pattern: \x1b[0m, \x1b[33m, \x1b[1;31m и т.д.
+  content = content.replace(/\x1b\[[0-9;]*m/g, '');
+  
+  // [0m pattern (если Буфер не обработал ESC правильно)
+  content = content.replace(/\[\d+m/g, '');
+  
+  // 2️⃣ Удалить другие управляющие символы (кроме tab, newline, carriage return)
+  content = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  
+  // 3️⃣ Экранировать CDATA delimiters
+  content = content.replace(/\]\]>/g, ']]&gt;');
+  
+  // 4️⃣ Удалить невалидные UTF-8 последовательности
+  try {
+    const buf = Buffer.from(content, 'utf8');
+    content = buf.toString('utf8');
+  } catch (e) {
+    console.warn('⚠️  WARNING: UTF-8 decoding error, sanitizing...');
+    content = content.replace(/[\u0000-\u001F]/g, ' ');
+  }
+  
+  // 5️⃣ Нормализовать whitespace
+  content = content.replace(/\s+/g, ' ');
+  
+  return content.trim();
+}
+
+/**
+ * 📅 Проверить что статья свежая (не старше N дней)
+ */
+function isRecentDate(dateStr, maxDaysOld = 7) {
+  try {
+    const articleDate = new Date(dateStr);
+    const now = new Date();
+    
+    if (isNaN(articleDate.getTime())) {
+      console.warn(`⚠️  WARNING: Invalid date format: "${dateStr}"`);
+      return false;
+    }
+    
+    const diffMs = now.getTime() - articleDate.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    
+    return diffDays <= maxDaysOld;
+  } catch (e) {
+    console.warn(`⚠️  ERROR parsing date "${dateStr}": ${e.message}`);
+    return false;
+  }
+}
+
+/**
  * Экранировать спецсимволы для XML
+ * & ДОЛЖЕН БЫТЬ ПЕРВЫМ!
  */
 function escapeXml(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
+    .replace(/&/g, '&amp;')      // & must be FIRST!
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/'/g, '&apos;')
+    .replace(/\x00/g, '')        // Remove null bytes
+    .trim();
 }
 
 /**
@@ -223,6 +286,9 @@ function markdownToHtml(markdown) {
     })
     .filter(p => p) // Убираем пустые строки
     .join('\n');
+
+  // ⭐ ДОБАВИТЬ ЗДЕСЬ - очистить контент перед валидацией
+  html = sanitizeForCdata(html);
 
   return validateHtml(html);
 }
@@ -300,7 +366,7 @@ function generateRssFeed(articles) {
         <media:copyright>© ZenMaster Articles</media:copyright>
       </media:content>
       
-      <content:encoded><![CDATA[${content}]]></content:encoded>
+      <content:encoded><![CDATA[${sanitizeForCdata(content)}]]></content:encoded>
     </item>
 `;
   }
@@ -346,12 +412,37 @@ async function main() {
     for (const filePath of articleFiles) {
       try {
         // Читаем файл
-        const fileContent = fs.readFileSync(filePath, 'utf8');
+        let fileContent = fs.readFileSync(filePath, 'utf8');
+        
+        // ⭐ Валидировать кодировку
+        try {
+          const validUtf8 = Buffer.from(fileContent, 'utf8').toString('utf8');
+          fileContent = validUtf8;
+        } catch (e) {
+          console.warn(`⚠️  WARNING: Invalid UTF-8 in ${path.basename(filePath)}, repairing...`);
+          // Попытка latin1 как fallback
+          try {
+            const latin1Buffer = Buffer.from(fileContent, 'latin1');
+            fileContent = latin1Buffer.toString('utf8');
+          } catch (e2) {
+            fileContent = fileContent.replace(/[\x00-\x1F]/g, ' ');
+          }
+        }
+        
         const { data: frontmatter, content: body } = matter(fileContent);
 
         // Проверяем обязательные поля
         if (!frontmatter.title || !frontmatter.date) {
           console.log(`⏭️  SKIP (no title/date): ${path.relative(process.cwd(), filePath)}`);
+          STATS.skipped++;
+          continue;
+        }
+
+        // ⭐ НОВОЕ: Проверить что статья не старше 7 дней
+        if (!isRecentDate(frontmatter.date, 7)) {
+          const articleDate = new Date(frontmatter.date);
+          const daysAgo = Math.floor((new Date() - articleDate) / (1000 * 60 * 60 * 24));
+          console.log(`⏭️  SKIP (${daysAgo} дней назад, > 7): ${path.relative(process.cwd(), filePath)}`);
           STATS.skipped++;
           continue;
         }
@@ -384,7 +475,26 @@ async function main() {
         // Конвертируем markdown в HTML
         const htmlContent = markdownToHtml(body);
 
-        // Добавляем в массив
+        // ⭐ Валидация контента (минимум 300 символов для Дзена)
+        if (htmlContent.length < 300) {
+          console.warn(`⚠️  WARNING: ${fileName} - content too short (${htmlContent.length} < 300 chars). Skipping.`);
+          STATS.skipped++;
+          continue;
+        }
+
+        // ⭐ Валидация HTML тегов (только разрешенные)
+        const allowedTags = ['p', 'a', 'b', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'ul', 'ol', 'li', 'figure', 'figcaption', 'img'];
+        const tagsInContent = htmlContent.match(/<(\w+)/g) || [];
+        const tagsSet = new Set(tagsInContent.map(t => t.slice(1)));
+        const invalidTags = Array.from(tagsSet).filter(tag => 
+          !allowedTags.includes(tag) && tag !== '!'
+        );
+
+        if (invalidTags.length > 0) {
+          console.warn(`⚠️  WARNING: ${fileName} - unsupported tags: ${invalidTags.join(', ')}`);
+        }
+
+        // Добавляем в массив (контент уже очищен sanitizeForCdata())
         articles.push({
           title: frontmatter.title,
           description: description,
