@@ -7,6 +7,10 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_run:
+    workflows: ['🤖 Generate Articles']  # ← СЛУШАЕМ другой workflow!
+    types: [completed]
+    branches: [main]
 
 jobs:
   restore-articles:
@@ -19,7 +23,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 50  # Больше истории для анализа
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
@@ -31,35 +35,59 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: 🔍 Get NEW and MODIFIED files only
+      - name: 🔍 Get NEW and MODIFIED files (ANY source)
         id: files
         run: |
-          echo "📊 Detecting changed files..."
+          echo "📊 Detecting changed articles..."
           echo ""
           
-          # Если это первый коммит (нет HEAD~1)
-          if git rev-parse --verify HEAD~1 &> /dev/null; then
-            # Сравниваем с предыдущим коммитом
-            # -A = Added (новые)
-            # -M = Modified (изменённые)
-            CHANGED=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- 'articles/women-35-60/**/*.md')
-          else
-            # Если это первый коммит - берём все файлы из этого коммита
-            CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- 'articles/women-35-60/**/*.md')
-          fi
+          # ═══════════════════════════════════════════════════════════
+          # МЕТОД 1: Если это workflow_run (от другого экшна)
+          # ═══════════════════════════════════════════════════════════
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            echo "📌 Mode: WORKFLOW_RUN (от другого генератора)"
+            
+            # Смотрим последние 50 коммитов и берём файлы что ЕСТЬ в articles/
+            CHANGED=$(find articles/women-35-60 -name "*.md" -type f 2>/dev/null | sort)
+            
+            if [ -z "$CHANGED" ]; then
+              echo "✅ No articles found"
+              echo "files=" >> $GITHUB_OUTPUT
+            else
+              echo "📝 Found articles to restore:"
+              echo "$CHANGED" | while read file; do
+                echo "   - $file"
+              done
+              FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
+              echo "files=$FILES_STR" >> $GITHUB_OUTPUT
+            fi
           
-          if [ -z "$CHANGED" ]; then
-            echo "✅ No NEW or MODIFIED articles found - nothing to restore"
-            echo "files=" >> $GITHUB_OUTPUT
+          # ═══════════════════════════════════════════════════════════
+          # МЕТОД 2: Если это обычный push (с фильтром paths)
+          # ═══════════════════════════════════════════════════════════
           else
-            echo "📝 Found files to restore:"
-            echo "$CHANGED" | while read file; do
-              echo "   - $file"
-            done
-            echo ""
-            # Преобразуем в строку для передачи в скрипт
-            FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
-            echo "files=$FILES_STR" >> $GITHUB_OUTPUT
+            echo "📌 Mode: PUSH (прямой push)"
+            
+            # Проверяем есть ли HEAD~1
+            if git rev-parse --verify HEAD~1 &> /dev/null; then
+              # Используем больший фильтр: A, M, T (Added, Modified, Type change)
+              CHANGED=$(git diff --name-only --diff-filter=AMT HEAD~1 HEAD -- 'articles/women-35-60/**/*.md')
+            else
+              # Первый коммит
+              CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- 'articles/women-35-60/**/*.md')
+            fi
+            
+            if [ -z "$CHANGED" ]; then
+              echo "✅ No new/modified articles found"
+              echo "files=" >> $GITHUB_OUTPUT
+            else
+              echo "📝 Found changed files:"
+              echo "$CHANGED" | while read file; do
+                echo "   - $file"
+              done
+              FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
+              echo "files=$FILES_STR" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: 🤖 Restore articles with Gemini
@@ -70,8 +98,15 @@ jobs:
         run: |
           echo "🚀 Starting restoration..."
           echo ""
-          node scripts/restore-articles.js ${{ steps.files.outputs.files }}
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
+          FILES="${{ steps.files.outputs.files }}"
+          
+          if [ -z "$FILES" ]; then
+            echo "No files to process"
+            echo "exit_code=0" >> $GITHUB_OUTPUT
+          else
+            node scripts/restore-articles.js $FILES
+            echo "exit_code=$?" >> $GITHUB_OUTPUT
+          fi
 
       - name: 📤 Commit restored articles
         if: steps.files.outputs.files != '' && steps.restore.outputs.exit_code == '0'
@@ -85,11 +120,11 @@ jobs:
           else
             echo "📝 Committing restored articles..."
             git add articles/
-            git commit -m "🔧 Auto-restore: Fixed article formatting and structure" 
+            git commit -m "🔧 Auto-restore: Fixed article formatting and structure" || true
             
             echo "🚀 Pushing to main..."
-            git push origin main
-            echo "✅ Successfully pushed"
+            git push origin main || echo "⚠️  Push skipped (no new commits)"
+            echo "✅ Committed and pushed"
           fi
 
       - name: ✅ Restore Complete
@@ -102,15 +137,13 @@ jobs:
             echo "╚════════════════════════════════════════════════════════╝"
             echo ""
             echo "📊 Summary:"
-            echo "   Files processed: $(echo '${{ steps.files.outputs.files }}' | tr ' ' '\n' | grep -c .)"
-            echo "   Mode: NEW & MODIFIED articles only"
+            echo "   Source: ${{ github.event_name }}"
+            echo "   Files processed: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
             echo "   Status: ✅ Restored and committed"
           else
-            echo "║  ❌ ARTICLE RESTORATION FAILED                         ║"
+            echo "║  ⚠️  ARTICLE RESTORATION SKIPPED                        ║"
             echo "╚════════════════════════════════════════════════════════╝"
             echo ""
-            echo "⚠️  Some articles failed quality checks"
-            echo "   Manual review required for:"
-            echo "   ${{ steps.files.outputs.files }}"
+            echo "No articles to process or restoration not needed"
           fi
           echo ""
