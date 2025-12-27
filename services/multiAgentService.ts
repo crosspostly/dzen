@@ -7,6 +7,65 @@ import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
 import { FinalArticleCleanupGate } from "./finalArticleCleanupGate";
 import { ArticlePublishGate } from "./articlePublishGate";
 
+// ============================================================================
+// NEW: Article Archetype Types (TOP Articles System)
+// ============================================================================
+
+export type HeroArchetype =
+  | "comeback_queen"
+  | "gold_digger_trap"
+  | "inheritance_reveal"
+  | "entrepreneur"
+  | "phoenix"
+  | "mother_wins"
+  | "wisdom_earned";
+
+export type ConflictType =
+  | "class_prejudice"
+  | "family_greed"
+  | "gender_expectations"
+  | "infidelity_redemption"
+  | "matriarch_rejection"
+  | "false_image";
+
+export type TimelineType =
+  | "sudden"       // 1-3 months (fast action!)
+  | "gradual"      // 6-12 months
+  | "cyclical"     // Years of silence → sudden change
+  | "revelation";  // Was hidden, now revealed
+
+export type AntagonistReaction =
+  | "shame"        // Mother-in-law feels shame
+  | "regret"       // Husband regrets
+  | "jealousy"     // They are jealous
+  | "pleading"     // They beg for help
+  | "denial"       // They don't believe → then see evidence
+  | "anger";       // They are angry
+
+export type VictoryType =
+  | "financial"    // "I'm rich, you're not"
+  | "professional" // "I'm more successful"
+  | "social"       // "I'm respected"
+  | "emotional"    // "I'm happy, you're jealous"
+  | "moral"        // "I was right"
+  | "multi";       // Combo of all
+
+export interface ArticleGeneratorConfig {
+  // Existing:
+  theme: string;
+  angle: string;
+  emotion: string;
+  audience: string;
+  maxChars?: number;
+
+  // NEW: Archetype parameters
+  heroArchetype?: HeroArchetype;
+  conflictType?: ConflictType;
+  timeline?: TimelineType;
+  antagonistReaction?: AntagonistReaction;
+  victoryType?: VictoryType;
+}
+
 export interface MultiAgentOptions {
   maxChars?: number;
   useAntiDetection?: boolean; // 🆕 v7.0: Disable anti-detection for simpler generation
@@ -22,6 +81,13 @@ export class MultiAgentService {
   private episodeCount: number = 12;
   private useAntiDetection: boolean; // 🆕 v7.0
   private skipCleanupGates: boolean; // 🆕 v7.0
+
+  // 🆕 NEW: Archetype configuration
+  private heroArchetype?: HeroArchetype;
+  private conflictType?: ConflictType;
+  private timeline?: TimelineType;
+  private antagonistReaction?: AntagonistReaction;
+  private victoryType?: VictoryType;
 
   constructor(apiKey?: string, options?: MultiAgentOptions) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
@@ -81,6 +147,8 @@ export class MultiAgentService {
 
   /**
    * Main entry point: Generate full longform article with dynamic episodes
+   * 
+   * 🆕 v8.0: Now accepts ArticleGeneratorConfig with archetype parameters
    */
   async generateLongFormArticle(params: {
     theme: string;
@@ -90,14 +158,30 @@ export class MultiAgentService {
     maxChars?: number;
     includeImages?: boolean;
     applyPhase2AntiDetection?: boolean;
+    // 🆕 NEW: Archetype parameters (from TOP Articles)
+    heroArchetype?: HeroArchetype;
+    conflictType?: ConflictType;
+    timeline?: TimelineType;
+    antagonistReaction?: AntagonistReaction;
+    victoryType?: VictoryType;
   }): Promise<LongFormArticle> {
     const maxChars = params.maxChars || this.maxChars;
     const episodeCount = this.calculateOptimalEpisodeCount(maxChars);
 
+    // 🆕 Store archetype configuration
+    this.heroArchetype = params.heroArchetype;
+    this.conflictType = params.conflictType;
+    this.timeline = params.timeline || "sudden";
+    this.antagonistReaction = params.antagonistReaction || "shame";
+    this.victoryType = params.victoryType || "multi";
+
     console.log("\n🎬 [ZenMaster v2.0] Starting dynamic longform generation...");
     console.log(`📏 Theme: "${params.theme}"`);
     console.log(`🎯 Angle: ${params.angle} | Emotion: ${params.emotion}`);
-    console.log(`🎬 Episodes: ${episodeCount} (dynamic based on ${maxChars} chars)\n`);
+    console.log(`🎬 Episodes: ${episodeCount} (dynamic based on ${maxChars} chars)`);
+    if (this.heroArchetype) {
+      console.log(`🏆 Archetype: ${this.heroArchetype} | Timeline: ${this.timeline} | Victory: ${this.victoryType}`);
+    }
     
     // Stage 0: Outline Engineering (dynamic episode count)
     console.log(`📋 Stage 0: Building outline (${episodeCount} episodes) + plotBible...`);
@@ -396,13 +480,17 @@ export class MultiAgentService {
   }
 
   /**
-   * 🎯 TASK 1: generateDevelopment() с Anti-Detection (v5.4)
+   * 🎯 TASK 1: generateDevelopment() с Anti-Detection и ARCHETYPE логикой (v8.0)
    * Средняя часть истории с PlotBible и правилами анти-детекции
+   * КЛЮЧЕВОЕ: Для "sudden" таймлайна - КОРОТКОЕ активное развитие (1500-2000 символов)
    */
   async generateDevelopment(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
     const plotBible = outline.plotBible;
     const lastEpisode = episodes[episodes.length - 1];
     const previousContext = lastEpisode ? lastEpisode.content.substring(0, 150) : 'Начало истории';
+    
+    // 🆕 v8.0: Get timeline for development pacing
+    const timeline = this.timeline || "sudden";
     
     let voiceGuide = '';
     if (plotBible?.narrator?.voiceHabits) {
@@ -416,16 +504,22 @@ export class MultiAgentService {
    Anger: "${h.angerPattern}"`;
     }
     
-    const sensoryGuide = plotBible?.sensoryPalette ? `
+    let sensoryGuide = '';
+    if (plotBible?.sensoryPalette) {
+      sensoryGuide = `
 🎨 SENSORY PALETTE:
    Visuals: ${plotBible.sensoryPalette.details?.slice(0, 3).join(', ')}
    Sounds: ${plotBible.sensoryPalette.sounds?.slice(0, 2).join(', ')}
-   Smells: ${plotBible.sensoryPalette.smells?.slice(0, 2).join(', ')}` : '';
+   Smells: ${plotBible.sensoryPalette.smells?.slice(0, 2).join(', ')}`;
+    }
+
+    // 🆕 v8.0: Timeline-specific instructions
+    const timelineInstructions = this.getDevelopmentTimelineInstructions(timeline, outline);
 
     const antiDetection = `
 ⚠️ ANTI-DETECTION MANDATORY:
 ✅ SENTENCE VARIETY: Short. Medium medium sentence. Long complex structure. Short.
-✅ INCOMPLETE SENTENCES: "Я началась говорить, но..." (3-4 times)
+✅ INCOMPLETE SENTENCES: "Я начала говорить, но..." (3-4 times)
 ✅ INTERJECTIONS: "Боже, как я была слепа." (2 times)
 ✅ EMOTIONS AS ACTIONS: ✅ "Руки тряслись." NOT ❌ "I was scared."
 ✅ DIALOGUE WITH SUBTEXT: Show subtext, don't explain
@@ -433,7 +527,12 @@ export class MultiAgentService {
 ✅ NO PLATFORM MENTIONS: Stay timeless, Russian, literary
 ✅ START WITH ACTION/DIALOGUE: NOT description`;
 
-    const prompt = `📄 CONTEXT: Development episode (1500-2000 chars) - middle of story
+    const prompt = `📄 CONTEXT: DEVELOPMENT episode - middle of story
+
+🏆 ARCHETYPE CONTEXT:
+${plotBible?.narrator?.heroArchetype ? `- Archetype: ${plotBible.narrator.heroArchetype}` : '- Standard narrative'}
+- Timeline: ${timeline}
+${timelineInstructions}
 
 ${voiceGuide}
 ${sensoryGuide}
@@ -442,6 +541,11 @@ ${antiDetection}
 🎯 TASK: Write DEVELOPMENT
 Hook from previous: "${previousContext}"
 Theme: "${outline.theme}"
+
+📏 TARGET LENGTH: ${timeline === 'sudden' ? '1500-2000' : '2000-2500'} chars
+
+TIMELINE REQUIREMENTS:
+${this.getTimelineDevelopmentRequirements(timeline)}
 
 REQUIREMENTS:
 - Continue from previous episode
@@ -463,12 +567,86 @@ OUTPUT: Only text`;
   }
 
   /**
-   * 🎯 TASK 2: generateClimax() с Триггерами (v5.4)
-   * Кульминация с короткими предложениями и сенсорной перегрузкой
+   * 🆕 v8.0: Get timeline-specific instructions for development
+   */
+  private getDevelopmentTimelineInstructions(timeline: TimelineType, outline: OutlineStructure): string {
+    switch (timeline) {
+      case 'sudden':
+        return `- QUICK DECISIONS: No years of suffering!
+- FAST ACTION: 1-3 months total story arc
+- VISIBLE PROGRESS: Show concrete steps (loan → business → first clients)
+- BRIEF DEVELOPMENT: Focus on KEY MOMENTS, not endless reflection`;
+      case 'gradual':
+        return `- VISIBLE GROWTH: Show step-by-step process
+- MONTH-BY-MONTH: Show progression
+- BUILDING MOMENTUM: Each step leads to next
+- REALISTIC TIMELINE: 6-12 months of actual work`;
+      case 'cyclical':
+        return `- PAST MENTIONED: Can reference years of silence
+- DRAMATIC SHIFT: But then something CHANGED
+- FOCUS ON NEW: 70% about NEW phase, 30% about past
+- THE TURNING POINT: What made everything change?`;
+      case 'revelation':
+        return `- HIDDEN TRUTH: Something was concealed
+- REVELATION MOMENT: The secret comes out
+- AFTERMATH: How does everyone react?
+- SHIFT IN DYNAMICS: Everything changes after reveal`;
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * 🆕 v8.0: Get specific requirements for development based on timeline
+   */
+  private getTimelineDevelopmentRequirements(timeline: TimelineType): string {
+    switch (timeline) {
+      case 'sudden':
+        return `❌ DON'T: Write about years of suffering, endless reflection, depression
+✅ DO: Show rapid transformation - loan taken, business started, first clients won
+📝 SCENES TO INCLUDE:
+   - Decision made (3-5 days, not months!)
+   - First action (loan, registration, first sale)
+   - Early results (first clients, first money)
+   - Building momentum (growth visible)`;
+      case 'gradual':
+        return `✅ DO: Show step-by-step growth process
+📝 SCENES TO INCLUDE:
+   - Education/learning phase
+   - First attempts (struggles included)
+   - Building client base (10→50→100)
+   - Visible income growth`;
+      case 'cyclical':
+        return `❌ DON'T: Focus only on past suffering
+✅ DO: Show the dramatic shift from old to new
+📝 STRUCTURE:
+   - 30% Past (brief reference to what was)
+   - 70% NEW PHASE (transformation visible)
+   - The turning point (what changed everything)`;
+      case 'revelation':
+        return `❌ DON'T: Long backstory about concealment
+✅ DO: Focus on the reveal and its consequences
+📝 SCENES TO INCLUDE:
+   - The moment of revelation
+   - Immediate reactions
+   - Shifting dynamics between characters`;
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * 🎯 TASK 2: generateClimax() с Триггерами и РЕАКЦИЕЙ АНТАГОНИСТА (v8.0)
+   * Кульминация с короткими предложениями, сенсорной перегрузкой И РЕАКЦИЕЙ СЕМЬИ
+   * КЛЮЧЕВОЕ: На кульминации СЕМЬЯ/МУЖ ВИДИТ и РЕАГИРУЕТ!
    */
   async generateClimax(outline: OutlineStructure, development: string, episodes: Episode[]): Promise<string> {
     const plotBible = outline.plotBible;
     const previousContext = development.substring(0, 150);
+    
+    // 🆕 v8.0: Get antagonist reaction for climax
+    const antagonistReaction = this.antagonistReaction || "shame";
+    const reactionInstructions = this.getClimaxAntagonistReaction(antagonistReaction);
 
     const antiDetection = `
 ⚠️ CLIMAX ANTI-DETECTION:
@@ -481,12 +659,39 @@ OUTPUT: Only text`;
 
     const prompt = `📄 CONTEXT: CLIMAX (1200-1600 chars) - turning point
 
+🏆 ARCHETYPE CONTEXT:
+${plotBible?.narrator?.heroArchetype ? `- Archetype: ${plotBible.narrator.heroArchetype}` : '- Standard narrative'}
+- Timeline: ${this.timeline || 'sudden'}
+- Antagonist Reaction: ${antagonistReaction}
+
+${reactionInstructions}
+
 ${antiDetection}
 
 Central Question: "${plotBible?.thematicCore?.centralQuestion || 'What changed everything?'}"
 
 🎯 TASK: Write CLIMAX
 Previous: "${previousContext}"
+
+🎬 CLIMAX STRUCTURE (v8.0 - ANTAGONIST MUST SEE AND REACT!):
+
+1. THE ENCOUNTER (theatrical moment)
+   - Where? Charity event / magazine / chance meeting in cafe
+   - Who sees? Mother-in-law / Husband / Entire family
+   - What do they see? Her success, beauty, confidence
+
+2. MOMENT OF REALIZATION
+   - She's on stage / on cover / in luxury dress
+   - They realize: THIS same woman?! But successful!
+   - Shock! Revelation!
+
+3. REACTION (based on ${antagonistReaction}):
+${this.getAntagonistReactionDetails(antagonistReaction)}
+
+4. DIALOGUE (30-50 words)
+   - Short! Punchy!
+   - Shows HER position (calm, above them)
+   - Shows THEIR reaction (lost, shocked)
 
 REQUIREMENTS:
 - Build from development
@@ -495,6 +700,7 @@ REQUIREMENTS:
 - Physical/sensory breakdown
 - Fast-paced sentences (many short)
 - Dialogue that breaks/interrupts
+- Antagonist SEES and REACTS visibly
 - Moment narrator realizes something permanent
 - End at turning point (not resolution)
 
@@ -508,39 +714,146 @@ OUTPUT: Only text`;
   }
 
   /**
-   * 🎯 TASK 3: generateResolution() - НОВАЯ ФУНКЦИЯ (v5.4)
-   * Развязка с интроспективным тоном и честной путаницей
+   * 🆕 v8.0: Get antagonist reaction instructions for climax
+   */
+  private getClimaxAntagonistReaction(reaction: AntagonistReaction): string {
+    switch (reaction) {
+      case 'shame':
+        return `EXPECTED REACTION: SHAME
+- Mother-in-law blushes, feels embarrassed
+- Avoids eye contact
+- Tries to hide, pretends not to notice
+- Later: might apologize or avoid protagonist`;
+      case 'regret':
+        return `EXPECTED REACTION: REGRET
+- Husband realizes what he lost
+- Longing, sadness in his eyes
+- Might try to approach, reach out
+- "What have I done?" expression`;
+      case 'jealousy':
+        return `EXPECTED REACTION: JEALOUSY
+- "How did SHE become richer than us?!"
+- Bitter comments, comparing
+- Trying to diminish her success
+- Envy visible in eyes and words`;
+      case 'pleading':
+        return `EXPECTED REACTION: PLEADING
+- Family members approach: "Help us, we need work"
+- Asking for money, connections, jobs
+- Begging, humble姿态
+- They need HER now, not the other way around`;
+      case 'denial':
+        return `EXPECTED REACTION: DENIAL
+- "This can't be true!"
+- "That's not her, it must be a mistake!"
+- But then they see proof...
+- Reality slowly sinks in`;
+      case 'anger':
+        return `EXPECTED REACTION: ANGER
+- "How did she dare become successful?!"
+- Accusations, blame
+- Trying to undermine her success
+- Frustration and rage at being surpassed`;
+      default:
+        return `EXPECTED REACTION: SHAME
+- Family feels embarrassed by her success`;
+    }
+  }
+
+  /**
+   * 🆕 v8.0: Get specific reaction details for climax
+   */
+  private getAntagonistReactionDetails(reaction: AntagonistReaction): string {
+    switch (reaction) {
+      case 'shame':
+        return `   - "shame": Свекровь краснеет, отводит взгляд
+   - Она пытается спрятаться, делает вид, что не замечает
+   - Потом: может подойти с извинениями`;
+      case 'regret':
+        return `   - "regret": Муж понимает, что потерял
+   - Долгий взгляд, сожаление в глазах
+   - Пытается подойти, заговорить`;
+      case 'jealousy':
+        return `   - "jealousy": "Как она стала богаче нас?!"
+   - Горькие комментарии, сравнения
+   - Зависть видна в глазах`;
+      case 'pleading':
+        return `   - "pleading": Родня подходит: "Помоги нам!"
+   - Просят денег, работы, связей
+   - Умоляют, унижаются`;
+      case 'denial':
+        return `   - "denial": "Это не может быть правдой!"
+   - Но потом видят доказательства...
+   - Реальность медленно доходит`;
+      case 'anger':
+        return `   - "anger": "Как она посмела?!"
+   - Обвинения, упреки
+   - Пытаются принизить её успех`;
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * 🎯 TASK 3: generateResolution() - ЖЁСТКАЯ ПОБЕДА (v8.0)
+   * Развязка с ЯСНЫМ финалом, НЕ "может быть"!
+   * КЛЮЧЕВОЕ: Финал УТВЕРЖДАЮЩИЙ, не вопросительный!
    */
   async generateResolution(outline: OutlineStructure, climax: string): Promise<string> {
     const plotBible = outline.plotBible;
     const previousContext = climax.substring(0, 150);
+    
+    // 🆕 v8.0: Get victory type for resolution
+    const victoryType = this.victoryType || "multi";
+    const victoryInstructions = this.getVictoryResolutionInstructions(victoryType);
 
     const antiDetection = `
 ⚠️ RESOLUTION ANTI-DETECTION:
 ✅ SLOWER PACE: "Я сидела. Просто сидела. Время странно..."
 ✅ SELF-REFLECTION: "Я была...? Какая я была?"
-✅ HONEST CONFUSION: "Облегчение? Ужас? Пусто? Может быть, всё."
-✅ NO MORALIZING: Realization without lesson
-✅ QUESTIONS NOT ANSWERED: "Почему я молчала? Боялась. Любила?"
-✅ WHAT CHANGED FOREVER: "Я больше не верила в добро."`;
+✅ NO MORALIZING: Realization without preachy lesson
+✅ WHAT CHANGED FOREVER: "Я стала другой. Факт."`;
 
     const prompt = `📄 CONTEXT: RESOLUTION (1000-1300 chars) - aftermath of climax
+
+🏆 ARCHETYPE CONTEXT:
+${plotBible?.narrator?.heroArchetype ? `- Archetype: ${plotBible.narrator.heroArchetype}` : '- Standard narrative'}
+- Victory Type: ${victoryType}
+
+${victoryInstructions}
 
 ${antiDetection}
 
 Central Question: "${plotBible?.thematicCore?.centralQuestion || 'What changed everything?'}"
 
-🎯 TASK: Write RESOLUTION (realization moment)
+🎯 TASK: Write RESOLUTION (FIRM VICTORY - v8.0!)
+
+STRUCTURE:
+- 40% Her new life (what is it now?)
+- 40% Others' reaction (they see changes)
+- 20% Her reflection (wisdom, but no self-pity)
+
+❌ FORBIDDEN ENDINGS:
+❌ "Может быть, я сделала правильно?"
+❌ "А вы как думаете?"
+❌ Uncertain, hesitant endings
+
+✅ REQUIRED:
+- Clear narrator position (she WON, she OVERCAME, she was RIGHT)
+- Consequences visible (for her AND for them)
+- CONFIDENT, NOT tentative
+- Final question (but not "what do you think?")
+
+VICTORY POSITION:
+${this.getVictoryPosition(victoryType)}
 
 REQUIREMENTS:
-- After climax rush, slower pace
-- Narrator processing what happened
-- Honest confusion, not neat answers
-- Physical return to normal
-- What changed permanently
-- Deep questions asked but not answered
-- Acceptance of complexity
-- NO happy ending, NO neat closure
+- After climax rush, processing what happened
+- Clear position on outcome
+- Consequences visible and specific
+- Confidence, not confusion
+- NO "maybe", NO "I wonder"
+- YES "I was right", "I won", "I succeeded"
 
 OUTPUT: Only text`;
 
@@ -549,6 +862,75 @@ OUTPUT: Only text`;
       model: "gemini-3-flash-preview",
       temperature: 0.85
     });
+  }
+
+  /**
+   * 🆕 v8.0: Get victory-specific resolution instructions
+   */
+  private getVictoryResolutionInstructions(victory: VictoryType): string {
+    switch (victory) {
+      case 'financial':
+        return `- Focus on MONEY aspect
+- "I'm rich, you're not"
+- Numbers, income, success visible
+- They need money, she has it`;
+      case 'professional':
+        return `- Focus on SUCCESS aspect
+- "I'm more successful"
+- Career growth, recognition
+- They work for her now`;
+      case 'social':
+        return `- Focus on STATUS aspect
+- "I'm respected now"
+- Recognition in community
+- They look up to her (or bow)`;
+      case 'emotional':
+        return `- Focus on HAPPINESS aspect
+- "I'm happy, you're jealous"
+- Inner peace, contentment
+- They are miserable without her`;
+      case 'moral':
+        return `- Focus on BEING RIGHT
+- "I was right from the start"
+- Truth revealed, justice served
+- They cannot deny anymore`;
+      case 'multi':
+        return `- Focus on COMBO of victories
+- Financial + Professional + Social
+- "I won on ALL fronts"
+- They lost on ALL fronts`;
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * 🆕 v8.0: Get victory position statement
+   */
+  private getVictoryPosition(victory: VictoryType): string {
+    switch (victory) {
+      case 'financial':
+        return `✅ "Я богатая. Вы — нет. Факт."
+   ✅ "Деньги есть. Их нет. Всё просто."`;
+      case 'professional':
+        return `✅ "Я успешнее. Вы — нет."
+   ✅ "Мой бизнес. Мои правила. Мой успех."`;
+      case 'social':
+        return `✅ "Меня уважают. Вас — нет."
+   ✅ "Я королева. Вы внизу."`;
+      case 'emotional':
+        return `✅ "Я счастлива. Вы завидуете."
+   ✅ "Мне хорошо. Вам — нет."`;
+      case 'moral':
+        return `✅ "Я была права. С самого начала."
+   ✅ "Правда на моей стороне."`;
+      case 'multi':
+        return `✅ "Я выиграла. Полностью. На всех фронтах."
+   ✅ "Деньги, успех, уважение — всё моё."
+   ✅ "Они потеряли всё. Я приобрела."`;
+      default:
+        return `✅ Clear victory statement required`;
+    }
   }
 
   /**
@@ -620,6 +1002,7 @@ OUTPUT: Only text`;
 
   /**
    * 🎭 EXTRACT & VALIDATE plotBible from outline
+   * 🆕 v8.0: Now passes archetype configuration
    */
   public extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
     // Check if ALL required fields exist in plotBible
@@ -634,7 +1017,19 @@ OUTPUT: Only text`;
         outline.plotBible.thematicCore &&
         outline.plotBible.thematicCore.centralQuestion) {
       console.log("✅ Using plotBible from Gemini generation");
-      return outline.plotBible;
+      
+      // 🆕 v8.0: Enhance plotBible with archetype configuration
+      const enhancedPlotBible = outline.plotBible;
+      
+      if (this.heroArchetype) {
+        enhancedPlotBible.narrator.heroArchetype = this.heroArchetype;
+        enhancedPlotBible.narrator.conflictType = this.conflictType;
+        enhancedPlotBible.narrator.timeline = this.timeline;
+        enhancedPlotBible.narrator.antagonistReaction = this.antagonistReaction;
+        enhancedPlotBible.narrator.victoryType = this.victoryType;
+      }
+      
+      return enhancedPlotBible;
     }
 
     console.warn("⚠️  plotBible incomplete from Gemini, using fallback");
@@ -643,18 +1038,29 @@ OUTPUT: Only text`;
     const age = ageMatch ? Math.round((parseInt(ageMatch[1]) + parseInt(ageMatch[2])) / 2) : 45;
     const gender = params.audience.toLowerCase().includes('woman') || params.audience.toLowerCase().includes('women') ? 'female' : 'male';
 
-    return {
-      narrator: outline.plotBible?.narrator || {
-        age,
-        gender: gender as "male" | "female",
-        tone: "confessional",
-        voiceHabits: {
-          apologyPattern: "I know it sounds strange, but...",
-          doubtPattern: "But then I realized...",
-          memoryTrigger: "I remember when...",
-          angerPattern: "And inside me clicked something",
-        },
+    const fallbackNarrator: any = {
+      age,
+      gender: gender as "male" | "female",
+      tone: "confessional",
+      voiceHabits: {
+        apologyPattern: "I know it sounds strange, but...",
+        doubtPattern: "But then I realized...",
+        memoryTrigger: "I remember when...",
+        angerPattern: "And inside me clicked something",
       },
+    };
+
+    // 🆕 v8.0: Add archetype fields to fallback narrator
+    if (this.heroArchetype) {
+      fallbackNarrator.heroArchetype = this.heroArchetype;
+      fallbackNarrator.conflictType = this.conflictType;
+      fallbackNarrator.timeline = this.timeline;
+      fallbackNarrator.antagonistReaction = this.antagonistReaction;
+      fallbackNarrator.victoryType = this.victoryType;
+    }
+
+    return {
+      narrator: fallbackNarrator,
       sensoryPalette: outline.plotBible?.sensoryPalette || {
         details: ["domestic", "intimate", "complex"],
         smells: ["coffee", "old books", "home"],
@@ -724,14 +1130,19 @@ OUTPUT: Only text`;
   }
 
   /**
-   * 🔧 v4.5 FIX: Generate outline structure with MANDATORY plotBible
-   * Make all fields required in prompt to force Gemini to generate them
+   * 🔧 v8.0: Generate outline structure with ARCHETYPE-SPECIFIC logic
+   * Uses TOP Articles patterns for high-performing content
    */
   public async generateOutline(params: {
     theme: string;
     angle: string;
     emotion: string;
     audience: string;
+    heroArchetype?: HeroArchetype;
+    conflictType?: ConflictType;
+    timeline?: TimelineType;
+    antagonistReaction?: AntagonistReaction;
+    victoryType?: VictoryType;
   }, episodeCount: number): Promise<OutlineStructure> {
     const episodeList = Array.from({ length: episodeCount }, (_, i) => ({
       id: i + 1,
@@ -749,48 +1160,64 @@ OUTPUT: Only text`;
       "openLoop": "..."
     }`).join(',');
 
+    // 🆕 v8.0: Build archetype-specific instructions
+    const archetypeInstructions = this.buildArchetypeInstructions(params);
+
     const prompt = `🎭 STORY ARCHITECT - GENERATE COMPLETE OUTLINE WITH PLOTBIBLE
 
-TASK: Create ${episodeCount}-episode narrative structure (29K chars total).
-MUSTGENERATE: EVERY field must be filled.
+  TASK: Create ${episodeCount}-episode narrative structure (29K chars total).
+  MUSTGENERATE: EVERY field must be filled.
 
-INPUT:
-- Theme: "${params.theme}"
-- Angle: ${params.angle}
-- Emotion: ${params.emotion}
-- Audience: ${params.audience}
+  INPUT:
+  - Theme: "${params.theme}"
+  - Angle: ${params.angle}
+  - Emotion: ${params.emotion}
+  - Audience: ${params.audience}
 
-🔧 CRITICAL REQUIREMENT:
-Gemini, you MUST generate COMPLETE plotBible with:
-1. narrator (age, gender, tone, voiceHabits with ALL 4 patterns)
-2. sensoryPalette (details [5+ items], smells [3+], sounds [3+], textures [3+], lightSources [3+])
-3. characterMap (Narrator + 2-3 other characters)
-4. thematicCore (centralQuestion, emotionalArc, resolutionStyle)
+  🏆 ARCHETYPE CONFIGURATION:
+  ${archetypeInstructions}
 
-❌ DO NOT skip or leave empty fields!
-❌ ALL text in RUSSIAN ONLY
-❌ Each field must be specific to this theme
+  🔧 CRITICAL REQUIREMENT:
+  Gemini, you MUST generate COMPLETE plotBible with:
+  1. narrator (age, gender, tone, voiceHabits with ALL 4 patterns)
+  2. sensoryPalette (details [5+ items], smells [3+], sounds [3+], textures [3+], lightSources [3+])
+  3. characterMap (Narrator + 2-3 other characters)
+  4. thematicCore (centralQuestion, emotionalArc, resolutionStyle)
 
-RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
-\`\`\`json
-{
+  ❌ DO NOT skip or leave empty fields!
+  ❌ ALL text in RUSSIAN ONLY
+  ❌ Each field must be specific to this theme
+
+  RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
+  \`\`\`json
+  {
   "theme": "${params.theme}",
   "angle": "${params.angle}",
   "emotion": "${params.emotion}",
   "audience": "${params.audience}",
-  
+  "heroArchetype": "${params.heroArchetype || 'standard'}",
+  "conflictType": "${params.conflictType || 'family_conflict'}",
+  "timeline": "${params.timeline || 'sudden'}",
+  "antagonistReaction": "${params.antagonistReaction || 'shame'}",
+  "victoryType": "${params.victoryType || 'multi'}",
+
   "narrator": {
     "age": [NUMBER 25-70],
     "gender": "female" or "male",
-    "tone": "[confessional/bitter/ironic/desperate]",
+    "tone": "[confessional/bitter/ironic/triumphant]",
     "voiceHabits": {
       "apologyPattern": "[specific Russian phrase]",
       "doubtPattern": "[specific Russian phrase]",
       "memoryTrigger": "[specific Russian phrase]",
       "angerPattern": "[specific Russian phrase]"
-    }
+    },
+    "heroArchetype": "${params.heroArchetype || 'standard'}",
+    "conflictType": "${params.conflictType || 'family_conflict'}",
+    "timeline": "${params.timeline || 'sudden'}",
+    "antagonistReaction": "${params.antagonistReaction || 'shame'}",
+    "victoryType": "${params.victoryType || 'multi'}"
   },
-  
+
   "sensoryPalette": {
     "details": ["detail1", "detail2", "detail3", "detail4", "detail5"],
     "smells": ["smell1", "smell2", "smell3"],
@@ -798,7 +1225,7 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
     "textures": ["texture1", "texture2", "texture3"],
     "lightSources": ["light1", "light2", "light3"]
   },
-  
+
   "characterMap": {
     "Narrator": {
       "role": "protagonist",
@@ -813,21 +1240,21 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
       "arc": "[arc]"
     }
   },
-  
+
   "thematicCore": {
     "centralQuestion": "[The core emotional question]",
     "emotionalArc": "${params.emotion}",
-    "resolutionStyle": "[bittersweet/uncertain/realistic/cathartic]"
+    "resolutionStyle": "[triumphant/cathartic/bittersweet]"
   },
-  
+
   "episodes": [${episodeJson}
   ],
-  
+
   "externalTensionArc": "[What actually happens in the story]",
   "internalEmotionArc": "[What shifts internally for narrator]",
   "forbiddenCliches": ["[avoid these", "cheap tropes", "predictable endings"]
-}
-\`\`\``;
+  }
+  \`\`\``;
 
     const response = await this.callGemini({
       prompt,
@@ -836,6 +1263,158 @@ RESPOND WITH ONLY VALID JSON (no extra text, no markdown):
     });
 
     return this.parseJsonSafely(response, 'Outline') as OutlineStructure;
+  }
+
+  /**
+   * 🆕 v8.0: Build archetype-specific instructions for outline generation
+   */
+  private buildArchetypeInstructions(params: {
+    heroArchetype?: HeroArchetype;
+    conflictType?: ConflictType;
+    timeline?: TimelineType;
+    antagonistReaction?: AntagonistReaction;
+    victoryType?: VictoryType;
+  }): string {
+    const { heroArchetype, conflictType, timeline, antagonistReaction, victoryType } = params;
+
+    if (!heroArchetype) {
+      return `- No specific archetype (will use standard narrative patterns)`;
+    }
+
+    let instructions = `- Archetype: ${heroArchetype} (TOP-performing pattern)
+  - Timeline: ${timeline || 'sudden'} ${this.getTimelineDescription(timeline)}
+  - Conflict: ${conflictType || 'family_conflict'} ${this.getConflictDescription(conflictType)}
+  - Victory Type: ${victoryType || 'multi'}
+  - Antagonist Reaction: ${antagonistReaction || 'shame'}
+
+  `;
+
+    // Add archetype-specific episode structure
+    instructions += this.getArchetypeEpisodeStructure(heroArchetype, timeline);
+
+    return instructions;
+  }
+
+  private getTimelineDescription(timeline?: TimelineType): string {
+    switch (timeline) {
+      case 'sudden':
+        return '(1-3 months: Fast action, rapid transformation)';
+      case 'gradual':
+        return '(6-12 months: Visible growth process)';
+      case 'cyclical':
+        return '(Years of silence → Sudden dramatic change)';
+      case 'revelation':
+        return '(Was hidden, now revealed)';
+      default:
+        return '';
+    }
+  }
+
+  private getConflictDescription(conflictType?: ConflictType): string {
+    switch (conflictType) {
+      case 'class_prejudice':
+        return '(They mock her for being "simple"/poor)';
+      case 'family_greed':
+        return '(Family fights over money/inheritance)';
+      case 'gender_expectations':
+        return '(She was expected to be submissive)';
+      case 'infidelity_redemption':
+        return '(Husband left, she transforms)';
+      case 'matriarch_rejection':
+        return '(Mother-in-law rejected her)';
+      case 'false_image':
+        return '(Family thought she was simple)';
+      default:
+        return '';
+    }
+  }
+
+  private getArchetypeEpisodeStructure(archetype: HeroArchetype, timeline?: TimelineType): string {
+    const isSudden = timeline === 'sudden';
+
+    switch (archetype) {
+      case 'comeback_queen':
+        return `
+  EPISODE STRUCTURE FOR "COMEBACK QUEEN":
+  1. PUBLIC HUMILIATION (all saw it)
+  2. QUICK DECISION (1 week, not years!)
+  3. METAMORPHOSIS (education → business → success)
+  4. THEATRICAL REUNION (family sees her transformation)
+  5. TRIUMPH (she's queen, they're below)
+
+  Key: Focus on TRANSFORMATION and PUBLIC RECOGNITION`;
+
+      case 'gold_digger_trap':
+        return `
+  EPISODE STRUCTURE FOR "GOLD DIGGER TRAP REVERSED":
+  1. FAMILY LAUGHTS (mocked for marrying "simple")
+  2. WEDDING WITHOUT THEM
+  3. REVELATION (she's successful!)
+  4. STARTUP → IPO
+  5. FAMILY BEGS (needs job, help)
+  6. HIERARCHY REVERSED (she's their benefactor)
+
+  Key: They thought SHE was the trap, but SHE trapped THEM`;
+
+      case 'inheritance_reveal':
+        return `
+  EPISODE STRUCTURE FOR "INHERITANCE REVEAL":
+  1. FAMILY BEHAVES (as they think they should)
+  2. NOTARY APPEARS (500K inheritance for HER!)
+  3. FAMILY MASKS (sudden "care", fake love)
+  4. LETTER OPENS (will written specifically for her)
+  5. TRUTH EXPOSED (she sees their true faces)
+  6. HIERARCHY SHIFTS (inheritance changes everything)
+
+  Key: Money reveals TRUE character of family`;
+
+      case 'entrepreneur':
+        return `
+  EPISODE STRUCTURE FOR "ENTREPRENEUR":
+  1. OPEN CONTEMPT (called poor, simple)
+  2. BUSINESS CREATION (her own effort)
+  3. FAST GROWTH (10→100→200 clients)
+  4. NUMERIC SUCCESS (she's richer than them)
+  5. THEY SEE (reactions visible)
+  6. "THE POOR ONE IS NOW THEIR BOSS"
+
+  Key: Show NUMBERS and GROWTH, not emotions`;
+
+      case 'phoenix':
+        return `
+  EPISODE STRUCTURE FOR "PHOENIX":
+  1. HE SAYS "You're too simple, I'm leaving"
+  2. QUICK DIVORCE (relief, not sorrow)
+  3. SHE BLOOMS (fitness, education, courses)
+  4. RANDOM MEETING (1-2 years later)
+  5. HE SEES (successful, beautiful, happy)
+  6. HE REGRETS (too late)
+
+  Key: Show TRANSFORMATION, his REGRET, her FREEDOM`;
+
+      case 'mother_wins':
+        return `
+  EPISODE STRUCTURE FOR "MOTHER WINS":
+  1. CHILDREN IN DANGER
+  2. HER STRUGGLE (legal, emotional)
+  3. TRIUMPH (children saved, justice served)
+  4. FAMILY RECOGNIZES (her strength)
+
+  Key: Maternal power and justice`;
+
+      case 'wisdom_earned':
+        return `
+  EPISODE STRUCTURE FOR "WISDOM EARNED":
+  1. YEARS OF TRIALS (lessons learned)
+  2. HARD-WON WISDOM (from suffering)
+  3. NEW PERSPECTIVE (peace, acceptance)
+  4. LESSON SHARED (with readers)
+
+  Key: Reflection, growth, and sharing wisdom`;
+
+      default:
+        return '';
+    }
   }
 
   /**
@@ -1015,10 +1594,13 @@ OUTPUT: Only the text. No title, no metadata.`;
    * CLEAN STORY: No platform mentions
    * CONTEXT: Platform goals in instructions only
    * 
-   * 🆕 v5.4: PlotBible integration - thematic core & narrator insight
+   * 🆕 v8.0: PlotBible integration + ARCHETYPE + FIRM VICTORY ENDING
    */
   async generateFinale(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
     const plotBible = outline.plotBible;
+    
+    // 🆕 v8.0: Get victory type for finale
+    const victoryType = this.victoryType || "multi";
     
     // Build thematic guidance
     let thematicGuide = '';
@@ -1027,10 +1609,10 @@ OUTPUT: Only the text. No title, no metadata.`;
       thematicGuide = `
 🎯 THEMATIC CORE (WHAT THIS STORY IS REALLY ABOUT):
    Central Question: ${core.centralQuestion || 'What if everything I believed was wrong?'}
-   Emotional Arc: ${core.emotionalArc || 'confusion → realization → acceptance'}
-   Resolution Style: ${core.resolutionStyle || 'bittersweet, realistic'}
+   Emotional Arc: ${core.emotionalArc || 'confusion → realization → triumph'}
+   Resolution Style: ${core.resolutionStyle || 'triumphant, cathartic'}
    
-⚠️  The finale must ANSWER the central question (not with solution, but with INSIGHT).`;
+⚠️  The finale must ANSWER the central question with FIRM CONCLUSION.`;
     }
     
     // Build narrator voice for ending
@@ -1039,74 +1621,156 @@ OUTPUT: Only the text. No title, no metadata.`;
       narratorInsight = `
 🎭 NARRATOR'S VOICE FOR ENDING:
    Age: ${plotBible.narrator.age || '40-50'} y/o ${plotBible.narrator.gender || 'woman'}
-   Tone: ${plotBible.narrator.tone || 'confessional, weary, wiser'}
+   Tone: ${plotBible.narrator.tone || 'confident, triumphant, wise'}
    
-⚠️  This is the narrator AFTER the journey - changed, wiser, but still uncertain.`;
+⚠️  This is the narrator AFTER the journey - CHANGED, TRIUMPHANT, CONFIDENT.`;
     }
     
     const prompt = `📄 EDITORIAL CONTEXT (FOR YOU, NOT IN THE STORY):
 This is finale for serialized story (1200-1800 chars).
-Goal: Reader should finish with complex emotions (not clear happy ending).
-Strategy: End with question to readers (encourages comments).
+Goal: Reader should finish with CONFIDENT, TRIUMPHANT feeling.
+Strategy: End with challenging question (encourages comments).
 
-⚠️  CRITICAL: Character doesn't know this will be published or discussed.
-No meta-commentary. Just the ending of their memory/story.
+🏆 ARCHETYPE CONTEXT:
+${plotBible?.narrator?.heroArchetype ? `- Archetype: ${plotBible.narrator.heroArchetype}` : '- Standard narrative'}
+- Victory Type: ${victoryType}
+- Final Tone: CONFIDENT, FIRM, NOT HESITANT
 
 ${thematicGuide}
 
 ${narratorInsight}
 
-⚠️  ANTI-DETECTION FINALE RULES:
+⚠️  ANTI-DETECTION FINALE RULES (v8.0 - FIRM VICTORY!):
 
-NOT A "HAPPY ENDING" - THIS IS REAL LIFE:
+❌ FORBIDDEN ENDINGS (HESITANT, UNCERTAIN):
+   ❌ "Может быть, я сделала правильно?"
+   ❌ "А вы как думаете?"
+   ❌ "Я не знаю, правильно ли поступила..."
+   ❌ "Время покажет..."
+   ❌ "Может быть, со временем всё изменится"
+   
+✅ REQUIRED ENDINGS (FIRM, CONFIDENT):
+   ✅ "Я сделала правильно. Факт."
+   ✅ "Я их королева, и они это знают."
+   ✅ "Я выиграла. Полностью."
+   ✅ "Я была права с самого начала."
 
-✅ RESOLUTION TYPES (choose one):
-   1. BITTERSWEET: Something gained, something lost forever
-      "Я получила ответы. Но покой так и не пришёл."
-      
-   2. UNCERTAIN: Life continues, questions remain
-      "Прошли годы. Я до сих пор не знаю, правильно ли я поступила."
-      
-   3. REALISTIC JUSTICE: Fair, but not satisfying
-      "Она получила что заслужила. Мне от этого не легче."
-      
-   4. INSIGHT WITHOUT SOLUTION: Understanding, not resolution
-      "Я поняла одно: справедливости не существует. Только выбор."
+✅ STRUCTURE (v8.0):
+   1. Show life AFTER the transformation (specific scene, not summary)
+   2. ONE concrete detail showing what changed FOR HER
+   3. ONE concrete detail showing what changed FOR THEM
+   4. Narrator's FIRM CONCLUSION (not question, not doubt)
+   5. End with CHALLENGING question (NOT "what do you think?")
 
-✅ STRUCTURE:
-   1. Show life AFTER the climax (specific scene, not summary)
-   2. ONE concrete detail showing what changed
-   3. Narrator's REALIZATION/INSIGHT (what they learned)
-   4. End with QUESTION (to self or reader)
+✅ VICTORY TYPES (based on ${victoryType}):
 
-✅ EXAMPLES OF STRONG FINALES:
-
-   "Прошло три года. Вчера я снова увидела её дочь. Она спросила 
-    те же вопросы, что задавала её мать. И тогда я поняла: это не 
-    закончится никогда. Молчание передаётся по наследству.
-    
-    Я не получила извинений. Но я получила это: я перестала ждать.
-    
-    А вы смогли бы простить без извинений?"
-
-   "Они развелись через полгода. Она вернулась в родной город.
-    Я больше никогда её не видела. Справедливость? Да.
-    Удовлетворение? Нет.
-    
-    Раньше я верила, что правда всё исцеляет. Теперь я знаю:
-    правда просто есть. Исцеление — это отдельно.
-    
-    А вы верите в справедливость?"
+${this.getFinaleVictoryExamples(victoryType)}
 
 ✅ SENTENCE VARIETY (anti-detection):
    - Mix: Short. Medium sentence with clause. Very short.
-   - Incomplete sentences: "Не знаю. Может быть."
-   - Natural repetition: "Я помню. Помню точно. Помню этот день."
+   - Incomplete sentences for emphasis: "И тогда... всё изменилось."
+   - Repeat for impact: "Я выиграла. Я выиграла. Я выиграла."
 
-✅ EMOTIONS AS ACTIONS:
-   ❌ "Я почувствовала облегчение"
-   ✅ "Плечи опустились. Дыхание стало ровным."
+⚠️ GRAPHIC FORMATTING (v8.0 spec):
+   - End with ONE confident statement in CAPS (2-3 words max):
+     "Я ПОБЕДИЛА."
+     "Я КОРОЛЕВА."
+     "Я БЫЛА ПРАВА."
+     
+   - Use THREE different punctuation marks per paragraph minimum:
+     Example: "Что делать? Не знала... Решила — победить!"
+     
+   - Final question (CHALLENGING, not timid):
+     "Смогли бы ВЫ совершить такой выбор?"
+     "Знаете ли вы женщину, которая смогла бы?"
+     "А вы готовы к таким переменам?"
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 КРИТИЧЕСКИЕ ЗАПРЕТЫ (v8.0 - FIRM ENDINGS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  БЕЗ метаданных: [note], [comment], [...] → УДАЛИ!
+⚠️  БЕЗ markdown: **, ##, ___ → УДАЛИ!
+⚠️  БЕЗ повторяющихся фраз > 1-2 раз
+⚠️  БЕЗ orphaned фрагментов в начале
+⚠️  БЕЗ разорванных предложений: "хотя...", "потому что..." в начале
+⚠️  БЕЗ диалогов где героиня сомневается
+
+🎯 TASK: Write FINALE - 1200-1800 RUSSIAN characters:
+
+Theme: "${outline.theme}"
+Victory Type: ${victoryType}
+Audience: Educated women (35-60, urban, thoughtful)
+
+REQUIREMENTS:
+- Resolve EXTERNAL conflict (she WON, they LOST)
+- Show INTERNAL shift (she's confident, changed)
+- FIRM VICTORY ENDING (not uncertain, not bittersweet!)
+- Life continues - but SHE IS WINNER
+- ONE specific scene showing her NEW life
+- ONE specific detail showing their REACTION
+- Narrator's FIRM CONCLUSION (not question, not doubt)
+- End with CHALLENGING question (not "what do you think?")
+
+OUTPUT: Only the text. No title, no metadata.`;
+
+    return await this.callGemini({
+      prompt,
+      model: "gemini-3-flash-preview",
+      temperature: 0.9, // Increased for authentic variety
+    });
+  }
+
+  /**
+   * 🆕 v8.0: Get victory examples for finale
+   */
+  private getFinaleVictoryExamples(victory: VictoryType): string {
+    switch (victory) {
+      case 'financial':
+        return `FINANCIAL VICTORY:
+   - Focus on MONEY: "Компания генерирует 500K в месяц"
+   - They need money: "Свекровь позвонила: нужна работа для сына"
+   - Her terms: "Я помогу, но на МОИХ условиях"
+   - Firm conclusion: "Я богатая. Они — нет. Факт."`;
+      case 'professional':
+        return `PROFESSIONAL VICTORY:
+   - Focus on SUCCESS: "Мой бизнес теперь генерирует миллионы"
+   - They work for her: "Её дочь мечтает работать у меня"
+   - Status shift: "Теперь Я решаю, кто достоин"
+   - Firm conclusion: "Я успешнее. Все видят это."`;
+      case 'social':
+        return `SOCIAL VICTORY:
+   - Focus on RESPECT: "Меня приглашают на закрытые вечера"
+   - They acknowledge: "Свекровь попросила прощения"
+   - Status change: "Я королева этого города"
+   - Firm conclusion: "Меня уважают. Вас — нет."`;
+      case 'emotional':
+        return `EMOTIONAL VICTORY:
+   - Focus on HAPPINESS: "Я счастлива. Без него. Без них."
+   - They suffer: "Он жалеет. Но поздно."
+   - Inner peace: "Плечи опустились. Дыхание ровное."
+   - Firm conclusion: "Я свободна. Я счастлива. Я выиграла."`;
+      case 'moral':
+        return `MORAL VICTORY:
+   - Focus on TRUTH: "Правда вышла наружу"
+   - They cannot deny: "Даже она признала..."
+   - Justice: "Я была права с начала"
+   - Firm conclusion: "Правда на моей стороне. Все видят."`;
+      case 'multi':
+        return `MULTI VICTORY (ALL FRONTS):
+   - "Прошло 8 месяцев. Компания генерирует 500K в месяц.
+     Вчера свекровь позвонила: нужна работа для её сына.
+     Я помогу, но на МОИХ условиях.
+     Теперь я знаю: я не ошибалась. Они просто не видели,
+     на что я способна."
+   - Firm conclusion: "Я ВЫИГРАЛА. НА ВСЕХ ФРОНТАХ."`;
+      default:
+        return `Focus on clear victory statement based on victoryType`;
+    }
+  }
+
+  /**
+   * ✅ v4.5: Generate article title: 55-90 chars (Russian only)
 ❌ FORBIDDEN (cheap endings):
    ❌ "И мы зажили счастливо" (fairy tale)
    ❌ "Время лечит" (cliché)

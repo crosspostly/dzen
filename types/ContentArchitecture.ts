@@ -78,6 +78,7 @@ export interface OutlineStructure {
   forbiddenClichés: string[];
   
   // 🎭 PLOT BIBLE - Generated in Stage 0 by Gemini
+  // 🆕 v8.0: Added archetype configuration fields
   plotBible?: {
     narrator: {
       age: number;
@@ -89,6 +90,12 @@ export interface OutlineStructure {
         memoryTrigger: string;
         angerPattern: string;
       };
+      // 🆕 v8.0: Archetype configuration
+      heroArchetype?: string;
+      conflictType?: string;
+      timeline?: string;
+      antagonistReaction?: string;
+      victoryType?: string;
     };
     sensoryPalette: {
       details: string[];
