@@ -55,7 +55,13 @@ export interface ImageMetadata {
   subjects?: string[]; // ["woman 40s", "kitchen table", "tea cup"]
   generationAttempts?: number; // How many tries before success
   fallbackUsed?: boolean;
-  
+
+  // 🆕 STAGE 4: Mobile Photo Authenticity
+  authenticityApplied?: boolean;      // Whether authenticity was applied
+  authenticityLevel?: 'low' | 'medium' | 'high';
+  appliedEffects?: string[];          // List of effects applied
+  deviceSimulated?: string;           // Device model (e.g., "iPhone 15 Pro")
+
   // @deprecated - use articleId instead
   episodeId?: number;
 }
