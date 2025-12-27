@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: 📅 Get today's articles (RECURSIVE)
+      - name: 📅 Get today's articles (RECURSIVE FIX)
         id: files
         shell: bash
         run: |
@@ -45,43 +45,47 @@ jobs:
           echo "🔍 Searching RECURSIVELY in articles/**/*.md"
           echo ""
           
-          CHANGED=""
+          # 🔴 НЕ ИСПОЛЬЗУЕМ piped while (теряется subshell)
+          # ✅ ИСПОЛЬЗУЕМ array + for loop
+          
+          declare -a FILES_ARRAY
           FILE_COUNT=0
           
-          # НАЙДЭМ РЕКУРСИВНО ВСЕ .md файлы
-          find articles -type f -name "*.md" -print0 2>/dev/null | while IFS= read -r -d '' file; do
-            # Получим время ПОСЛЕДНЕГО изменения в unix timestamp
-            FILE_TIME=$(git log -1 --format=%at -- "$file" 2>/dev/null || echo "0")
+          # Находим все файлы рекурсивно
+          while IFS= read -r -d '' file; do
+            # Получаем timestamp последнего изменения
+            FILE_TIME=$(git log -1 --format=%at -- "$file" 2>/dev/null)
             
-            if [ -z "$FILE_TIME" ] || [ "$FILE_TIME" = "0" ]; then
-              # Новый файл - берём!
-              COMMIT_TIME=$(date '+%Y-%m-%d %H:%M:%S UTC')
-              echo "✨ $file (NEW FILE - $COMMIT_TIME)"
-              CHANGED="$CHANGED $file"
-              FILE_COUNT=$((FILE_COUNT + 1))
-            elif [ "$FILE_TIME" -gt "$TIME_LIMIT" ]; then
-              # Модифицирован в последние N часов - берём!
+            if [ -z "$FILE_TIME" ]; then
+              FILE_TIME=0
+            fi
+            
+            # Сравниваем
+            if [ "$FILE_TIME" -gt "$TIME_LIMIT" ]; then
               COMMIT_TIME=$(date -d @${FILE_TIME} '+%Y-%m-%d %H:%M:%S UTC')
               echo "✏️  $file ($COMMIT_TIME)"
-              CHANGED="$CHANGED $file"
+              FILES_ARRAY+=("$file")
               FILE_COUNT=$((FILE_COUNT + 1))
             fi
-          done
+          done < <(find articles -type f -name "*.md" -print0 2>/dev/null)
           
-          if [ -z "$CHANGED" ]; then
-            echo ""
-            echo "❌ No articles modified in last ${HOURS_BACK} hours"
+          echo ""
+          
+          if [ "$FILE_COUNT" -eq 0 ]; then
+            echo "❌ No articles found"
             echo "exit=empty" >> $GITHUB_OUTPUT
+            echo "files_count=0" >> $GITHUB_OUTPUT
           else
-            echo ""
             echo "📝 Found: $FILE_COUNT files"
             echo ""
-            echo "$CHANGED" | xargs echo "Files:" 
             
-            # Очень важно: сохраняем в OUTPUT
-            FILES_STR=$(echo "$CHANGED" | sed 's/^[[:space:]]*//g')
+            # Сохраняем в OUTPUT
+            FILES_STR="${FILES_ARRAY[*]}"
             echo "files=$FILES_STR" >> $GITHUB_OUTPUT
+            echo "files_count=$FILE_COUNT" >> $GITHUB_OUTPUT
             echo "exit=ok" >> $GITHUB_OUTPUT
+            
+            echo "✅ Files saved to output"
           fi
         env:
           INPUT_HOURS: ${{ github.event.inputs.hours_back }}
@@ -92,16 +96,12 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          echo "🚀 Restoring $(echo '${{ steps.files.outputs.files }}' | wc -w) articles..."
+          echo "🚀 Restoring ${{ steps.files.outputs.files_count }} articles..."
           echo ""
           
           FILES="${{ steps.files.outputs.files }}"
           
-          # рассчитываем кол-во файлов
-          COUNT=$(echo "$FILES" | wc -w)
-          echo "📊 Processing $COUNT files..."
-          echo ""
-          
+          # Запускаем restore
           node scripts/restore-articles.js $FILES
           EXIT_CODE=$?
           
@@ -121,15 +121,17 @@ jobs:
           git config --local user.name "github-actions[bot]"
           
           echo "🔍 Checking for changes..."
+          echo ""
           
           # Показываем что изменилось
-          if git diff --name-only; then
-            echo ""
-            echo "📑 Changes detected:"
+          if git diff --quiet; then
+            echo "ℹ️  No changes detected after restoration"
+          else
+            echo "📋 Changes detected:"
             git diff --stat
             echo ""
             
-            # Аддим всё измененное
+            # Добавляем все изменения
             git add -A articles/
             
             # Коммитим
@@ -140,23 +142,21 @@ jobs:
             
             echo ""
             echo "✅ Successfully pushed to main!"
-          else
-            echo "ℹ️  No changes detected after restoration"
           fi
 
       - name: ✅ Summary
         if: always()
         run: |
           echo ""
-          echo "╔════════════════════════════════════════╗"
+          echo "╔════════════════════════════════════════════════════════╗"
           if [ "${{ steps.files.outputs.exit }}" = "ok" ]; then
-            echo "║ ✨ Restore Complete ✨                 ║"
+            echo "║  ✨ Restore Complete - ${{ steps.files.outputs.files_count }} articles         ║"
           else
-            echo "║ ℹ️  No articles to restore              ║"
+            echo "║  ℹ️  No articles to restore                          ║"
           fi
-          echo "╚════════════════════════════════════════╝"
+          echo "╚════════════════════════════════════════════════════════╝"
           echo ""
           echo "Hours back: ${{ github.event.inputs.hours_back || 24 }}"
-          echo "Files: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
-          echo "Status: $([ "${{ steps.restore.outputs.exit_code }}" = "0" ] && echo '✅ Restored & Pushed' || echo '⚠️  Failed')"
+          echo "Files found: ${{ steps.files.outputs.files_count || 0 }}"
+          echo "Status: $([ "${{ steps.restore.outputs.exit_code }}" = "0" ] && echo '✅ Restored & Pushed' || echo '⚠️  Check logs')"
           echo ""
