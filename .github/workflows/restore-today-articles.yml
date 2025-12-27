@@ -1,0 +1,110 @@
+name: ✨ Restore Today's Articles
+
+on:
+  workflow_dispatch:
+    inputs:
+      hours_back:
+        description: 'How many hours back to check (default: 24)'
+        required: false
+        default: '24'
+
+jobs:
+  restore-today:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 📅 Get today's articles
+        id: files
+        run: |
+          HOURS_BACK=${INPUT_HOURS:-24}
+          TIME_LIMIT=$(date -d "${HOURS_BACK} hours ago" --utc +%s)
+          
+          echo "⏰ Checking articles modified in last ${HOURS_BACK} hours"
+          echo "   Since: $(date -d @${TIME_LIMIT})"
+          echo ""
+          
+          CHANGED=""
+          
+          # Проходим по всем .md файлам в articles/
+          find articles -name "*.md" -type f 2>/dev/null | while read file; do
+            FILE_TIME=$(git log -1 --format=%at -- "$file" 2>/dev/null || echo 0)
+            
+            if [ "$FILE_TIME" -gt "$TIME_LIMIT" ]; then
+              COMMIT_TIME=$(date -d @${FILE_TIME} --utc +"%Y-%m-%d %H:%M UTC")
+              echo "✓ $file (modified: $COMMIT_TIME)"
+              CHANGED="$CHANGED $file"
+            fi
+          done
+          
+          if [ -z "$CHANGED" ]; then
+            echo ""
+            echo "❌ No articles modified in last ${HOURS_BACK} hours"
+            echo "files=" >> $GITHUB_OUTPUT
+          else
+            echo ""
+            echo "📝 Total files: $(echo $CHANGED | wc -w)"
+            echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          fi
+        env:
+          INPUT_HOURS: ${{ github.event.inputs.hours_back }}
+
+      - name: 🤖 Restore today's articles
+        if: steps.files.outputs.files != ''
+        id: restore
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "🚀 Restoring $(echo '${{ steps.files.outputs.files }}' | wc -w) articles..."
+          echo ""
+          node scripts/restore-articles.js ${{ steps.files.outputs.files }}
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: 📤 Commit restored articles
+        if: steps.files.outputs.files != '' && steps.restore.outputs.exit_code == '0'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          if ! git diff --quiet; then
+            git add articles/
+            git commit -m "✨ Restore: Updated today's articles formatting" || true
+            git push origin main || true
+            echo "✅ Committed and pushed"
+          else
+            echo "ℹ️  No changes after restoration"
+          fi
+
+      - name: ✅ Summary
+        if: always()
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════╗"
+          if [ "${{ steps.files.outputs.files }}" != "" ]; then
+            echo "║ ✨ Today's Articles Restored ✨        ║"
+          else
+            echo "║ ℹ️  No articles to restore              ║"
+          fi
+          echo "╚════════════════════════════════════════╝"
+          echo ""
+          echo "📊 Details:"
+          echo "   Hours back: ${{ github.event.inputs.hours_back || 24 }}"
+          echo "   Files found: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
+          echo "   Status: $([ "${{ steps.restore.outputs.exit_code }}" == "0" ] && echo '✅ Success' || echo '⚠️  Failed')"
+          echo ""
