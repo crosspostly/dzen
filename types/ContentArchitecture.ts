@@ -27,7 +27,7 @@ export interface Episode {
   // 🖼️ ИЗОБРАЖЕНИЯ
   imageBuffer?: Buffer;       // Буфер обработанного изображения
   imagePath?: string;         // Путь к сохраненному файлу
-  
+
   // 🆕 PHASE 2: Per-episode anti-detection metrics
   phase2Metrics?: {
     adversarialScore: number;
@@ -47,6 +47,11 @@ export interface Episode {
     };
     suggestion: string;
   };
+
+  // 🆕 STAGE 4: Mobile photo authenticity
+  authenticityLevel?: 'low' | 'medium' | 'high';
+  appliedEffects?: string[];
+  deviceSimulated?: string;
 }
 
 export interface EpisodeOutline {
@@ -166,6 +171,10 @@ export interface LongFormArticle {
     base64?: string;
     processedBuffer?: Buffer;
     format?: string;
+    // 🆕 Stage 4: Authenticity fields
+    authenticityLevel?: 'low' | 'medium' | 'high';
+    appliedEffects?: string[];
+    deviceSimulated?: string;
   };
   imageMetadata?: {
     aspectRatio: string;      // "16:9"
@@ -179,6 +188,13 @@ export interface LongFormArticle {
   processedContent?: string;        // Content after Phase2 processing
   adversarialScore?: AdversarialScore; // Anti-detection metrics
   phase2Applied?: boolean;          // Flag indicating Phase2 was applied
+
+  // 🆕 STAGE 4: MOBILE PHOTO AUTHENTICITY
+  stage4Applied?: boolean;          // Flag indicating Stage 4 was applied
+  stage4Stats?: {                   // Processing statistics
+    processedCount: number;
+    failedCount: number;
+  };
 }
 
 // ============================================================================

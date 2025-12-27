@@ -3,6 +3,7 @@ import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePasspo
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
+import { MobilePhotoAuthenticityProcessor } from "./mobilePhotoAuthenticityProcessor";
 import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
 import { FinalArticleCleanupGate } from "./finalArticleCleanupGate";
 import { ArticlePublishGate } from "./articlePublishGate";
@@ -75,6 +76,7 @@ export class MultiAgentService {
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
   private phase2Service: Phase2AntiDetectionService;
+  private authenticityProcessor: MobilePhotoAuthenticityProcessor;
   private maxChars: number;
   private episodeCount: number = 12;
   private useAntiDetection: boolean;
@@ -93,6 +95,7 @@ export class MultiAgentService {
     this.contextManager = new ContextManager();
     this.maxChars = options?.maxChars || CHAR_BUDGET;
     this.phase2Service = new Phase2AntiDetectionService();
+    this.authenticityProcessor = new MobilePhotoAuthenticityProcessor();
     this.useAntiDetection = options?.useAntiDetection ?? false;
     this.skipCleanupGates = options?.skipCleanupGates ?? false;
     
@@ -336,8 +339,82 @@ export class MultiAgentService {
     console.log(`\n✅ ARTICLE COMPLETE`);
     console.log(`📊 Metrics: ${article.metadata.totalChars} chars, ${article.metadata.episodeCount} episodes`);
     console.log(`   Phase 2 Score: ${article.adversarialScore?.overallScore || 0}/100`);
-    
+
+    // 🆕 STAGE 4: Apply mobile photo authenticity to images
+    await this.applyAuthenticityToImages(article);
+    if (article.stage4Applied) {
+      console.log(`   Stage 4 (Authenticity): ✅ Applied (${article.stage4Stats?.processedCount} images)`);
+    }
+
     return article;
+  }
+
+  /**
+   * 🆕 STAGE 4: Apply mobile photo authenticity to article images
+   * Processes cover image and any episode images
+   */
+  private async applyAuthenticityToImages(article: LongFormArticle): Promise<void> {
+    console.log(`\n🔧 Stage 4: Applying mobile photo authenticity...`);
+
+    let processedCount = 0;
+    let failedCount = 0;
+
+    // Process cover image if present
+    if (article.coverImage?.base64) {
+      try {
+        console.log(`   Processing cover image...`);
+        const authResult = await this.authenticityProcessor.processForMobileAuthenticity(
+          article.coverImage.base64
+        );
+
+        if (authResult.success && authResult.processedBuffer) {
+          article.coverImage.base64 = authResult.processedBuffer.toString('base64');
+          article.coverImage.authenticityLevel = authResult.authenticityLevel;
+          article.coverImage.appliedEffects = authResult.appliedEffects;
+          article.coverImage.deviceSimulated = authResult.deviceSimulated;
+          processedCount++;
+          console.log(`   ✅ Cover image authenticated (${authResult.deviceSimulated})`);
+        } else {
+          failedCount++;
+          console.warn(`   ⚠️  Cover image authentication failed: ${authResult.errorMessage}`);
+        }
+      } catch (error) {
+        failedCount++;
+        console.error(`   ❌ Cover image error:`, (error as Error).message);
+      }
+    }
+
+    // Process episode images if present
+    for (const episode of article.episodes) {
+      if (episode.imagePath) {
+        try {
+          console.log(`   Processing episode ${episode.id} image...`);
+          const authResult = await this.authenticityProcessor.processForMobileAuthenticity(
+            episode.imagePath
+          );
+
+          if (authResult.success && authResult.processedBuffer) {
+            episode.imagePath = authResult.processedBuffer.toString('base64');
+            episode.authenticityLevel = authResult.authenticityLevel;
+            episode.appliedEffects = authResult.appliedEffects;
+            processedCount++;
+            console.log(`   ✅ Episode ${episode.id} authenticated`);
+          } else {
+            failedCount++;
+            console.warn(`   ⚠️  Episode ${episode.id} authentication failed: ${authResult.errorMessage}`);
+          }
+        } catch (error) {
+          failedCount++;
+          console.error(`   ❌ Episode ${episode.id} error:`, (error as Error).message);
+        }
+      }
+    }
+
+    console.log(`\n✅ Stage 4 Complete: ${processedCount} images processed, ${failedCount} failed`);
+
+    // Update article metadata
+    article.stage4Applied = true;
+    article.stage4Stats = { processedCount, failedCount };
   }
 
   /**

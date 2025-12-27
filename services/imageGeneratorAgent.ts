@@ -25,6 +25,7 @@ import {
   ImageGenerationConfig
 } from "../types/ImageGeneration";
 import { PlotBible } from "../types/PlotBible";
+import { MobilePhotoAuthenticityProcessor } from "./mobilePhotoAuthenticityProcessor";
 
 export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
@@ -32,6 +33,7 @@ export class ImageGeneratorAgent {
   private fallbackModel = "gemini-2.5-flash-lite";
   private primaryModel = "gemini-2.5-flash-image";
   private usedPrompts: Set<string> = new Set();
+  private authenticityProcessor: MobilePhotoAuthenticityProcessor;
 
   constructor(apiKey?: string, config?: Partial<ImageGenerationConfig>) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
@@ -48,6 +50,9 @@ export class ImageGeneratorAgent {
       optimizeForZen: true,
       ...config
     };
+
+    // Initialize Stage 4: Mobile Photo Authenticity Processor
+    this.authenticityProcessor = new MobilePhotoAuthenticityProcessor();
   }
 
   // ============================================
@@ -997,6 +1002,37 @@ No text, no filters, authentic moment.
     const validation = this.validateImage(generatedImage);
     if (!validation.valid) {
       throw new Error(`Image validation failed: ${validation.errors.join(', ')}`);
+    }
+
+    // 🆕 STAGE 4: Apply mobile photo authenticity processing
+    console.log(`🔧 Stage 4: Applying mobile photo authenticity...`);
+    try {
+      const authResult = await this.authenticityProcessor.processForMobileAuthenticity(
+        generatedImage.base64
+      );
+
+      if (authResult.success && authResult.processedBuffer) {
+        // Replace original base64 with processed version
+        generatedImage.base64 = authResult.processedBuffer.toString('base64');
+        generatedImage.fileSize = generatedImage.base64.length * 0.75;
+
+        // Add authenticity metadata
+        generatedImage.metadata!.authenticityApplied = true;
+        generatedImage.metadata!.authenticityLevel = authResult.authenticityLevel;
+        generatedImage.metadata!.appliedEffects = authResult.appliedEffects;
+        generatedImage.metadata!.deviceSimulated = authResult.deviceSimulated;
+
+        console.log(`   ✅ Authenticity applied. Effects: ${authResult.appliedEffects.join(', ')}`);
+        console.log(`   📷 Device: ${authResult.deviceSimulated} | Level: ${authResult.authenticityLevel}`);
+      } else {
+        console.warn(`   ⚠️  Authenticity processing failed: ${authResult.errorMessage}`);
+        console.log(`   📷 Using original image (graceful degradation)`);
+        // Continue with original image (graceful degradation)
+      }
+    } catch (authError) {
+      console.warn(`   ⚠️  Authenticity error: ${(authError as Error).message}`);
+      console.log(`   📷 Using original image (graceful degradation)`);
+      // Continue with original image (graceful degradation)
     }
 
     console.log(`✅ Image generated in ${Date.now() - startTime}ms`);
