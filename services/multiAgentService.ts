@@ -340,6 +340,12 @@ export class MultiAgentService {
     console.log(`📊 Metrics: ${article.metadata.totalChars} chars, ${article.metadata.episodeCount} episodes`);
     console.log(`   Phase 2 Score: ${article.adversarialScore?.overallScore || 0}/100`);
 
+    // 🆕 STAGE 4: Apply mobile photo authenticity to images
+    await this.applyAuthenticityToImages(article);
+    if (article.stage4Applied) {
+      console.log(`   Stage 4 (Authenticity): ✅ Applied (${article.stage4Stats?.processedCount} images)`);
+    }
+
     return article;
   }
 
