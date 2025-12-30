@@ -16,6 +16,7 @@
  * - category: native-draft
  * - media:rating
  * - content:encoded в CDATA
+ * - *** markers removed BEFORE RSS conversion ✅ КРИТИЧНО!
  */
 
 import fs from 'fs';
@@ -43,6 +44,35 @@ const STATS = {
 // ═══════════════════════════════════════════════════════════════
 // 📂 ФУНКЦИИ
 // ═══════════════════════════════════════════════════════════════
+
+/**
+ * 🧹 КРИТИЧНО! Удаляет *** маркеры из контента
+ * ДОЛЖНО выполняться ДО преобразования в RSS!
+ * @param {string} content - контент с потенциальными *** маркерами
+ * @returns {string} очищенный контент
+ */
+function cleanArticleMarkers(content) {
+  if (!content || typeof content !== 'string') {
+    return content;
+  }
+
+  // 1️⃣ Удаляем строки состоящие ТОЛЬКО из *** и пробелов
+  content = content.replace(/^\s*\*\*\*\s*$/gm, '');
+  
+  // 2️⃣ Удаляем *** маркеры которые находятся в конце строк
+  content = content.replace(/\s*\*\*\*\s*$/gm, '');
+  
+  // 3️⃣ Удаляем *** маркеры которые находятся в начале строк
+  content = content.replace(/^\s*\*\*\*\s*/gm, '');
+  
+  // 4️⃣ Удаляем оставшиеся *** внутри текста (заменяем на пробел)
+  content = content.replace(/\*\*\*/g, ' ');
+  
+  // 5️⃣ Очищаем множественные пробелы
+  content = content.replace(/\s+/g, ' ');
+  
+  return content.trim();
+}
 
 /**
  * Получить все файлы статей из папки articles/
@@ -470,8 +500,9 @@ async function main() {
   try {
     console.log('');
     console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.3)     ║');
+    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.4)     ║');
     console.log('║  ✅ All 6 Validation Issues Fixed                 ║');
+    console.log('║  ✅ *** Marker Removal Added (CRITICAL)           ║');
     console.log('╚════════════════════════════════════════════════════╝');
     console.log('');
     console.log(`📋 Mode: ${MODE}`);
@@ -546,8 +577,12 @@ async function main() {
         const imageSize = getImageSize(filePath);
         imageSizes.push(imageSize);
         
-        const description = frontmatter.description || getDescription(body);
-        const htmlContent = markdownToHtml(body);
+        // 🧹 КРИТИЧНО! Удаляем *** маркеры ДО обработки контента
+        let cleanBody = cleanArticleMarkers(body);
+        let cleanTitle = cleanArticleMarkers(frontmatter.title);
+        let cleanDescription = frontmatter.description ? cleanArticleMarkers(frontmatter.description) : getDescription(cleanBody);
+        
+        const htmlContent = markdownToHtml(cleanBody);
 
         if (htmlContent.length < 300) {
           console.warn(`⚠️  WARNING: ${fileName} - content too short (${htmlContent.length} < 300 chars). Skipping.`);
@@ -567,8 +602,8 @@ async function main() {
         }
 
         articles.push({
-          title: frontmatter.title,
-          description: description,
+          title: cleanTitle,
+          description: cleanDescription,
           content: htmlContent,
           date: frontmatter.date,
           imageUrl: imageUrl,
@@ -594,6 +629,7 @@ async function main() {
     console.log('   ✅ Task 4: Making GUID unique');
     console.log('   ✅ Task 5: Distributing pubDate by time');
     console.log('   ✅ Task 6: Updated lastBuildDate');
+    console.log('   ✅ CRITICAL: *** markers removed before RSS conversion');
     
     const rssFeed = generateRssFeed(articles, imageSizes);
 
