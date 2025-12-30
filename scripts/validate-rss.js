@@ -135,10 +135,14 @@ class RssValidator {
       }
     }
 
-    if (this.content.includes('<atom:link')) {
-      console.log('   ✅ <atom:link> присутствует');
+    // Проверить atom:link с rel="self" (обязательно для Дзена)
+    const atomLinkMatch = this.content.match(/<atom:link[^>]*href="([^"]*)"[^>]*rel="self"[^>]*>/) ||
+                          this.content.match(/<atom:link[^>]*rel="self"[^>]*href="([^"]*)"[^>]*>/);
+    
+    if (atomLinkMatch) {
+      console.log(`   ✅ <atom:link rel="self"> присутствует: ${atomLinkMatch[1]}`);
     } else {
-      this.warnings.push('<atom:link> рекомендуется добавить в <channel>');
+      this.errors.push('❌ Отсутствует <atom:link rel="self"> (обязательно для Яндекс Дзен)');
     }
   }
 
@@ -202,18 +206,38 @@ class RssValidator {
 
     let withLength = 0;
     let withoutLength = 0;
+    let zeroLength = 0;
+    let invalidLength = 0;
 
     for (const enclosure of enclosures) {
-      if (enclosure.includes('length=')) {
+      // Проверяем наличие атрибута length
+      const lengthMatch = enclosure.match(/length="(\d+)"/);
+      if (lengthMatch) {
         withLength++;
+        const lengthValue = parseInt(lengthMatch[1], 10);
+        
+        // Проверяем что length > 0
+        if (lengthValue <= 0) {
+          zeroLength++;
+          this.errors.push(`❌ enclosure с length="${lengthValue}" (должен быть > 0)`);
+        }
+        
+        // Проверяем что length - число
+        if (isNaN(lengthValue)) {
+          invalidLength++;
+          this.errors.push(`❌ enclosure с невалидным length: ${lengthMatch[1]}`);
+        }
       } else {
         withoutLength++;
+        this.errors.push(`❌ enclosure без атрибута length: ${enclosure.substring(0, 80)}...`);
       }
     }
 
-    if (withLength === enclosures.length) {
-      console.log(`   ✅ ВСЕ ${withLength} <enclosure> имеют атрибут length`);
-    } else {
+    if (withLength === enclosures.length && zeroLength === 0 && invalidLength === 0) {
+      console.log(`   ✅ ВСЕ ${withLength} <enclosure> имеют корректный length > 0`);
+    } else if (withoutLength === 0 && zeroLength > 0) {
+      this.errors.push(`❌ ${zeroLength} <enclosure> имеют length="0" (требуется реальный размер файла)`);
+    } else if (withoutLength > 0) {
       this.errors.push(`❌ ${withoutLength} <enclosure> без атрибута length (из ${enclosures.length})`);
     }
   }
@@ -236,6 +260,16 @@ class RssValidator {
       console.log(`   ✅ Весь контент обёрнут в CDATA`);
     } else {
       this.warnings.push(`Только ${cdataCount} из ${contentCount} контентов в CDATA`);
+    }
+
+    // Проверить что все CDATA секции закрыты правильно
+    const openCdata = (this.content.match(/<!\[CDATA\[/g) || []).length;
+    const closeCdata = (this.content.match(/\]\]>/g) || []).length;
+    
+    if (openCdata === closeCdata) {
+      console.log(`   ✅ Все CDATA секции закрыты (${openCdata} открыто, ${closeCdata} закрыто)`);
+    } else {
+      this.errors.push(`❌ Дисбаланс CDATA: ${openCdata} открыто, ${closeCdata} закрыто`);
     }
 
     // Проверить минимальную длину контента (только внутри content:encoded)
