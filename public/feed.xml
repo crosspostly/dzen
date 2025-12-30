@@ -10,20 +10,19 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Tue, 30 Dec 2025 16:23:00 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 30 Dec 2025 16:37:23 +0300</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.7 (Dzen Compliant)</generator>
+    <generator>ZenMaster RSS Generator v2.8 (Scheduled Publishing)</generator>
 
     <item>
       <title>Шесть часов у плиты ради мерзкой лжи. Я выбрасываю этот ужин и всю свою прошлую жизнь</title>
       <description><![CDATA[Почему я выбрасываю в мусорное ведро праздничный ужин, над которым трудилась шесть часов? Утка в медовой глазури медленно скользит по стенке пакета. Прямо в очистки. Мерзко. А мне всё равно. Руки...]]></description>
       <link>https://dzen.ru/potemki/shest-chasov-u-plity-radi-merzkoy-lzhi-ya-vybrasyv-20251224</link>
       <guid isPermaLink="false">guid-d3f6226e-1</guid>
-      <pubDate>Wed, 24 Dec 2025 09:00:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 06:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -43,11 +42,10 @@
       <description><![CDATA[Почему я считала, что имею право распоряжаться чужой судьбой? Глупо. Даже сейчас, спустя столько времени, в горле стоит ком. Посмотри на мои руки. Видишь? Они больше не дрожат. Впервые за эти...]]></description>
       <link>https://dzen.ru/potemki/vpervye-za-gody-moi-ruki-ne-drozhat-ya-priznayus-k-20251224</link>
       <guid isPermaLink="false">guid-ec0db791-2</guid>
-      <pubDate>Wed, 24 Dec 2025 10:15:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 07:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -67,11 +65,10 @@
       <description><![CDATA[Почему один-единственный взгляд может превратить двадцать лет брака в пыль? Я до сих пор не понимаю. Просто стояла там, в дверях кафе, и чувствовала, как внутри всё крошится. Боже мой, какая же я...]]></description>
       <link>https://dzen.ru/potemki/ya-nenavizhu-tot-den-odin-ego-vzglyad-prevratil-dv-20251224</link>
       <guid isPermaLink="false">guid-abe0857b-3</guid>
-      <pubDate>Wed, 24 Dec 2025 11:30:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 09:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -91,11 +88,10 @@
       <description><![CDATA[Как можно не заметить монстра в человеке, который спас твою жизнь? Посмотри на мои руки. Видишь, они больше не дрожат? Господи, какое же это невероятное облегчение — просто сидеть здесь с тобой,...]]></description>
       <link>https://dzen.ru/potemki/ya-schitala-muzha-geroem-poka-ne-ponyala-kto-on-go-20251224</link>
       <guid isPermaLink="false">guid-a104cdd1-4</guid>
-      <pubDate>Wed, 24 Dec 2025 12:45:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 10:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -115,11 +111,10 @@
       <description><![CDATA[— Почему её жизнь — яркое кино, а моя — какой-то скомканный черновик? Боже мой, я задавала себе этот вопрос каждое утро, до боли сжимая челюсти. Ногти впились в ладони. Опять она. Опять Марина со своим безупречным счастьем...]]></description>
       <link>https://dzen.ru/potemki/ya-do-boli-zavidovala-eyo-yarkomu-kino-poka-ne-uzn-20251225</link>
       <guid isPermaLink="false">guid-d2557527-5</guid>
-      <pubDate>Thu, 25 Dec 2025 09:00:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 12:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -139,11 +134,10 @@
       <description><![CDATA[Господи, до чего же глупо это звучит сейчас. Я ведь годами носила это чувство как медаль на груди. Помнишь то кольцо? Я даже палец выпрямляла как-то по-особенному, чтобы все видели. Какая же...]]></description>
       <link>https://dzen.ru/potemki/ya-godami-nosila-eto-koltso-kak-medal-poka-ne-uzna-20251225</link>
       <guid isPermaLink="false">guid-2d0121ff-6</guid>
-      <pubDate>Thu, 25 Dec 2025 10:15:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 13:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -163,11 +157,10 @@
       <description><![CDATA[Ты когда-нибудь боялась обычного белого конверта? Я стояла в тёмном подъезде, и пальцы внезапно онемели. Тридцать лет тишины. Тридцать лет я жила с этой тайной, как с острым камнем в ботинке....]]></description>
       <link>https://dzen.ru/potemki/ya-molchala-tridtsat-let-segodnya-etot-belyy-konve-20251225</link>
       <guid isPermaLink="false">guid-17060b7e-7</guid>
-      <pubDate>Thu, 25 Dec 2025 11:30:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 15:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -187,11 +180,10 @@
       <description><![CDATA[— Посмотри на это лицо. Видишь? Это я. Те же скулы, тот же изгиб бровей, даже эта крошечная родинка над губой. Только это не я. Я никогда не носила это шелковое платье...]]></description>
       <link>https://dzen.ru/potemki/ya-nashla-svoyo-litso-na-chuzhom-foto-teper-ya-zna-20251225</link>
       <guid isPermaLink="false">guid-6744bfc4-8</guid>
-      <pubDate>Thu, 25 Dec 2025 12:45:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 16:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -211,11 +203,10 @@
       <description><![CDATA[Я выронила чашку. Осколки брызнули по кафелю, но я даже не вздрогнула. Телефон на столе вибрировал, настойчиво и беспощадно. Тридцать лет. Господи, я молчала ровно тридцать лет. Думала, что время...]]></description>
       <link>https://dzen.ru/potemki/ya-tridtsat-let-skryvala-etu-postydnuyu-pravdu-seg-20251225</link>
       <guid isPermaLink="false">guid-ae80475c-9</guid>
-      <pubDate>Thu, 25 Dec 2025 09:00:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 18:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -235,11 +226,10 @@
       <description><![CDATA[Я до сих пор чувствую этот холод в пальцах. Глупо, правда? Три года прошло. Я просто перебирала вещи в его кабинете, хотела наконец раздать старые книги. И вдруг — этот конверт. Жёлтый, плотный,...]]></description>
       <link>https://dzen.ru/potemki/mne-do-sih-por-stydno-za-ego-taynu-ya-nashla-to-pi-20251226</link>
       <guid isPermaLink="false">guid-616a4f96-10</guid>
-      <pubDate>Fri, 26 Dec 2025 10:15:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 19:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -259,11 +249,10 @@
       <description><![CDATA[— Ты когда-нибудь чувствовала себя воровкой в собственном доме? Чёрт побери, я смотрела на эти безупречные шёлковые обои и хотела содрать их ногтями. У меня ведь было всё. Идеальный муж, этот его...]]></description>
       <link>https://dzen.ru/potemki/mne-stydno-priznatsya-no-ya-godami-chuvstvovala-se-20251227</link>
       <guid isPermaLink="false">guid-7d070188-11</guid>
-      <pubDate>Sat, 27 Dec 2025 11:30:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 21:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -283,11 +272,10 @@
       <description><![CDATA[— Налей ещё чаю. Руки до сих пор леденеют, когда вспоминаю тот вечер. Ты ведь видела мои старые фотографии? Идеальная жизнь. Белоснежная улыбка, отпуск в Тоскане, шёлковые простыни. Господи, какая...]]></description>
       <link>https://dzen.ru/potemki/ya-godami-stroila-chuzhuyu-zhizn-prishlo-vremya-ra-20251227</link>
       <guid isPermaLink="false">guid-1c473b22-12</guid>
-      <pubDate>Sat, 27 Dec 2025 12:45:00 +0300</pubDate>
+      <pubDate>Wed, 31 Dec 2025 22:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -307,11 +295,10 @@
       <description><![CDATA[— Почему ты молчишь? — муж смотрел на меня в упор. Я не знала, что сказать. Просто не могла. В горле стоял ком. Знаешь, это странное чувство, когда у тебя есть всё: огромный дом, достаток, даже...]]></description>
       <link>https://dzen.ru/potemki/ya-godami-zhila-chuzhoy-zhiznyu-poka-odno-staroe-p-20251227</link>
       <guid isPermaLink="false">guid-6513773d-13</guid>
-      <pubDate>Sat, 27 Dec 2025 09:00:00 +0300</pubDate>
+      <pubDate>Thu, 01 Jan 2026 00:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -331,11 +318,10 @@
       <description><![CDATA[«Что это, Максим?» — я стояла посреди кабинета, сжимая в руках помятый листок. Детский рисунок. Кривой домик, яркое солнце и размашистая подпись фломастером: «Папе от Дениса». У нас дочь. Алиса....]]></description>
       <link>https://dzen.ru/potemki/ya-gordilas-svoim-idealnym-muzhem-poka-ne-nashla-v-20251227</link>
       <guid isPermaLink="false">guid-dd07a95a-14</guid>
-      <pubDate>Sat, 27 Dec 2025 10:15:00 +0300</pubDate>
+      <pubDate>Thu, 01 Jan 2026 01:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -355,11 +341,10 @@
       <description><![CDATA[Почему случайная встреча в очереди за хлебом заставила моё сердце остановиться? До сих пор не знаю. Просто стояла, смотрела на её затылок и чувствовала, как постепенно немеют пальцы. Я ведь считала...]]></description>
       <link>https://dzen.ru/potemki/ya-schitala-sebya-schastlivoy-poka-ne-vstretila-ey-20251227</link>
       <guid isPermaLink="false">guid-f153974d-15</guid>
-      <pubDate>Sat, 27 Dec 2025 11:30:00 +0300</pubDate>
+      <pubDate>Thu, 01 Jan 2026 03:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -379,11 +364,10 @@
       <description><![CDATA[Кто этот человек? Почему он пишет маме о нашей общей тайне через целых три года после моего официального рождения? Я сидела на пыльном полу чердака, сжимая в пальцах пожелтевшую открытку. Сердце...]]></description>
       <link>https://dzen.ru/potemki/ya-uznala-chto-vsya-moya-zhizn-byla-lozhyu-i-nakon-20251227</link>
       <guid isPermaLink="false">guid-1991484f-16</guid>
-      <pubDate>Sat, 27 Dec 2025 12:45:00 +0300</pubDate>
+      <pubDate>Thu, 01 Jan 2026 04:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
