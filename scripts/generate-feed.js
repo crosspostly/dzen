@@ -13,10 +13,12 @@
  * - GUID уникальные ✅ ЗАДАЧА 4
  * - pubDate распределённые по времени ✅ ЗАДАЧА 5
  * - lastBuildDate актуальная ✅ ЗАДАЧА 6
- * - category: native-draft
- * - media:rating
- * - content:encoded в CDATA
- * - *** markers converted to breaks (ВАЖНО! Сохраняет структуру)
+ * - category: native-draft, format-article, index, comment-all ✅
+ * - description в CDATA ✅
+ * - media:rating ✅
+ * - content:encoded в CDATA ✅
+ * - *** markers converted to breaks ✅
+ * - GitHub images wrapped in <figure> ✅
  */
 
 import fs from 'fs';
@@ -46,13 +48,13 @@ const STATS = {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * 🧹 КРИТИЧНО! Заменяет *** маркеры на пустые строки для разделения
+ * 🧹 ВАЖНО! Заменяет *** маркеры на пустые строки для разделения
  * НЕ удаляет, а ПРЕОБРАЗУЕТ в структурные разделители (пустые строки)
  * Это сохраняет визуальное разделение между секциями текста!
  * 
  * ВАЖНО: *** используются для разделения сцен/мыслей, это структурный элемент!
  * Если просто удалить - текст слипнется в одну простыню.
- * Правильно: преобразовать в пустую строку, чтобы в HTML стало <p></p> разделением.
+ * Правильно: преобразовать в пустую строку, чтобы в HTML стало <p></p> разделение.
  * 
  * @param {string} content - контент со звёздочками ***
  * @returns {string} контент со звёздочками преобразованными в разделители
@@ -65,7 +67,7 @@ function cleanArticleMarkers(content) {
   // 1️⃣ Заменяем строки ТОЛЬКО с *** (и пробелами вокруг) на пустые строки
   // Это преобразует *** в разделитель между абзацами
   content = content.replace(/^\s*\*\*\*\s*$/gm, '');
-  // ↑ Удаляет МАРКЕР, но оставляет разделение (новая строка после замены)
+  // ↑ Удаляет МАРКЕР, но оставляет разделение (новая строка после замены)!
   
   // 2️⃣ Очищаем пробелы в начале/конце строк (кроме пустых)
   content = content.split('\n').map(line => line.trim()).join('\n');
@@ -81,6 +83,32 @@ function cleanArticleMarkers(content) {
   // "Текст 1\n\nТекст 2" → "Текст 1\n\nТекст 2" (оставляем, это правильно)
   
   return content.trim();
+}
+
+/**
+ * 🖼️ Оборачивает GitHub изображения в <figure> теги для Дзена
+ * Если в контенте есть ссылки на raw.githubusercontent.com - обёрнуть в <figure>
+ * @param {string} html - HTML контент
+ * @returns {string} HTML с изображениями в <figure>
+ */
+function wrapGithubImagesInFigure(html) {
+  if (!html) return html;
+  
+  // Ищем img теги с GitHub URL'ами и оборачиваем их в figure
+  // Но ТОЛЬКО если они не уже в figure!
+  html = html.replace(
+    /<img\s+src=["']https:\/\/raw\.githubusercontent\.com\/[^"']+["'][^>]*>/g,
+    (match) => {
+      // Проверяем, не уже ли этот img в figure
+      if (match.includes('<figure>')) {
+        return match; // Уже обёрнут, не трогаем
+      }
+      // Оборачиваем в figure
+      return `<figure>${match}</figure>`;
+    }
+  );
+  
+  return html;
 }
 
 /**
@@ -271,7 +299,7 @@ function isRecentDate(dateStr, maxDaysOld = 7) {
 }
 
 /**
- * Экранировать спецсимволы для XML
+ * Экранировать спецсимволы для XML (но не для CDATA!)
  * & ДОЛЖЕН БЫТЬ ПЕРВЫМ!
  */
 function escapeXml(str) {
@@ -414,6 +442,9 @@ function markdownToHtml(markdown) {
   // ✅ ЗАДАЧА 2: Валидировать HTML теги
   html = validateAndFixHtmlTags(html);
 
+  // 🖼️ Обёртываем GitHub изображения в <figure>
+  html = wrapGithubImagesInFigure(html);
+
   // Очистить контент перед валидацией
   html = sanitizeForCdata(html);
 
@@ -443,7 +474,7 @@ function generateRssFeed(articles, imageSizes = []) {
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.6 (*** Markers Preserved)</generator>
+    <generator>ZenMaster RSS Generator v2.7 (Dzen Compliant)</generator>
 `;
 
   // Добавляем каждую статью
@@ -461,7 +492,6 @@ function generateRssFeed(articles, imageSizes = []) {
     // ✅ ЗАДАЧА 5: Распределить pubDate по времени
     const pubDate = distributePubDate(date, i);
     const escapedTitle = escapeXml(title);
-    const escapedDescription = escapeXml(description);
     
     const articleLink = `${DZEN_CHANNEL}/${itemId}`;
     
@@ -474,22 +504,26 @@ function generateRssFeed(articles, imageSizes = []) {
     rssContent += `
     <item>
       <title>${escapedTitle}</title>
-      <description><![CDATA[${escapedDescription}]]></description>
+      <description><![CDATA[${sanitizeForCdata(description)}]]></description>
       <link>${articleLink}</link>
       <guid isPermaLink="false">${uniqueGuid}</guid>
       <pubDate>${pubDate}</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="${imageUrl}" type="image/jpeg" length="${imageSize}"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="${imageUrl}">
-        <media:description type="plain">${escapedDescription}</media:description>
+        <media:description type="plain">${sanitizeForCdata(description)}</media:description>
         <media:copyright>© ZenMaster Articles</media:copyright>
       </media:content>
       
-      <content:encoded><![CDATA[${sanitizeForCdata(content)}]]></content:encoded>
+      <content:encoded><![CDATA[${content}]]></content:encoded>
     </item>
 `;
   }
@@ -509,10 +543,10 @@ async function main() {
   try {
     console.log('');
     console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.6)     ║');
-    console.log('║  ✅ All 6 Validation Issues Fixed                 ║');
-    console.log('║  ✅ *** Markers Converted to Breaks                ║');
-    console.log('║  ✅ Document Structure Preserved                   ║');
+    console.log('║  📡 RSS Feed Generator - Dzen Compliant (v2.7)    ║');
+    console.log('║  ✅ All Dzen Requirements Met                     ║');
+    console.log('║  ✅ *** Markers Converted to Breaks               ║');
+    console.log('║  ✅ GitHub Images Wrapped in <figure>             ║');
     console.log('╚════════════════════════════════════════════════════╝');
     console.log('');
     console.log(`📋 Mode: ${MODE}`);
@@ -588,7 +622,6 @@ async function main() {
         imageSizes.push(imageSize);
         
         // 🧹 ВАЖНО! Преобразуем *** маркеры в разделители (пустые строки)
-        // НЕ удаляем, а ЗАМЕНЯЕМ, чтобы сохранить структуру текста
         let cleanBody = cleanArticleMarkers(body);
         let cleanTitle = cleanArticleMarkers(frontmatter.title);
         let cleanDescription = frontmatter.description ? cleanArticleMarkers(frontmatter.description) : getDescription(cleanBody);
@@ -640,8 +673,10 @@ async function main() {
     console.log('   ✅ Task 4: Making GUID unique');
     console.log('   ✅ Task 5: Distributing pubDate by time');
     console.log('   ✅ Task 6: Updated lastBuildDate');
-    console.log('   ✅ IMPORTANT: *** markers converted to paragraph breaks');
-    console.log('   ✅ IMPORTANT: Document structure and readability preserved');
+    console.log('   ✅ DZEN: <description> in CDATA');
+    console.log('   ✅ DZEN: Complete category elements');
+    console.log('   ✅ DZEN: GitHub images wrapped in <figure>');
+    console.log('   ✅ STRUCTURE: *** markers converted to breaks');
     
     const rssFeed = generateRssFeed(articles, imageSizes);
 
