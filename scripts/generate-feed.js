@@ -5,6 +5,12 @@
  * 
  * Генерирует RSS фид из статей в папке articles/
  * с правильными URL'ами для Dzen канала и GitHub изображений
+ * 
+ * ⚠️ ВАЖНО: Для Яндекс Дзен обязательны:
+ * - length в enclosure (размер в байтах)
+ * - category: native-draft
+ * - media:rating
+ * - content:encoded в CDATA
  */
 
 import fs from 'fs';
@@ -18,6 +24,8 @@ import matter from 'gray-matter';
 const MODE = process.argv[2] || 'incremental';
 const BASE_URL = process.env.BASE_URL || 'https://raw.githubusercontent.com/crosspostly/dzen/main';
 const DZEN_CHANNEL = 'https://dzen.ru/potemki';  // ✅ ТВОЙ КАНАЛ!
+const RSS_URL = 'https://dzen-livid.vercel.app/feed.xml';  // URL фида для atom:link
+const DEFAULT_IMAGE_SIZE = 50000;  // 50KB - дефолтный размер для enclosure length
 
 const STATS = {
   total: 0,
@@ -117,6 +125,51 @@ function getImageUrl(articlePath) {
 }
 
 /**
+ * Получить размер файла изображения в байтах
+ * Для локальных файлов читаем реальный размер
+ * @param {string} articlePath - путь к файлу статьи
+ * @returns {number} размер в байтах или DEFAULT_IMAGE_SIZE
+ */
+function getImageSize(articlePath) {
+  const dir = path.dirname(articlePath);
+  const name = path.basename(articlePath, '.md');
+  const imagePath = path.join(dir, `${name}.jpg`);
+  
+  try {
+    if (fs.existsSync(imagePath)) {
+      const stats = fs.statSync(imagePath);
+      return stats.size;
+    }
+    console.warn(`⚠️  WARNING: Image file not found: ${imagePath}, using default size`);
+    return DEFAULT_IMAGE_SIZE;
+  } catch (error) {
+    console.warn(`⚠️  WARNING: Error getting image size: ${error.message}, using default`);
+    return DEFAULT_IMAGE_SIZE;
+  }
+}
+
+/**
+ * Получить размер изображения по URL (локальный путь или GitHub URL)
+ * @param {string} imageUrl - URL изображения
+ * @param {string} articlePath - путь к файлу статьи (для локальных файлов)
+ * @returns {number} размер в байтах
+ */
+function getImageSizeFromUrl(imageUrl, articlePath) {
+  // Если это GitHub Raw URL - используем размер по умолчанию
+  // (нельзя делать HTTP запросы в GitHub Actions)
+  if (imageUrl.includes('raw.githubusercontent.com')) {
+    return DEFAULT_IMAGE_SIZE;
+  }
+  
+  // Если локальный путь - пробуем получить реальный размер
+  if (articlePath && fs.existsSync(articlePath)) {
+    return getImageSize(articlePath);
+  }
+  
+  return DEFAULT_IMAGE_SIZE;
+}
+
+/**
  * Получить папку канала из пути (например "women-35-60")
  */
 function getChannel(articlePath) {
@@ -158,22 +211,25 @@ function sanitizeForCdata(content) {
   // [0m pattern (если Буфер не обработал ESC правильно)
   content = content.replace(/\[\d+m/g, '');
   
-  // 2️⃣ Удалить другие управляющие символы (кроме tab, newline, carriage return)
-  content = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  // 2️⃣ Удалить все управляющие символы включая null bytes
+  // \x00 = null, \x01-\x1F = control chars, \x7F = DEL
+  content = content.replace(/[\x00-\x1F\x7F]/g, '');
   
   // 3️⃣ Экранировать CDATA delimiters
   content = content.replace(/\]\]>/g, ']]&gt;');
   
-  // 4️⃣ Удалить невалидные UTF-8 последовательности
+  // 4️⃣ Удалить невалидные UTF-8 последовательности и повторно очистить
   try {
     const buf = Buffer.from(content, 'utf8');
     content = buf.toString('utf8');
+    // Повторная очистка после UTF-8 преобразования
+    content = content.replace(/[\x00-\x1F\x7F]/g, '');
   } catch (e) {
     console.warn('⚠️  WARNING: UTF-8 decoding error, sanitizing...');
-    content = content.replace(/[\u0000-\u001F]/g, ' ');
+    content = content.replace(/[\x00-\x1F\x7F]/g, ' ');
   }
   
-  // 5️⃣ Нормализовать whitespace
+  // 5️⃣ Нормализовать whitespace (пробелы, табы, переносы строк)
   content = content.replace(/\s+/g, ' ');
   
   return content.trim();
@@ -213,7 +269,7 @@ function escapeXml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;')
-    .replace(/\x00/g, '')        // Remove null bytes
+    .replace(/[\x00-\x1F\x7F]/g, '')  // Remove all control chars
     .trim();
 }
 
@@ -311,26 +367,31 @@ function validateHtml(html) {
 
 /**
  * Генерировать RSS фид
+ * @param {Array} articles - массив статей
+ * @param {Array} imageSizes - массив размеров изображений
  */
-function generateRssFeed(articles) {
+function generateRssFeed(articles, imageSizes = []) {
   const now = toRFC822(new Date());
   
   let rssContent = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" 
      xmlns:content="http://purl.org/rss/1.0/modules/content/"
      xmlns:media="http://search.yahoo.com/mrss/"
-     xmlns:dc="http://purl.org/dc/elements/1.1/">
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Потёмки - Истории из жизни</title>
     <link>${DZEN_CHANNEL}</link>
+    <atom:link href="${RSS_URL}" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.1</generator>
+    <generator>ZenMaster RSS Generator v2.2</generator>
 `;
 
   // Добавляем каждую статью
-  for (const article of articles) {
+  for (let i = 0; i < articles.length; i++) {
+    const article = articles[i];
     const {
       title,
       description,
@@ -344,8 +405,11 @@ function generateRssFeed(articles) {
     const escapedTitle = escapeXml(title);
     const escapedDescription = escapeXml(description);
     
-    // Создаём уникальный URL статьи
+    // Создаём уникальный URL статьи (без UTM параметров!)
     const articleLink = `${DZEN_CHANNEL}/${itemId}`;
+    
+    // Получаем размер изображения
+    const imageSize = imageSizes[i] || DEFAULT_IMAGE_SIZE;
     
     rssContent += `
     <item>
@@ -356,11 +420,9 @@ function generateRssFeed(articles) {
       <pubDate>${pubDate}</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <category>format-article</category>
-      <category>index</category>
-      <category>comment-all</category>
+      <category>native-draft</category>
       
-      <enclosure url="${imageUrl}" type="image/jpeg"/>
+      <enclosure url="${imageUrl}" type="image/jpeg" length="${imageSize}"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="${imageUrl}">
         <media:description type="plain">${escapedDescription}</media:description>
         <media:copyright>© ZenMaster Articles</media:copyright>
@@ -408,6 +470,7 @@ async function main() {
     // Обрабатываем каждый файл
     const processedIds = new Set();
     const articles = [];
+    const imageSizes = [];  // Массив размеров изображений
 
     for (const filePath of articleFiles) {
       try {
@@ -468,7 +531,11 @@ async function main() {
 
         // Получаем URL изображения
         const imageUrl = getImageUrl(filePath);
-
+        
+        // ⭐ Получаем размер изображения для атрибута length в enclosure
+        const imageSize = getImageSize(filePath);
+        imageSizes.push(imageSize);
+        
         // Получаем описание
         const description = frontmatter.description || getDescription(body);
 
@@ -519,7 +586,7 @@ async function main() {
     console.log('');
     console.log('🔄 Generating RSS feed...');
     
-    const rssFeed = generateRssFeed(articles);
+    const rssFeed = generateRssFeed(articles, imageSizes);
 
     // Создаём папку public если нужно
     const publicDir = path.join(process.cwd(), 'public');
