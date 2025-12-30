@@ -10,9 +10,9 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Tue, 30 Dec 2025 11:34:05 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 30 Dec 2025 16:23:00 +0300</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.6 (*** Markers Preserved)</generator>
+    <generator>ZenMaster RSS Generator v2.7 (Dzen Compliant)</generator>
 
     <item>
       <title>Шесть часов у плиты ради мерзкой лжи. Я выбрасываю этот ужин и всю свою прошлую жизнь</title>
@@ -22,9 +22,13 @@
       <pubDate>Wed, 24 Dec 2025 09:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-24/shest-chasov-u-plity-radi-merzkoy-lzhi-ya-vybrasyv.jpg" type="image/jpeg" length="77552"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-24/shest-chasov-u-plity-radi-merzkoy-lzhi-ya-vybrasyv.jpg">
         <media:description type="plain">Почему я выбрасываю в мусорное ведро праздничный ужин, над которым трудилась шесть часов? Утка в медовой глазури медленно скользит по стенке пакета. Прямо в очистки. Мерзко. А мне всё равно. Руки...</media:description>
@@ -42,9 +46,13 @@
       <pubDate>Wed, 24 Dec 2025 10:15:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-24/vpervye-za-gody-moi-ruki-ne-drozhat-ya-priznayus-k.jpg" type="image/jpeg" length="126031"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-24/vpervye-za-gody-moi-ruki-ne-drozhat-ya-priznayus-k.jpg">
         <media:description type="plain">Почему я считала, что имею право распоряжаться чужой судьбой? Глупо. Даже сейчас, спустя столько времени, в горле стоит ком. Посмотри на мои руки. Видишь? Они больше не дрожат. Впервые за эти...</media:description>
@@ -62,9 +70,13 @@
       <pubDate>Wed, 24 Dec 2025 11:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-24/ya-nenavizhu-tot-den-odin-ego-vzglyad-prevratil-dv.jpg" type="image/jpeg" length="150277"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-24/ya-nenavizhu-tot-den-odin-ego-vzglyad-prevratil-dv.jpg">
         <media:description type="plain">Почему один-единственный взгляд может превратить двадцать лет брака в пыль? Я до сих пор не понимаю. Просто стояла там, в дверях кафе, и чувствовала, как внутри всё крошится. Боже мой, какая же я...</media:description>
@@ -82,9 +94,13 @@
       <pubDate>Wed, 24 Dec 2025 12:45:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-24/ya-schitala-muzha-geroem-poka-ne-ponyala-kto-on-go.jpg" type="image/jpeg" length="86630"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-24/ya-schitala-muzha-geroem-poka-ne-ponyala-kto-on-go.jpg">
         <media:description type="plain">Как можно не заметить монстра в человеке, который спас твою жизнь? Посмотри на мои руки. Видишь, они больше не дрожат? Господи, какое же это невероятное облегчение — просто сидеть здесь с тобой,...</media:description>
@@ -102,9 +118,13 @@
       <pubDate>Thu, 25 Dec 2025 09:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-do-boli-zavidovala-eyo-yarkomu-kino-poka-ne-uzn.jpg" type="image/jpeg" length="90897"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-do-boli-zavidovala-eyo-yarkomu-kino-poka-ne-uzn.jpg">
         <media:description type="plain">— Почему её жизнь — яркое кино, а моя — какой-то скомканный черновик? Боже мой, я задавала себе этот вопрос каждое утро, до боли сжимая челюсти. Ногти впились в ладони. Опять она. Опять Марина со своим безупречным счастьем...</media:description>
@@ -122,9 +142,13 @@
       <pubDate>Thu, 25 Dec 2025 10:15:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-godami-nosila-eto-koltso-kak-medal-poka-ne-uzna.jpg" type="image/jpeg" length="74955"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-godami-nosila-eto-koltso-kak-medal-poka-ne-uzna.jpg">
         <media:description type="plain">Господи, до чего же глупо это звучит сейчас. Я ведь годами носила это чувство как медаль на груди. Помнишь то кольцо? Я даже палец выпрямляла как-то по-особенному, чтобы все видели. Какая же...</media:description>
@@ -142,9 +166,13 @@
       <pubDate>Thu, 25 Dec 2025 11:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-molchala-tridtsat-let-segodnya-etot-belyy-konve.jpg" type="image/jpeg" length="70327"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-molchala-tridtsat-let-segodnya-etot-belyy-konve.jpg">
         <media:description type="plain">Ты когда-нибудь боялась обычного белого конверта? Я стояла в тёмном подъезде, и пальцы внезапно онемели. Тридцать лет тишины. Тридцать лет я жила с этой тайной, как с острым камнем в ботинке....</media:description>
@@ -162,9 +190,13 @@
       <pubDate>Thu, 25 Dec 2025 12:45:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-nashla-svoyo-litso-na-chuzhom-foto-teper-ya-zna.jpg" type="image/jpeg" length="86729"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-nashla-svoyo-litso-na-chuzhom-foto-teper-ya-zna.jpg">
         <media:description type="plain">— Посмотри на это лицо. Видишь? Это я. Те же скулы, тот же изгиб бровей, даже эта крошечная родинка над губой. Только это не я. Я никогда не носила это шелковое платье...</media:description>
@@ -182,9 +214,13 @@
       <pubDate>Thu, 25 Dec 2025 09:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-tridtsat-let-skryvala-etu-postydnuyu-pravdu-seg.jpg" type="image/jpeg" length="69535"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-25/ya-tridtsat-let-skryvala-etu-postydnuyu-pravdu-seg.jpg">
         <media:description type="plain">Я выронила чашку. Осколки брызнули по кафелю, но я даже не вздрогнула. Телефон на столе вибрировал, настойчиво и беспощадно. Тридцать лет. Господи, я молчала ровно тридцать лет. Думала, что время...</media:description>
@@ -202,9 +238,13 @@
       <pubDate>Fri, 26 Dec 2025 10:15:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-26/mne-do-sih-por-stydno-za-ego-taynu-ya-nashla-to-pi.jpg" type="image/jpeg" length="79736"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-26/mne-do-sih-por-stydno-za-ego-taynu-ya-nashla-to-pi.jpg">
         <media:description type="plain">Я до сих пор чувствую этот холод в пальцах. Глупо, правда? Три года прошло. Я просто перебирала вещи в его кабинете, хотела наконец раздать старые книги. И вдруг — этот конверт. Жёлтый, плотный,...</media:description>
@@ -222,9 +262,13 @@
       <pubDate>Sat, 27 Dec 2025 11:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/mne-stydno-priznatsya-no-ya-godami-chuvstvovala-se.jpg" type="image/jpeg" length="45871"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/mne-stydno-priznatsya-no-ya-godami-chuvstvovala-se.jpg">
         <media:description type="plain">— Ты когда-нибудь чувствовала себя воровкой в собственном доме? Чёрт побери, я смотрела на эти безупречные шёлковые обои и хотела содрать их ногтями. У меня ведь было всё. Идеальный муж, этот его...</media:description>
@@ -242,9 +286,13 @@
       <pubDate>Sat, 27 Dec 2025 12:45:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-godami-stroila-chuzhuyu-zhizn-prishlo-vremya-ra.jpg" type="image/jpeg" length="74340"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-godami-stroila-chuzhuyu-zhizn-prishlo-vremya-ra.jpg">
         <media:description type="plain">— Налей ещё чаю. Руки до сих пор леденеют, когда вспоминаю тот вечер. Ты ведь видела мои старые фотографии? Идеальная жизнь. Белоснежная улыбка, отпуск в Тоскане, шёлковые простыни. Господи, какая...</media:description>
@@ -262,9 +310,13 @@
       <pubDate>Sat, 27 Dec 2025 09:00:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-godami-zhila-chuzhoy-zhiznyu-poka-odno-staroe-p.jpg" type="image/jpeg" length="71942"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-godami-zhila-chuzhoy-zhiznyu-poka-odno-staroe-p.jpg">
         <media:description type="plain">— Почему ты молчишь? — муж смотрел на меня в упор. Я не знала, что сказать. Просто не могла. В горле стоял ком. Знаешь, это странное чувство, когда у тебя есть всё: огромный дом, достаток, даже...</media:description>
@@ -282,9 +334,13 @@
       <pubDate>Sat, 27 Dec 2025 10:15:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-gordilas-svoim-idealnym-muzhem-poka-ne-nashla-v.jpg" type="image/jpeg" length="70820"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-gordilas-svoim-idealnym-muzhem-poka-ne-nashla-v.jpg">
         <media:description type="plain">«Что это, Максим?» — я стояла посреди кабинета, сжимая в руках помятый листок. Детский рисунок. Кривой домик, яркое солнце и размашистая подпись фломастером: «Папе от Дениса». У нас дочь. Алиса....</media:description>
@@ -302,9 +358,13 @@
       <pubDate>Sat, 27 Dec 2025 11:30:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-schitala-sebya-schastlivoy-poka-ne-vstretila-ey.jpg" type="image/jpeg" length="79820"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-schitala-sebya-schastlivoy-poka-ne-vstretila-ey.jpg">
         <media:description type="plain">Почему случайная встреча в очереди за хлебом заставила моё сердце остановиться? До сих пор не знаю. Просто стояла, смотрела на её затылок и чувствовала, как постепенно немеют пальцы. Я ведь считала...</media:description>
@@ -322,9 +382,13 @@
       <pubDate>Sat, 27 Dec 2025 12:45:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
+      <!-- Категории Дзена -->
       <category>native-draft</category>
+      <category>format-article</category>
+      <category>index</category>
+      <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length="77552" добавлен автоматически -->
+      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
       <enclosure url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-uznala-chto-vsya-moya-zhizn-byla-lozhyu-i-nakon.jpg" type="image/jpeg" length="93196"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="https://raw.githubusercontent.com/crosspostly/dzen/main/articles/women-35-60/2025-12-27/ya-uznala-chto-vsya-moya-zhizn-byla-lozhyu-i-nakon.jpg">
         <media:description type="plain">Кто этот человек? Почему он пишет маме о нашей общей тайне через целых три года после моего официального рождения? Я сидела на пыльном полу чердака, сжимая в пальцах пожелтевшую открытку. Сердце...</media:description>
