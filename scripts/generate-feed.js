@@ -275,60 +275,6 @@ function generateUniqueGuid(title, index) {
 }
 
 /**
- * ✅ ЗАДАЧА 2: УЛУЧШЕННАЯ валидация и исправление HTML тегов
- * Удаляет orphaned closing tags И добавляет недостающие
- * ЭТО ДЛЯ ИСПОЛЬЗОВАНИЯ ДО CDATA!
- */
-function validateAndFixHtmlTags(html) {
-  if (!html) return '';
-  
-  // Список тегов для обработки
-  const tagsToFix = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'b', 'i', 'u', 's', 'span', 'strong', 'em', 'div', 'blockquote', 'li'];
-  
-  for (const tag of tagsToFix) {
-    let iterations = 0;
-    const maxIterations = 10;
-    
-    while (iterations < maxIterations) {
-      iterations++;
-      
-      const openRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
-      const closeRegex = new RegExp(`<\/${tag}>`, 'gi');
-      
-      const opens = html.match(openRegex) || [];
-      const closes = html.match(closeRegex) || [];
-      
-      const openCount = opens.length;
-      const closeCount = closes.length;
-      
-      if (openCount === closeCount) {
-        break; // Теги сбалансированы
-      }
-      
-      // Если закрывающих ТОП чем открывающих - удаляем orphaned теги
-      if (closeCount > openCount) {
-        // Удаляем ПЕРВЫЙ orphaned closing tag
-        const orphanedIndex = html.search(closeRegex);
-        if (orphanedIndex !== -1) {
-          const tagEnd = html.indexOf('>', orphanedIndex);
-          html = html.substring(0, orphanedIndex) + html.substring(tagEnd + 1);
-        } else {
-          break;
-        }
-      }
-      // Если открывающих больше - добавляем закрывающие в конец
-      else if (openCount > closeCount) {
-        const diff = openCount - closeCount;
-        html += `</${tag}>`.repeat(diff);
-        break;
-      }
-    }
-  }
-  
-  return html;
-}
-
-/**
  * Конвертировать дату в RFC822 формат с часовым поясом +0300 (Москва)
  */
 function toRFC822(dateStr) {
@@ -357,48 +303,107 @@ function toRFC822(dateStr) {
 }
 
 /**
- * Конвертировать markdown контент в HTML для Dzen
+ * ✅ ЗАДАЧА 2: ПРАВИЛЬНАЯ конверсия markdown в HTML
+ * БЕЗ orphaned tags с самого начала!
  */
 function markdownToHtml(markdown) {
-  let html = markdown;
+  if (!markdown) return '';
   
-  // Конвертируем заголовки
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // ШАГИ КОНВЕРСИИ в правильном порядке
   
-  // Конвертируем жирный текст
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  // 1. Экранировать спецсимволы перед парсингом
+  let html = markdown
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
   
-  // Конвертируем курсив
-  html = html.replace(/\*([^*]+)\*/g, '<i>$1</i>');
+  // 2. Конвертировать заголовки (ПЕРЕД параграфами!)
+  html = html
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>');
   
-  // Конвертируем ссылки
+  // 3. Конвертировать форматирование текста
+  html = html
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')  // жирный
+    .replace(/\*([^*]+)\*/g, '<i>$1</i>')      // курсив
+    .replace(/`([^`]+)`/g, '<code>$1</code>');  // код
+  
+  // 4. Конвертировать ссылки (ПЕРЕД параграфами!)
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
   
-  // Разбиваем на параграфы (двойные переносы строк)
-  const paragraphs = html.split(/\n\n+/);
+  // 5. КЛЮЧЕВОЙ ШАГ: правильно обработать параграфы
+  // Разбить по ПУСТЫМ СТРОКАМ (\n\n+) и только тогда оборачивать в <p>
+  const lines = html.split('\n');
+  const blocks = [];
+  let currentBlock = [];
   
-  html = paragraphs
-    .map(p => {
-      p = p.trim();
-      if (p.match(/^<(h[1-6]|ul|ol|blockquote)/)) {
-        return p;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    
+    if (!trimmed) {
+      // Пустая строка = конец блока
+      if (currentBlock.length > 0) {
+        blocks.push(currentBlock.join('\n'));
+        currentBlock = [];
       }
-      if (!p) {
-        return '';
+    } else {
+      currentBlock.push(line);
+    }
+  }
+  
+  // Добавить оставшийся блок
+  if (currentBlock.length > 0) {
+    blocks.push(currentBlock.join('\n'));
+  }
+  
+  // 6. Обработать каждый блок правильно
+  html = blocks.map(block => {
+    const trimmed = block.trim();
+    
+    // НЕ оборачивать в <p> если уже есть блочный элемент
+    if (trimmed.match(/^<(h[1-6]|ul|ol|blockquote|div|p|code)/i)) {
+      return trimmed;
+    }
+    
+    // Пусто? Пропустить
+    if (!trimmed) {
+      return '';
+    }
+    
+    // Остальное оборачиваем в <p> ВСЕ СРАЗУ
+    return `<p>${trimmed}</p>`;
+  })
+  .filter(b => b)  // Убрать пустые блоки
+  .join('\n');
+  
+  // 7. ФИНАЛЬНАЯ ВАЛИДАЦИЯ: убедиться что все теги закрыты
+  const tagsToCheck = ['p', 'h1', 'h2', 'h3', 'a', 'b', 'i', 'code'];
+  
+  for (const tag of tagsToCheck) {
+    const openRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
+    const closeRegex = new RegExp(`<\/${tag}>`, 'gi');
+    
+    const opens = (html.match(openRegex) || []).length;
+    const closes = (html.match(closeRegex) || []).length;
+    
+    // Если закрывающих больше - удалить orphaned
+    if (closes > opens) {
+      // Удалить orphaned closing tags
+      while ((html.match(closeRegex) || []).length > (html.match(openRegex) || []).length) {
+        html = html.replace(new RegExp(`<\/${tag}>(?!.*<${tag}[^>]*>)`, 'i'), '');
       }
-      return `<p>${p}</p>`;
-    })
-    .filter(p => p)
-    .join('\n');
-
-  // ✅ ЗАДАЧА 2: Валидировать HTML теги
-  html = validateAndFixHtmlTags(html);
-
-  // Очистить контент перед валидацией
+    }
+    // Если открывающих больше - добавить закрывающие в конец
+    else if (opens > closes) {
+      const diff = opens - closes;
+      html += `</${tag}>`.repeat(diff);
+    }
+  }
+  
+  // 8. Очистить для CDATA
   html = sanitizeForCdata(html);
-
+  
   return html;
 }
 
@@ -425,7 +430,7 @@ function generateRssFeed(articles, imageSizes = []) {
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.4 (W3C Validated)</generator>
+    <generator>ZenMaster RSS Generator v2.5 (W3C Validated - Fixed HTML)</generator>
 `;
 
   // Добавляем каждую статью
@@ -491,8 +496,9 @@ async function main() {
   try {
     console.log('');
     console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.4)     ║');
+    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.5)     ║');
     console.log('║  ✅ All 6 Validation Issues Fixed                 ║');
+    console.log('║  🔧 HTML Fixed at Markdown Conversion Level       ║');
     console.log('╚════════════════════════════════════════════════════╝');
     console.log('');
     console.log(`📋 Mode: ${MODE}`);
@@ -576,7 +582,7 @@ async function main() {
           continue;
         }
 
-        const allowedTags = ['p', 'a', 'b', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'ul', 'ol', 'li', 'figure', 'figcaption', 'img'];
+        const allowedTags = ['p', 'a', 'b', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'ul', 'ol', 'li', 'figure', 'figcaption', 'img', 'code'];
         const tagsInContent = htmlContent.match(/<(\w+)/g) || [];
         const tagsSet = new Set(tagsInContent.map(t => t.slice(1)));
         const invalidTags = Array.from(tagsSet).filter(tag => 
@@ -610,7 +616,7 @@ async function main() {
     console.log('');
     console.log('🔄 Generating RSS feed...');
     console.log('   ✅ Task 1: Adding length to enclosure');
-    console.log('   ✅ Task 2: Validating HTML tags (aggressive orphaned removal)');
+    console.log('   ✅ Task 2: Fixed HTML at markdown conversion');
     console.log('   ✅ Task 3: Added atom:link');
     console.log('   ✅ Task 4: Making GUID unique');
     console.log('   ✅ Task 5: Distributing pubDate by time');
