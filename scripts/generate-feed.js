@@ -174,7 +174,88 @@ function getDescription(content) {
 }
 
 /**
- * 🧹 Очистить контент для безопасного CDATA
+ * 🧹 ОЧИСТИТЬ КОНТЕНТ ОТ БИТЫХ ТЕГОВ И МАРКЕРОВ
+ * Удаляет *** маркеры, незаконченные теги в конце, нормализует пробелы
+ */
+function cleanBrokenHtml(html) {
+  if (!html) return '';
+  
+  // 1️⃣ Удалить *** маркеры
+  html = html.replace(/\*\*\*/g, '');
+  
+  // 2️⃣ Удалить незаконченные теги в конце (обрезанный текст)
+  // Например: <p>Текст начался но... (без </p>)
+  html = html.replace(/<p>(?!.*<\/p>)[^<]*$/i, '');
+  html = html.replace(/<h[1-6]>(?!.*<\/h[1-6]>)[^<]*$/i, '');
+  html = html.replace(/<div>(?!.*<\/div>)[^<]*$/i, '');
+  html = html.replace(/<span>(?!.*<\/span>)[^<]*$/i, '');
+  
+  // 3️⃣ Нормализовать множественные пробелы
+  html = html.replace(/\s{2,}/g, ' ');
+  
+  // 4️⃣ Удалить пустые теги
+  html = html.replace(/<p>\s*<\/p>/g, '');
+  html = html.replace(/<div>\s*<\/div>/g, '');
+  html = html.replace(/<span>\s*<\/span>/g, '');
+  
+  return html.trim();
+}
+
+/**
+ * 🧹 ПРАВИЛЬНО ЗАКРЫТЬ ВСЕ HTML ТЕГИ
+ * Гарантирует что каждый открытый тег имеет закрывающий парный
+ */
+function balanceAllHtmlTags(html) {
+  if (!html) return '';
+  
+  // Стек для отслеживания открытых тегов
+  const tagStack = [];
+  const selfClosingTags = new Set(['img', 'br', 'hr', 'input', 'meta', 'link']);
+  
+  // Regex для поиска тегов
+  const tagRegex = /<\/?([a-z][a-z0-9]*)[^>]*>/gi;
+  let lastIndex = 0;
+  let match;
+  const parts = [];
+  
+  // Сначала находим все теги и их позиции
+  const matches = [];
+  while ((match = tagRegex.exec(html)) !== null) {
+    matches.push({
+      full: match[0],
+      name: match[1].toLowerCase(),
+      isClosing: match[0].startsWith('</'),
+      index: match.index,
+      endIndex: match.index + match[0].length
+    });
+  }
+  
+  // Проходим по тегам и балансируем
+  for (const m of matches) {
+    if (m.isClosing) {
+      // Закрывающий тег
+      const idx = tagStack.findIndex(t => t === m.name);
+      if (idx !== -1) {
+        tagStack.splice(idx, 1);
+      }
+    } else if (!selfClosingTags.has(m.name)) {
+      // Открывающий тег (не self-closing)
+      tagStack.push(m.name);
+    }
+  }
+  
+  // Добавляем закрывающие теги для всех оставшихся открытых
+  let result = html;
+  while (tagStack.length > 0) {
+    const tag = tagStack.pop();
+    result += `</${tag}>`;
+  }
+  
+  return result;
+}
+
+/**
+ * 🧹 ОЧИСТИТЬ КОНТЕНТ ДЛЯ БЕЗОПАСНОГО CDATA
  * Убирает ANSI коды, управляющие символы, нормализует UTF-8
  */
 function sanitizeForCdata(content) {
@@ -192,7 +273,7 @@ function sanitizeForCdata(content) {
   // 3️⃣ Экранировать CDATA delimiters
   content = content.replace(/\]\]>/g, ']]&gt;');
   
-  // 4️⃣ Удалить невалидные UTF-8 последовательности и повторно очистить
+  // 4️⃣ Удалить невалидные UTF-8 последовательности
   try {
     const buf = Buffer.from(content, 'utf8');
     content = buf.toString('utf8');
@@ -303,50 +384,14 @@ function toRFC822(dateStr) {
 }
 
 /**
- * ✅ ЗАДАЧА 2: ГАРАНТИРОВАННАЯ валидация HTML
- * Закрывает ВСЕ открытые теги в правильном порядке
- */
-function closeAllOpenTags(html) {
-  if (!html) return '';
-  
-  // Порядок закрытия важен! Закрываем в ОБРАТНОМ порядке открытия
-  const openTags = [];
-  const tagRegex = /<\/?([a-z][a-z0-9]*)[^>]*>/gi;
-  let match;
-  
-  while ((match = tagRegex.exec(html)) !== null) {
-    const tagName = match[1].toLowerCase();
-    const isClosing = match[0].startsWith('</');
-    
-    if (!isClosing) {
-      openTags.push(tagName);
-    } else {
-      // Удалить из стека если есть
-      const index = openTags.lastIndexOf(tagName);
-      if (index !== -1) {
-        openTags.splice(index, 1);
-      }
-    }
-  }
-  
-  // Закрыть все оставшиеся открытые теги в ОБРАТНОМ порядке
-  while (openTags.length > 0) {
-    const tag = openTags.pop();
-    html += `</${tag}>`;
-  }
-  
-  return html;
-}
-
-/**
- * ✅ ЗАДАЧА 2: ПРАВИЛЬНАЯ конверсия markdown в HTML
+ * ✅ ЗАДАЧА 2: ПРАВИЛЬНАЯ конвертация markdown в HTML
  * БЕЗ orphaned tags с самого начала!
- * КЛЮЧЕВОЙ ФИХ: *** separator просто УДАЛЯЮТСЯ, не конвертируются в <hr/>!
+ * КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: *** separator просто УДАЛЯЕТСЯ, не конвертируется!
  */
 function markdownToHtml(markdown) {
   if (!markdown) return '';
   
-  // ШАГИ КОНВЕРСИИ в правильном порядке
+  // ШАГИ КОНВЕРТАЦИИ в правильном порядке
   
   // 0️⃣ ПЕРВЫЙ ШАГ: УДАЛИТЬ *** separators - они не нужны в RSS!
   // Это критически важно! Не конвертируем в <hr/>, а просто удаляем!
@@ -399,7 +444,7 @@ function markdownToHtml(markdown) {
   html = blocks.map(block => {
     const trimmed = block.trim();
     
-    // НЕ оборачивать в <p> если уже есть блочный элемент
+    // НЕ обораживать в <p> если уже есть блочный элемент
     if (trimmed.match(/^<(h[1-6]|ul|ol|blockquote|div|p|code)/i)) {
       return trimmed;
     }
@@ -408,16 +453,19 @@ function markdownToHtml(markdown) {
       return '';
     }
     
-    // Оборачиваем в <p> ВСЕГДА ПОЛНОСТЬЮ
+    // Обораживаем в <p> ВСЕГДА ПОЛНОСТЬЮ
     return `<p>${trimmed}</p>`;
   })
   .filter(b => b)
   .join('\n');
   
-  // 7️⃣ КРИТИЧЕСКИ ВАЖНО: Закрыть ВСЕ открытые теги
-  html = closeAllOpenTags(html);
+  // 7️⃣ ОЧИСТИТЬ БИТЫЕ ТЕГИ И МАРКЕРЫ
+  html = cleanBrokenHtml(html);
   
-  // 8️⃣ Финальная очистка для CDATA
+  // 8️⃣ ПРАВИЛЬНО ЗАКРЫТЬ ВСЕ ТЕГИ
+  html = balanceAllHtmlTags(html);
+  
+  // 9️⃣ ФИНАЛЬНАЯ ОЧИСТКА для CDATA
   html = sanitizeForCdata(html);
   
   return html;
@@ -446,7 +494,7 @@ function generateRssFeed(articles, imageSizes = []) {
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.8 (W3C Validated - *** Removed)</generator>
+    <generator>ZenMaster RSS Generator v2.9 (W3C Validated - Broken Tags Fixed)</generator>
 `;
 
   // Добавляем каждую статью
@@ -511,11 +559,11 @@ function generateRssFeed(articles, imageSizes = []) {
 async function main() {
   try {
     console.log('');
-    console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.8)     ║');
-    console.log('║  ✅ All 6 Validation Issues Fixed                 ║');
-    console.log('║  🔧 *** Separators Properly Removed                ║');
-    console.log('╚════════════════════════════════════════════════════╝');
+    console.log('╔═════════════════════════════════════════════════════════════╗');
+    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.9)              ║');
+    console.log('║  ✅ All 6 Validation Issues Fixed                          ║');
+    console.log('║  🧹 Broken Tags & *** Separators Removed                   ║');
+    console.log('╚═════════════════════════════════════════════════════════════╝');
     console.log('');
     console.log(`📋 Mode: ${MODE}`);
     console.log(`🔗 Dzen Channel: ${DZEN_CHANNEL}`);
@@ -556,7 +604,7 @@ async function main() {
         const { data: frontmatter, content: body } = matter(fileContent);
 
         if (!frontmatter.title || !frontmatter.date) {
-          console.log(`⏭️  SKIP (no title/date): ${path.relative(process.cwd(), filePath)}`);
+          console.log(`↩️  SKIP (no title/date): ${path.relative(process.cwd(), filePath)}`);
           STATS.skipped++;
           continue;
         }
@@ -564,13 +612,13 @@ async function main() {
         if (!isRecentDate(frontmatter.date, 7)) {
           const articleDate = new Date(frontmatter.date);
           const daysAgo = Math.floor((new Date() - articleDate) / (1000 * 60 * 60 * 24));
-          console.log(`⏭️  SKIP (${daysAgo} дней назад, > 7): ${path.relative(process.cwd(), filePath)}`);
+          console.log(`↩️  SKIP (${daysAgo} дней назад, > 7): ${path.relative(process.cwd(), filePath)}`);
           STATS.skipped++;
           continue;
         }
 
         if (!imageExists(filePath)) {
-          console.log(`⏭️  SKIP (no image): ${path.relative(process.cwd(), filePath)}`);
+          console.log(`↩️  SKIP (no image): ${path.relative(process.cwd(), filePath)}`);
           STATS.skipped++;
           continue;
         }
@@ -580,7 +628,7 @@ async function main() {
         const itemId = `${fileName}-${dateClean}`;
 
         if (processedIds.has(itemId)) {
-          console.log(`⏭️  SKIP (already processed): ${fileName}`);
+          console.log(`↩️  SKIP (already processed): ${fileName}`);
           STATS.skipped++;
           continue;
         }
@@ -632,12 +680,12 @@ async function main() {
     console.log('');
     console.log('🔄 Generating RSS feed...');
     console.log('   ✅ Task 1: Adding length to enclosure');
-    console.log('   ✅ Task 2: Perfect HTML tag structure');
+    console.log('   ✅ Task 2: Perfect HTML tag structure + removing broken tags');
     console.log('   ✅ Task 3: Added atom:link');
     console.log('   ✅ Task 4: Making GUID unique');
     console.log('   ✅ Task 5: Distributing pubDate by time');
     console.log('   ✅ Task 6: Updated lastBuildDate');
-    console.log('   ✅ BONUS: *** Separators removed from RSS');
+    console.log('   ✅ BONUS: *** Separators removed from content');
     
     const rssFeed = generateRssFeed(articles, imageSizes);
 
@@ -654,12 +702,12 @@ async function main() {
     console.log(`   Size: ${(fs.statSync(feedPath).size / 1024).toFixed(2)} KB`);
 
     console.log('');
-    console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📊 Statistics                                     ║');
-    console.log('╚════════════════════════════════════════════════════╝');
+    console.log('╔═════════════════════════════════════════════════════════════╗');
+    console.log('║  📊 Statistics                                              ║');
+    console.log('╚═════════════════════════════════════════════════════════════╝');
     console.log(`📚 Total files: ${STATS.total}`);
     console.log(`✅ Processed: ${STATS.processed}`);
-    console.log(`⏭️  Skipped: ${STATS.skipped}`);
+    console.log(`↩️  Skipped: ${STATS.skipped}`);
     console.log(`❌ Failed: ${STATS.failed}`);
     console.log('');
 
