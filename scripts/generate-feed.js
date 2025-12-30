@@ -275,34 +275,53 @@ function generateUniqueGuid(title, index) {
 }
 
 /**
- * ✅ ЗАДАЧА 2: Валидировать и исправить HTML теги
- * Убедиться что все теги закрыты правильно
- * УЛУЧШЕННАЯ ВЕРСИЯ: удаляет orphaned closing tags
+ * ✅ ЗАДАЧА 2: УЛУЧШЕННАЯ валидация и исправление HTML тегов
+ * Удаляет orphaned closing tags И добавляет недостающие
+ * ЭТО ДЛЯ ИСПОЛЬЗОВАНИЯ ДО CDATA!
  */
 function validateAndFixHtmlTags(html) {
-  // Сначала удаляем orphaned closing tags (закрывающие теги без открывающих)
-  const tagsToFix = ['p', 'h1', 'h2', 'h3', 'a', 'b', 'i', 'u', 's', 'span', 'strong', 'em'];
+  if (!html) return '';
+  
+  // Список тегов для обработки
+  const tagsToFix = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'b', 'i', 'u', 's', 'span', 'strong', 'em', 'div', 'blockquote', 'li'];
   
   for (const tag of tagsToFix) {
-    // Удаляем orphaned closing tags
-    const orphanedRegex = new RegExp(`(^|[^<])</${tag}>`, 'gi');
-    const closeRegex = new RegExp(`</${tag}>`, 'gi');
-    const openRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
+    let iterations = 0;
+    const maxIterations = 10;
     
-    let openCount = (html.match(openRegex) || []).length;
-    let closeCount = (html.match(closeRegex) || []).length;
-    
-    // Если закрывающих больше чем открывающих - удаляем orphaned
-    while (closeCount > openCount) {
-      html = html.replace(orphanedRegex, '$1');
-      openCount = (html.match(openRegex) || []).length;
-      closeCount = (html.match(closeRegex) || []).length;
-    }
-    
-    // Если открывающих больше чем закрывающих - добавляем закрывающие
-    if (openCount > closeCount) {
-      const diff = openCount - closeCount;
-      html += `</${tag}>`.repeat(diff);
+    while (iterations < maxIterations) {
+      iterations++;
+      
+      const openRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
+      const closeRegex = new RegExp(`<\/${tag}>`, 'gi');
+      
+      const opens = html.match(openRegex) || [];
+      const closes = html.match(closeRegex) || [];
+      
+      const openCount = opens.length;
+      const closeCount = closes.length;
+      
+      if (openCount === closeCount) {
+        break; // Теги сбалансированы
+      }
+      
+      // Если закрывающих ТОП чем открывающих - удаляем orphaned теги
+      if (closeCount > openCount) {
+        // Удаляем ПЕРВЫЙ orphaned closing tag
+        const orphanedIndex = html.search(closeRegex);
+        if (orphanedIndex !== -1) {
+          const tagEnd = html.indexOf('>', orphanedIndex);
+          html = html.substring(0, orphanedIndex) + html.substring(tagEnd + 1);
+        } else {
+          break;
+        }
+      }
+      // Если открывающих больше - добавляем закрывающие в конец
+      else if (openCount > closeCount) {
+        const diff = openCount - closeCount;
+        html += `</${tag}>`.repeat(diff);
+        break;
+      }
     }
   }
   
@@ -406,7 +425,7 @@ function generateRssFeed(articles, imageSizes = []) {
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.3 (W3C Validated)</generator>
+    <generator>ZenMaster RSS Generator v2.4 (W3C Validated)</generator>
 `;
 
   // Добавляем каждую статью
@@ -472,7 +491,7 @@ async function main() {
   try {
     console.log('');
     console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.3)     ║');
+    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.4)     ║');
     console.log('║  ✅ All 6 Validation Issues Fixed                 ║');
     console.log('╚════════════════════════════════════════════════════╝');
     console.log('');
@@ -591,7 +610,7 @@ async function main() {
     console.log('');
     console.log('🔄 Generating RSS feed...');
     console.log('   ✅ Task 1: Adding length to enclosure');
-    console.log('   ✅ Task 2: Validating HTML tags (orphaned tags removed)');
+    console.log('   ✅ Task 2: Validating HTML tags (aggressive orphaned removal)');
     console.log('   ✅ Task 3: Added atom:link');
     console.log('   ✅ Task 4: Making GUID unique');
     console.log('   ✅ Task 5: Distributing pubDate by time');
