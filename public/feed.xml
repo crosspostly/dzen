@@ -10,9 +10,9 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Tue, 30 Dec 2025 09:59:54 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 30 Dec 2025 10:04:41 +0300</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.3 (W3C Validated)</generator>
+    <generator>ZenMaster RSS Generator v2.4 (W3C Validated)</generator>
 
     <item>
       <title>Шесть часов у плиты ради мерзкой лжи. Я выбрасываю этот ужин и всю свою прошлую жизнь</title>
