@@ -13,12 +13,15 @@
  * - GUID уникальные ✅ ЗАДАЧА 4
  * - pubDate распределённые по времени ✅ ЗАДАЧА 5
  * - lastBuildDate актуальная ✅ ЗАДАЧА 6
- * - category: native-draft, format-article, index, comment-all ✅
+ * - category: format-article, index, comment-all (БЕЗ native-draft!) ✅
  * - description в CDATA ✅
  * - media:rating ✅
  * - content:encoded в CDATA ✅
  * - *** markers converted to breaks ✅
  * - GitHub images wrapped in <figure> ✅
+ * - pubDate работает как расписание публикации ✅ v2.8
+ * - интервал 90 минут между статьями ✅ v2.8
+ * - публикация со следующего дня в 06:00 ✅ v2.8
  */
 
 import fs from 'fs';
@@ -26,9 +29,9 @@ import path from 'path';
 import matter from 'gray-matter';
 import crypto from 'crypto';
 
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // ⚙️ КОНФИГУРАЦИЯ
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 const MODE = process.argv[2] || 'incremental';
 const BASE_URL = process.env.BASE_URL || 'https://raw.githubusercontent.com/crosspostly/dzen/main';
@@ -43,14 +46,14 @@ const STATS = {
   skipped: 0
 };
 
-// ═══════════════════════════════════════════════════════════════
-// 📂 ФУНКЦИИ
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+// 📄 ФУНКЦИИ
+// ══════════════════════════════════════════════════════════════════════════════
 
 /**
  * 🧹 ВАЖНО! Заменяет *** маркеры на пустые строки для разделения
  * НЕ удаляет, а ПРЕОБРАЗУЕТ в структурные разделители (пустые строки)
- * Это сохраняет визуальное разделение между секциями текста!
+ * Это сохраняет визуальное разделение между сценами/мыслями!
  * 
  * ВАЖНО: *** используются для разделения сцен/мыслей, это структурный элемент!
  * Если просто удалить - текст слипнется в одну простыню.
@@ -86,16 +89,16 @@ function cleanArticleMarkers(content) {
 }
 
 /**
- * 🖼️ Оборачивает GitHub изображения в <figure> теги для Дзена
- * Если в контенте есть ссылки на raw.githubusercontent.com - обёрнуть в <figure>
+ * 🖼️ Обёртывает GitHub изображения в <figure> теги для Дзена
+ * Если в контенте есть ссылки на raw.githubusercontent.com - обёрнут в <figure>
  * @param {string} html - HTML контент
  * @returns {string} HTML с изображениями в <figure>
  */
 function wrapGithubImagesInFigure(html) {
   if (!html) return html;
   
-  // Ищем img теги с GitHub URL'ами и оборачиваем их в figure
-  // Но ТОЛЬКО если они не уже в figure!
+  // Ищем img теги с GitHub URL'ами и обёртываем их в figure
+  // НО ТОЛЬКО если они не уже в figure!
   html = html.replace(
     /<img\s+src=["']https:\/\/raw\.githubusercontent\.com\/[^"']+["'][^>]*>/g,
     (match) => {
@@ -103,7 +106,7 @@ function wrapGithubImagesInFigure(html) {
       if (match.includes('<figure>')) {
         return match; // Уже обёрнут, не трогаем
       }
-      // Оборачиваем в figure
+      // Обёртываем в figure
       return `<figure>${match}</figure>`;
     }
   );
@@ -299,7 +302,7 @@ function isRecentDate(dateStr, maxDaysOld = 7) {
 }
 
 /**
- * Экранировать спецсимволы для XML (но не для CDATA!)
+ * 🧹 Экранировать спецсимволы для XML (но не для CDATA!)
  * & ДОЛЖЕН БЫТЬ ПЕРВЫМ!
  */
 function escapeXml(str) {
@@ -314,21 +317,30 @@ function escapeXml(str) {
 }
 
 /**
- * ✅ ЗАДАЧА 5: Распределить pubDate по времени
- * Берём дату и добавляем разное время в зависимости от индекса
+ * ✅ ЗАДАЧА 5 v2.8: Рассчитать pubDate с интервалом 90 минут
+ * Начинаем со СЛЕДУЮЩЕГО дня в 06:00
+ * Добавляем 90 минут × номер статьи
+ * 
+ * @param {string} baseDate - дата статьи (игнорируется, используется сегодня)
+ * @param {number} index - номер статьи (0, 1, 2...)
+ * @returns {string} дата в RFC822 формате
  */
-function distributePubDate(dateStr, index) {
+function calculateScheduledDate(baseDate, index) {
   try {
-    const date = new Date(dateStr);
-    const times = ['09:00:00', '10:15:00', '11:30:00', '12:45:00'];
-    const time = times[index % times.length];
+    const date = new Date();
     
-    const [hours, minutes, seconds] = time.split(':').map(Number);
-    date.setHours(hours, minutes, seconds);
+    // +1 день со следующего дня
+    date.setDate(date.getDate() + 1);
+    
+    // Устанавливаем начальное время 06:00
+    date.setHours(6, 0, 0, 0);
+    
+    // Добавляем 90 минут × номер статьи
+    date.setMinutes(date.getMinutes() + (90 * index));
     
     return toRFC822(date);
   } catch (e) {
-    return toRFC822(dateStr);
+    return toRFC822(new Date());
   }
 }
 
@@ -474,7 +486,7 @@ function generateRssFeed(articles, imageSizes = []) {
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.7 (Dzen Compliant)</generator>
+    <generator>ZenMaster RSS Generator v2.8 (Scheduled Publishing)</generator>
 `;
 
   // Добавляем каждую статью
@@ -489,8 +501,8 @@ function generateRssFeed(articles, imageSizes = []) {
       itemId
     } = article;
 
-    // ✅ ЗАДАЧА 5: Распределить pubDate по времени
-    const pubDate = distributePubDate(date, i);
+    // ✅ ЗАДАЧА 5 v2.8: Рассчитать pubDate со следующего дня, интервал 90 минут
+    const pubDate = calculateScheduledDate(date, i);
     const escapedTitle = escapeXml(title);
     
     const articleLink = `${DZEN_CHANNEL}/${itemId}`;
@@ -510,8 +522,7 @@ function generateRssFeed(articles, imageSizes = []) {
       <pubDate>${pubDate}</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- Категории Дзена -->
-      <category>native-draft</category>
+      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -535,21 +546,21 @@ function generateRssFeed(articles, imageSizes = []) {
   return rssContent;
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 // 🚀 ОСНОВНОЙ ПРОЦЕСС
-// ═══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
 
 async function main() {
   try {
     console.log('');
-    console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - Dzen Compliant (v2.7)    ║');
-    console.log('║  ✅ All Dzen Requirements Met                     ║');
-    console.log('║  ✅ *** Markers Converted to Breaks               ║');
-    console.log('║  ✅ GitHub Images Wrapped in <figure>             ║');
-    console.log('╚════════════════════════════════════════════════════╝');
+    console.log('╔═════════════════════════════════════════════════════════════════╗');
+    console.log('║  📡 RSS Feed Generator - Dzen Scheduled Publishing (v2.8)      ║');
+    console.log('║  ✅ pubDate Scheduling Enabled (90-min intervals)              ║');
+    console.log('║  ✅ *** Markers Converted to Breaks                            ║');
+    console.log('║  ✅ GitHub Images Wrapped in <figure>                          ║');
+    console.log('╚═════════════════════════════════════════════════════════════════╝');
     console.log('');
-    console.log(`📋 Mode: ${MODE}`);
+    console.log(`📝 Mode: ${MODE}`);
     console.log(`🔗 Dzen Channel: ${DZEN_CHANNEL}`);
     console.log(`📦 Base URL: ${BASE_URL}`);
     console.log('');
@@ -588,7 +599,7 @@ async function main() {
         const { data: frontmatter, content: body } = matter(fileContent);
 
         if (!frontmatter.title || !frontmatter.date) {
-          console.log(`⏭️  SKIP (no title/date): ${path.relative(process.cwd(), filePath)}`);
+          console.log(`↩️  SKIP (no title/date): ${path.relative(process.cwd(), filePath)}`);
           STATS.skipped++;
           continue;
         }
@@ -596,13 +607,13 @@ async function main() {
         if (!isRecentDate(frontmatter.date, 7)) {
           const articleDate = new Date(frontmatter.date);
           const daysAgo = Math.floor((new Date() - articleDate) / (1000 * 60 * 60 * 24));
-          console.log(`⏭️  SKIP (${daysAgo} дней назад, > 7): ${path.relative(process.cwd(), filePath)}`);
+          console.log(`↩️  SKIP (${daysAgo} дней назад, > 7): ${path.relative(process.cwd(), filePath)}`);
           STATS.skipped++;
           continue;
         }
 
         if (!imageExists(filePath)) {
-          console.log(`⏭️  SKIP (no image): ${path.relative(process.cwd(), filePath)}`);
+          console.log(`↩️  SKIP (no image): ${path.relative(process.cwd(), filePath)}`);
           STATS.skipped++;
           continue;
         }
@@ -612,7 +623,7 @@ async function main() {
         const itemId = `${fileName}-${dateClean}`;
 
         if (processedIds.has(itemId)) {
-          console.log(`⏭️  SKIP (already processed): ${fileName}`);
+          console.log(`↩️  SKIP (already processed): ${fileName}`);
           STATS.skipped++;
           continue;
         }
@@ -671,12 +682,13 @@ async function main() {
     console.log('   ✅ Task 2: Validating HTML tags');
     console.log('   ✅ Task 3: Added atom:link');
     console.log('   ✅ Task 4: Making GUID unique');
-    console.log('   ✅ Task 5: Distributing pubDate by time');
+    console.log('   ✅ Task 5 v2.8: Calculating scheduled dates (90-min intervals, starting tomorrow 06:00)');
     console.log('   ✅ Task 6: Updated lastBuildDate');
     console.log('   ✅ DZEN: <description> in CDATA');
-    console.log('   ✅ DZEN: Complete category elements');
+    console.log('   ✅ DZEN: Category format-article, index, comment-all (NO native-draft!)');
     console.log('   ✅ DZEN: GitHub images wrapped in <figure>');
     console.log('   ✅ STRUCTURE: *** markers converted to breaks');
+    console.log('   ✅ v2.8: pubDate works as automatic schedule!');
     
     const rssFeed = generateRssFeed(articles, imageSizes);
 
@@ -693,12 +705,12 @@ async function main() {
     console.log(`   Size: ${(fs.statSync(feedPath).size / 1024).toFixed(2)} KB`);
 
     console.log('');
-    console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📊 Statistics                                     ║');
-    console.log('╚════════════════════════════════════════════════════╝');
+    console.log('╔═════════════════════════════════════════════════════════════════╗');
+    console.log('║  📊 Statistics                                                 ║');
+    console.log('╚═════════════════════════════════════════════════════════════════╝');
     console.log(`📚 Total files: ${STATS.total}`);
     console.log(`✅ Processed: ${STATS.processed}`);
-    console.log(`⏭️  Skipped: ${STATS.skipped}`);
+    console.log(`↩️  Skipped: ${STATS.skipped}`);
     console.log(`❌ Failed: ${STATS.failed}`);
     console.log('');
 
@@ -709,7 +721,24 @@ async function main() {
 
     console.log('✅ RSS feed generation completed successfully!');
     console.log('');
-    console.log('🔗 Next: Validate at https://validator.w3.org/feed/');
+    console.log('📋 SCHEDULE (Starting tomorrow at 06:00, 90-min intervals):');
+    const now = new Date();
+    for (let i = 0; i < Math.min(articles.length, 10); i++) {
+      const date = new Date();
+      date.setDate(date.getDate() + 1);
+      date.setHours(6, 0, 0, 0);
+      date.setMinutes(date.getMinutes() + (90 * i));
+      const timeStr = date.toLocaleString('ru-RU', { 
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      });
+      console.log(`   ⏰ ${timeStr} - ${articles[i].title.substring(0, 50)}...`);
+    }
+    if (articles.length > 10) {
+      console.log(`   ... и ещё ${articles.length - 10} статей`);
+    }
+    console.log('');
+    console.log('🔗 Validate at https://validator.w3.org/feed/');
     console.log('');
 
   } catch (error) {
