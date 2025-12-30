@@ -50,6 +50,9 @@ jobs:
     - name: Generate RSS feed
       run: node scripts/generate-feed.js ${{ github.event.inputs.mode }}
 
+    - name: Validate RSS feed
+      run: node scripts/validate-rss.js public/feed.xml
+
     - name: Commit and push if changed
       run: |
         git config --local user.email "action@github.com"
