@@ -277,30 +277,32 @@ function generateUniqueGuid(title, index) {
 /**
  * ✅ ЗАДАЧА 2: Валидировать и исправить HTML теги
  * Убедиться что все теги закрыты правильно
+ * УЛУЧШЕННАЯ ВЕРСИЯ: удаляет orphaned closing tags
  */
 function validateAndFixHtmlTags(html) {
-  const tags = ['p', 'h1', 'h2', 'h3', 'a', 'b', 'i'];
+  // Сначала удаляем orphaned closing tags (закрывающие теги без открывающих)
+  const tagsToFix = ['p', 'h1', 'h2', 'h3', 'a', 'b', 'i', 'u', 's', 'span', 'strong', 'em'];
   
-  for (const tag of tags) {
-    const openRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
+  for (const tag of tagsToFix) {
+    // Удаляем orphaned closing tags
+    const orphanedRegex = new RegExp(`(^|[^<])</${tag}>`, 'gi');
     const closeRegex = new RegExp(`</${tag}>`, 'gi');
+    const openRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
     
-    const openCount = (html.match(openRegex) || []).length;
-    const closeCount = (html.match(closeRegex) || []).length;
+    let openCount = (html.match(openRegex) || []).length;
+    let closeCount = (html.match(closeRegex) || []).length;
     
+    // Если закрывающих больше чем открывающих - удаляем orphaned
+    while (closeCount > openCount) {
+      html = html.replace(orphanedRegex, '$1');
+      openCount = (html.match(openRegex) || []).length;
+      closeCount = (html.match(closeRegex) || []).length;
+    }
+    
+    // Если открывающих больше чем закрывающих - добавляем закрывающие
     if (openCount > closeCount) {
       const diff = openCount - closeCount;
       html += `</${tag}>`.repeat(diff);
-      console.log(`   ✓ Fixed <${tag}>: added ${diff} closing tag(s)`);
-    } else if (closeCount > openCount) {
-      const diff = closeCount - openCount;
-      for (let i = 0; i < diff; i++) {
-        const lastIndex = html.lastIndexOf(`</${tag}>`);
-        if (lastIndex !== -1) {
-          html = html.substring(0, lastIndex) + html.substring(lastIndex + tag.length + 3);
-        }
-      }
-      console.log(`   ✓ Fixed <${tag}>: removed ${diff} extra closing tag(s)`);
     }
   }
   
@@ -589,7 +591,7 @@ async function main() {
     console.log('');
     console.log('🔄 Generating RSS feed...');
     console.log('   ✅ Task 1: Adding length to enclosure');
-    console.log('   ✅ Task 2: Validating HTML tags');
+    console.log('   ✅ Task 2: Validating HTML tags (orphaned tags removed)');
     console.log('   ✅ Task 3: Added atom:link');
     console.log('   ✅ Task 4: Making GUID unique');
     console.log('   ✅ Task 5: Distributing pubDate by time');
