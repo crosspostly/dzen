@@ -1,0 +1,31 @@
+{
+  "version": "4.0",
+  "generatedAt": 1767113587646,
+  "config": {
+    "articleCount": 5,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 5,
+  "totalCharacters": 82858,
+  "totalImages": 5,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2025-12-30/ya-byla-v-shoke-ya-uznala-pravdu-o-muzhe-kogda-odn.jpg",
+      "articles/women-35-60/2025-12-30/ya-byla-v-uzhase-kogda-otkryla-pismo-mamy-i-ponyal.jpg",
+      "articles/women-35-60/2025-12-30/bolno-no-ya-osoznala-pravdu-moy-idealnyy-muzh-mons.jpg",
+      "articles/women-35-60/2025-12-30/ya-byla-v-shoke-kogda-otkryla-komod-i-ponyala-mama.jpg",
+      "articles/women-35-60/2025-12-30/menya-zatryaslo-kogda-ya-nashla-to-foto-i-ponyala-.jpg"
+    ],
+    "report": "articles/women-35-60/2025-12-30/REPORT.md"
+  }
+}
