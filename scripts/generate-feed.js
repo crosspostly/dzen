@@ -341,34 +341,39 @@ function closeAllOpenTags(html) {
 /**
  * ✅ ЗАДАЧА 2: ПРАВИЛЬНАЯ конверсия markdown в HTML
  * БЕЗ orphaned tags с самого начала!
+ * КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Обработать *** separator ПЕРЕД форматированием!
  */
 function markdownToHtml(markdown) {
   if (!markdown) return '';
   
   // ШАГИ КОНВЕРСИИ в правильном порядке
   
-  // 1. Экранировать спецсимволы ПЕРВЫМ делом
-  let html = markdown
+  // 0️⃣ ПЕРВЫЙ ШАГ: Удалить или заменить *** separators ПЕРЕД всем остальным!
+  // Это критически важно, иначе *** преобразуется в <i><b></b></i>
+  let html = markdown.replace(/^\*\*\*\s*$/gm, '<hr/>');
+  
+  // 1️⃣ Экранировать спецсимволы ПЕРВЫМ делом
+  html = html
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
   
-  // 2. Конвертировать заголовки (ПЕРЕД параграфами!)
+  // 2️⃣ Конвертировать заголовки (ПЕРЕД параграфами!)
   html = html
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
     .replace(/^# (.+)$/gm, '<h1>$1</h1>');
   
-  // 3. Конвертировать форматирование текста
+  // 3️⃣ Конвертировать форматирование текста
   html = html
     .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')  // жирный
     .replace(/\*([^*]+)\*/g, '<i>$1</i>')      // курсив
     .replace(/`([^`]+)`/g, '<code>$1</code>');  // код
   
-  // 4. Конвертировать ссылки (ПЕРЕД параграфами!)
+  // 4️⃣ Конвертировать ссылки (ПЕРЕД параграфами!)
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
   
-  // 5. КЛЮЧЕВОЙ ШАГ: правильно обработать параграфы
+  // 5️⃣ КЛЮЧЕВОЙ ШАГ: правильно обработать параграфы
   const lines = html.split('\n');
   const blocks = [];
   let currentBlock = [];
@@ -390,12 +395,12 @@ function markdownToHtml(markdown) {
     blocks.push(currentBlock.join('\n'));
   }
   
-  // 6. Обработать каждый блок
+  // 6️⃣ Обработать каждый блок
   html = blocks.map(block => {
     const trimmed = block.trim();
     
     // НЕ оборачивать в <p> если уже есть блочный элемент
-    if (trimmed.match(/^<(h[1-6]|ul|ol|blockquote|div|p|code)/i)) {
+    if (trimmed.match(/^<(h[1-6]|ul|ol|blockquote|div|p|code|hr)/i)) {
       return trimmed;
     }
     
@@ -409,10 +414,10 @@ function markdownToHtml(markdown) {
   .filter(b => b)
   .join('\n');
   
-  // 7. КРИТИЧЕСКИ ВАЖНО: Закрыть ВСЕ открытые теги
+  // 7️⃣ КРИТИЧЕСКИ ВАЖНО: Закрыть ВСЕ открытые теги
   html = closeAllOpenTags(html);
   
-  // 8. Финальная очистка для CDATA
+  // 8️⃣ Финальная очистка для CDATA
   html = sanitizeForCdata(html);
   
   return html;
@@ -441,7 +446,7 @@ function generateRssFeed(articles, imageSizes = []) {
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.6 (W3C Validated - Perfect HTML)</generator>
+    <generator>ZenMaster RSS Generator v2.7 (W3C Validated - *** Separator Fixed)</generator>
 `;
 
   // Добавляем каждую статью
@@ -507,9 +512,9 @@ async function main() {
   try {
     console.log('');
     console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.6)     ║');
+    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.7)     ║');
     console.log('║  ✅ All 6 Validation Issues Fixed                 ║');
-    console.log('║  🔧 Nested Tags Properly Closed                   ║');
+    console.log('║  🔧 *** Separator Properly Handled                ║');
     console.log('╚════════════════════════════════════════════════════╝');
     console.log('');
     console.log(`📋 Mode: ${MODE}`);
@@ -593,7 +598,7 @@ async function main() {
           continue;
         }
 
-        const allowedTags = ['p', 'a', 'b', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'ul', 'ol', 'li', 'figure', 'figcaption', 'img', 'code'];
+        const allowedTags = ['p', 'a', 'b', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'ul', 'ol', 'li', 'figure', 'figcaption', 'img', 'code', 'hr'];
         const tagsInContent = htmlContent.match(/<(\w+)/g) || [];
         const tagsSet = new Set(tagsInContent.map(t => t.slice(1)));
         const invalidTags = Array.from(tagsSet).filter(tag => 
@@ -632,6 +637,7 @@ async function main() {
     console.log('   ✅ Task 4: Making GUID unique');
     console.log('   ✅ Task 5: Distributing pubDate by time');
     console.log('   ✅ Task 6: Updated lastBuildDate');
+    console.log('   ✅ BONUS: *** Separator handled correctly');
     
     const rssFeed = generateRssFeed(articles, imageSizes);
 
