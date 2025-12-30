@@ -341,16 +341,16 @@ function closeAllOpenTags(html) {
 /**
  * ✅ ЗАДАЧА 2: ПРАВИЛЬНАЯ конверсия markdown в HTML
  * БЕЗ orphaned tags с самого начала!
- * КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Обработать *** separator ПЕРЕД форматированием!
+ * КЛЮЧЕВОЙ ФИХ: *** separator просто УДАЛЯЮТСЯ, не конвертируются в <hr/>!
  */
 function markdownToHtml(markdown) {
   if (!markdown) return '';
   
   // ШАГИ КОНВЕРСИИ в правильном порядке
   
-  // 0️⃣ ПЕРВЫЙ ШАГ: Удалить или заменить *** separators ПЕРЕД всем остальным!
-  // Это критически важно, иначе *** преобразуется в <i><b></b></i>
-  let html = markdown.replace(/^\*\*\*\s*$/gm, '<hr/>');
+  // 0️⃣ ПЕРВЫЙ ШАГ: УДАЛИТЬ *** separators - они не нужны в RSS!
+  // Это критически важно! Не конвертируем в <hr/>, а просто удаляем!
+  let html = markdown.replace(/^\*\*\*\s*$/gm, '');
   
   // 1️⃣ Экранировать спецсимволы ПЕРВЫМ делом
   html = html
@@ -400,7 +400,7 @@ function markdownToHtml(markdown) {
     const trimmed = block.trim();
     
     // НЕ оборачивать в <p> если уже есть блочный элемент
-    if (trimmed.match(/^<(h[1-6]|ul|ol|blockquote|div|p|code|hr)/i)) {
+    if (trimmed.match(/^<(h[1-6]|ul|ol|blockquote|div|p|code)/i)) {
       return trimmed;
     }
     
@@ -446,7 +446,7 @@ function generateRssFeed(articles, imageSizes = []) {
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.7 (W3C Validated - *** Separator Fixed)</generator>
+    <generator>ZenMaster RSS Generator v2.8 (W3C Validated - *** Removed)</generator>
 `;
 
   // Добавляем каждую статью
@@ -512,9 +512,9 @@ async function main() {
   try {
     console.log('');
     console.log('╔════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.7)     ║');
+    console.log('║  📡 RSS Feed Generator - W3C Validated (v2.8)     ║');
     console.log('║  ✅ All 6 Validation Issues Fixed                 ║');
-    console.log('║  🔧 *** Separator Properly Handled                ║');
+    console.log('║  🔧 *** Separators Properly Removed                ║');
     console.log('╚════════════════════════════════════════════════════╝');
     console.log('');
     console.log(`📋 Mode: ${MODE}`);
@@ -598,7 +598,7 @@ async function main() {
           continue;
         }
 
-        const allowedTags = ['p', 'a', 'b', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'ul', 'ol', 'li', 'figure', 'figcaption', 'img', 'code', 'hr'];
+        const allowedTags = ['p', 'a', 'b', 'i', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'ul', 'ol', 'li', 'figure', 'figcaption', 'img', 'code'];
         const tagsInContent = htmlContent.match(/<(\w+)/g) || [];
         const tagsSet = new Set(tagsInContent.map(t => t.slice(1)));
         const invalidTags = Array.from(tagsSet).filter(tag => 
@@ -637,7 +637,7 @@ async function main() {
     console.log('   ✅ Task 4: Making GUID unique');
     console.log('   ✅ Task 5: Distributing pubDate by time');
     console.log('   ✅ Task 6: Updated lastBuildDate');
-    console.log('   ✅ BONUS: *** Separator handled correctly');
+    console.log('   ✅ BONUS: *** Separators removed from RSS');
     
     const rssFeed = generateRssFeed(articles, imageSizes);
 
