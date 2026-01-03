@@ -10,19 +10,19 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Sat, 03 Jan 2026 07:23:58 +0300</lastBuildDate>
+    <lastBuildDate>Sat, 03 Jan 2026 08:16:26 +0300</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.8 (Scheduled Publishing)</generator>
+    <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
     <item>
       <title>Больно, но я осознала правду: мой идеальный муж — монстр, и я больше не буду жертвой</title>
       <description><![CDATA[«У тебя же всё есть. Почему ты опять недовольна?» — его голос хлещет по лицу, как мокрое полотенце. Я смотрю на отражение в панорамном окне. Дорогой шелк. Идеальная укладка. И абсолютная пустота в...]]></description>
       <link>https://dzen.ru/potemki/bolno-no-ya-osoznala-pravdu-moy-idealnyy-muzh-mons-20251230</link>
       <guid isPermaLink="false">guid-271c4694-1</guid>
-      <pubDate>Sun, 04 Jan 2026 06:00:00 +0300</pubDate>
+      <pubDate>Sat, 03 Jan 2026 11:16:26 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
+      <!-- ✅ v2.10: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -42,10 +42,10 @@
       <description><![CDATA[— Мам, это ты? Тишина в ответ. Только шорох пыльной бумаги и мое собственное прерывистое дыхание. В руках — глянцевый прямоугольник, вытянутый из самого низа старой обувной коробки. Что делать,...]]></description>
       <link>https://dzen.ru/potemki/menya-zatryaslo-kogda-ya-nashla-to-foto-i-ponyala--20251230</link>
       <guid isPermaLink="false">guid-dd916aba-2</guid>
-      <pubDate>Sun, 04 Jan 2026 07:30:00 +0300</pubDate>
+      <pubDate>Sat, 03 Jan 2026 12:46:26 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
+      <!-- ✅ v2.10: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -65,10 +65,10 @@
       <description><![CDATA[«Отойди от него! Не смей даже касаться!» — крик матери до сих пор звенел в ушах, хотя её не было в доме уже неделю. Я стояла перед этим старым, облезлым комодом. Он пах пылью и чем-то...]]></description>
       <link>https://dzen.ru/potemki/ya-byla-v-shoke-kogda-otkryla-komod-i-ponyala-mama-20251230</link>
       <guid isPermaLink="false">guid-6afcd318-3</guid>
-      <pubDate>Sun, 04 Jan 2026 09:00:00 +0300</pubDate>
+      <pubDate>Sat, 03 Jan 2026 11:16:26 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
+      <!-- ✅ v2.10: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -88,10 +88,10 @@
       <description><![CDATA[— Дорогой, ты не заглядывал сегодня в аптеку на углу? — спросила я, просто чтобы нарушить тишину. Он вздрогнул. Резко. Словно я коснулась оголенного провода. Чашка в его руке мелко задрожала,...]]></description>
       <link>https://dzen.ru/potemki/ya-byla-v-shoke-ya-uznala-pravdu-o-muzhe-kogda-odn-20251230</link>
       <guid isPermaLink="false">guid-ca6258db-4</guid>
-      <pubDate>Sun, 04 Jan 2026 10:30:00 +0300</pubDate>
+      <pubDate>Sat, 03 Jan 2026 12:46:26 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
+      <!-- ✅ v2.10: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -111,10 +111,10 @@
       <description><![CDATA[Почему мама прятала этот ключ даже в последние дни своей жизни? Руки дрожали. Холодный металл больно впивался в ладонь. Она уходила, но до последнего вздоха держала его под подушкой. Прятала под...]]></description>
       <link>https://dzen.ru/potemki/ya-byla-v-uzhase-kogda-otkryla-pismo-mamy-i-ponyal-20251230</link>
       <guid isPermaLink="false">guid-6a783530-5</guid>
-      <pubDate>Sun, 04 Jan 2026 12:00:00 +0300</pubDate>
+      <pubDate>Sat, 03 Jan 2026 14:16:26 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
+      <!-- ✅ v2.10: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
