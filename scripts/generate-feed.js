@@ -19,9 +19,9 @@
  * - content:encoded в CDATA ✅
  * - *** markers converted to breaks ✅
  * - GitHub images wrapped in <figure> ✅
- * - pubDate работает как расписание публикации ✅ v2.8
- * - интервал 90 минут между статьями ✅ v2.8
- * - публикация со следующего дня в 06:00 ✅ v2.8
+ * - pubDate работает как расписание публикации ✅ v2.9
+ * - интервал 90 минут между статьями ✅ v2.9
+ * - ПРАВИЛЬНАЯ логика: если < 6:00 MSK → сегодня, иначе завтра ✅ v2.9
  */
 
 import fs from 'fs';
@@ -38,6 +38,10 @@ const BASE_URL = process.env.BASE_URL || 'https://raw.githubusercontent.com/cros
 const DZEN_CHANNEL = 'https://dzen.ru/potemki';  // ✅ ТВОЙ КАНАЛ!
 const RSS_URL = 'https://dzen-livid.vercel.app/feed.xml';  // URL фида для atom:link
 const DEFAULT_IMAGE_SIZE = 50000;  // 50KB - дефолтный размер для enclosure length
+
+// ✅ v2.9: Constants for smart scheduling
+const PUBLICATION_HOUR = 6;     // Hour of publication in MSK (UTC+3)
+const INTERVAL_MINUTES = 90;    // Interval between publications
 
 const STATS = {
   total: 0,
@@ -317,29 +321,45 @@ function escapeXml(str) {
 }
 
 /**
- * ✅ ЗАДАЧА 5 v2.8: Рассчитать pubDate с интервалом 90 минут
- * Начинаем со СЛЕДУЮЩЕГО дня в 06:00
- * Добавляем 90 минут × номер статьи
+ * ✅ ЗАДАЧА 5 v2.9: Generate pubDate with correct logic for scheduled publishing
  * 
- * @param {string} baseDate - дата статьи (игнорируется, используется сегодня)
+ * LOGIC (Variant A - Fixed Time):
+ * - If current time MSK < 6:00 → schedule for TODAY at 6:00 MSK
+ * - If current time MSK >= 6:00 → schedule for TOMORROW at 6:00 MSK
+ * - Add 90-minute intervals for each subsequent article
+ * 
+ * @param {string} baseDate - дата статьи (игнорируется, используется текущее время MSK)
  * @param {number} index - номер статьи (0, 1, 2...)
- * @returns {string} дата в RFC822 формате
+ * @returns {string} дата в RFC822 формате: "Sat, 03 Jan 2026 06:00:00 +0300"
  */
-function calculateScheduledDate(baseDate, index) {
+function generatePubDate(baseDate, index) {
   try {
-    const date = new Date();
+    // Get current time (UTC)
+    const now = new Date();
     
-    // +1 день со следующего дня
-    date.setDate(date.getDate() + 1);
+    // Convert to MSK (UTC+3) to check current hour
+    const mskTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    const currentHourMSK = mskTime.getUTCHours();
     
-    // Устанавливаем начальное время 06:00
-    date.setHours(6, 0, 0, 0);
+    // Create publication date (start from UTC now)
+    const pubDate = new Date(now);
     
-    // Добавляем 90 минут × номер статьи
-    date.setMinutes(date.getMinutes() + (90 * index));
+    // CRITICAL LOGIC: If current time < 6:00 MSK, use today; else use tomorrow
+    if (currentHourMSK < PUBLICATION_HOUR) {
+      // Publish TODAY at 6:00 MSK = 3:00 UTC
+      pubDate.setUTCHours(PUBLICATION_HOUR - 3, 0, 0, 0);
+    } else {
+      // Publish TOMORROW at 6:00 MSK = 3:00 UTC
+      pubDate.setDate(pubDate.getDate() + 1);
+      pubDate.setUTCHours(PUBLICATION_HOUR - 3, 0, 0, 0);
+    }
     
-    return toRFC822(date);
+    // Add interval based on article index (90 minutes each)
+    pubDate.setMinutes(pubDate.getMinutes() + (INTERVAL_MINUTES * index));
+    
+    return toRFC822(pubDate);
   } catch (e) {
+    console.error(`❌ ERROR in generatePubDate: ${e.message}`);
     return toRFC822(new Date());
   }
 }
@@ -388,6 +408,7 @@ function validateAndFixHtmlTags(html) {
 
 /**
  * Конвертировать дату в RFC822 формат с часовым поясом +0300 (Москва)
+ * ВАЖНО: Конвертирует UTC дату в MSK для правильного отображения
  */
 function toRFC822(dateStr) {
   try {
@@ -396,13 +417,16 @@ function toRFC822(dateStr) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
-    const dayName = days[date.getDay()];
-    const dayNum = String(date.getDate()).padStart(2, '0');
-    const monthName = months[date.getMonth()];
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
+    // IMPORTANT: Convert UTC date to MSK (UTC+3) for proper display
+    const mskDate = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+    
+    const dayName = days[mskDate.getUTCDay()];
+    const dayNum = String(mskDate.getUTCDate()).padStart(2, '0');
+    const monthName = months[mskDate.getUTCMonth()];
+    const year = mskDate.getUTCFullYear();
+    const hours = String(mskDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(mskDate.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(mskDate.getUTCSeconds()).padStart(2, '0');
     
     return `${dayName}, ${dayNum} ${monthName} ${year} ${hours}:${minutes}:${seconds} +0300`;
   } catch (e) {
@@ -410,7 +434,8 @@ function toRFC822(dateStr) {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${days[now.getDay()]}, ${String(now.getDate()).padStart(2, '0')} ${months[now.getMonth()]} ${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} +0300`;
+    const mskDate = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    return `${days[mskDate.getUTCDay()]}, ${String(mskDate.getUTCDate()).padStart(2, '0')} ${months[mskDate.getUTCMonth()]} ${mskDate.getUTCFullYear()} ${String(mskDate.getUTCHours()).padStart(2, '0')}:${String(mskDate.getUTCMinutes()).padStart(2, '0')}:${String(mskDate.getUTCSeconds()).padStart(2, '0')} +0300`;
   }
 }
 
@@ -486,7 +511,7 @@ function generateRssFeed(articles, imageSizes = []) {
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.8 (Scheduled Publishing)</generator>
+    <generator>ZenMaster RSS Generator v2.9 (Scheduled Publishing with Fixed Time)</generator>
 `;
 
   // Добавляем каждую статью
@@ -501,8 +526,8 @@ function generateRssFeed(articles, imageSizes = []) {
       itemId
     } = article;
 
-    // ✅ ЗАДАЧА 5 v2.8: Рассчитать pubDate со следующего дня, интервал 90 минут
-    const pubDate = calculateScheduledDate(date, i);
+    // ✅ ЗАДАЧА 5 v2.9: Correct pubDate logic (if < 6:00 → today, else → tomorrow)
+    const pubDate = generatePubDate(date, i);
     const escapedTitle = escapeXml(title);
     
     const articleLink = `${DZEN_CHANNEL}/${itemId}`;
@@ -522,7 +547,7 @@ function generateRssFeed(articles, imageSizes = []) {
       <pubDate>${pubDate}</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- ✅ v2.8: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
+      <!-- ✅ v2.9: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -554,8 +579,8 @@ async function main() {
   try {
     console.log('');
     console.log('╔═════════════════════════════════════════════════════════════════╗');
-    console.log('║  📡 RSS Feed Generator - Dzen Scheduled Publishing (v2.8)      ║');
-    console.log('║  ✅ pubDate Scheduling Enabled (90-min intervals)              ║');
+    console.log('║  📡 RSS Feed Generator - Dzen Scheduled Publishing (v2.9)      ║');
+    console.log('║  ✅ pubDate Scheduling Fixed (smart logic)                      ║');
     console.log('║  ✅ *** Markers Converted to Breaks                            ║');
     console.log('║  ✅ GitHub Images Wrapped in <figure>                          ║');
     console.log('╚═════════════════════════════════════════════════════════════════╝');
@@ -682,13 +707,13 @@ async function main() {
     console.log('   ✅ Task 2: Validating HTML tags');
     console.log('   ✅ Task 3: Added atom:link');
     console.log('   ✅ Task 4: Making GUID unique');
-    console.log('   ✅ Task 5 v2.8: Calculating scheduled dates (90-min intervals, starting tomorrow 06:00)');
+    console.log('   ✅ Task 5 v2.9: Fixed pubDate logic (if current < 6:00 → today, else → tomorrow)');
     console.log('   ✅ Task 6: Updated lastBuildDate');
     console.log('   ✅ DZEN: <description> in CDATA');
     console.log('   ✅ DZEN: Category format-article, index, comment-all (NO native-draft!)');
     console.log('   ✅ DZEN: GitHub images wrapped in <figure>');
     console.log('   ✅ STRUCTURE: *** markers converted to breaks');
-    console.log('   ✅ v2.8: pubDate works as automatic schedule!');
+    console.log('   ✅ v2.9: pubDate works as automatic schedule with correct timezone!');
     
     const rssFeed = generateRssFeed(articles, imageSizes);
 
@@ -721,12 +746,19 @@ async function main() {
 
     console.log('✅ RSS feed generation completed successfully!');
     console.log('');
-    console.log('📋 SCHEDULE (Starting tomorrow at 06:00, 90-min intervals):');
+    console.log('📋 SCHEDULE (Smart: if current < 6:00 AM MSK → today, else → tomorrow, 90-min intervals):');
     const now = new Date();
     for (let i = 0; i < Math.min(articles.length, 10); i++) {
       const date = new Date();
-      date.setDate(date.getDate() + 1);
-      date.setHours(6, 0, 0, 0);
+      const mskTime = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+      if (mskTime.getUTCHours() < 6) {
+        // Publish today
+        date.setUTCHours(3, 0, 0, 0);
+      } else {
+        // Publish tomorrow
+        date.setDate(date.getDate() + 1);
+        date.setUTCHours(3, 0, 0, 0);
+      }
       date.setMinutes(date.getMinutes() + (90 * i));
       const timeStr = date.toLocaleString('ru-RU', { 
         year: 'numeric', month: '2-digit', day: '2-digit',
