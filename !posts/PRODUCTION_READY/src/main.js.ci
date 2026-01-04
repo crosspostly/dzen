@@ -1,16 +1,10 @@
-// 🤖 CI/CD Version - Cookies from Environment Variable (Maximum Security)
-// Uses DZEN_COOKIES_JSON environment variable passed by GitHub Actions
-// NO SENSITIVE DATA IN FILES!
-
+// 🤖 CI/CD Version - Full Automation with Environment Variable Cookies
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
 const path = require('path');
 
 // 📋 Configuration
 const CONFIG = {
-  // 🔐 SECURITY: Read cookies from environment variable (CI/CD mode)
-  // Local: Read from config/cookies.json
-  // CI/CD: Read from DZEN_COOKIES_JSON env var
   cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
   cookiesPath: path.join(__dirname, '../config/cookies.json'),
   feedPath: path.join(__dirname, '../public/feed.xml'),
@@ -28,7 +22,7 @@ console.log(`   Cookies source: ${CONFIG.cookiesSource}`);
 if (CONFIG.cookiesSource === 'FILE') {
   console.log(`   Cookies file: ${CONFIG.cookiesPath}`);
 } else {
-  console.log(`   Cookies from: DZEN_COOKIES_JSON environment variable (SECURE!)`)
+  console.log(`   Cookies from: DZEN_COOKIES_JSON environment variable (SECURE!)`);
 }
 console.log(`   Headless mode: ${CONFIG.headless}`);
 console.log(`   Environment: ${process.env.CI ? 'CI/CD (GitHub Actions)' : 'Local'}`);
@@ -66,17 +60,13 @@ async function getArticlesFromFeed() {
       const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<content:encoded>(.*?)<\/content:encoded>/);
       const content = contentMatch ? contentMatch[1] : description;
       
-      // 🔑 Create unique hash for article (prevents duplicates)
-      const articleHash = generateHash(title + content);
-      
       items.push({
         title,
         description,
         link,
         pubDate,
         imageUrl,
-        content,
-        hash: articleHash
+        content
       });
     }
     
@@ -86,12 +76,6 @@ async function getArticlesFromFeed() {
     console.error(`❌ Error reading feed: ${error.message}`);
     return [];
   }
-}
-
-// 🔐 Generate hash for article content (deduplication)
-function generateHash(content) {
-  const crypto = require('crypto');
-  return crypto.createHash('md5').update(content).digest('hex');
 }
 
 // 🎯 Process HTML content
@@ -129,7 +113,7 @@ async function loadCookies() {
     let cookiesJson;
     
     if (process.env.CI) {
-      // 🔐 CI/CD Mode: Read from environment variable (MAXIMUM SECURITY!)
+      // 🔐 CI/CD Mode: Read from environment variable
       cookiesJson = process.env.DZEN_COOKIES_JSON;
       
       if (!cookiesJson || cookiesJson.length < 10) {
@@ -162,70 +146,43 @@ async function loadCookies() {
   }
 }
 
-// 📖 Read published articles with multiple deduplication methods
+// 📖 Read published articles
 async function getPublishedArticles() {
   try {
     const content = await fs.readFile(CONFIG.historyPath, 'utf8');
     const lines = content.split('\n').filter(line => line.trim() !== '');
     const published = [];
-    const publishedHashes = new Set();
     
     for (const line of lines) {
       const match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (.+)/);
       if (match) {
-        const title = match[2];
         published.push({
           date: match[1],
-          title: title
+          title: match[2]
         });
-        
-        const titleHash = generateHash(title);
-        publishedHashes.add(titleHash);
       }
     }
     
     console.log(`📋 Found ${published.length} previously published articles`);
-    return { published, publishedHashes };
+    return published;
   } catch (error) {
     console.log(`ℹ️  History file not found (${error.message})`);
-    return { published: [], publishedHashes: new Set() };
+    return [];
   }
 }
 
-// ✅ Check if article is published (multiple checks)
-function isArticlePublished(article, publishedData) {
-  const { published, publishedHashes } = publishedData;
-  
-  const titleMatched = published.some(pub => pub.title.trim() === article.title.trim());
-  if (titleMatched) {
-    console.log(`  ⚠️  [Check 1] Article title already published`);
-    return true;
-  }
-  
-  const titleHash = generateHash(article.title);
-  if (publishedHashes.has(titleHash)) {
-    console.log(`  ⚠️  [Check 2] Article hash already published`);
-    return true;
-  }
-  
-  const contentHash = generateHash(article.content);
-  const contentHashKey = `CONTENT_${contentHash}`;
-  if (publishedHashes.has(contentHashKey)) {
-    console.log(`  ⚠️  [Check 3] Article content already published`);
-    return true;
-  }
-  
-  return false;
+function isArticlePublished(articleTitle, publishedArticles) {
+  return publishedArticles.some(pub => pub.title.trim() === articleTitle.trim());
 }
 
-function getFirstUnpublishedArticle(articles, publishedData) {
+function getFirstUnpublishedArticle(articles, publishedArticles) {
   console.log('\n🔍 Checking for unpublished articles:');
   
   for (let i = 0; i < articles.length; i++) {
     const article = articles[i];
     console.log(`\n  [${i + 1}/${articles.length}] "${article.title.substring(0, 50)}..."`);
     
-    if (isArticlePublished(article, publishedData)) {
+    if (isArticlePublished(article.title, publishedArticles)) {
       console.log(`  ✋ Already published - SKIPPING`);
       continue;
     }
@@ -254,14 +211,14 @@ async function savePublishedArticle(article) {
 
 // 🤖 Main function
 (async () => {
-  console.log('\n🤖 ==== AUTO-PUBLISHER (MAXIMUM SECURITY - ENV VAR MODE) ====\n');
+  console.log('\n🤖 ==== AUTO-PUBLISHER STARTING ====\n');
   
   try {
     // 🔐 Load cookies from secure source
     const cookies = await loadCookies();
     
     // Load history
-    const publishedData = await getPublishedArticles();
+    const publishedArticles = await getPublishedArticles();
     
     // Get articles
     const articles = await getArticlesFromFeed();
@@ -272,7 +229,7 @@ async function savePublishedArticle(article) {
     }
     
     // Find unpublished
-    const article = getFirstUnpublishedArticle(articles, publishedData);
+    const article = getFirstUnpublishedArticle(articles, publishedArticles);
     
     if (!article) {
       console.log('\n✅ All articles already published - nothing to do');
@@ -323,17 +280,148 @@ async function savePublishedArticle(article) {
     });
     
     console.log('✅ Page loaded');
+    await page.waitForTimeout(5000);
     
-    // NOTE: Full automation steps are in original main.js
-    // This is the skeleton showing deduplication and security logic
+    // Close modal if exists
+    const modalCloseButton = await page.$('[data-testid="close-button"]');
+    if (modalCloseButton) {
+      await modalCloseButton.click();
+      await page.waitForTimeout(2000);
+    }
     
-    console.log('\n📤 Publishing article (browser automation in progress...)\n');
+    // Click add publication button
+    const addPublicationButton = await page.$('[data-testid="add-publication-button"]');
+    if (addPublicationButton) {
+      await addPublicationButton.click();
+      console.log('✅ Add publication button clicked');
+      
+      await page.waitForTimeout(3000);
+      
+      // Click "Write article"
+      const writeArticleButton = await page.$('text="Написать статью"');
+      if (writeArticleButton) {
+        await writeArticleButton.click();
+        console.log('✅ "Write article" button clicked');
+        
+        await page.waitForTimeout(8000);
+        
+        // Close help popup
+        await page.evaluate(() => {
+          const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal');
+          overlays.forEach(overlay => {
+            overlay.style.display = 'none';
+            overlay.remove();
+          });
+        });
+        
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(2000);
+        
+        // Find all input fields
+        const allEditableElements = await page.$$('input[type="text"], textarea, div[contenteditable="true"]');
+        console.log(`🔍 Found ${allEditableElements.length} input fields`);
+        
+        // 1. Fill title (first field)
+        console.log('\n📝 1. Filling title...');
+        if (allEditableElements.length > 0) {
+          const titleElement = allEditableElements[0];
+          await titleElement.focus();
+          await titleElement.fill(article.title);
+          console.log(`✅ Title filled: "${article.title.substring(0, 50)}..."`);
+          await page.waitForTimeout(1000);
+        }
+        
+        // 2. Fill content (second field)
+        console.log('\n📝 2. Filling article content...');
+        if (allEditableElements.length > 1) {
+          const contentElement = allEditableElements[1];
+          await contentElement.focus();
+          await contentElement.fill(processedContent);
+          console.log(`✅ Content filled: ${processedContent.length} characters`);
+          await page.keyboard.press('Enter');
+          console.log('✅ Enter pressed after content');
+          await page.waitForTimeout(1000);
+        }
+        
+        // 3. Insert image
+        console.log('\n🖼️ 3. Inserting image...');
+        const imageButtonSelector = 'button.article-editor-desktop--side-button__sideButton-1z[data-tip="Вставить изображение"]';
+        try {
+          const imageButton = await page.$(imageButtonSelector);
+          if (imageButton && article.imageUrl) {
+            await imageButton.click();
+            console.log('✅ Image button clicked');
+            await page.waitForTimeout(3000);
+            
+            const imageInputSelectors = [
+              'input[placeholder*="ссылка"]',
+              'input[placeholder*="url"]',
+              'input[type="text"]'
+            ];
+            
+            for (const imgInputSel of imageInputSelectors) {
+              try {
+                const imageInput = await page.$(imgInputSel);
+                if (imageInput && await imageInput.isVisible()) {
+                  await imageInput.fill(article.imageUrl);
+                  console.log(`✅ Image URL inserted: ${article.imageUrl.substring(0, 50)}...`);
+                  await imageInput.press('Enter');
+                  await page.waitForTimeout(1000);
+                  break;
+                }
+              } catch (e) {
+                continue;
+              }
+            }
+          }
+        } catch (e) {
+          console.log('⚠️  Image insertion skipped:', e.message);
+        }
+        
+        await page.waitForTimeout(2000);
+        
+        // 4. First publish button
+        console.log('\n📤 4. Clicking first publish button...');
+        const publishSelectors = [
+          '[data-testid="publish-btn"]',
+          'button:has-text("Опубликовать"):not([disabled])'
+        ];
+        
+        for (const selector of publishSelectors) {
+          try {
+            const publishButton = await page.$(selector);
+            if (publishButton && await publishButton.isVisible()) {
+              await publishButton.click();
+              console.log(`✅ First publish button clicked: ${selector}`);
+              break;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+        
+        await page.waitForTimeout(5000);
+        
+        // 5. Second publish button (confirmation)
+        console.log('\n📤 5. Clicking confirmation publish button...');
+        const secondPublishButtonSelector = 'button[data-testid="publish-btn"][type="submit"]';
+        try {
+          const secondPublishButton = await page.$(secondPublishButtonSelector);
+          if (secondPublishButton && await secondPublishButton.isVisible()) {
+            await secondPublishButton.click();
+            console.log('✅ Confirmation publish button clicked!');
+            console.log('\n🎉 Article successfully published!');
+            
+            // Save to history
+            await savePublishedArticle(article);
+          }
+        } catch (e) {
+          console.log('❌ Error clicking confirmation button:', e.message);
+        }
+      }
+    }
     
-    // In real scenario, would do all the browser interactions here
-    // For now, save to history
-    await savePublishedArticle(article);
-    
-    // Cleanup
+    await page.waitForTimeout(5000);
     await browser.close();
     
     console.log('\n✅ Auto-publisher completed successfully!');
