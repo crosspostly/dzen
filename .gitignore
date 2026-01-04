@@ -57,3 +57,8 @@ docs/.docusaurus/
 .cache/
 \!a_posts/config/config.json
 /\!a_posts
+article_generator_analysis.txt
+*.msg
+Postyvdzen.exe_extracted/_tcl_data/tzdata/Africa/Mogadishu
+/Postyvdzen.exe_extracted
+/PostyDzen

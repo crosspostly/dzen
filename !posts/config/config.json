@@ -1,0 +1,18 @@
+{
+  "articlesPath": "../articles",
+  "cookiesPath": "./config/cookies.json",
+  "intervalMinutes": 90,
+  "typingDelayMin": 20,
+  "typingDelayMax": 80,
+  "headless": false,
+  "maxArticlesPerSession": 10,
+  "enableLogging": true,
+  "logLevel": "info",
+  "browser": {
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  }
+}
