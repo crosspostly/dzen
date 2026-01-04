@@ -1,0 +1,34 @@
+name: Test Dzen Setup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Run test
+        run: |
+          cd "!posts\\PRODUCTION_READY"
+          node test-setup.js
+        shell: pwsh
+      
+      - name: Test with secret
+        run: |
+          Write-Host "Testing with secret..."
+          if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
+            Write-Host "✅ Secret DZEN_COOKIES_JSON found!"
+            $env:DZEN_COOKIES_JSON = "${{ secrets.DZEN_COOKIES_JSON }}"
+            cd "!posts\\PRODUCTION_READY"
+            node test-setup.js
+          } else {
+            Write-Host "⚠️  Secret not set yet. Add it to Settings > Secrets"
+          }
+        shell: pwsh
