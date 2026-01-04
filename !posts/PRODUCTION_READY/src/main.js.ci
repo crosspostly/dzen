@@ -70,17 +70,34 @@ function processArticleContent(content) {
   if (!content) return '';
   
   let processed = content
+    // ✅ 1. Удаляем ANSI escape codes (как в normalizeTitle)
+    //    Примеры: \x1b[31m, \x1b[0m и т.п.
+    .replace(/\x1b\[[0-9;]*m/g, '')
+    // ✅ 2. Удаляем нежелательные управляющие символы,
+    //    но НЕ трогаем переводы строк/табуляции, чтобы не ломать структуру
+    //    - вырезаем: 0x00–0x08, 0x0B, 0x0C, 0x0E–0x1F, 0x7F–0x9F
+    //    - оставляем: \x09 (TAB), \x0A (LF, \n), \x0D (CR, \r)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '')
+    
+    // ===== Дальше — существующая логика сохранения структуры =====
+    // <p>, </p> → пустая строка между абзацами
     .replace(/<p[^>]*>/gi, '\n\n')
     .replace(/<\/p>/gi, '')
+    // <h1-6> → отдельные абзацы
     .replace(/<h[1-6][^>]*>/gi, '\n\n')
     .replace(/<\/h[1-6]>/gi, '\n\n')
+    // <div> → одинарный перенос строки
     .replace(/<div[^>]*>/gi, '\n')
     .replace(/<\/div>/gi, '\n')
+    // <br> → перенос строки
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<br>/gi, '\n')
+    // <li> → маркер списка
     .replace(/<li[^>]*>/gi, '\n• ')
     .replace(/<\/li>/gi, '')
+    // все остальные теги убираем
     .replace(/<[^>]*>/g, '')
+    // HTML entities → реальные символы
     .replace(/&nbsp;/g, ' ')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -88,6 +105,7 @@ function processArticleContent(content) {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'");  // ✅ FIX: Correct HTML entity replacement
   
+  // Схлопываем тройные и более пустые строки в двойные
   processed = processed.replace(/\n\s*\n\s*\n+/g, '\n\n');
   return processed.trim();
 }
