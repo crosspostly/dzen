@@ -37,7 +37,7 @@ async function getArticlesFromFeed() {
       const itemContent = match[1];
       
       const titleMatch = itemContent.match(/<title><!\[CDATA\[(.*)\]\]>/) || itemContent.match(/<title>(.+?)<\/title>/);
-      const title = titleMatch ? titleMatch[1].replace(/<![CDATA[(.*?)]\]>/g, '$1').trim() : 'Without title';
+      const title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.*?)]\]>/g, '$1').trim() : 'Without title';
       
       const linkMatch = itemContent.match(/<link>(.+?)<\/link>/);
       const link = linkMatch ? linkMatch[1] : '';
@@ -175,9 +175,7 @@ function normalizeTitle(title) {
     // Normalize whitespace (replace multiple spaces with single space)
     .replace(/\s+/g, ' ')
     // Trim
-    .trim()
-    // Lowercase for case-insensitive comparison
-    .toLowerCase();
+    .trim();
 }
 
 function isArticlePublished(articleTitle, publishedArticles) {
