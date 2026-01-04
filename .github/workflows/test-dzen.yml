@@ -32,10 +32,13 @@ jobs:
         shell: pwsh
       
       - name: Test with GitHub Secret
+        env:
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
           Write-Host "🔐 Testing GitHub Secret..."
           
-          $secretValue = "${{ secrets.DZEN_COOKIES_JSON }}"
+          # Use environment variable instead of direct injection to avoid quote escaping issues
+          $secretValue = $env:DZEN_COOKIES_JSON
           
           if ([string]::IsNullOrWhiteSpace($secretValue)) {
             Write-Host "⚠️  Secret DZEN_COOKIES_JSON not found"
