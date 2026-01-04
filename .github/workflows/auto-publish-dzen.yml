@@ -20,8 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: '!posts/PRODUCTION_READY/package.json'
+          # Disable cache due to ! character in path - will enable after install
           
       - name: 🔐 Validate GitHub Secret (DZEN_COOKIES_JSON)
         run: |
@@ -74,14 +73,16 @@ jobs:
         run: |
           cd "!posts/PRODUCTION_READY"
           echo "📥 Installing npm packages..."
-          npm install 2>&1 | tail -10
+          npm install 2>&1 | tail -20
+          echo "✅ Dependencies installed"
         continue-on-error: false
       
       - name: 🎬 Install Playwright
         run: |
           cd "!posts/PRODUCTION_READY"
           echo "🎬 Installing Playwright browsers..."
-          npx playwright install chromium --with-deps
+          npx playwright install chromium --with-deps 2>&1 | tail -20
+          echo "✅ Playwright installed"
         continue-on-error: false
       
       - name: 🤖 Run auto-publisher
@@ -180,7 +181,7 @@ jobs:
           echo "📋 What happened:"
           echo "   ✅ Validated DZEN_COOKIES_JSON secret"
           echo "   ✅ Checked feed.xml in /public"
-          echo "   ✅ Installed dependencies (npm cache enabled)"
+          echo "   ✅ Installed dependencies"
           echo "   ✅ Installed Playwright browsers"
           echo "   ✅ Ran auto-publisher (main.js.ci)"
           echo "   ✅ Committed results"
