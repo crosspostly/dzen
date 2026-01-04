@@ -295,41 +295,27 @@ async function savePublishedArticle(article) {
         
         await page.waitForTimeout(2000);
         
-        // PUBLISH BUTTON 1 - First button in editor header (WORKING)
+        // PUBLISH BUTTON 1 - Click via page.click() on span selector
         console.log(`\n📤 4. Clicking first publish button (editor header)...`);
-        const publishBtn = await page.$('span:has-text("Опубликовать")');
-        
-        if (publishBtn) {
-          try {
-            const btn = await publishBtn.evaluate(el => el.closest('button'));
-            await btn.click();
-            console.log(`✅ First publish button clicked`);
-          } catch (e) {
-            console.log(`⚠️  Error clicking publish button: ${e.message}`);
-          }
-        } else {
-          console.log(`❌ First publish button not found`);
+        try {
+          await page.click('span:has-text("Опубликовать")');
+          console.log(`✅ First publish button clicked`);
+        } catch (e) {
+          console.log(`⚠️  Error clicking publish button: ${e.message}`);
         }
         
         await page.waitForTimeout(5000);
         
-        // PUBLISH BUTTON 2 - Confirmation button in modal (WORKING)
+        // PUBLISH BUTTON 2 - Confirmation button in modal
         console.log(`\n📤 5. Clicking confirmation button (modal)...`);
-        const confirmBtn = await page.$('button[data-testid="publish-btn"][type="submit"]');
-        
-        if (confirmBtn) {
-          try {
-            await confirmBtn.click();
-            console.log(`✅ Confirmation button clicked`);
-            console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
-            console.log(`   Title: "${article.title.substring(0, 50)}..."`);
-            await savePublishedArticle(article);
-          } catch (error) {
-            console.log(`❌ Error clicking confirmation button: ${error.message}`);
-          }
-        } else {
-          console.log(`❌ Confirmation button not found`);
-          console.log(`   Selector: button[data-testid="publish-btn"][type="submit"]`);
+        try {
+          await page.click('button[data-testid="publish-btn"][type="submit"]');
+          console.log(`✅ Confirmation button clicked`);
+          console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
+          console.log(`   Title: "${article.title.substring(0, 50)}..."`);
+          await savePublishedArticle(article);
+        } catch (error) {
+          console.log(`❌ Confirmation button not found or click failed: ${error.message}`);
         }
       }
     }
