@@ -295,33 +295,103 @@ async function savePublishedArticle(article) {
         
         await page.waitForTimeout(2000);
         
-        // PUBLISH BUTTON 1
-        console.log(`\n📤 4. Clicking publish button...`);
-        let publishBtn = await page.$('button:has-text("Опубликовать"):not([disabled])');
-        if (publishBtn && await publishBtn.isVisible() && await publishBtn.isEnabled()) {
-          await publishBtn.click();
-          console.log(`✅ First publish button clicked`);
+        // PUBLISH BUTTON 1 - First button in editor header
+        console.log(`\n📤 4. Clicking first publish button (editor header)...`);
+        const publishSelectors = [
+          'button:has-text("Опубликовать"):not([disabled])',
+          'span:has-text("Опубликовать")',
+        ];
+        
+        let publishBtn = null;
+        for (const selector of publishSelectors) {
+          publishBtn = await page.$(selector);
+          if (publishBtn && await publishBtn.isVisible()) {
+            console.log(`✅ Found publish button with selector: ${selector}`);
+            // If it's span, get parent button
+            if (publishBtn.tagName === 'SPAN') {
+              publishBtn = await publishBtn.evaluate(el => el.closest('button'));
+            }
+            break;
+          }
+        }
+        
+        if (publishBtn) {
+          try {
+            await publishBtn.click();
+            console.log(`✅ First publish button clicked`);
+          } catch (e) {
+            console.log(`⚠️  Error clicking publish button: ${e.message}`);
+          }
         } else {
           console.log(`❌ First publish button not found`);
         }
         
         await page.waitForTimeout(5000);
         
-        // PUBLISH BUTTON 2 (confirmation)
-        console.log(`\n📤 5. Clicking confirmation button...`);
-        let confirmBtn = await page.$('button[data-testid="publish-btn"][type="submit"]');
-        if (!confirmBtn) {
-          confirmBtn = await page.$('button[data-testid="publish-btn"]');
+        // PUBLISH BUTTON 2 - Confirmation button in modal
+        console.log(`\n📤 5. Clicking confirmation button (modal)...`);
+        
+        const confirmSelectors = [
+          // Primary selector - data-testid
+          'button[data-testid="publish-btn"][type="submit"]',
+          'button[data-testid="publish-btn"]',
+          // Text-based selectors
+          'button:has-text("Опубликовать"):not([disabled])',
+          'button:has-text("Опубликовать сейчас"):not([disabled])',
+          // Class-based selectors from your schema
+          'button.article-editor-desktop--base-button__primary-1Y:not([disabled])',
+          // Generic button selectors
+          'button[type="submit"]',
+        ];
+        
+        let confirmBtn = null;
+        let foundSelector = null;
+        
+        for (const selector of confirmSelectors) {
+          try {
+            const elements = await page.$$(selector);
+            if (elements.length > 0) {
+              // Get the last visible button (usually the one in modal)
+              for (let i = elements.length - 1; i >= 0; i--) {
+                const el = elements[i];
+                if (await el.isVisible() && await el.isEnabled()) {
+                  confirmBtn = el;
+                  foundSelector = selector;
+                  console.log(`✅ Found confirmation button with selector: ${selector}`);
+                  break;
+                }
+              }
+              if (confirmBtn) break;
+            }
+          } catch (e) {
+            // Continue to next selector
+          }
         }
         
-        if (confirmBtn && await confirmBtn.isVisible() && await confirmBtn.isEnabled()) {
-          await confirmBtn.click();
-          console.log(`✅ Confirmation button clicked`);
-          console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
-          console.log(`   Title: "${article.title.substring(0, 50)}..."`);
-          await savePublishedArticle(article);
+        if (confirmBtn) {
+          try {
+            await confirmBtn.click();
+            console.log(`✅ Confirmation button clicked with selector: ${foundSelector}`);
+            console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
+            console.log(`   Title: "${article.title.substring(0, 50)}..."`);
+            await savePublishedArticle(article);
+          } catch (error) {
+            console.log(`❌ Error clicking confirmation button: ${error.message}`);
+          }
         } else {
-          console.log(`❌ Confirmation button not found`);
+          console.log(`❌ Confirmation button not found with any selector`);
+          console.log(`   Tried ${confirmSelectors.length} different selectors`);
+          
+          // Debug: log all buttons on page
+          const allButtons = await page.$$('button');
+          console.log(`\n🔍 Debug: Found ${allButtons.length} total buttons on page`);
+          for (let i = 0; i < Math.min(5, allButtons.length); i++) {
+            const btn = allButtons[i];
+            const text = await btn.textContent();
+            const testid = await btn.getAttribute('data-testid');
+            const type = await btn.getAttribute('type');
+            console.log(`   Button ${i + 1}: text="${text?.trim()}", data-testid="${testid}", type="${type}"`);
+          }
         }
       }
     }
