@@ -16,18 +16,11 @@ const CONFIG = {
 };
 
 console.log('🤖 AUTO-PUBLISHER CONFIGURATION:');
-console.log(`   __dirname: ${__dirname}`);
 console.log(`   Feed path: ${CONFIG.feedPath}`);
 console.log(`   History path: ${CONFIG.historyPath}`);
 console.log(`   Cookies source: ${CONFIG.cookiesSource}`);
-if (CONFIG.cookiesSource === 'FILE') {
-  console.log(`   Cookies file: ${CONFIG.cookiesPath}`);
-} else {
-  console.log(`   Cookies from: DZEN_COOKIES_JSON environment variable (SECURE!)`);
-}
 console.log(`   Headless mode: ${CONFIG.headless}`);
-console.log(`   Environment: ${process.env.CI ? 'CI/CD (GitHub Actions)' : 'Local'}`);
-console.log('');
+console.log(`   Environment: ${process.env.CI ? 'CI/CD (GitHub Actions)' : 'Local'}\n`);
 
 // 📖 Get articles from feed.xml
 async function getArticlesFromFeed() {
@@ -61,17 +54,10 @@ async function getArticlesFromFeed() {
       const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<content:encoded>(.*?)<\/content:encoded>/);
       const content = contentMatch ? contentMatch[1] : description;
       
-      items.push({
-        title,
-        description,
-        link,
-        pubDate,
-        imageUrl,
-        content
-      });
+      items.push({ title, description, link, pubDate, imageUrl, content });
     }
     
-    console.log(`📄 Found ${items.length} articles in feed\n`);
+    console.log(`📄 Found ${items.length} articles\n`);
     return items;
   } catch (error) {
     console.error(`❌ Error reading feed: ${error.message}`);
@@ -103,43 +89,30 @@ function processArticleContent(content) {
     .replace(/&#39;/g, "'");
   
   processed = processed.replace(/\n\s*\n\s*\n+/g, '\n\n');
-  processed = processed.trim();
-  
-  return processed;
+  return processed.trim();
 }
 
-// 📖 Load cookies (from file or environment variable)
+// 📖 Load cookies
 async function loadCookies() {
   try {
     let cookiesJson;
     
     if (process.env.CI) {
       cookiesJson = process.env.DZEN_COOKIES_JSON;
-      
       if (!cookiesJson || cookiesJson.length < 10) {
         throw new Error('DZEN_COOKIES_JSON environment variable is empty!');
       }
-      
-      console.log(`🔐 Cookies loaded from environment variable (CI/CD)`);
-      console.log(`   Size: ${cookiesJson.length} characters`);
+      console.log(`🔐 Cookies loaded from environment variable (${cookiesJson.length} chars)`);
     } else {
       cookiesJson = await fs.readFile(CONFIG.cookiesPath, 'utf8');
-      console.log(`🔐 Cookies loaded from file: ${CONFIG.cookiesPath}`);
-      console.log(`   Size: ${cookiesJson.length} characters`);
+      console.log(`🔐 Cookies loaded from file (${cookiesJson.length} chars)`);
     }
     
-    try {
-      const cookies = JSON.parse(cookiesJson);
-      console.log(`✅ Valid JSON format (${Array.isArray(cookies) ? cookies.length : 1} items)\n`);
-      return cookies;
-    } catch (e) {
-      throw new Error(`Invalid JSON format: ${e.message}`);
-    }
+    const cookies = JSON.parse(cookiesJson);
+    console.log(`✅ Valid JSON (${Array.isArray(cookies) ? cookies.length : 1} items)\n`);
+    return cookies;
   } catch (error) {
     console.error(`❌ Error loading cookies: ${error.message}`);
-    if (process.env.CI) {
-      console.error(`   Make sure GitHub Secret 'DZEN_COOKIES_JSON' is set!`);
-    }
     throw error;
   }
 }
@@ -148,23 +121,13 @@ async function loadCookies() {
 async function getPublishedArticles() {
   try {
     const content = await fs.readFile(CONFIG.historyPath, 'utf8');
-    const lines = content.split('\n').filter(line => line.trim() !== '');
-    const published = [];
-    
-    for (const line of lines) {
+    const lines = content.split('\n').filter(line => line.trim());
+    return lines.map(line => {
       const match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (.+)/);
-      if (match) {
-        published.push({
-          date: match[1],
-          title: match[2]
-        });
-      }
-    }
-    
-    console.log(`📋 Found ${published.length} previously published articles`);
-    return published;
+      return match ? { date: match[1], title: match[2] } : null;
+    }).filter(Boolean);
   } catch (error) {
-    console.log(`ℹ️  History file not found (${error.message})`);
+    console.log(`ℹ️  History file not found`);
     return [];
   }
 }
@@ -174,83 +137,61 @@ function isArticlePublished(articleTitle, publishedArticles) {
 }
 
 function getFirstUnpublishedArticle(articles, publishedArticles) {
-  console.log('\n🔍 Checking for unpublished articles:');
-  
+  console.log('🔍 Checking for unpublished articles:\n');
   for (let i = 0; i < articles.length; i++) {
     const article = articles[i];
-    console.log(`\n  [${i + 1}/${articles.length}] "${article.title.substring(0, 50)}..."`);
+    const status = isArticlePublished(article.title, publishedArticles) ? '✋ Already published' : '✅ NEW';
+    console.log(`  [${i + 1}/${articles.length}] ${status} - "${article.title.substring(0, 40)}..."`);
     
-    if (isArticlePublished(article.title, publishedArticles)) {
-      console.log(`  ✋ Already published - SKIPPING`);
-      continue;
+    if (!isArticlePublished(article.title, publishedArticles)) {
+      return article;
     }
-    
-    console.log(`  ✅ NEW ARTICLE - WILL PUBLISH`);
-    return article;
   }
-  
   return null;
 }
 
 async function savePublishedArticle(article) {
-  const now = new Date();
-  const date = now.toISOString().replace('T', ' ').substring(0, 19);
+  const date = new Date().toISOString().replace('T', ' ').substring(0, 19);
   const entry = `${date} - ${article.title}\n`;
-  
   try {
     await fs.appendFile(CONFIG.historyPath, entry);
-    console.log(`\n✅ Article saved to history:`);
-    console.log(`   "${article.title}"`);
-    console.log(`   Published: ${date} UTC`);
+    console.log(`✅ Saved to history: "${article.title.substring(0, 50)}..."`);
   } catch (error) {
-    console.error(`❌ Error saving article: ${error.message}`);
+    console.error(`❌ Error saving: ${error.message}`);
   }
 }
 
 // 🤖 Main function
 (async () => {
-  console.log('\n🤖 ==== AUTO-PUBLISHER STARTING ====\n');
+  console.log('🤖 ==== AUTO-PUBLISHER STARTING ====\n');
   
   try {
-    // 🔐 Load cookies from secure source
     const cookies = await loadCookies();
-    
-    // Load history
     const publishedArticles = await getPublishedArticles();
-    
-    // Get articles
     const articles = await getArticlesFromFeed();
     
     if (articles.length === 0) {
-      console.log('\n❌ No articles found in feed.xml');
+      console.log('❌ No articles found in feed.xml');
       process.exit(0);
     }
     
-    // Find unpublished
     const article = getFirstUnpublishedArticle(articles, publishedArticles);
     
     if (!article) {
-      console.log('\n✅ All articles already published - nothing to do');
+      console.log('\n✅ All articles already published');
       process.exit(0);
     }
     
-    console.log(`\n📝 Found new article: ${article.title.substring(0, 60)}...`);
-    console.log(`📄 Content length: ${article.content.length} characters`);
-    
-    // Process content
+    console.log(`\n📝 Found article: "${article.title.substring(0, 50)}..."`);
     const processedContent = processArticleContent(article.content);
-    console.log(`✅ Content processed: ${processedContent.length} characters`);
+    console.log(`✅ Content ready: ${processedContent.length} chars`);
     
     // Launch browser
     console.log('\n🌐 Launching browser...');
     
     const browser = await chromium.launch({
       headless: CONFIG.headless,
-      args: [
-        '--no-sandbox',
-        '--disable-blink-features=AutomationControlled',
-        '--disable-dev-shm-usage'
-      ]
+      args: ['--no-sandbox', '--disable-blink-features=AutomationControlled', '--disable-dev-shm-usage']
     });
     
     const context = await browser.newContext({
@@ -260,10 +201,9 @@ async function savePublishedArticle(article) {
     
     const page = await context.newPage();
     
-    // Use cookies
     try {
       await context.addCookies(cookies);
-      console.log(`✅ Cookies added to browser context (${cookies.length} cookies)`);
+      console.log(`✅ Cookies loaded (${cookies.length} cookies)`);
     } catch (error) {
       console.error(`❌ Error adding cookies: ${error.message}`);
       await browser.close();
@@ -271,8 +211,8 @@ async function savePublishedArticle(article) {
     }
     
     // Navigate
-    console.log('\n🌐 Navigating to Dzen editor...');
-    await page.goto('https://dzen.ru/profile/editor/potemki', { 
+    console.log('🌐 Navigating to Dzen editor...');
+    await page.goto('https://dzen.ru/profile/editor/potemki', {
       waitUntil: 'domcontentloaded',
       timeout: CONFIG.navigationTimeout
     });
@@ -280,199 +220,108 @@ async function savePublishedArticle(article) {
     console.log('✅ Page loaded');
     await page.waitForTimeout(5000);
     
-    // Close modal if exists
-    const modalCloseButton = await page.$('[data-testid="close-button"]');
-    if (modalCloseButton) {
-      await modalCloseButton.click();
-      console.log('✅ Closed modal window');
+    // Close modal
+    const modalButton = await page.$('[data-testid="close-button"]');
+    if (modalButton) {
+      await modalButton.click();
       await page.waitForTimeout(2000);
     }
     
-    // Click add publication button
-    const addPublicationButton = await page.$('[data-testid="add-publication-button"]');
-    if (addPublicationButton) {
-      await addPublicationButton.click();
+    // Click add publication
+    const addButton = await page.$('[data-testid="add-publication-button"]');
+    if (addButton) {
+      await addButton.click();
       console.log('✅ Add publication button clicked');
-      
       await page.waitForTimeout(3000);
       
-      // Click "Write article"
-      const writeArticleButton = await page.$('text="Написать статью"');
-      if (writeArticleButton) {
-        await writeArticleButton.click();
-        console.log('✅ "Write article" button clicked');
-        
+      // Click write article
+      const writeButton = await page.$('text="Написать статью"');
+      if (writeButton) {
+        await writeButton.click();
+        console.log('✅ "Write article" clicked');
         await page.waitForTimeout(8000);
         
-        // Close help popup
+        // Close popups
         await page.evaluate(() => {
           const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, .article-editor-desktop--help-popup__overlay-3q');
-          overlays.forEach(overlay => {
-            overlay.style.display = 'none';
-            overlay.style.visibility = 'hidden';
-            overlay.style.pointerEvents = 'none';
-            overlay.remove();
-          });
+          overlays.forEach(el => { el.style.display = 'none'; el.remove(); });
         });
-        
         await page.keyboard.press('Escape');
-        console.log('✅ Closed help popup');
         await page.waitForTimeout(5000);
         
-        // 🔍 FIND ALL INPUT FIELDS
-        console.log('\n🔍 === ANALYZING AVAILABLE INPUT FIELDS ===\n');
-        const allEditableElements = await page.$$('input[type="text"], textarea, div[contenteditable="true"]');
-        console.log(`🔍 Found ${allEditableElements.length} editable fields`);
+        // Get input fields
+        const inputs = await page.$$('input[type="text"], textarea, div[contenteditable="true"]');
+        console.log(`\n🔍 Found ${inputs.length} input fields`);
         
-        // GET DETAILED INFORMATION
-        const fieldInfo = await page.evaluate(() => {
-          const elements = Array.from(document.querySelectorAll('input[type="text"], textarea, div[contenteditable="true"]'));
-          return elements.map((el, index) => {
-            return {
-              index: index,
-              tagName: el.tagName,
-              id: el.id || 'none',
-              className: el.className || 'none',
-              placeholder: el.getAttribute('placeholder') || 'none',
-              ariaLabel: el.getAttribute('aria-label') || 'none',
-              isVisible: el.offsetParent !== null,
-              offsetHeight: el.offsetHeight,
-              offsetWidth: el.offsetWidth
-            };
-          });
-        });
-        
-        console.log('\n📋 === FIELD ANALYSIS RESULTS ===\n');
-        fieldInfo.forEach((field, idx) => {
-          console.log(`[${idx + 1}] ${field.tagName}`);
-          console.log(`    ID: ${field.id}`);
-          console.log(`    Placeholder: "${field.placeholder}"`);
-          console.log(`    Aria-label: "${field.ariaLabel}"`);
-          console.log(`    Visible: ${field.isVisible} | Size: ${field.offsetWidth}x${field.offsetHeight}`);
-          console.log('');
-        });
-        
-        // 1. FILL TITLE
-        console.log('\n📝 === 1. FILLING TITLE ===\n');
-        
-        if (allEditableElements.length > 0) {
-          const titleElement = allEditableElements[0];
-          await titleElement.focus();
-          await titleElement.fill(article.title);
-          console.log(`✅ Title filled: "${article.title.substring(0, 50)}..."`);
+        // Fill title
+        if (inputs.length > 0) {
+          console.log(`\n📝 1. Filling title...`);
+          await inputs[0].focus();
+          await inputs[0].fill(article.title);
+          console.log(`✅ Title filled`);
           await page.waitForTimeout(1000);
         }
         
-        // 2. FILL CONTENT
-        console.log('\n📝 === 2. FILLING ARTICLE CONTENT ===\n');
-        
-        if (allEditableElements.length > 1) {
-          const contentElement = allEditableElements[1];
-          await contentElement.focus();
-          await contentElement.fill(processedContent);
-          console.log(`✅ Content filled: ${processedContent.length} characters`);
+        // Fill content
+        if (inputs.length > 1) {
+          console.log(`\n📝 2. Filling content...`);
+          await inputs[1].focus();
+          await inputs[1].fill(processedContent);
+          console.log(`✅ Content filled (${processedContent.length} chars)`);
           await page.keyboard.press('Enter');
-          console.log('✅ Pressed Enter after content');
           await page.waitForTimeout(1000);
         }
         
         await page.waitForTimeout(2000);
         
-        // 3. INSERT IMAGE
-        console.log('\n🖼️  === 3. INSERTING IMAGE ===\n');
-        
-        const imageButtonSelector = 'button.article-editor-desktop--side-button__sideButton-1z[data-tip="Вставить изображение"]';
-        const imageButton = await page.$(imageButtonSelector);
-        if (imageButton && article.imageUrl) {
-          console.log(`✅ Found image button`);
-          await imageButton.click();
+        // Insert image
+        console.log(`\n🖼️  3. Inserting image...`);
+        const imageBtn = await page.$('button.article-editor-desktop--side-button__sideButton-1z[data-tip="Вставить изображение"]');
+        if (imageBtn && article.imageUrl) {
+          await imageBtn.click();
+          console.log(`✅ Image button clicked`);
           await page.waitForTimeout(3000);
           
-          const imageInput = await page.$('input[type="text"]');
-          if (imageInput) {
-            await imageInput.fill(article.imageUrl);
+          const imgInput = await page.$('input[type="text"]');
+          if (imgInput) {
+            await imgInput.fill(article.imageUrl);
             console.log(`✅ Image URL inserted`);
-            await imageInput.press('Enter');
+            await imgInput.press('Enter');
             await page.waitForTimeout(1000);
           }
         } else {
-          console.log('ℹ️  Image not inserted (button not found or no URL)');
+          console.log(`ℹ️  Image skipped (button not found or no URL)`);
         }
         
         await page.waitForTimeout(2000);
         
-        // 4. FIRST PUBLISH BUTTON - try multiple selectors with priority
-        console.log('\n📤 === 4. CLICKING FIRST PUBLISH BUTTON ===\n');
-        
-        const firstPublishSelectors = [
-          'button.article-editor-desktop--editor-header__editBtn-44',
-          'button[class*="publishButton"]',
-          'button[class*="publish"]',
-          '[data-testid="publish-btn"]',
-          'button:has-text("Опубликовать"):not([disabled])'
-        ];
-        
-        let publishClicked = false;
-        for (const selector of firstPublishSelectors) {
-          const button = await page.$(selector);
-          if (button) {
-            try {
-              const isVisible = await button.isVisible();
-              const isEnabled = await button.isEnabled();
-              if (isVisible && isEnabled) {
-                console.log(`✅ Found first publish button: ${selector}`);
-                await button.click();
-                publishClicked = true;
-                break;
-              }
-            } catch (e) {
-              console.log(`⚠️  Button found but not clickable: ${selector}`);
-            }
-          }
-        }
-        
-        if (!publishClicked) {
-          console.log('❌ First publish button not found in any selector');
+        // PUBLISH BUTTON 1
+        console.log(`\n📤 4. Clicking publish button...`);
+        let publishBtn = await page.$('button:has-text("Опубликовать"):not([disabled])');
+        if (publishBtn && await publishBtn.isVisible() && await publishBtn.isEnabled()) {
+          await publishBtn.click();
+          console.log(`✅ First publish button clicked`);
+        } else {
+          console.log(`❌ First publish button not found`);
         }
         
         await page.waitForTimeout(5000);
         
-        // 5. SECOND PUBLISH BUTTON (confirmation) - also try multiple selectors
-        console.log('\n📤 === 5. CLICKING CONFIRMATION PUBLISH BUTTON ===\n');
-        
-        const secondPublishSelectors = [
-          'button[data-testid="publish-btn"][type="submit"]',
-          'button[type="submit"][class*="publish"]',
-          'button:has-text("Опубликовать"):not([disabled]):not([aria-disabled="true"])',
-          'button:has-text("Опубликовать сейчас"):not([disabled]):not([aria-disabled="true"])',
-          '[data-testid="publish-btn"]'
-        ];
-        
-        let confirmClicked = false;
-        for (const selector of secondPublishSelectors) {
-          const button = await page.$(selector);
-          if (button) {
-            try {
-              const isVisible = await button.isVisible();
-              const isEnabled = await button.isEnabled();
-              if (isVisible && isEnabled) {
-                console.log(`✅ Found confirmation button: ${selector}`);
-                await button.click();
-                console.log('\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!');
-                console.log(`   Title: "${article.title}"`);
-                console.log(`   Content: ${processedContent.length} characters`);
-                await savePublishedArticle(article);
-                confirmClicked = true;
-                break;
-              }
-            } catch (e) {
-              console.log(`⚠️  Button found but not clickable: ${selector}`);
-            }
-          }
+        // PUBLISH BUTTON 2 (confirmation)
+        console.log(`\n📤 5. Clicking confirmation button...`);
+        let confirmBtn = await page.$('button[data-testid="publish-btn"][type="submit"]');
+        if (!confirmBtn) {
+          confirmBtn = await page.$('button[data-testid="publish-btn"]');
         }
         
-        if (!confirmClicked) {
-          console.log('❌ Confirmation button not found - publication may have failed');
+        if (confirmBtn && await confirmBtn.isVisible() && await confirmBtn.isEnabled()) {
+          await confirmBtn.click();
+          console.log(`✅ Confirmation button clicked`);
+          console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
+          console.log(`   Title: "${article.title.substring(0, 50)}..."`);
+          await savePublishedArticle(article);
+        } else {
+          console.log(`❌ Confirmation button not found`);
         }
       }
     }
@@ -485,7 +334,6 @@ async function savePublishedArticle(article) {
     
   } catch (error) {
     console.error(`\n❌ CRITICAL ERROR: ${error.message}`);
-    console.error('Stack:', error.stack);
     process.exit(1);
   }
 })();
