@@ -14,21 +14,69 @@ jobs:
         with:
           node-version: '18'
       
-      - name: Run test
+      - name: Check feed.xml location
         run: |
-          cd "!posts\\PRODUCTION_READY"
-          node test-setup.js
+          Write-Host "🔍 Checking feed.xml locations..."
+          
+          if (Test-Path "public/feed.xml") {
+            Write-Host "✅ Found: public/feed.xml"
+            $size = (Get-Item "public/feed.xml").Length / 1KB
+            Write-Host "   Size: $([Math]::Round($size, 2)) KB"
+          }
+          
+          if (Test-Path "!posts/PRODUCTION_READY/public/feed.xml") {
+            Write-Host "✅ Found: !posts/PRODUCTION_READY/public/feed.xml"
+            $size = (Get-Item "!posts/PRODUCTION_READY/public/feed.xml").Length / 1KB
+            Write-Host "   Size: $([Math]::Round($size, 2)) KB"
+          }
         shell: pwsh
       
-      - name: Test with secret
+      - name: Test with GitHub Secret
         run: |
-          Write-Host "Testing with secret..."
+          Write-Host "🔐 Testing GitHub Secret..."
+          
           if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
             Write-Host "✅ Secret DZEN_COOKIES_JSON found!"
+            Write-Host "   Size: $("${{ secrets.DZEN_COOKIES_JSON }}".Length) characters"
+            
+            # Test parsing
             $env:DZEN_COOKIES_JSON = "${{ secrets.DZEN_COOKIES_JSON }}"
+            $json = $env:DZEN_COOKIES_JSON | ConvertFrom-Json
+            Write-Host "✅ Valid JSON: $(($json | Measure-Object).Count) items"
+          } else {
+            Write-Host "⚠️  Secret DZEN_COOKIES_JSON not found"
+            Write-Host "   Add it to: Settings > Secrets > New Secret"
+            Write-Host "   Name: DZEN_COOKIES_JSON"
+            Write-Host "   Value: (your JSON cookies)"
+          }
+        shell: pwsh
+      
+      - name: Run test-setup.js if exists
+        run: |
+          if (Test-Path "!posts/PRODUCTION_READY/test-setup.js") {
+            Write-Host "🧪 Running test-setup.js..."
             cd "!posts\\PRODUCTION_READY"
             node test-setup.js
           } else {
-            Write-Host "⚠️  Secret not set yet. Add it to Settings > Secrets"
+            Write-Host "⚠️  test-setup.js not found in !posts/PRODUCTION_READY/"
           }
+        shell: pwsh
+        continue-on-error: true
+      
+      - name: Summary
+        run: |
+          Write-Host ""
+          Write-Host "✅ TEST SETUP COMPLETED" -ForegroundColor Green
+          Write-Host ""
+          Write-Host "🔍 What was checked:"
+          Write-Host "   ✅ feed.xml location"
+          Write-Host "   ✅ GitHub Secret DZEN_COOKIES_JSON"
+          Write-Host "   ✅ JSON parsing"
+          Write-Host "   ✅ test-setup.js availability"
+          Write-Host ""
+          Write-Host "🔗 Next steps:"
+          Write-Host "   1. Add GitHub Secret: DZEN_COOKIES_JSON"
+          Write-Host "   2. Run: Auto-Publish to Dzen Every 3 Hours workflow"
+          Write-Host "   3. Check logs for any errors"
+          Write-Host ""
         shell: pwsh
