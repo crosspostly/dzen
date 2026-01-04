@@ -9,6 +9,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest  # Use Ubuntu (faster, cheaper than Windows)
     timeout-minutes: 15
+    permissions:
+      contents: write  # For push to repository
+      actions: read    # For reading workflow status
     
     steps:
       - name: 📥 Checkout code
