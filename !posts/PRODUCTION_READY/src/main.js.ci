@@ -7,7 +7,10 @@ const path = require('path');
 const CONFIG = {
   cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
   cookiesPath: path.join(__dirname, '../config/cookies.json'),
-  // FIX: Go up 2 levels (!posts/PRODUCTION_READY/src -> !posts -> repo root) then into /public
+  // FIXED: Single correct path for both CI and local
+  // From: !posts/PRODUCTION_READY/src/main.js.ci
+  // Go up 3 levels: src -> PRODUCTION_READY -> !posts -> ROOT
+  // Then into: public/feed.xml
   feedPath: path.join(__dirname, '../../../public/feed.xml'),
   historyPath: path.join(__dirname, '../published_articles.txt'),
   headless: process.env.HEADLESS !== 'false',
