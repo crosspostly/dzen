@@ -33,14 +33,14 @@ jobs:
       
       - name: Test with GitHub Secret
         env:
-          DZEN_COOKIES_JSON: ${{ toJSON(secrets.DZEN_COOKIES_JSON) }}
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
           Write-Host "🔐 Testing GitHub Secret..."
           
           $secretValue = $env:DZEN_COOKIES_JSON
           
-          if ([string]::IsNullOrWhiteSpace($secretValue) -or $secretValue -eq '""') {
-            Write-Host "⚠️  Secret DZEN_COOKIES_JSON not found"
+          if ([string]::IsNullOrWhiteSpace($secretValue)) {
+            Write-Host "⚠️  Secret DZEN_COOKIES_JSON not found or empty"
             Write-Host "   Add it to: Settings > Secrets > New Secret"
             Write-Host "   Name: DZEN_COOKIES_JSON"
             Write-Host "   Value: (paste your JSON cookies directly)"
@@ -52,7 +52,15 @@ jobs:
           
           # Test parsing with error handling
           try {
+            # Try to parse directly
             $json = $secretValue | ConvertFrom-Json -ErrorAction Stop
+            
+            # Check if we got a string back (double-encoded case) and try to parse again if needed
+            if ($json -is [string]) {
+               Write-Host "⚠️  Detected double-encoded JSON string, parsing again..."
+               $json = $json | ConvertFrom-Json -ErrorAction Stop
+            }
+
             $count = if ($json -is [array]) { $json.Count } else { 1 }
             Write-Host "✅ Valid JSON: $count items parsed successfully"
             
@@ -71,7 +79,7 @@ jobs:
             Write-Host ""
             Write-Host "🔍 Troubleshooting:"
             Write-Host "   1. Check Secret value in Settings > Secrets"
-            Write-Host "   2. Paste your JSON directly (no encoding needed!)"
+            Write-Host "   2. Paste your JSON directly"
             Write-Host "   3. Validate with: https://jsonlint.com"
             Write-Host ""
             Write-Host "   First 200 chars of secret:"
@@ -110,8 +118,7 @@ jobs:
           Write-Host ""
           Write-Host "🔗 Next steps:"
           Write-Host "   1. Add GitHub Secret: DZEN_COOKIES_JSON"
-          Write-Host "   2. Paste your JSON directly (no encoding!)"
-          Write-Host "   3. Run: Auto-Publish to Dzen Every 3 Hours workflow"
-          Write-Host "   4. Check logs for any errors"
+          Write-Host "   2. Run: Auto-Publish to Dzen Every 3 Hours workflow"
+          Write-Host "   3. Check logs for any errors"
           Write-Host ""
         shell: pwsh
