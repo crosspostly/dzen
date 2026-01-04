@@ -36,22 +36,22 @@ async function getArticlesFromFeed() {
     while ((match = itemRegex.exec(feedContent)) !== null) {
       const itemContent = match[1];
       
-      const titleMatch = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<title>(.*?)<\/title>/);
-      const title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : 'Without title';
+      const titleMatch = itemContent.match(/<title><!\[CDATA\[(.*)\]\]>/) || itemContent.match(/<title>(.+?)<\/title>/);
+      const title = titleMatch ? titleMatch[1].replace(/<![CDATA[(.*?)]\]>/g, '$1').trim() : 'Without title';
       
-      const linkMatch = itemContent.match(/<link>(.*?)<\/link>/);
+      const linkMatch = itemContent.match(/<link>(.+?)<\/link>/);
       const link = linkMatch ? linkMatch[1] : '';
       
-      const mediaContentMatch = itemContent.match(/<media:content[^>]*url="(.*?)"[^>]*>/);
+      const mediaContentMatch = itemContent.match(/<media:content[^>]*url="(.+?)"[^>]*>/);
       const imageUrl = mediaContentMatch ? mediaContentMatch[1] : '';
       
-      const dateMatch = itemContent.match(/<pubDate>(.*?)<\/pubDate>/);
+      const dateMatch = itemContent.match(/<pubDate>(.+?)<\/pubDate>/);
       const pubDate = dateMatch ? dateMatch[1] : '';
       
-      const descMatch = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<description>(.*?)<\/description>/);
+      const descMatch = itemContent.match(/<description><!\[CDATA\[(.*)\]\]>/) || itemContent.match(/<description>(.+?)<\/description>/);
       const description = descMatch ? descMatch[1] : '';
       
-      const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<content:encoded>(.*?)<\/content:encoded>/);
+      const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[(.*)\]\]>/) || itemContent.match(/<content:encoded>(.+?)<\/content:encoded>/);
       const content = contentMatch ? contentMatch[1] : description;
       
       items.push({ title, description, link, pubDate, imageUrl, content });
@@ -211,11 +211,11 @@ function getFirstUnpublishedArticle(articles, publishedArticles) {
     const isPublished = isArticlePublished(art.title, publishedArticles);
     const status = isPublished ? '✋ Already published' : '✅ NEW';
     
-    console.log(`   [${idx + 1}/${articles.length}] ${status}`);
+    console.log(`   ***${idx + 1}/13*** ${status}`);
     console.log(`        Title: "${art.title}"`);
     console.log(`        Length: ${art.title.length}`);
     console.log(`        Normalized: "${normalizeTitle(art.title)}"`);
-    console.log(`        Hex: ${art.title.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ')}`);
+    console.log(`        Hex: ${art.title.split('').map(c => c.charCodeAt(0).toString(16)).join(' ')}`);
     console.log(`        Published: ${isPublished}`);
   });
   console.log();
@@ -302,17 +302,22 @@ async function typeNaturally(element, text, page) {
 // Scroll page naturally (simulates human scrolling)
 async function scrollNaturally(page, direction = 'down', amount = 200) {
   try {
+    console.log(`🔧 DEBUG: scrollNaturally called with direction="${direction}", amount=${amount}`);
     const scrollSteps = Math.floor(Math.random() * 3) + 3; // 3-5 steps
     const stepAmount = amount / scrollSteps;
+    console.log(`🔧 DEBUG: scrollSteps=${scrollSteps}, stepAmount=${stepAmount}`);
   
     for (let i = 0; i < scrollSteps; i++) {
+      console.log(`🔧 DEBUG: scroll step ${i+1}/${scrollSteps}`);
       await page.evaluate(({step, dir}) => {
         window.scrollBy(0, dir === 'down' ? step : -step);
       }, {step: stepAmount, dir: direction});
       await page.waitForTimeout(Math.floor(Math.random() * 50) + 30);
     }
+    console.log(`✅ scrollNaturally completed`);
   } catch (error) {
     console.error(`❌ Scroll failed: ${error.message}`);
+    console.error(`Stack: ${error.stack}`);
     throw error;
   }
 }
@@ -413,8 +418,10 @@ async function clickNaturally(page, element) {
 
     // 🎭 Simulate human-like page exploration
     console.log('🎭 Human simulation: Exploring page...');
+    console.log('🔧 DEBUG: About to call scrollNaturally');
     try {
       await scrollNaturally(page, 'down', 100);
+      console.log('🔧 DEBUG: scrollNaturally succeeded');
       await randomDelay(page, 800, 1500);
     } catch (error) {
       console.error(`❌ Human simulation failed: ${error.message}`);
@@ -603,6 +610,7 @@ async function clickNaturally(page, element) {
     
   } catch (error) {
     console.error(`\n❌ CRITICAL ERROR: ${error.message}`);
+    console.error(`Stack: ${error.stack}`);
     process.exit(1);
   }
 })();
