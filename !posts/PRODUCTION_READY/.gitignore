@@ -1,0 +1,8 @@
+node_modules/
+*.log
+debug*.html
+*.tmp
+.DS_Store
+Thumbs.db
+config/cookies.json
+data/published_articles.txt

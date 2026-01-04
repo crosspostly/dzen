@@ -1,0 +1,28 @@
+{
+  "name": "dzen-auto-publisher",
+  "version": "1.0.0",
+  "description": "Полностью автоматизированный инструмент для публикации статей из RSS-файла в Яндекс Дзен с использованием точных селекторов и правильной обработки HTML-тегов",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "publish": "node src/main.js",
+    "install-browsers": "npx playwright install chromium"
+  },
+  "keywords": ["dzen", "publisher", "automation", "rss", "yandex", "content", "publishing"],
+  "author": "Auto Publisher",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/dzen-auto-publisher.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/dzen-auto-publisher/issues"
+  },
+  "homepage": "https://github.com/your-username/dzen-auto-publisher#readme"
+}
