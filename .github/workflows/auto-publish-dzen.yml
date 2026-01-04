@@ -58,13 +58,13 @@ jobs:
       - name: 📄 Check feed.xml exists
         run: |
           echo "🔍 Checking feed.xml..."
-          if [ -f "public/feed.xml" ]; then
-            ITEM_COUNT=$(grep -c "<item>" public/feed.xml || echo "0")
+          if [ -f "!posts/PRODUCTION_READY/public/feed.xml" ]; then
+            ITEM_COUNT=$(grep -c "<item>" "!posts/PRODUCTION_READY/public/feed.xml" || echo "0")
             echo "✅ feed.xml found"
             echo "   📊 Articles in feed: $ITEM_COUNT"
-            echo "   📦 File size: $(wc -c < public/feed.xml) bytes"
+            echo "   📦 File size: $(wc -c < "!posts/PRODUCTION_READY/public/feed.xml") bytes"
           else
-            echo "❌ ERROR: feed.xml not found at public/feed.xml"
+            echo "❌ ERROR: feed.xml not found at !posts/PRODUCTION_READY/public/feed.xml"
             exit 1
           fi
       
@@ -97,12 +97,13 @@ jobs:
           echo ""
           echo "📋 Configuration:"
           echo "   Feed: public/feed.xml"
-          echo "   Cookies: From DZEN_COOKIES_JSON secret (SECURE ✅)"
+          echo "   Cookies: From DZEN_COOKIES_JSON env variable (encrypted from secret)"
           echo "   Environment: CI/CD (GitHub Actions)"
           echo "   Headless mode: true"
           echo ""
           
-          timeout 300 node src/main.js 2>&1 | tee publish.log
+          # Use main.js.ci which reads from env variable
+          timeout 300 node src/main.js.ci 2>&1 | tee publish.log
           PUBLISHER_EXIT=$?
           
           echo ""
@@ -175,17 +176,17 @@ jobs:
           echo "✅ Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           echo ""
           echo "📋 What happened:"
-          echo "   ✅ Validated DZEN_COOKIES_JSON secret (encrypted)"
+          echo "   ✅ Validated DZEN_COOKIES_JSON secret"
           echo "   ✅ Checked feed.xml"
           echo "   ✅ Installed dependencies"
-          echo "   ✅ Ran auto-publisher"
+          echo "   ✅ Ran auto-publisher (main.js.ci)"
           echo "   ✅ Committed results"
           echo ""
           echo "🔐 Security:"
-          echo "   ✅ Cookies from GitHub Secrets (encrypted)"
-          echo "   ✅ No credentials in logs"
-          echo "   ✅ No sensitive data in repository"
-          echo "   ✅ Environment variables only (CI mode)"
+          echo "   ✅ Cookies from GitHub Secrets (AES-256 encrypted)"
+          echo "   ✅ Passed via environment variable"
+          echo "   ✅ Masked in logs (GitHub automatic)"
+          echo "   ✅ No credentials in repository"
           echo ""
           echo "📖 Next steps:"
           echo "   • Check 'Actions' tab for detailed logs"
