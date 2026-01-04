@@ -35,19 +35,51 @@ jobs:
         run: |
           Write-Host "🔐 Testing GitHub Secret..."
           
-          if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
-            Write-Host "✅ Secret DZEN_COOKIES_JSON found!"
-            Write-Host "   Size: $("${{ secrets.DZEN_COOKIES_JSON }}".Length) characters"
-            
-            # Test parsing
-            $env:DZEN_COOKIES_JSON = "${{ secrets.DZEN_COOKIES_JSON }}"
-            $json = $env:DZEN_COOKIES_JSON | ConvertFrom-Json
-            Write-Host "✅ Valid JSON: $(($json | Measure-Object).Count) items"
-          } else {
+          $secretValue = "${{ secrets.DZEN_COOKIES_JSON }}"
+          
+          if ([string]::IsNullOrWhiteSpace($secretValue)) {
             Write-Host "⚠️  Secret DZEN_COOKIES_JSON not found"
             Write-Host "   Add it to: Settings > Secrets > New Secret"
             Write-Host "   Name: DZEN_COOKIES_JSON"
             Write-Host "   Value: (your JSON cookies)"
+            exit 0
+          }
+          
+          Write-Host "✅ Secret DZEN_COOKIES_JSON found!"
+          Write-Host "   Size: $($secretValue.Length) characters"
+          
+          # Test parsing with error handling
+          try {
+            $json = $secretValue | ConvertFrom-Json -ErrorAction Stop
+            $count = if ($json -is [array]) { $json.Count } else { 1 }
+            Write-Host "✅ Valid JSON: $count items parsed successfully"
+            
+            # Show cookie names if available
+            if ($json -is [array]) {
+              $names = $json | Select-Object -ExpandProperty name -ErrorAction SilentlyContinue
+              if ($names) {
+                Write-Host "   Cookie names: $($names -join ', ')"
+              }
+            } elseif ($null -ne $json.name) {
+              Write-Host "   Cookie name: $($json.name)"
+            }
+          } catch {
+            Write-Host "❌ JSON Parse Error!"
+            Write-Host "   Error: $($_.Exception.Message)"
+            Write-Host ""
+            Write-Host "🔍 Troubleshooting:"
+            Write-Host "   1. Check Secret value in Settings > Secrets"
+            Write-Host "   2. Ensure JSON is valid (no double-escaping)"
+            Write-Host "   3. Use: https://jsonlint.com to validate"
+            Write-Host ""
+            Write-Host "   First 150 chars of secret:"
+            $preview = if ($secretValue.Length -gt 150) { 
+              $secretValue.Substring(0, 150) + "..." 
+            } else { 
+              $secretValue 
+            }
+            Write-Host "   $preview"
+            exit 1
           }
         shell: pwsh
       
