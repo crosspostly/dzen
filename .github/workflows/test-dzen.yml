@@ -33,30 +33,22 @@ jobs:
       
       - name: Test with GitHub Secret
         env:
-          DZEN_COOKIES_B64: ${{ secrets.DZEN_COOKIES_JSON }}
+          DZEN_COOKIES_JSON: ${{ toJSON(secrets.DZEN_COOKIES_JSON) }}
         run: |
           Write-Host "🔐 Testing GitHub Secret..."
           
-          if ([string]::IsNullOrWhiteSpace($env:DZEN_COOKIES_B64)) {
+          $secretValue = $env:DZEN_COOKIES_JSON
+          
+          if ([string]::IsNullOrWhiteSpace($secretValue) -or $secretValue -eq '""') {
             Write-Host "⚠️  Secret DZEN_COOKIES_JSON not found"
             Write-Host "   Add it to: Settings > Secrets > New Secret"
             Write-Host "   Name: DZEN_COOKIES_JSON"
-            Write-Host "   Value: (your JSON cookies)"
+            Write-Host "   Value: (paste your JSON cookies directly)"
             exit 0
           }
           
           Write-Host "✅ Secret DZEN_COOKIES_JSON found!"
-          Write-Host "   Size: $($env:DZEN_COOKIES_B64.Length) characters"
-          
-          # Decode from Base64
-          try {
-            $decodedBytes = [System.Convert]::FromBase64String($env:DZEN_COOKIES_B64)
-            $secretValue = [System.Text.Encoding]::UTF8.GetString($decodedBytes)
-            Write-Host "✅ Secret decoded successfully"
-          } catch {
-            Write-Host "⚠️  Secret is not Base64 encoded, treating as raw JSON"
-            $secretValue = $env:DZEN_COOKIES_B64
-          }
+          Write-Host "   Size: $($secretValue.Length) characters"
           
           # Test parsing with error handling
           try {
@@ -78,18 +70,13 @@ jobs:
             Write-Host "   Error: $($_.Exception.Message)"
             Write-Host ""
             Write-Host "🔍 Troubleshooting:"
-            Write-Host "   1. Encode your JSON in Base64 first"
-            Write-Host "   2. Add encoded value to: Settings > Secrets > New Secret"
-            Write-Host "   3. Name: DZEN_COOKIES_JSON"
+            Write-Host "   1. Check Secret value in Settings > Secrets"
+            Write-Host "   2. Paste your JSON directly (no encoding needed!)"
+            Write-Host "   3. Validate with: https://jsonlint.com"
             Write-Host ""
-            Write-Host "   How to encode JSON in Base64:"
-            Write-Host "   - Linux/Mac: echo 'YOUR_JSON' | base64"
-            Write-Host "   - Windows: [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('YOUR_JSON'))"
-            Write-Host "   - Online: https://www.base64encode.org/"
-            Write-Host ""
-            Write-Host "   First 100 chars of secret:"
-            $preview = if ($secretValue.Length -gt 100) { 
-              $secretValue.Substring(0, 100) + "..." 
+            Write-Host "   First 200 chars of secret:"
+            $preview = if ($secretValue.Length -gt 200) { 
+              $secretValue.Substring(0, 200) + "..." 
             } else { 
               $secretValue 
             }
@@ -122,8 +109,9 @@ jobs:
           Write-Host "   ✅ test-setup.js availability"
           Write-Host ""
           Write-Host "🔗 Next steps:"
-          Write-Host "   1. Add GitHub Secret: DZEN_COOKIES_JSON (Base64 encoded)"
-          Write-Host "   2. Run: Auto-Publish to Dzen Every 3 Hours workflow"
-          Write-Host "   3. Check logs for any errors"
+          Write-Host "   1. Add GitHub Secret: DZEN_COOKIES_JSON"
+          Write-Host "   2. Paste your JSON directly (no encoding!)"
+          Write-Host "   3. Run: Auto-Publish to Dzen Every 3 Hours workflow"
+          Write-Host "   4. Check logs for any errors"
           Write-Host ""
         shell: pwsh
