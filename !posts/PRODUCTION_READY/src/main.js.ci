@@ -7,11 +7,6 @@ const path = require('path');
 const CONFIG = {
   cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
   cookiesPath: path.join(__dirname, '../config/cookies.json'),
-  // 🔨 ABSOLUTE FIX: Build path by going up from __dirname and then down
-  // __dirname = /home/runner/work/dzen/dzen/!posts/PRODUCTION_READY/src
-  // path.dirname = /home/runner/work/dzen/dzen/!posts/PRODUCTION_READY
-  // path.dirname(path.dirname(__dirname)) = /home/runner/work/dzen/dzen
-  // Then add /public/feed.xml
   feedPath: path.join(path.dirname(path.dirname(path.dirname(__dirname))), 'public', 'feed.xml'),
   historyPath: path.join(__dirname, '../published_articles.txt'),
   headless: process.env.HEADLESS !== 'false',
@@ -119,7 +114,6 @@ async function loadCookies() {
     let cookiesJson;
     
     if (process.env.CI) {
-      // 🔐 CI/CD Mode: Read from environment variable
       cookiesJson = process.env.DZEN_COOKIES_JSON;
       
       if (!cookiesJson || cookiesJson.length < 10) {
@@ -129,13 +123,11 @@ async function loadCookies() {
       console.log(`🔐 Cookies loaded from environment variable (CI/CD)`);
       console.log(`   Size: ${cookiesJson.length} characters`);
     } else {
-      // 📄 Local Mode: Read from file
       cookiesJson = await fs.readFile(CONFIG.cookiesPath, 'utf8');
       console.log(`🔐 Cookies loaded from file: ${CONFIG.cookiesPath}`);
       console.log(`   Size: ${cookiesJson.length} characters`);
     }
     
-    // 📖 Validate JSON format
     try {
       const cookies = JSON.parse(cookiesJson);
       console.log(`✅ Valid JSON format (${Array.isArray(cookies) ? cookies.length : 1} items)\n`);
@@ -244,10 +236,12 @@ async function savePublishedArticle(article) {
     
     console.log(`\n📝 Found new article: ${article.title.substring(0, 60)}...`);
     console.log(`📄 Content length: ${article.content.length} characters`);
+    console.log(`🔍 First 100 chars: ${article.content.substring(0, 100)}...`);
     
     // Process content
     const processedContent = processArticleContent(article.content);
     console.log(`✅ Content processed: ${processedContent.length} characters`);
+    console.log(`🔍 First 100 chars after processing: ${processedContent.substring(0, 100)}...`);
     
     // Launch browser
     console.log('\n🌐 Launching browser...');
@@ -292,6 +286,7 @@ async function savePublishedArticle(article) {
     const modalCloseButton = await page.$('[data-testid="close-button"]');
     if (modalCloseButton) {
       await modalCloseButton.click();
+      console.log('✅ Closed modal window');
       await page.waitForTimeout(2000);
     }
     
@@ -313,116 +308,277 @@ async function savePublishedArticle(article) {
         
         // Close help popup
         await page.evaluate(() => {
-          const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal');
+          const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, .article-editor-desktop--help-popup__overlay-3q');
           overlays.forEach(overlay => {
             overlay.style.display = 'none';
+            overlay.style.visibility = 'hidden';
+            overlay.style.pointerEvents = 'none';
             overlay.remove();
           });
         });
         
         await page.keyboard.press('Escape');
+        console.log('✅ Closed help popup');
+        await page.waitForTimeout(2000);
+        await page.waitForTimeout(3000);
+        
+        // 🔍 FIND ALL INPUT FIELDS AND ANALYZE THEM
+        console.log('\n🔍 === ANALYZING AVAILABLE INPUT FIELDS ===\n');
+        const allEditableElements = await page.$$('input[type="text"], textarea, div[contenteditable="true"]');
+        console.log(`🔍 Found ${allEditableElements.length} editable fields\n`);
+        
+        // GET DETAILED INFORMATION ABOUT EACH FIELD
+        const fieldInfo = await page.evaluate(() => {
+          const elements = Array.from(document.querySelectorAll('input[type="text"], textarea, div[contenteditable="true"]'));
+          return elements.map((el, index) => {
+            return {
+              index: index,
+              tagName: el.tagName,
+              id: el.id || 'none',
+              className: el.className || 'none',
+              placeholder: el.getAttribute('placeholder') || 'none',
+              ariaLabel: el.getAttribute('aria-label') || 'none',
+              contentEditable: el.getAttribute('contenteditable') || 'none',
+              role: el.getAttribute('role') || 'none',
+              textContent: (el.textContent || el.getAttribute('value') || '').substring(0, 30),
+              isVisible: el.offsetParent !== null,
+              offsetHeight: el.offsetHeight,
+              offsetWidth: el.offsetWidth
+            };
+          });
+        });
+        
+        console.log('📋 === FIELD ANALYSIS RESULTS ===\n');
+        fieldInfo.forEach((field, idx) => {
+          console.log(`[${idx + 1}] ${field.tagName}`);
+          console.log(`    ID: ${field.id}`);
+          console.log(`    Class: ${field.className}`);
+          console.log(`    Placeholder: "${field.placeholder}"`);
+          console.log(`    Aria-label: "${field.ariaLabel}"`);
+          console.log(`    Role: ${field.role}`);
+          console.log(`    Text: "${field.textContent}"`);
+          console.log(`    Visible: ${field.isVisible} | Size: ${field.offsetWidth}x${field.offsetHeight}`);
+          console.log('');
+        });
+        
+        // 1. FILL TITLE
+        console.log('\n📝 === 1. FILLING TITLE ===\n');
+        
+        let titleElement = null;
+        let titleElementIndex = -1;
+        
+        // Try to find title field by aria-label or placeholder
+        for (let i = 0; i < allEditableElements.length; i++) {
+          const field = fieldInfo[i];
+          
+          if (field.ariaLabel.toLowerCase().includes('заголов') || 
+              field.ariaLabel.toLowerCase().includes('title') ||
+              field.placeholder.toLowerCase().includes('заголов') ||
+              field.placeholder.toLowerCase().includes('title')) {
+            
+            if (field.isVisible) {
+              const element = allEditableElements[i];
+              await element.focus();
+              await element.fill(article.title);
+              console.log(`✅ Title filled in field [${i + 1}]`);
+              console.log(`   Aria-label: "${field.ariaLabel}"`);
+              console.log(`   Placeholder: "${field.placeholder}"`);
+              console.log(`   Title: "${article.title.substring(0, 50)}..."`);
+              titleElement = element;
+              titleElementIndex = i;
+              break;
+            }
+          }
+        }
+        
+        // If title field not found, use first visible field
+        if (!titleElement && allEditableElements.length > 0) {
+          console.log('ℹ️  Title field not found by attributes, using first field');
+          const field = fieldInfo[0];
+          if (field.isVisible) {
+            const element = allEditableElements[0];
+            await element.focus();
+            await element.fill(article.title);
+            console.log(`✅ Title filled in field [1] (first available)`);
+            console.log(`   Title: "${article.title.substring(0, 50)}..."`);
+            titleElement = element;
+            titleElementIndex = 0;
+          }
+        }
+        
+        if (!titleElement) {
+          console.log('❌ Could not find title field');
+        } else {
+          await page.waitForTimeout(1000);
+        }
+        
+        // 2. FILL CONTENT
+        console.log('\n📝 === 2. FILLING ARTICLE CONTENT ===\n');
+        
+        let contentElement = null;
+        let contentElementIndex = -1;
+        
+        // Find content field (not title)
+        for (let i = 0; i < allEditableElements.length; i++) {
+          const field = fieldInfo[i];
+          
+          // Skip title fields
+          if (field.ariaLabel.toLowerCase().includes('заголов') || 
+              field.ariaLabel.toLowerCase().includes('title') ||
+              field.placeholder.toLowerCase().includes('заголов') ||
+              field.placeholder.toLowerCase().includes('title')) {
+            continue;
+          }
+          
+          if (field.isVisible && i !== titleElementIndex) {
+            const element = allEditableElements[i];
+            await element.focus();
+            await element.fill(processedContent);
+            console.log(`✅ Content filled in field [${i + 1}]`);
+            console.log(`   Aria-label: "${field.ariaLabel}"`);
+            console.log(`   Placeholder: "${field.placeholder}"`);
+            console.log(`   Content length: ${processedContent.length} characters`);
+            console.log(`   First 50 chars: "${processedContent.substring(0, 50)}..."`);
+            contentElement = element;
+            contentElementIndex = i;
+            break;
+          }
+        }
+        
+        if (!contentElement) {
+          console.log('❌ Could not find content field');
+        } else {
+          await page.keyboard.press('Enter');
+          console.log('✅ Pressed Enter after content');
+          await page.waitForTimeout(1000);
+        }
+        
         await page.waitForTimeout(2000);
         
-        // Find all input fields
-        const allEditableElements = await page.$$('input[type="text"], textarea, div[contenteditable="true"]');
-        console.log(`🔍 Found ${allEditableElements.length} input fields`);
+        // 3. INSERT IMAGE
+        console.log('\n🖼️  === 3. INSERTING IMAGE ===\n');
         
-        // 1. Fill title (first field)
-        console.log('\n📝 1. Filling title...');
-        if (allEditableElements.length > 0) {
-          const titleElement = allEditableElements[0];
-          await titleElement.focus();
-          await titleElement.fill(article.title);
-          console.log(`✅ Title filled: "${article.title.substring(0, 50)}..."`);
-          await page.waitForTimeout(1000);
-        }
-        
-        // 2. Fill content (second field)
-        console.log('\n📝 2. Filling article content...');
-        if (allEditableElements.length > 1) {
-          const contentElement = allEditableElements[1];
-          await contentElement.focus();
-          await contentElement.fill(processedContent);
-          console.log(`✅ Content filled: ${processedContent.length} characters`);
-          await page.keyboard.press('Enter');
-          console.log('✅ Enter pressed after content');
-          await page.waitForTimeout(1000);
-        }
-        
-        // 3. Insert image
-        console.log('\n🖼️ 3. Inserting image...');
         const imageButtonSelector = 'button.article-editor-desktop--side-button__sideButton-1z[data-tip="Вставить изображение"]';
         try {
           const imageButton = await page.$(imageButtonSelector);
-          if (imageButton && article.imageUrl) {
+          if (imageButton) {
+            console.log(`✅ Found image button: ${imageButtonSelector}`);
             await imageButton.click();
-            console.log('✅ Image button clicked');
             await page.waitForTimeout(3000);
             
-            const imageInputSelectors = [
-              'input[placeholder*="ссылка"]',
-              'input[placeholder*="url"]',
-              'input[type="text"]'
-            ];
-            
-            for (const imgInputSel of imageInputSelectors) {
-              try {
+            if (article.imageUrl) {
+              const imageInputSelectors = [
+                'input[placeholder*="ссылка"]',
+                'input[placeholder*="url"]',
+                'input[placeholder*="изображение"]',
+                'input[type="text"]',
+                'input'
+              ];
+              
+              let imageInputFound = false;
+              for (const imgInputSel of imageInputSelectors) {
                 const imageInput = await page.$(imgInputSel);
                 if (imageInput && await imageInput.isVisible()) {
                   await imageInput.fill(article.imageUrl);
-                  console.log(`✅ Image URL inserted: ${article.imageUrl.substring(0, 50)}...`);
+                  console.log(`✅ Image URL filled`);
+                  console.log(`   Selector: ${imgInputSel}`);
+                  console.log(`   URL: ${article.imageUrl.substring(0, 50)}...`);
                   await imageInput.press('Enter');
                   await page.waitForTimeout(1000);
+                  imageInputFound = true;
                   break;
                 }
-              } catch (e) {
-                continue;
               }
+              
+              if (!imageInputFound) {
+                console.log('❌ Image URL input field not found');
+              }
+            } else {
+              console.log('ℹ️  Image URL not available');
             }
+          } else {
+            console.log(`❌ Image button not found: ${imageButtonSelector}`);
           }
         } catch (e) {
-          console.log('⚠️  Image insertion skipped:', e.message);
+          console.log('❌ Image insertion error:', e.message);
         }
         
         await page.waitForTimeout(2000);
         
-        // 4. First publish button
-        console.log('\n📤 4. Clicking first publish button...');
+        // 4. FIRST PUBLISH BUTTON
+        console.log('\n📤 === 4. CLICKING FIRST PUBLISH BUTTON ===\n');
+        
         const publishSelectors = [
           '[data-testid="publish-btn"]',
-          'button:has-text("Опубликовать"):not([disabled])'
+          'button:has-text("Опубликовать"):not([disabled])',
+          'button[class*="publish"]'
         ];
         
+        let publishClicked = false;
         for (const selector of publishSelectors) {
-          try {
-            const publishButton = await page.$(selector);
-            if (publishButton && await publishButton.isVisible()) {
-              await publishButton.click();
-              console.log(`✅ First publish button clicked: ${selector}`);
-              break;
-            }
-          } catch (e) {
-            continue;
+          const publishButton = await page.$(selector);
+          if (publishButton && await publishButton.isVisible() && await publishButton.isEnabled()) {
+            console.log(`✅ Found and clicked publish button`);
+            console.log(`   Selector: ${selector}`);
+            await publishButton.click();
+            publishClicked = true;
+            break;
           }
+        }
+        
+        if (!publishClicked) {
+          console.log('⚠️  First publish button not found');
         }
         
         await page.waitForTimeout(5000);
         
-        // 5. Second publish button (confirmation)
-        console.log('\n📤 5. Clicking confirmation publish button...');
+        // 5. SECOND PUBLISH BUTTON (confirmation)
+        console.log('\n📤 === 5. CLICKING CONFIRMATION PUBLISH BUTTON ===\n');
+        
         const secondPublishButtonSelector = 'button[data-testid="publish-btn"][type="submit"]';
         try {
           const secondPublishButton = await page.$(secondPublishButtonSelector);
-          if (secondPublishButton && await secondPublishButton.isVisible()) {
+          if (secondPublishButton && await secondPublishButton.isVisible() && await secondPublishButton.isEnabled()) {
+            console.log(`✅ Found confirmation publish button`);
+            console.log(`   Selector: ${secondPublishButtonSelector}`);
             await secondPublishButton.click();
-            console.log('✅ Confirmation publish button clicked!');
-            console.log('\n🎉 Article successfully published!');
+            console.log('\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!');
+            console.log(`   Title: "${article.title}"`);
+            console.log(`   Content length: ${processedContent.length} characters`);
+            console.log(`   Image: ${article.imageUrl || 'none'}`);
             
             // Save to history
             await savePublishedArticle(article);
+          } else {
+            console.log(`❌ Confirmation publish button not found: ${secondPublishButtonSelector}`);
+            
+            // Try alternative selectors
+            const altSelectors = [
+              'button:has-text("Опубликовать"):not([disabled]):not([aria-disabled="true"])',
+              'button:has-text("Опубликовать сейчас"):not([disabled]):not([aria-disabled="true"])',
+              'button:has-text("Да"):not([disabled]):not([aria-disabled="true"])'
+            ];
+            
+            let altFound = false;
+            for (const altSel of altSelectors) {
+              const altButton = await page.$(altSel);
+              if (altButton && await altButton.isVisible() && await altButton.isEnabled()) {
+                console.log(`✅ Found alternative confirmation button`);
+                console.log(`   Selector: ${altSel}`);
+                await altButton.click();
+                console.log('\n🎉 ARTICLE PUBLISHED SUCCESSFULLY (via alternative selector)!');
+                await savePublishedArticle(article);
+                altFound = true;
+                break;
+              }
+            }
+            
+            if (!altFound) {
+              console.log('⚠️  No confirmation button found - publication may have failed');
+            }
           }
         } catch (e) {
-          console.log('❌ Error clicking confirmation button:', e.message);
+          console.log('❌ Error with confirmation button:', e.message);
         }
       }
     }
@@ -430,7 +586,7 @@ async function savePublishedArticle(article) {
     await page.waitForTimeout(5000);
     await browser.close();
     
-    console.log('\n✅ Auto-publisher completed successfully!');
+    console.log('\n✅ Auto-publisher completed!');
     process.exit(0);
     
   } catch (error) {
