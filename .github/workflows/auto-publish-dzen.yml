@@ -57,13 +57,15 @@ jobs:
       - name: 📄 Check feed.xml exists
         run: |
           echo "🔍 Checking feed.xml..."
-          if [ -f "!posts/PRODUCTION_READY/public/feed.xml" ]; then
-            ITEM_COUNT=$(grep -c "<item>" "!posts/PRODUCTION_READY/public/feed.xml" || echo "0")
-            echo "✅ feed.xml found"
+          if [ -f "public/feed.xml" ]; then
+            ITEM_COUNT=$(grep -c "<item>" "public/feed.xml" || echo "0")
+            echo "✅ feed.xml found in /public"
             echo "   📊 Articles in feed: $ITEM_COUNT"
-            echo "   📦 File size: $(wc -c < "!posts/PRODUCTION_READY/public/feed.xml") bytes"
+            echo "   📦 File size: $(wc -c < "public/feed.xml") bytes"
           else
-            echo "❌ ERROR: feed.xml not found at !posts/PRODUCTION_READY/public/feed.xml"
+            echo "❌ ERROR: feed.xml not found at /public/feed.xml"
+            echo "📁 Available files:"
+            ls -la public/ 2>/dev/null || echo "   /public directory not found"
             exit 1
           fi
       
@@ -80,6 +82,13 @@ jobs:
           echo "🎬 Installing Playwright browsers..."
           npx playwright install chromium --with-deps
         continue-on-error: false
+      
+      - name: 📋 Copy feed.xml to work directory
+        run: |
+          echo "📋 Copying feed.xml to work directory..."
+          cp public/feed.xml "!posts/PRODUCTION_READY/public/feed.xml"
+          echo "✅ feed.xml copied"
+          echo "   File size: $(wc -c < "!posts/PRODUCTION_READY/public/feed.xml") bytes"
       
       - name: 🤖 Run auto-publisher
         id: publisher
@@ -176,8 +185,9 @@ jobs:
           echo ""
           echo "📋 What happened:"
           echo "   ✅ Validated DZEN_COOKIES_JSON secret"
-          echo "   ✅ Checked feed.xml"
+          echo "   ✅ Checked feed.xml in /public"
           echo "   ✅ Installed dependencies"
+          echo "   ✅ Copied feed.xml to work directory"
           echo "   ✅ Ran auto-publisher (main.js.ci)"
           echo "   ✅ Committed results"
           echo ""
