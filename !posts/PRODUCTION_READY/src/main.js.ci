@@ -7,7 +7,8 @@ const path = require('path');
 const CONFIG = {
   cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
   cookiesPath: path.join(__dirname, '../config/cookies.json'),
-  feedPath: path.join(__dirname, '../public/feed.xml'),
+  // READ FEED FROM REPOSITORY ROOT, NOT LOCAL DIRECTORY!
+  feedPath: process.env.CI ? path.join(__dirname, '../../public/feed.xml') : path.join(__dirname, '../public/feed.xml'),
   historyPath: path.join(__dirname, '../published_articles.txt'),
   headless: process.env.HEADLESS !== 'false',
   timeout: 60000,
