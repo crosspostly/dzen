@@ -236,12 +236,10 @@ async function savePublishedArticle(article) {
     
     console.log(`\n📝 Found new article: ${article.title.substring(0, 60)}...`);
     console.log(`📄 Content length: ${article.content.length} characters`);
-    console.log(`🔍 First 100 chars: ${article.content.substring(0, 100)}...`);
     
     // Process content
     const processedContent = processArticleContent(article.content);
     console.log(`✅ Content processed: ${processedContent.length} characters`);
-    console.log(`🔍 First 100 chars after processing: ${processedContent.substring(0, 100)}...`);
     
     // Launch browser
     console.log('\n🌐 Launching browser...');
@@ -319,15 +317,14 @@ async function savePublishedArticle(article) {
         
         await page.keyboard.press('Escape');
         console.log('✅ Closed help popup');
-        await page.waitForTimeout(2000);
-        await page.waitForTimeout(3000);
+        await page.waitForTimeout(5000);
         
-        // 🔍 FIND ALL INPUT FIELDS AND ANALYZE THEM
+        // 🔍 FIND ALL INPUT FIELDS
         console.log('\n🔍 === ANALYZING AVAILABLE INPUT FIELDS ===\n');
         const allEditableElements = await page.$$('input[type="text"], textarea, div[contenteditable="true"]');
-        console.log(`🔍 Found ${allEditableElements.length} editable fields\n`);
+        console.log(`🔍 Found ${allEditableElements.length} editable fields`);
         
-        // GET DETAILED INFORMATION ABOUT EACH FIELD
+        // GET DETAILED INFORMATION
         const fieldInfo = await page.evaluate(() => {
           const elements = Array.from(document.querySelectorAll('input[type="text"], textarea, div[contenteditable="true"]'));
           return elements.map((el, index) => {
@@ -338,9 +335,6 @@ async function savePublishedArticle(article) {
               className: el.className || 'none',
               placeholder: el.getAttribute('placeholder') || 'none',
               ariaLabel: el.getAttribute('aria-label') || 'none',
-              contentEditable: el.getAttribute('contenteditable') || 'none',
-              role: el.getAttribute('role') || 'none',
-              textContent: (el.textContent || el.getAttribute('value') || '').substring(0, 30),
               isVisible: el.offsetParent !== null,
               offsetHeight: el.offsetHeight,
               offsetWidth: el.offsetWidth
@@ -348,15 +342,12 @@ async function savePublishedArticle(article) {
           });
         });
         
-        console.log('📋 === FIELD ANALYSIS RESULTS ===\n');
+        console.log('\n📋 === FIELD ANALYSIS RESULTS ===\n');
         fieldInfo.forEach((field, idx) => {
           console.log(`[${idx + 1}] ${field.tagName}`);
           console.log(`    ID: ${field.id}`);
-          console.log(`    Class: ${field.className}`);
           console.log(`    Placeholder: "${field.placeholder}"`);
           console.log(`    Aria-label: "${field.ariaLabel}"`);
-          console.log(`    Role: ${field.role}`);
-          console.log(`    Text: "${field.textContent}"`);
           console.log(`    Visible: ${field.isVisible} | Size: ${field.offsetWidth}x${field.offsetHeight}`);
           console.log('');
         });
@@ -364,90 +355,22 @@ async function savePublishedArticle(article) {
         // 1. FILL TITLE
         console.log('\n📝 === 1. FILLING TITLE ===\n');
         
-        let titleElement = null;
-        let titleElementIndex = -1;
-        
-        // Try to find title field by aria-label or placeholder
-        for (let i = 0; i < allEditableElements.length; i++) {
-          const field = fieldInfo[i];
-          
-          if (field.ariaLabel.toLowerCase().includes('заголов') || 
-              field.ariaLabel.toLowerCase().includes('title') ||
-              field.placeholder.toLowerCase().includes('заголов') ||
-              field.placeholder.toLowerCase().includes('title')) {
-            
-            if (field.isVisible) {
-              const element = allEditableElements[i];
-              await element.focus();
-              await element.fill(article.title);
-              console.log(`✅ Title filled in field [${i + 1}]`);
-              console.log(`   Aria-label: "${field.ariaLabel}"`);
-              console.log(`   Placeholder: "${field.placeholder}"`);
-              console.log(`   Title: "${article.title.substring(0, 50)}..."`);
-              titleElement = element;
-              titleElementIndex = i;
-              break;
-            }
-          }
-        }
-        
-        // If title field not found, use first visible field
-        if (!titleElement && allEditableElements.length > 0) {
-          console.log('ℹ️  Title field not found by attributes, using first field');
-          const field = fieldInfo[0];
-          if (field.isVisible) {
-            const element = allEditableElements[0];
-            await element.focus();
-            await element.fill(article.title);
-            console.log(`✅ Title filled in field [1] (first available)`);
-            console.log(`   Title: "${article.title.substring(0, 50)}..."`);
-            titleElement = element;
-            titleElementIndex = 0;
-          }
-        }
-        
-        if (!titleElement) {
-          console.log('❌ Could not find title field');
-        } else {
+        if (allEditableElements.length > 0) {
+          const titleElement = allEditableElements[0];
+          await titleElement.focus();
+          await titleElement.fill(article.title);
+          console.log(`✅ Title filled: "${article.title.substring(0, 50)}..."`);
           await page.waitForTimeout(1000);
         }
         
         // 2. FILL CONTENT
         console.log('\n📝 === 2. FILLING ARTICLE CONTENT ===\n');
         
-        let contentElement = null;
-        let contentElementIndex = -1;
-        
-        // Find content field (not title)
-        for (let i = 0; i < allEditableElements.length; i++) {
-          const field = fieldInfo[i];
-          
-          // Skip title fields
-          if (field.ariaLabel.toLowerCase().includes('заголов') || 
-              field.ariaLabel.toLowerCase().includes('title') ||
-              field.placeholder.toLowerCase().includes('заголов') ||
-              field.placeholder.toLowerCase().includes('title')) {
-            continue;
-          }
-          
-          if (field.isVisible && i !== titleElementIndex) {
-            const element = allEditableElements[i];
-            await element.focus();
-            await element.fill(processedContent);
-            console.log(`✅ Content filled in field [${i + 1}]`);
-            console.log(`   Aria-label: "${field.ariaLabel}"`);
-            console.log(`   Placeholder: "${field.placeholder}"`);
-            console.log(`   Content length: ${processedContent.length} characters`);
-            console.log(`   First 50 chars: "${processedContent.substring(0, 50)}..."`);
-            contentElement = element;
-            contentElementIndex = i;
-            break;
-          }
-        }
-        
-        if (!contentElement) {
-          console.log('❌ Could not find content field');
-        } else {
+        if (allEditableElements.length > 1) {
+          const contentElement = allEditableElements[1];
+          await contentElement.focus();
+          await contentElement.fill(processedContent);
+          console.log(`✅ Content filled: ${processedContent.length} characters`);
           await page.keyboard.press('Enter');
           console.log('✅ Pressed Enter after content');
           await page.waitForTimeout(1000);
@@ -459,126 +382,97 @@ async function savePublishedArticle(article) {
         console.log('\n🖼️  === 3. INSERTING IMAGE ===\n');
         
         const imageButtonSelector = 'button.article-editor-desktop--side-button__sideButton-1z[data-tip="Вставить изображение"]';
-        try {
-          const imageButton = await page.$(imageButtonSelector);
-          if (imageButton) {
-            console.log(`✅ Found image button: ${imageButtonSelector}`);
-            await imageButton.click();
-            await page.waitForTimeout(3000);
-            
-            if (article.imageUrl) {
-              const imageInputSelectors = [
-                'input[placeholder*="ссылка"]',
-                'input[placeholder*="url"]',
-                'input[placeholder*="изображение"]',
-                'input[type="text"]',
-                'input'
-              ];
-              
-              let imageInputFound = false;
-              for (const imgInputSel of imageInputSelectors) {
-                const imageInput = await page.$(imgInputSel);
-                if (imageInput && await imageInput.isVisible()) {
-                  await imageInput.fill(article.imageUrl);
-                  console.log(`✅ Image URL filled`);
-                  console.log(`   Selector: ${imgInputSel}`);
-                  console.log(`   URL: ${article.imageUrl.substring(0, 50)}...`);
-                  await imageInput.press('Enter');
-                  await page.waitForTimeout(1000);
-                  imageInputFound = true;
-                  break;
-                }
-              }
-              
-              if (!imageInputFound) {
-                console.log('❌ Image URL input field not found');
-              }
-            } else {
-              console.log('ℹ️  Image URL not available');
-            }
-          } else {
-            console.log(`❌ Image button not found: ${imageButtonSelector}`);
+        const imageButton = await page.$(imageButtonSelector);
+        if (imageButton && article.imageUrl) {
+          console.log(`✅ Found image button`);
+          await imageButton.click();
+          await page.waitForTimeout(3000);
+          
+          const imageInput = await page.$('input[type="text"]');
+          if (imageInput) {
+            await imageInput.fill(article.imageUrl);
+            console.log(`✅ Image URL inserted`);
+            await imageInput.press('Enter');
+            await page.waitForTimeout(1000);
           }
-        } catch (e) {
-          console.log('❌ Image insertion error:', e.message);
+        } else {
+          console.log('ℹ️  Image not inserted (button not found or no URL)');
         }
         
         await page.waitForTimeout(2000);
         
-        // 4. FIRST PUBLISH BUTTON
+        // 4. FIRST PUBLISH BUTTON - try multiple selectors with priority
         console.log('\n📤 === 4. CLICKING FIRST PUBLISH BUTTON ===\n');
         
-        const publishSelectors = [
+        const firstPublishSelectors = [
+          'button.article-editor-desktop--editor-header__editBtn-44',
+          'button[class*="publishButton"]',
+          'button[class*="publish"]',
           '[data-testid="publish-btn"]',
-          'button:has-text("Опубликовать"):not([disabled])',
-          'button[class*="publish"]'
+          'button:has-text("Опубликовать"):not([disabled])'
         ];
         
         let publishClicked = false;
-        for (const selector of publishSelectors) {
-          const publishButton = await page.$(selector);
-          if (publishButton && await publishButton.isVisible() && await publishButton.isEnabled()) {
-            console.log(`✅ Found and clicked publish button`);
-            console.log(`   Selector: ${selector}`);
-            await publishButton.click();
-            publishClicked = true;
-            break;
+        for (const selector of firstPublishSelectors) {
+          const button = await page.$(selector);
+          if (button) {
+            try {
+              const isVisible = await button.isVisible();
+              const isEnabled = await button.isEnabled();
+              if (isVisible && isEnabled) {
+                console.log(`✅ Found first publish button: ${selector}`);
+                await button.click();
+                publishClicked = true;
+                break;
+              }
+            } catch (e) {
+              console.log(`⚠️  Button found but not clickable: ${selector}`);
+            }
           }
         }
         
         if (!publishClicked) {
-          console.log('⚠️  First publish button not found');
+          console.log('❌ First publish button not found in any selector');
         }
         
         await page.waitForTimeout(5000);
         
-        // 5. SECOND PUBLISH BUTTON (confirmation)
+        // 5. SECOND PUBLISH BUTTON (confirmation) - also try multiple selectors
         console.log('\n📤 === 5. CLICKING CONFIRMATION PUBLISH BUTTON ===\n');
         
-        const secondPublishButtonSelector = 'button[data-testid="publish-btn"][type="submit"]';
-        try {
-          const secondPublishButton = await page.$(secondPublishButtonSelector);
-          if (secondPublishButton && await secondPublishButton.isVisible() && await secondPublishButton.isEnabled()) {
-            console.log(`✅ Found confirmation publish button`);
-            console.log(`   Selector: ${secondPublishButtonSelector}`);
-            await secondPublishButton.click();
-            console.log('\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!');
-            console.log(`   Title: "${article.title}"`);
-            console.log(`   Content length: ${processedContent.length} characters`);
-            console.log(`   Image: ${article.imageUrl || 'none'}`);
-            
-            // Save to history
-            await savePublishedArticle(article);
-          } else {
-            console.log(`❌ Confirmation publish button not found: ${secondPublishButtonSelector}`);
-            
-            // Try alternative selectors
-            const altSelectors = [
-              'button:has-text("Опубликовать"):not([disabled]):not([aria-disabled="true"])',
-              'button:has-text("Опубликовать сейчас"):not([disabled]):not([aria-disabled="true"])',
-              'button:has-text("Да"):not([disabled]):not([aria-disabled="true"])'
-            ];
-            
-            let altFound = false;
-            for (const altSel of altSelectors) {
-              const altButton = await page.$(altSel);
-              if (altButton && await altButton.isVisible() && await altButton.isEnabled()) {
-                console.log(`✅ Found alternative confirmation button`);
-                console.log(`   Selector: ${altSel}`);
-                await altButton.click();
-                console.log('\n🎉 ARTICLE PUBLISHED SUCCESSFULLY (via alternative selector)!');
+        const secondPublishSelectors = [
+          'button[data-testid="publish-btn"][type="submit"]',
+          'button[type="submit"][class*="publish"]',
+          'button:has-text("Опубликовать"):not([disabled]):not([aria-disabled="true"])',
+          'button:has-text("Опубликовать сейчас"):not([disabled]):not([aria-disabled="true"])',
+          '[data-testid="publish-btn"]'
+        ];
+        
+        let confirmClicked = false;
+        for (const selector of secondPublishSelectors) {
+          const button = await page.$(selector);
+          if (button) {
+            try {
+              const isVisible = await button.isVisible();
+              const isEnabled = await button.isEnabled();
+              if (isVisible && isEnabled) {
+                console.log(`✅ Found confirmation button: ${selector}`);
+                await button.click();
+                console.log('\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!');
+                console.log(`   Title: "${article.title}"`);
+                console.log(`   Content: ${processedContent.length} characters`);
                 await savePublishedArticle(article);
-                altFound = true;
+                confirmClicked = true;
                 break;
               }
-            }
-            
-            if (!altFound) {
-              console.log('⚠️  No confirmation button found - publication may have failed');
+            } catch (e) {
+              console.log(`⚠️  Button found but not clickable: ${selector}`);
             }
           }
-        } catch (e) {
-          console.log('❌ Error with confirmation button:', e.message);
+        }
+        
+        if (!confirmClicked) {
+          console.log('❌ Confirmation button not found - publication may have failed');
         }
       }
     }
