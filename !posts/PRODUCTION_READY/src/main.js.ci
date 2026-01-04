@@ -7,8 +7,8 @@ const path = require('path');
 const CONFIG = {
   cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
   cookiesPath: path.join(__dirname, '../config/cookies.json'),
-  // READ FEED FROM REPOSITORY ROOT, NOT LOCAL DIRECTORY!
-  feedPath: process.env.CI ? path.join(__dirname, '../../public/feed.xml') : path.join(__dirname, '../public/feed.xml'),
+  // FIX: Go up 2 levels (!posts/PRODUCTION_READY/src -> !posts -> repo root) then into /public
+  feedPath: path.join(__dirname, '../../../public/feed.xml'),
   historyPath: path.join(__dirname, '../published_articles.txt'),
   headless: process.env.HEADLESS !== 'false',
   timeout: 60000,
@@ -79,7 +79,7 @@ async function getArticlesFromFeed() {
   }
 }
 
-// 🎯 Process HTML content
+// 🏄 Process HTML content
 function processArticleContent(content) {
   if (!content) return '';
   
@@ -238,7 +238,7 @@ async function savePublishedArticle(article) {
     }
     
     console.log(`\n📝 Found new article: ${article.title.substring(0, 60)}...`);
-    console.log(`📏 Content length: ${article.content.length} characters`);
+    console.log(`📄 Content length: ${article.content.length} characters`);
     
     // Process content
     const processedContent = processArticleContent(article.content);
