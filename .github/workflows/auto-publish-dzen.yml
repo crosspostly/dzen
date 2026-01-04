@@ -20,9 +20,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: '!posts/PRODUCTION_READY/package.json'
-      
+          # Removed cache to avoid path resolution error with '!' character
+          
       - name: 🔐 Validate GitHub Secret (DZEN_COOKIES_JSON)
         run: |
           if [ -z "${{ secrets.DZEN_COOKIES_JSON }}" ]; then
