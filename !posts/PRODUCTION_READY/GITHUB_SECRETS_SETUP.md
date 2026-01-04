@@ -1,389 +1,290 @@
-# 🔐 GitHub Secrets Setup: DZEN_COOKIES_BASE64
+# 🔐 GitHub Secrets Setup: DZEN_COOKIES_JSON
 
 ## Overview
 
-This guide shows how to **securely store your Dzen cookies** in GitHub Secrets for CI/CD automation.
+Это **супер просто**! Никакого кодирования не нужно!
 
-**What you'll do:**
-1. Extract cookies from your browser
-2. Encode them as Base64
-3. Add to GitHub Secrets as `DZEN_COOKIES_BASE64`
-4. Workflow automatically decodes and uses them
+**Что ты делаешь:**
+1. Копируешь весь JSON с куками
+2. Вставляешь в GitHub Secret
+3. Всё! Actions сам загружает
 
-**Why Base64?**
-- ✅ Safe to store in GitHub
-- ✅ Prevents accidental exposure in logs
-- ✅ Workflow decodes automatically
-- ✅ Works cross-platform
+**Почему так просто?**
+- ✅ GitHub сам может хранить JSON
+- ✅ Workflow сам читает секрет
+- ✅ Никакого Base64 кодирования!
+- ✅ Просто копируй-вставь
 
-## 🔏 Step 1: Export Cookies from Browser
+## 🎯 Step 1: Скопируй весь JSON
 
-### Option A: Chrome/Edge (Recommended)
+Твой JSON из браузера (уже есть у тебя):
 
-1. Open **Dzen** in your browser: https://dzen.ru
-2. Open **Developer Tools**: `F12` or `Ctrl+Shift+I`
-3. Go to: **Application** tab
-4. Left sidebar: **Cookies** > **https://dzen.ru**
-5. You should see cookies like:
-   - `Session`
-   - `sessionid`
-   - `PHPSESSID`
-   - `Ydanautocomplete`
-   - etc.
-
-6. **Right-click** in the cookies table > **Copy all** (or manually select)
-
-### Option B: Manual Copy
-
-1. In DevTools, find these cookies (minimum required):
-   ```
-   - Session ID (usually "Session" or "sessionid")
-   - PHPSESSID
-   - Any Yandex auth cookies
-   ```
-
-2. Create JSON like this:
-   ```json
-   [
-     {
-       "name": "Session",
-       "value": "your_session_value",
-       "domain": ".dzen.ru",
-       "path": "/",
-       "expires": -1,
-       "httpOnly": true,
-       "secure": true,
-       "sameSite": "Strict"
-     },
-     {
-       "name": "PHPSESSID",
-       "value": "your_php_session_value",
-       "domain": ".dzen.ru",
-       "path": "/",
-       "expires": -1,
-       "httpOnly": true,
-       "secure": true,
-       "sameSite": "Strict"
-     }
-   ]
-   ```
-
-## 📖 Step 2: Prepare Cookie File
-
-### Local Setup (Development)
-
-**For local use on your PC:**
-
-```bash
-# 1. Create config directory
-mkdir -p !posts/PRODUCTION_READY/config
-
-# 2. Save cookies as JSON
-# Windows: Save to C:\path\to\project\!posts\PRODUCTION_READY\config\cookies.json
-# Linux/Mac: Save to ./!posts/PRODUCTION_READY/config/cookies.json
-
-# 3. Add to .gitignore (NEVER commit!)
-echo "config/cookies.json" >> .gitignore
-```
-
-**File content example:**
 ```json
 [
   {
-    "name": "Session",
-    "value": "abc123xyz...",
+    "name": "mda2_beacon",
+    "value": "1765685032529",
     "domain": ".dzen.ru",
     "path": "/",
-    "expires": -1,
-    "httpOnly": true,
+    "expires": 1800245033,
+    "httpOnly": false,
     "secure": true,
-    "sameSite": "Strict"
+    "sameSite": "None"
   },
-  {
-    "name": "PHPSESSID",
-    "value": "def456uvw...",
-    "domain": ".dzen.ru",
-    "path": "/",
-    "expires": -1,
-    "httpOnly": true,
-    "secure": true,
-    "sameSite": "Strict"
-  }
+  ...
+  ВСЕ ТВОИ КУКИ
+  ...
 ]
 ```
 
-## 🔐 Step 3: Encode to Base64
+**Скопируй весь массив целиком** (от первого `[` до последнего `]`)
 
-### Option A: PowerShell (Windows)
+## 🔐 Step 2: Добавь в GitHub Secret
 
-```powershell
-# Read the file and encode
-$cookiesPath = "!posts\PRODUCTION_READY\config\cookies.json"
-$cookiesContent = Get-Content $cookiesPath -Raw
-$encodedCookies = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($cookiesContent))
+### Способ 1: Через веб-интерфейс GitHub
 
-# Copy to clipboard
-$encodedCookies | Set-Clipboard
+1. Иди сюда:
+   ```
+   https://github.com/crosspostly/dzen/settings/secrets/actions
+   ```
 
-Write-Host "✅ Encoded cookies copied to clipboard!"
-Write-Host "Length: $($encodedCookies.Length) characters"
-```
+2. Или вручную:
+   - Откроешь репо
+   - Settings (вверху)
+   - Left sidebar: **Secrets and variables** > **Actions**
 
-### Option B: Bash (Linux/Mac)
+3. Нажми: **"New repository secret"**
+
+4. Заполни:
+   - **Name:** `DZEN_COOKIES_JSON` (точно так!)
+   - **Value:** Вставь весь JSON (от `[` до `]`)
+   - **Save**
+
+### Способ 2: Через GitHub CLI (если установлен)
 
 ```bash
-# Read and encode
-cat !posts/PRODUCTION_READY/config/cookies.json | base64 > cookies_base64.txt
-
-# Or directly to clipboard (macOS)
-cat !posts/PRODUCTION_READY/config/cookies.json | base64 | pbcopy
-
-# Or directly to clipboard (Linux)
-cat !posts/PRODUCTION_READY/config/cookies.json | base64 | xclip -selection clipboard
-
-echo "✅ Encoded cookies copied!"
-wc -c cookies_base64.txt
+# Сохрани JSON в файл
+# Потом выполни:
+gh secret set DZEN_COOKIES_JSON < cookies.json
 ```
 
-### Option C: Online Tool (if not comfortable with CLI)
+## ✅ Проверка
 
-1. Go to: https://www.base64encode.org/
-2. Paste your cookies.json content
-3. Click "Encode"
-4. Copy the output
-
-**⚠️ WARNING:** Only use for sensitive data if you trust the website!
-
-## 🕷 Step 4: Add to GitHub Secrets
-
-### 1. Go to Your Repository
+В Settings > Secrets должно быть:
 
 ```
-https://github.com/crosspostly/dzen/settings/secrets/actions
-```
-
-Or navigate manually:
-1. Go to: https://github.com/crosspostly/dzen
-2. Click: **Settings** (top right)
-3. Left sidebar: **Secrets and variables** > **Actions**
-
-### 2. Create New Secret
-
-1. Click: **"New repository secret"** button
-2. **Name:** `DZEN_COOKIES_BASE64` (exactly!)
-3. **Value:** Paste your Base64 encoded cookies
-4. Click: **"Add secret"**
-
-### 3. Verify
-
-You should see:
-```
-🔐 DZEN_COOKIES_BASE64
+🔐 DZEN_COOKIES_JSON
 Updated 2 minutes ago
 ```
 
-## 🔄 How the Workflow Uses It
+## 🎨 Как это работает в Actions
 
-### In `.github/workflows/auto-publish.yml`:
+**В workflow файле:**
 
 ```yaml
 - name: 🔐 Load cookies from GitHub Secrets
   run: |
-    # Decode Base64 secret
-    $cookiesBase64 = "${{ secrets.DZEN_COOKIES_BASE64 }}"
-    $cookiesJson = [System.Text.Encoding]::UTF8.GetString(
-      [System.Convert]::FromBase64String($cookiesBase64)
-    )
+    # Читаем секрет как JSON (БЕЗ кодирования!)
+    $cookiesJson = """${{ secrets.DZEN_COOKIES_JSON }}"""
     
-    # Save to config/cookies.json
+    # Сохраняем напрямую в config/cookies.json
     Set-Content -Path 'config/cookies.json' -Value $cookiesJson
-    Write-Host "✅ Cookies loaded from GitHub Secrets"
 ```
 
-**Flow:**
+**Готово!**
+
+## 📊 Сравнение подходов
+
+### ❌ Old Way (Base64)
 ```
-1. GitHub Secrets stores: Base64(cookies.json)
-   ↓
-2. Workflow decodes: Base64 → JSON
-   ↓
-3. Saves to: config/cookies.json
-   ↓
-4. Script uses: config/cookies.json
-   ↓
-5. Browser authenticates: Dzen
-```
-
-## ⚠️ Important Notes
-
-### Keeping Both Working
-
-**Option A - Recommended:**
-```
-Local PC Development:
-└── config/cookies.json (in .gitignore)
-
-GitHub Actions:
-└── DZEN_COOKIES_BASE64 secret
-    ↓ (decodes to)
-    config/cookies.json (during workflow)
+JSON → Encode Base64 → DZEN_COOKIES_BASE64
+                    ↓
+              Decode Base64 → JSON
+              (лишний шаг)
 ```
 
-**This way:**
-- ✅ Local: Use `config/cookies.json` directly
-- ✅ GitHub: Use `DZEN_COOKIES_BASE64` secret
-- ✅ Both work independently
-- ✅ No conflicts
+### ✅ New Way (Direct JSON)
+```
+JSON → DZEN_COOKIES_JSON
+        ↓
+    Используем напрямую
+    (просто и понятно!)
+```
 
-### Security Best Practices
+## 🔄 Локальное + GitHub
 
-1. **Never commit cookies.json**
-   ```bash
-   echo "config/cookies.json" >> .gitignore
-   git rm --cached config/cookies.json  # if already committed
-   ```
+**Тебе нужны ДВА места с куками:**
 
-2. **Rotate cookies periodically**
-   - Dzen sessions expire
-   - Update secret when needed: Settings > Secrets > Edit
+### Локально (на твоем ПК):
 
-3. **Limit secret access**
-   - Only used in auto-publish workflow
-   - Only accessed by Actions
-   - Not visible in logs
+```bash
+# Сохрани куки в файл
+!posts/PRODUCTION_READY/config/cookies.json
 
-4. **Monitor usage**
-   - Check workflow runs: Actions tab
-   - Review logs for errors
-   - Alert on failures
+# Используется когда запускаешь локально:
+cd !posts/PRODUCTION_READY
+node src/main.js
+```
 
-## 🔍 Testing the Setup
+**Файл:** просто скопируешь JSON из браузера
 
-### Test 1: Local
+### На GitHub:
+
+```
+Settings > Secrets > DZEN_COOKIES_JSON
+          ↓
+Вставляешь тот же JSON
+          ↓
+Workflow использует автоматически
+```
+
+**Секрет:** зашифрован GitHub
+
+## 🛡️ Безопасность
+
+✅ **Локальный файл:**
+- В `.gitignore` (не коммитится)
+- На твоем ПК
+- Видишь только ты
+
+✅ **GitHub Secret:**
+- Зашифрован GitHub
+- Видишь при редактировании
+- НЕ видишь в логах
+- НЕ видшен другим пользователям (если public repo)
+
+## 📝 ВАЖНО: Никогда не коммитить
+
+```bash
+# Убедись что в .gitignore:
+echo "config/cookies.json" >> .gitignore
+
+# Если уже случайно закоммитил:
+git rm --cached config/cookies.json
+git commit -m "Remove cookies from tracking"
+```
+
+## 🧪 Тестирование
+
+### Test 1: Локально
 
 ```bash
 cd !posts/PRODUCTION_READY
 
-# Make sure cookies.json exists
+# Убедись что есть config/cookies.json
 ls config/cookies.json
 
-# Test script locally
+# Запусти
 node src/main.js
 ```
 
-### Test 2: GitHub Actions (Manual Run)
+### Test 2: На GitHub
 
-1. Go to: https://github.com/crosspostly/dzen/actions
-2. Select: "Auto-Publish Articles Every 3 Hours"
-3. Click: "Run workflow"
-4. Watch logs for:
+1. Actions > "Auto-Publish Articles Every 3 Hours"
+2. "Run workflow"
+3. Смотри логи:
    ```
-   ✅ Cookies loaded from GitHub Secrets (DZEN_COOKIES_BASE64)
-   📖 Found X previously published articles
-   📄 Found X articles in feed
+   ✅ Cookies loaded from GitHub Secrets (DZEN_COOKIES_JSON)
+   ✅ Valid JSON format (40 cookies)
    ```
 
-## 🔎 Troubleshooting
+## ⚡ Что если не работает?
 
-### Secret not found error:
+### Error: "DZEN_COOKIES_JSON secret is empty"
 
-```
-⚠️  WARNING: DZEN_COOKIES_BASE64 secret not found!
-📖 Please add it to your repository secrets
-```
+**Решение:**
+1. Проверь что добавил секрет в Settings
+2. Проверь что имя точно: `DZEN_COOKIES_JSON` (большие буквы)
+3. Проверь что вставил весь JSON (от `[` до `]`)
+4. Подожди минуту и попробуй снова
 
-**Solution:**
-1. Check name is exactly: `DZEN_COOKIES_BASE64`
-2. Verify it's in the right repo
-3. Wait a minute for GitHub to sync
-4. Try manual run again
+### Error: "Could not parse JSON"
 
-### Cookies file is empty:
+**Решение:**
+1. Проверь JSON формат (используй https://jsonlint.com/)
+2. Убедись нет лишних символов
+3. Скопируй весь JSON ещё раз с браузера
 
-```
-❌ Cookies file not found!
-```
+### Error: "File not created"
 
-**Solution:**
-1. Check Base64 string is valid
-2. Check JSON format is correct
-3. Test decoding locally:
-   ```powershell
-   [System.Text.Encoding]::UTF8.GetString(
-     [System.Convert]::FromBase64String("YOUR_BASE64_HERE")
-   )
-   ```
+**Решение:**
+1. Проверь что директория создана: `!posts/PRODUCTION_READY/config/`
+2. Проверь права доступа
+3. Посмотри полные логи workflow
 
-### Authentication fails:
+## 📱 Monitoring
+
+### Смотри логи
+
+https://github.com/crosspostly/dzen/actions
 
 ```
-❌ Error loading cookies: Invalid format
+✅ Cookies loaded from GitHub Secrets (DZEN_COOKIES_JSON)
+✅ Valid JSON format (40 cookies)
+✅ Cookies file created: 15234 bytes
 ```
 
-**Solution:**
-1. Cookies expired? Update them
-2. JSON format wrong? Validate on jsonlint.com
-3. Base64 encoding corrupted? Re-encode
-4. Test locally first before pushing
+### Проверь историю
 
-## 📄 Reference
-
-### Secret Name: `DZEN_COOKIES_BASE64`
-
-```
-Where used:
-  - .github/workflows/auto-publish.yml
-    Line: ${{ secrets.DZEN_COOKIES_BASE64 }}
-
-What it contains:
-  - Base64 encoded cookies.json
-
-How long valid:
-  - Until Dzen session expires (usually weeks)
-  - Update when authentication fails
+```bash
+cat !posts/PRODUCTION_READY/published_articles.txt
 ```
 
-### File Structure
+## 🎯 Чек-лист
 
 ```
-Local Development:
-!posts/PRODUCTION_READY/
-├── config/
-│   └── cookies.json           ← Not committed (in .gitignore)
-└── src/
-    └── main.js                ← Uses cookies.json
-
-CI/CD (GitHub Actions):
-DZEN_COOKIES_BASE64 secret
-  ↓ (decoded by workflow)
-config/cookies.json (temporary)
-  ↓ (used by script)
-Browser authentication
+[ ] Скопировал весь JSON из браузера
+[ ] Сохранил локально в config/cookies.json
+[ ] Добавил в .gitignore
+[ ] Добавил GitHub Secret DZEN_COOKIES_JSON
+[ ] Вставил тот же JSON в секрет
+[ ] Протестировал локально (node src/main.js)
+[ ] Запустил workflow вручную (Actions > Run)
+[ ] Проверил логи - всё зелёное ✅
+[ ] Ждём автоматических запусков (каждые 3 часа)
 ```
 
-## ✅ Checklist
+## 📚 Файлы и их роль
 
-- [ ] Exported cookies from Dzen
-- [ ] Saved to `config/cookies.json` locally
-- [ ] Added `config/cookies.json` to `.gitignore`
-- [ ] Encoded cookies as Base64
-- [ ] Created GitHub Secret `DZEN_COOKIES_BASE64`
-- [ ] Verified secret is in Settings > Secrets
-- [ ] Tested workflow manually
-- [ ] Checked logs for success
-- [ ] Confirmed article was published
+```
+Локально на твоем ПК:
+!posts/PRODUCTION_READY/config/cookies.json
+↓ (обычный JSON файл)
+Используется: node src/main.js
 
-## 📕 Next Steps
+На GitHub (в Actions):
+DZEN_COOKIES_JSON (secret)
+↓ (зашифрован)
+Скопируется в: config/cookies.json (временный)
+↓
+Используется: node src/main.js
+```
 
-1. ✅ Set up secret (this guide)
-2. ✅ Enable GitHub Actions (Settings > Actions)
-3. ✅ Test manual workflow run
-4. ✅ Wait for scheduled runs (every 3 hours)
-5. ✅ Monitor published articles
+## 🚀 Так что нужно делать
+
+1. ✅ Уже готово: куки скопированы в JSON
+2. ✅ Сохрани локально: `config/cookies.json`
+3. ✅ Добавь в `.gitignore`
+4. ✅ Скопируй JSON
+5. ✅ Добавь GitHub Secret: `DZEN_COOKIES_JSON`
+6. ✅ Вставь JSON в секрет
+7. ✅ Тест: запусти Actions вручную
+8. ✅ Готово! Дальше автоматически
+
+## 🎉 Итого
+
+**Было:** Кодировать в Base64, потом декодировать
+
+**Стало:** Просто копируешь JSON и вставляешь
+
+**Сложность:** Минимальная ✅
+
+**Безопасность:** Максимальная ✅
 
 ---
 
-**Security:** 🔐 Your cookies are encrypted by GitHub
-**Expiration:** ⏳ Update secret when Dzen session expires
-**Monitoring:** 💰 Check Actions tab for runs
+**Секрет:** `DZEN_COOKIES_JSON` (на GitHub)
+**Файл:** `config/cookies.json` (на твоем ПК + временный в Actions)
+**Формат:** Pure JSON (no encoding)
 
-Last updated: 2026-01-04 08:10 UTC
+Last updated: 2026-01-04 08:15 UTC
