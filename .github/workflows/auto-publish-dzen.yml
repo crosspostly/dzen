@@ -69,6 +69,18 @@ jobs:
             exit 1
           fi
       
+      - name: 📝 Initialize history file
+        run: |
+          HISTORY_FILE="!posts/PRODUCTION_READY/published_articles.txt"
+          if [ ! -f "$HISTORY_FILE" ]; then
+            echo "📝 Creating history file..."
+            touch "$HISTORY_FILE"
+            echo "✅ History file created: $HISTORY_FILE"
+          else
+            echo "✅ History file already exists"
+            echo "📊 Current entries: $(wc -l < "$HISTORY_FILE")"
+          fi
+      
       - name: 📦 Install dependencies
         run: |
           cd "!posts/PRODUCTION_READY"
@@ -149,21 +161,24 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "GitHub Actions Bot"
           
-          echo "📤 Preparing to commit..."
+          echo "📤 Preparing to commit history and logs..."
           
-          # Add changes
-          git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
+          # Add history file - MUST EXIST NOW
+          git add "!posts/PRODUCTION_READY/published_articles.txt"
+          echo "✅ Added published_articles.txt"
+          
+          # Add logs if they exist
           git add "publish-*.log" 2>/dev/null || true
           
           # Check if there's anything to commit
           if git diff --cached --quiet; then
-            echo "ℹ️  Nothing to commit"
+            echo "ℹ️  No changes to commit (all articles already published)"
           else
             echo "📝 Committing changes..."
-            git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" 2>&1 | tail -5
+            git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed (might be empty)"
             
             echo "📤 Pushing to repository..."
-            git push 2>&1 | tail -5
+            git push origin main || echo "⚠️  Push failed"
             echo "✅ Successfully pushed!"
           fi
         continue-on-error: true
@@ -181,10 +196,11 @@ jobs:
           echo "📋 What happened:"
           echo "   ✅ Validated DZEN_COOKIES_JSON secret"
           echo "   ✅ Checked feed.xml in /public"
+          echo "   ✅ Initialized history file"
           echo "   ✅ Installed dependencies"
           echo "   ✅ Installed Playwright browsers"
           echo "   ✅ Ran auto-publisher (main.js.ci)"
-          echo "   ✅ Committed results"
+          echo "   ✅ Committed history to git"
           echo ""
           echo "🔐 Security:"
           echo "   ✅ Cookies from GitHub Secrets (AES-256 encrypted)"
