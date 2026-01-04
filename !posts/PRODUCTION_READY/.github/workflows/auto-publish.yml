@@ -30,48 +30,60 @@ jobs:
         run: npx playwright install chromium
         working-directory: '!posts/PRODUCTION_READY'
 
-      - name: 🔐 Load cookies from GitHub Secrets
+      - name: 🔐 Load cookies from GitHub Secrets (JSON Direct)
         run: |
           # Create config directory if it doesn't exist
           if (-not (Test-Path '!posts\PRODUCTION_READY\config')) {
             New-Item -ItemType Directory -Path '!posts\PRODUCTION_READY\config' | Out-Null
           }
           
-          # Decode base64 secret and save to cookies.json
-          $cookiesBase64 = "${{ secrets.DZEN_COOKIES_BASE64 }}"
-          if ($cookiesBase64) {
-            $cookiesJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($cookiesBase64))
+          # Get JSON directly from secret (no Base64!)
+          $cookiesJson = """${{ secrets.DZEN_COOKIES_JSON }}"""
+          
+          if ($cookiesJson -and $cookiesJson.Length -gt 10) {
+            # Save directly to cookies.json
             Set-Content -Path '!posts\PRODUCTION_READY\config\cookies.json' -Value $cookiesJson -Encoding UTF8
-            Write-Host "✅ Cookies loaded from GitHub Secrets (DZEN_COOKIES_BASE64)"
+            Write-Host "✅ Cookies loaded from GitHub Secrets (DZEN_COOKIES_JSON)"
+            Write-Host "   Size: $($cookiesJson.Length) characters"
           } else {
-            Write-Host "⚠️  WARNING: DZEN_COOKIES_BASE64 secret not found!"
-            Write-Host "📖 Please add it to your repository secrets:"
+            Write-Host "❌ ERROR: DZEN_COOKIES_JSON secret is empty or not found!"
+            Write-Host "📋 Please add it to your repository secrets:"
             Write-Host "   1. Go to: Settings > Secrets and variables > Actions"
             Write-Host "   2. Click 'New repository secret'"
-            Write-Host "   3. Name: DZEN_COOKIES_BASE64"
-            Write-Host "   4. Value: (base64 encoded cookies.json content)"
+            Write-Host "   3. Name: DZEN_COOKIES_JSON"
+            Write-Host "   4. Value: (paste your entire cookies.json content)"
             exit 1
           }
         shell: pwsh
 
-      - name: 📖 Verify cookies were loaded
+      - name: 📋 Verify cookies were loaded
         run: |
           if (Test-Path '!posts\PRODUCTION_READY\config\cookies.json') {
             $size = (Get-Item '!posts\PRODUCTION_READY\config\cookies.json').Length
-            Write-Host "✅ Cookies file size: $size bytes"
+            Write-Host "✅ Cookies file created: $size bytes"
+            
+            # Try to parse JSON to validate
+            try {
+              $content = Get-Content '!posts\PRODUCTION_READY\config\cookies.json' -Raw
+              $json = $content | ConvertFrom-Json
+              Write-Host "✅ Valid JSON format ($(($json | Measure-Object).Count) cookies)"
+            } catch {
+              Write-Host "⚠️  Warning: Could not parse JSON - format may be invalid"
+              Write-Host "   Error: $_"
+            }
           } else {
             Write-Host "❌ Cookies file not found!"
             exit 1
           }
         shell: pwsh
 
-      - name: 📋 Check published articles history
+      - name: 📖 Check published articles history
         run: |
           $historyFile = '!posts\PRODUCTION_READY\published_articles.txt'
           if (Test-Path $historyFile) {
             $count = @(Get-Content $historyFile).Count
             Write-Host "📖 Found $count previously published articles"
-            Write-Host "📋 Recent articles:"
+            Write-Host "📖 Recent articles:"
             Get-Content $historyFile -Tail 5 | ForEach-Object { Write-Host "   $_" }
           } else {
             Write-Host "📄 No history file yet - starting fresh"
@@ -110,9 +122,9 @@ jobs:
         if: always()
         run: |
           Write-Host ""
-          Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
           Write-Host "🤖 AUTO-PUBLISHER WORKFLOW COMPLETED" -ForegroundColor Green
-          Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
           Write-Host ""
           Write-Host "📊 Execution Details:" -ForegroundColor Yellow
           Write-Host "   Run Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
@@ -120,7 +132,8 @@ jobs:
           Write-Host "   Status: $(if(${{ job.status }} -eq 'success') { '✅ SUCCESS' } else { '⚠️  CHECK LOGS' })"
           Write-Host ""
           Write-Host "🔐 Authentication:" -ForegroundColor Yellow
-          Write-Host "   Cookies Source: GitHub Secrets (DZEN_COOKIES_BASE64)"
+          Write-Host "   Cookies Source: GitHub Secrets (DZEN_COOKIES_JSON)"
+          Write-Host "   Format: Pure JSON (no encoding!)"
           Write-Host "   Config Path: !posts/PRODUCTION_READY/config/cookies.json"
           Write-Host ""
           Write-Host "📖 Article Tracking:" -ForegroundColor Yellow
@@ -130,7 +143,7 @@ jobs:
           Write-Host "🔗 View full logs:" -ForegroundColor Cyan
           Write-Host "   https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           Write-Host ""
-          Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
           Write-Host ""
         shell: pwsh
         continue-on-error: true
