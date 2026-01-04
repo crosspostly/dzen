@@ -7,11 +7,12 @@ const path = require('path');
 const CONFIG = {
   cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
   cookiesPath: path.join(__dirname, '../config/cookies.json'),
-  // FIXED: Single correct path for both CI and local
-  // From: !posts/PRODUCTION_READY/src/main.js.ci
-  // Go up 3 levels: src -> PRODUCTION_READY -> !posts -> ROOT
-  // Then into: public/feed.xml
-  feedPath: path.join(__dirname, '../../../public/feed.xml'),
+  // 🔨 ABSOLUTE FIX: Build path by going up from __dirname and then down
+  // __dirname = /home/runner/work/dzen/dzen/!posts/PRODUCTION_READY/src
+  // path.dirname = /home/runner/work/dzen/dzen/!posts/PRODUCTION_READY
+  // path.dirname(path.dirname(__dirname)) = /home/runner/work/dzen/dzen
+  // Then add /public/feed.xml
+  feedPath: path.join(path.dirname(path.dirname(path.dirname(__dirname))), 'public', 'feed.xml'),
   historyPath: path.join(__dirname, '../published_articles.txt'),
   headless: process.env.HEADLESS !== 'false',
   timeout: 60000,
@@ -20,6 +21,7 @@ const CONFIG = {
 };
 
 console.log('🤖 AUTO-PUBLISHER CONFIGURATION:');
+console.log(`   __dirname: ${__dirname}`);
 console.log(`   Feed path: ${CONFIG.feedPath}`);
 console.log(`   History path: ${CONFIG.historyPath}`);
 console.log(`   Cookies source: ${CONFIG.cookiesSource}`);
