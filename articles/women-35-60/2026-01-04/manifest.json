@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1767526364802,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 173542,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-04/tihaya-yarost-ya-ponyala-chto-zhivu-ne-svoey-a-chu.jpg",
+      "articles/women-35-60/2026-01-04/mne-bylo-strashno-chto-ya-schitala-sebya-obychnoy-.jpg",
+      "articles/women-35-60/2026-01-04/shok-ya-nashla-mamin-dnevnik-i-ponyala-chto-vsya-m.jpg",
+      "articles/women-35-60/2026-01-04/s-gorechyu-ya-schitala-mat-svyatoy-poka-eyo-staryy.jpg",
+      "articles/women-35-60/2026-01-04/uzhas-skoval-menya-ya-otkryla-shkatulku-i-ponyala-.jpg",
+      "articles/women-35-60/2026-01-04/mne-bylo-stydno-no-ya-brosila-idealnuyu-zhizn-i-na.jpg",
+      "articles/women-35-60/2026-01-04/gorko-ya-plakala-v-svoey-roskoshi-poka-odin-zvonok.jpg",
+      "articles/women-35-60/2026-01-04/slyozy-raskayaniya-ya-otdala-rodnuyu-doch-i-teper-.jpg",
+      "articles/women-35-60/2026-01-04/bolno-ya-skryvala-pravdu-tridtsat-let-poka-etot-zh.jpg",
+      "articles/women-35-60/2026-01-04/ya-schitala-nash-brak-idealnym-25-let-poka-ne-nash.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-04/REPORT.md"
+  }
+}
