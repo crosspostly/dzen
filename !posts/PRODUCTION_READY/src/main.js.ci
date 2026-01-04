@@ -1,6 +1,6 @@
-// 🤖 Enhanced CI/CD Version with GitHub Secrets Support
-// Uses DZEN_COOKIES_BASE64 secret from GitHub
-// Prevents duplicate article publishing with robust deduplication
+// 🤖 CI/CD Version - Cookies from Environment Variable (Maximum Security)
+// Uses DZEN_COOKIES_JSON environment variable passed by GitHub Actions
+// NO SENSITIVE DATA IN FILES!
 
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
@@ -8,8 +8,12 @@ const path = require('path');
 
 // 📋 Configuration
 const CONFIG = {
-  feedPath: path.join(__dirname, '../public/feed.xml'),
+  // 🔐 SECURITY: Read cookies from environment variable (CI/CD mode)
+  // Local: Read from config/cookies.json
+  // CI/CD: Read from DZEN_COOKIES_JSON env var
+  cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
   cookiesPath: path.join(__dirname, '../config/cookies.json'),
+  feedPath: path.join(__dirname, '../public/feed.xml'),
   historyPath: path.join(__dirname, '../published_articles.txt'),
   headless: process.env.HEADLESS !== 'false',
   timeout: 60000,
@@ -19,8 +23,13 @@ const CONFIG = {
 
 console.log('🤖 AUTO-PUBLISHER CONFIGURATION:');
 console.log(`   Feed path: ${CONFIG.feedPath}`);
-console.log(`   Cookies path: ${CONFIG.cookiesPath}`);
 console.log(`   History path: ${CONFIG.historyPath}`);
+console.log(`   Cookies source: ${CONFIG.cookiesSource}`);
+if (CONFIG.cookiesSource === 'FILE') {
+  console.log(`   Cookies file: ${CONFIG.cookiesPath}`);
+} else {
+  console.log(`   Cookies from: DZEN_COOKIES_JSON environment variable (SECURE!)`)
+}
 console.log(`   Headless mode: ${CONFIG.headless}`);
 console.log(`   Environment: ${process.env.CI ? 'CI/CD (GitHub Actions)' : 'Local'}`);
 console.log('');
@@ -67,7 +76,7 @@ async function getArticlesFromFeed() {
         pubDate,
         imageUrl,
         content,
-        hash: articleHash  // 🔐 Unique identifier
+        hash: articleHash
       });
     }
     
@@ -114,6 +123,45 @@ function processArticleContent(content) {
   return processed;
 }
 
+// 📖 Load cookies (from file or environment variable)
+async function loadCookies() {
+  try {
+    let cookiesJson;
+    
+    if (process.env.CI) {
+      // 🔐 CI/CD Mode: Read from environment variable (MAXIMUM SECURITY!)
+      cookiesJson = process.env.DZEN_COOKIES_JSON;
+      
+      if (!cookiesJson || cookiesJson.length < 10) {
+        throw new Error('DZEN_COOKIES_JSON environment variable is empty!');
+      }
+      
+      console.log(`🔐 Cookies loaded from environment variable (CI/CD)`);
+      console.log(`   Size: ${cookiesJson.length} characters`);
+    } else {
+      // 📄 Local Mode: Read from file
+      cookiesJson = await fs.readFile(CONFIG.cookiesPath, 'utf8');
+      console.log(`🔐 Cookies loaded from file: ${CONFIG.cookiesPath}`);
+      console.log(`   Size: ${cookiesJson.length} characters`);
+    }
+    
+    // 📖 Validate JSON format
+    try {
+      const cookies = JSON.parse(cookiesJson);
+      console.log(`✅ Valid JSON format (${Array.isArray(cookies) ? cookies.length : 1} items)\n`);
+      return cookies;
+    } catch (e) {
+      throw new Error(`Invalid JSON format: ${e.message}`);
+    }
+  } catch (error) {
+    console.error(`❌ Error loading cookies: ${error.message}`);
+    if (process.env.CI) {
+      console.error(`   Make sure GitHub Secret 'DZEN_COOKIES_JSON' is set!`);
+    }
+    throw error;
+  }
+}
+
 // 📖 Read published articles with multiple deduplication methods
 async function getPublishedArticles() {
   try {
@@ -131,7 +179,6 @@ async function getPublishedArticles() {
           title: title
         });
         
-        // Store hash for content-based deduplication
         const titleHash = generateHash(title);
         publishedHashes.add(titleHash);
       }
@@ -149,21 +196,18 @@ async function getPublishedArticles() {
 function isArticlePublished(article, publishedData) {
   const { published, publishedHashes } = publishedData;
   
-  // Check 1: Exact title match (primary method)
   const titleMatched = published.some(pub => pub.title.trim() === article.title.trim());
   if (titleMatched) {
     console.log(`  ⚠️  [Check 1] Article title already published`);
     return true;
   }
   
-  // Check 2: Hash match (prevents content duplicates even with different titles)
   const titleHash = generateHash(article.title);
   if (publishedHashes.has(titleHash)) {
     console.log(`  ⚠️  [Check 2] Article hash already published`);
     return true;
   }
   
-  // Check 3: Partial content match (prevents re-publishing same content)
   const contentHash = generateHash(article.content);
   const contentHashKey = `CONTENT_${contentHash}`;
   if (publishedHashes.has(contentHashKey)) {
@@ -210,18 +254,11 @@ async function savePublishedArticle(article) {
 
 // 🤖 Main function
 (async () => {
-  console.log('\n🤖 ==== AUTO-PUBLISHER (CI/CD WITH GITHUB SECRETS) ====\n');
+  console.log('\n🤖 ==== AUTO-PUBLISHER (MAXIMUM SECURITY - ENV VAR MODE) ====\n');
   
   try {
-    // Verify cookies exist
-    try {
-      const cookiesContent = await fs.readFile(CONFIG.cookiesPath, 'utf8');
-      console.log(`🔐 Cookies loaded: ${cookiesContent.length} bytes`);
-    } catch (error) {
-      console.error(`❌ Cookies not found: ${CONFIG.cookiesPath}`);
-      console.error(`   Make sure GitHub Secret 'DZEN_COOKIES_BASE64' is set!`);
-      process.exit(1);
-    }
+    // 🔐 Load cookies from secure source
+    const cookies = await loadCookies();
     
     // Load history
     const publishedData = await getPublishedArticles();
@@ -268,13 +305,12 @@ async function savePublishedArticle(article) {
     
     const page = await context.newPage();
     
-    // Load cookies
+    // Use cookies
     try {
-      const cookies = JSON.parse(await fs.readFile(CONFIG.cookiesPath, 'utf8'));
       await context.addCookies(cookies);
-      console.log('✅ Cookies loaded to browser context');
+      console.log(`✅ Cookies added to browser context (${cookies.length} cookies)`);
     } catch (error) {
-      console.error(`❌ Error loading cookies: ${error.message}`);
+      console.error(`❌ Error adding cookies: ${error.message}`);
       await browser.close();
       process.exit(1);
     }
@@ -289,7 +325,7 @@ async function savePublishedArticle(article) {
     console.log('✅ Page loaded');
     
     // NOTE: Full automation steps are in original main.js
-    // This is the skeleton showing deduplication logic
+    // This is the skeleton showing deduplication and security logic
     
     console.log('\n📤 Publishing article (browser automation in progress...)\n');
     
