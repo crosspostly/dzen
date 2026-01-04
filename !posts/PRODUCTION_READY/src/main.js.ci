@@ -1,3 +1,300 @@
+// 🤖 CI/CD Version - Full Automation with Environment Variable Cookies
+const { chromium } = require('playwright');
+const fs = require('fs').promises;
+const path = require('path');
+
+// 📋 Configuration
+const CONFIG = {
+  cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
+  cookiesPath: path.join(__dirname, '../config/cookies.json'),
+  feedPath: path.join(path.dirname(path.dirname(path.dirname(__dirname))), 'public', 'feed.xml'),
+  historyPath: path.join(__dirname, '../published_articles.txt'),
+  headless: process.env.HEADLESS !== 'false',
+  timeout: 60000,
+  navigationTimeout: 60000,
+  waitTimeout: 30000
+};
+
+console.log('🤖 AUTO-PUBLISHER CONFIGURATION:');
+console.log(`   Feed path: ${CONFIG.feedPath}`);
+console.log(`   History path: ${CONFIG.historyPath}`);
+console.log(`   Cookies source: ${CONFIG.cookiesSource}`);
+console.log(`   Headless mode: ${CONFIG.headless}`);
+console.log(`   Environment: ${process.env.CI ? 'CI/CD (GitHub Actions)' : 'Local'}\n`);
+
+// 📖 Get articles from feed.xml
+async function getArticlesFromFeed() {
+  try {
+    console.log(`📄 Opening feed: ${CONFIG.feedPath}`);
+    const feedContent = await fs.readFile(CONFIG.feedPath, 'utf8');
+    console.log(`✅ Feed loaded: ${feedContent.length} characters`);
+    
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    const items = [];
+    let match;
+    
+    while ((match = itemRegex.exec(feedContent)) !== null) {
+      const itemContent = match[1];
+      
+      const titleMatch = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<title>(.*?)<\/title>/);
+      const title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : 'Without title';
+      
+      const linkMatch = itemContent.match(/<link>(.*?)<\/link>/);
+      const link = linkMatch ? linkMatch[1] : '';
+      
+      const mediaContentMatch = itemContent.match(/<media:content[^>]*url="(.*?)"[^>]*>/);
+      const imageUrl = mediaContentMatch ? mediaContentMatch[1] : '';
+      
+      const dateMatch = itemContent.match(/<pubDate>(.*?)<\/pubDate>/);
+      const pubDate = dateMatch ? dateMatch[1] : '';
+      
+      const descMatch = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<description>(.*?)<\/description>/);
+      const description = descMatch ? descMatch[1] : '';
+      
+      const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<content:encoded>(.*?)<\/content:encoded>/);
+      const content = contentMatch ? contentMatch[1] : description;
+      
+      items.push({ title, description, link, pubDate, imageUrl, content });
+    }
+    
+    console.log(`📄 Found ${items.length} articles\n`);
+    return items;
+  } catch (error) {
+    console.error(`❌ Error reading feed: ${error.message}`);
+    return [];
+  }
+}
+
+// 🏄 Process HTML content
+function processArticleContent(content) {
+  if (!content) return '';
+  
+  let processed = content
+    .replace(/<p[^>]*>/gi, '\n\n')
+    .replace(/<\/p>/gi, '')
+    .replace(/<h[1-6][^>]*>/gi, '\n\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<div[^>]*>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<br>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '\n• ')
+    .replace(/<\/li>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+  
+  processed = processed.replace(/\n\s*\n\s*\n+/g, '\n\n');
+  return processed.trim();
+}
+
+// 📖 Load cookies
+async function loadCookies() {
+  try {
+    let cookiesJson;
+    
+    if (process.env.CI) {
+      cookiesJson = process.env.DZEN_COOKIES_JSON;
+      if (!cookiesJson || cookiesJson.length < 10) {
+        throw new Error('DZEN_COOKIES_JSON environment variable is empty!');
+      }
+      console.log(`🔐 Cookies loaded from environment variable (${cookiesJson.length} chars)`);
+    } else {
+      cookiesJson = await fs.readFile(CONFIG.cookiesPath, 'utf8');
+      console.log(`🔐 Cookies loaded from file (${cookiesJson.length} chars)`);
+    }
+    
+    const cookies = JSON.parse(cookiesJson);
+    console.log(`✅ Valid JSON (${Array.isArray(cookies) ? cookies.length : 1} items)\n`);
+    return cookies;
+  } catch (error) {
+    console.error(`❌ Error loading cookies: ${error.message}`);
+    throw error;
+  }
+}
+
+// 📖 Read published articles
+async function getPublishedArticles() {
+  try {
+    const content = await fs.readFile(CONFIG.historyPath, 'utf8');
+    const lines = content.split('\n').filter(line => line.trim());
+    return lines.map(line => {
+      const match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (.+)/);
+      return match ? { date: match[1], title: match[2] } : null;
+    }).filter(Boolean);
+  } catch (error) {
+    console.log(`ℹ️  History file not found`);
+    return [];
+  }
+}
+
+function isArticlePublished(articleTitle, publishedArticles) {
+  return publishedArticles.some(pub => pub.title.trim() === articleTitle.trim());
+}
+
+function getFirstUnpublishedArticle(articles, publishedArticles) {
+  console.log('🔍 Checking for unpublished articles:\n');
+  for (let i = 0; i < articles.length; i++) {
+    const article = articles[i];
+    const status = isArticlePublished(article.title, publishedArticles) ? '✋ Already published' : '✅ NEW';
+    console.log(`  [${i + 1}/${articles.length}] ${status} - "${article.title.substring(0, 40)}..."`);
+    
+    if (!isArticlePublished(article.title, publishedArticles)) {
+      return article;
+    }
+  }
+  return null;
+}
+
+async function savePublishedArticle(article) {
+  const date = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const entry = `${date} - ${article.title}\n`;
+  try {
+    await fs.appendFile(CONFIG.historyPath, entry);
+    console.log(`✅ Saved to history: "${article.title.substring(0, 50)}..."`);
+  } catch (error) {
+    console.error(`❌ Error saving: ${error.message}`);
+  }
+}
+
+// 🤖 Main function
+(async () => {
+  console.log('🤖 ==== AUTO-PUBLISHER STARTING ====\n');
+  
+  try {
+    const cookies = await loadCookies();
+    const publishedArticles = await getPublishedArticles();
+    const articles = await getArticlesFromFeed();
+    
+    if (articles.length === 0) {
+      console.log('❌ No articles found in feed.xml');
+      process.exit(0);
+    }
+    
+    const article = getFirstUnpublishedArticle(articles, publishedArticles);
+    
+    if (!article) {
+      console.log('\n✅ All articles already published');
+      process.exit(0);
+    }
+    
+    console.log(`\n📝 Found article: "${article.title.substring(0, 50)}..."`);
+    const processedContent = processArticleContent(article.content);
+    console.log(`✅ Content ready: ${processedContent.length} chars`);
+    
+    // Launch browser
+    console.log('\n🌐 Launching browser...');
+    
+    const browser = await chromium.launch({
+      headless: CONFIG.headless,
+      args: ['--no-sandbox', '--disable-blink-features=AutomationControlled', '--disable-dev-shm-usage']
+    });
+    
+    const context = await browser.newContext({
+      viewport: { width: 1920, height: 1080 },
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    });
+    
+    const page = await context.newPage();
+    
+    try {
+      await context.addCookies(cookies);
+      console.log(`✅ Cookies loaded (${cookies.length} cookies)`);
+    } catch (error) {
+      console.error(`❌ Error adding cookies: ${error.message}`);
+      await browser.close();
+      process.exit(1);
+    }
+    
+    // Navigate
+    console.log('🌐 Navigating to Dzen editor...');
+    await page.goto('https://dzen.ru/profile/editor/potemki', {
+      waitUntil: 'domcontentloaded',
+      timeout: CONFIG.navigationTimeout
+    });
+    
+    console.log('✅ Page loaded');
+    await page.waitForTimeout(5000);
+    
+    // Close modal
+    const modalButton = await page.$('[data-testid="close-button"]');
+    if (modalButton) {
+      await modalButton.click();
+      await page.waitForTimeout(2000);
+    }
+    
+    // Click add publication
+    const addButton = await page.$('[data-testid="add-publication-button"]');
+    if (addButton) {
+      await addButton.click();
+      console.log('✅ Add publication button clicked');
+      await page.waitForTimeout(3000);
+      
+      // Click write article
+      const writeButton = await page.$('text="Написать статью"');
+      if (writeButton) {
+        await writeButton.click();
+        console.log('✅ "Write article" clicked');
+        await page.waitForTimeout(8000);
+        
+        // Close popups
+        await page.evaluate(() => {
+          const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, .article-editor-desktop--help-popup__overlay-3q');
+          overlays.forEach(el => { el.style.display = 'none'; el.remove(); });
+        });
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(5000);
+        
+        // Get input fields
+        const inputs = await page.$$('input[type="text"], textarea, div[contenteditable="true"]');
+        console.log(`\n🔍 Found ${inputs.length} input fields`);
+        
+        // Fill title
+        if (inputs.length > 0) {
+          console.log(`\n📝 1. Filling title...`);
+          await inputs[0].focus();
+          await inputs[0].fill(article.title);
+          console.log(`✅ Title filled`);
+          await page.waitForTimeout(1000);
+        }
+        
+        // Fill content
+        if (inputs.length > 1) {
+          console.log(`\n📝 2. Filling content...`);
+          await inputs[1].focus();
+          await inputs[1].fill(processedContent);
+          console.log(`✅ Content filled (${processedContent.length} chars)`);
+          await page.keyboard.press('Enter');
+          await page.waitForTimeout(1000);
+        }
+        
+        await page.waitForTimeout(2000);
+        
+        // Insert image
+        console.log(`\n🖼️  3. Inserting image...`);
+        const imageBtn = await page.$('button.article-editor-desktop--side-button__sideButton-1z[data-tip="Вставить изображение"]');
+        if (imageBtn && article.imageUrl) {
+          await imageBtn.click();
+          console.log(`✅ Image button clicked`);
+          await page.waitForTimeout(3000);
+          
+          const imgInput = await page.$('input[type="text"]');
+          if (imgInput) {
+            await imgInput.fill(article.imageUrl);
+            console.log(`✅ Image URL inserted`);
+            await imgInput.press('Enter');
+            await page.waitForTimeout(1000);
+          }
+        } else {
+          console.log(`ℹ️  Image skipped (button not found or no URL)`);
+        }
+        
+        await page.waitForTimeout(2000);
+        
         // PUBLISH BUTTON 1 - First button in editor header
         console.log(`\n📤 4. Clicking first publish button (editor header)...`);
         const publishSelectors = [
@@ -10,9 +307,8 @@
           try {
             const element = await page.$(selector);
             if (element && await element.isVisible()) {
-              console.log(`✅ Found element with selector: ${selector}`);
-              
-              // Use page.click() to avoid element handle issues
+              console.log(`✅ Found with selector: ${selector}`);
+              // Use page.click() on selector directly (handles both button and span)
               await page.click(selector);
               console.log(`✅ First publish button clicked`);
               publishClicked = true;
@@ -24,5 +320,63 @@
         }
         
         if (!publishClicked) {
-          console.log(`❌ First publish button not found with any selector`);
+          console.log(`❌ First publish button not found`);
         }
+        
+        await page.waitForTimeout(5000);
+        
+        // PUBLISH BUTTON 2 - Confirmation button in modal
+        console.log(`\n📤 5. Clicking confirmation button (modal)...`);
+        
+        const confirmSelectors = [
+          'button[data-testid="publish-btn"][type="submit"]',
+          'button[data-testid="publish-btn"]',
+          'button:has-text("Опубликовать"):not([disabled])',
+          'button:has-text("Опубликовать сейчас"):not([disabled])',
+          'button.article-editor-desktop--base-button__primary-1Y:not([disabled])',
+          'button[type="submit"]',
+        ];
+        
+        let confirmClicked = false;
+        for (const selector of confirmSelectors) {
+          try {
+            const elements = await page.$$(selector);
+            if (elements.length > 0) {
+              // Get the last visible button (usually the one in modal)
+              for (let i = elements.length - 1; i >= 0; i--) {
+                const el = elements[i];
+                if (await el.isVisible() && await el.isEnabled()) {
+                  console.log(`✅ Found with selector: ${selector}`);
+                  await page.click(selector);
+                  console.log(`✅ Confirmation button clicked`);
+                  console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
+                  console.log(`   Title: "${article.title.substring(0, 50)}..."`);
+                  await savePublishedArticle(article);
+                  confirmClicked = true;
+                  break;
+                }
+              }
+            }
+            if (confirmClicked) break;
+          } catch (e) {
+            console.log(`   ⚠️  Selector failed: ${selector}`);
+          }
+        }
+        
+        if (!confirmClicked) {
+          console.log(`❌ Confirmation button not found`);
+        }
+      }
+    }
+    
+    await page.waitForTimeout(5000);
+    await browser.close();
+    
+    console.log('\n✅ Auto-publisher completed!');
+    process.exit(0);
+    
+  } catch (error) {
+    console.error(`\n❌ CRITICAL ERROR: ${error.message}`);
+    process.exit(1);
+  }
+})();
