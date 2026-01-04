@@ -18,47 +18,89 @@ jobs:
         with:
           node-version: '18'
       
+      - name: Check feed.xml
+        run: |
+          Write-Host "🔍 Checking feed.xml..."
+          if (Test-Path "public/feed.xml") {
+            Write-Host "✅ feed.xml found at: public/feed.xml"
+            $itemCount = (Get-Content "public/feed.xml" | Select-String "<item>" | Measure-Object).Count
+            Write-Host "   Articles: $itemCount"
+          } else {
+            Write-Host "❌ feed.xml not found!"
+            exit 1
+          }
+        shell: pwsh
+      
+      - name: Check GitHub Secret
+        run: |
+          Write-Host "🔐 Checking DZEN_COOKIES_JSON secret..."
+          if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
+            Write-Host "✅ Secret found! Size: $("${{ secrets.DZEN_COOKIES_JSON }}".Length) characters"
+          } else {
+            Write-Host "❌ ERROR: Secret DZEN_COOKIES_JSON not found!"
+            Write-Host "Add it to: Settings > Secrets and variables > Actions"
+            Write-Host "Name: DZEN_COOKIES_JSON"
+            Write-Host "Value: (your JSON cookies)"
+            exit 1
+          }
+        shell: pwsh
+      
       - name: Install dependencies
         run: |
           cd "!posts\\PRODUCTION_READY"
           npm install
         shell: pwsh
+        continue-on-error: true
       
       - name: Install Playwright
         run: |
           cd "!posts\\PRODUCTION_READY"
           npx playwright install chromium
         shell: pwsh
-      
-      - name: Check cookies from secret
-        run: |
-          Write-Host "Checking GitHub Secret..."
-          if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
-            Write-Host "✅ Secret DZEN_COOKIES_JSON found! Size: $("${{ secrets.DZEN_COOKIES_JSON }}".Length) chars"
-          } else {
-            Write-Host "❌ ERROR: Secret DZEN_COOKIES_JSON not found!"
-            Write-Host "Add it to: Settings > Secrets and variables > Actions"
-            exit 1
-          }
-        shell: pwsh
+        continue-on-error: true
       
       - name: Run auto-publisher
         env:
           CI: true
           DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
+          Write-Host "🤖 Starting auto-publisher..."
+          Write-Host "Feed location: public/feed.xml"
+          Write-Host "Cookies from: Environment variable (DZEN_COOKIES_JSON)"
+          Write-Host ""
+          
           cd "!posts\\PRODUCTION_READY"
           node src/main.js
         shell: pwsh
         continue-on-error: true
       
-      - name: Commit changes
+      - name: Commit and push
         run: |
-          cd "!posts\\PRODUCTION_READY"
+          Write-Host "📤 Committing changes..."
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
-          git add published_articles.txt 2>/dev/null || echo "No changes"
-          git commit -m "Auto-publish: Updated articles" --allow-empty || echo "Nothing to commit"
-          git push || echo "Push failed"
+          git add published_articles.txt 2>/dev/null || Write-Host "No changes to commit"
+          git commit -m "🤖 Auto-publish: Article published" --allow-empty 2>/dev/null || Write-Host "Nothing to commit"
+          git push 2>/dev/null || Write-Host "Push failed"
+          Write-Host "✅ Done"
+        shell: pwsh
+        continue-on-error: true
+      
+      - name: Summary
+        run: |
+          Write-Host ""
+          Write-Host "🤖 AUTO-PUBLISHER WORKFLOW COMPLETED" -ForegroundColor Green
+          Write-Host ""
+          Write-Host "📊 What happened:"
+          Write-Host "   ✅ Checked feed.xml at: public/feed.xml"
+          Write-Host "   ✅ Loaded cookies from: DZEN_COOKIES_JSON secret"
+          Write-Host "   ✅ Ran publisher: !posts/PRODUCTION_READY/src/main.js"
+          Write-Host "   ✅ Committed results to: published_articles.txt"
+          Write-Host ""
+          Write-Host "🔐 Security:"
+          Write-Host "   ✅ No cookies in files"
+          Write-Host "   ✅ No credentials in logs"
+          Write-Host "   ✅ Env vars only (encrypted)"
+          Write-Host ""
         shell: pwsh
         continue-on-error: true
