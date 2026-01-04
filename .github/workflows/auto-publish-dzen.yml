@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
@@ -178,10 +179,12 @@ jobs:
             git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed (might be empty)"
             
             echo "📤 Pushing to repository..."
-            git push origin main || echo "⚠️  Push failed"
+            git push origin main
             echo "✅ Successfully pushed!"
           fi
         continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: 📋 Summary
         if: always()
@@ -201,6 +204,7 @@ jobs:
           echo "   ✅ Installed Playwright browsers"
           echo "   ✅ Ran auto-publisher (main.js.ci)"
           echo "   ✅ Committed history to git"
+          echo "   ✅ Pushed updates using GITHUB_TOKEN"
           echo ""
           echo "🔐 Security:"
           echo "   ✅ Cookies from GitHub Secrets (AES-256 encrypted)"
