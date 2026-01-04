@@ -251,78 +251,98 @@ async function randomDelay(page, min = 500, max = 2000) {
 
 // Move mouse naturally (simulates human mouse movement)
 async function moveMouseNaturally(page, x, y) {
-  const steps = Math.floor(Math.random() * 6) + 5; // 5-10 steps
-  const currentPos = await page.evaluate(() => ({ x: window.mouseX || 0, y: window.mouseY || 0 }));
+  try {
+    const steps = Math.floor(Math.random() * 6) + 5; // 5-10 steps
+    const currentPos = await page.evaluate(() => ({ x: window.mouseX || 0, y: window.mouseY || 0 }));
   
-  for (let i = 0; i < steps; i++) {
-    const progress = (i + 1) / steps;
-    const randomX = currentPos.x + (x - currentPos.x) * progress + (Math.random() - 0.5) * 30;
-    const randomY = currentPos.y + (y - currentPos.y) * progress + (Math.random() - 0.5) * 30;
-    await page.mouse.move(randomX, randomY);
-    await page.waitForTimeout(Math.floor(Math.random() * 30) + 20);
+    for (let i = 0; i < steps; i++) {
+      const progress = (i + 1) / steps;
+      const randomX = currentPos.x + (x - currentPos.x) * progress + (Math.random() - 0.5) * 30;
+      const randomY = currentPos.y + (y - currentPos.y) * progress + (Math.random() - 0.5) * 30;
+      await page.mouse.move(randomX, randomY);
+      await page.waitForTimeout(Math.floor(Math.random() * 30) + 20);
+    }
+  
+    await page.mouse.move(x, y);
+    await page.evaluate(({mx, my}) => { window.mouseX = mx; window.mouseY = my; }, {mx: x, my: y});
+  } catch (error) {
+    console.error(`❌ Mouse movement failed: ${error.message}`);
+    throw error;
   }
-  
-  await page.mouse.move(x, y);
-  await page.evaluate((mx, my) => { window.mouseX = mx; window.mouseY = my; }, x, y);
 }
 
 // Type text naturally (simulates human typing with pauses)
 async function typeNaturally(element, text, page) {
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    await element.type(char);
-    
-    // Variable typing speed (faster for common words, slower for complex parts)
-    let delay = Math.floor(Math.random() * 50) + 30; // 30-80ms base
-    
-    // Add pauses at punctuation (simulates thinking)
-    if (['.', ',', '!', '?', ';', ':'].includes(char)) {
-      delay += Math.floor(Math.random() * 200) + 100; // +100-300ms
+  try {
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      await element.type(char);
+      
+      // Variable typing speed (faster for common words, slower for complex parts)
+      let delay = Math.floor(Math.random() * 50) + 30; // 30-80ms base
+      
+      // Add pauses at punctuation (simulates thinking)
+      if (['.', ',', '!', '?', ';', ':'].includes(char)) {
+        delay += Math.floor(Math.random() * 200) + 100; // +100-300ms
+      }
+      
+      // Occasional longer pause (simulates re-reading or thinking)
+      if (Math.random() < 0.05) {
+        delay += Math.floor(Math.random() * 300) + 200; // +200-500ms
+      }
+      
+      await page.waitForTimeout(delay);
     }
-    
-    // Occasional longer pause (simulates re-reading or thinking)
-    if (Math.random() < 0.05) {
-      delay += Math.floor(Math.random() * 300) + 200; // +200-500ms
-    }
-    
-    await page.waitForTimeout(delay);
+  } catch (error) {
+    console.error(`❌ Typing failed: ${error.message}`);
+    throw error;
   }
 }
 
 // Scroll page naturally (simulates human scrolling)
 async function scrollNaturally(page, direction = 'down', amount = 200) {
-  const scrollSteps = Math.floor(Math.random() * 3) + 3; // 3-5 steps
-  const stepAmount = amount / scrollSteps;
+  try {
+    const scrollSteps = Math.floor(Math.random() * 3) + 3; // 3-5 steps
+    const stepAmount = amount / scrollSteps;
   
-  for (let i = 0; i < scrollSteps; i++) {
-    await page.evaluate((step, dir) => {
-      window.scrollBy(0, dir === 'down' ? step : -step);
-    }, stepAmount, direction);
-    await page.waitForTimeout(Math.floor(Math.random() * 50) + 30);
+    for (let i = 0; i < scrollSteps; i++) {
+      await page.evaluate(({step, dir}) => {
+        window.scrollBy(0, dir === 'down' ? step : -step);
+      }, {step: stepAmount, dir: direction});
+      await page.waitForTimeout(Math.floor(Math.random() * 50) + 30);
+    }
+  } catch (error) {
+    console.error(`❌ Scroll failed: ${error.message}`);
+    throw error;
   }
 }
 
 // Click with human-like behavior
 async function clickNaturally(page, element) {
-  const box = await element.boundingBox();
-  if (box) {
-    // Move mouse to element with slight randomness
-    const x = box.x + box.width / 2 + (Math.random() - 0.5) * 20;
-    const y = box.y + box.height / 2 + (Math.random() - 0.5) * 20;
-    
-    await moveMouseNaturally(page, x, y);
-    await randomDelay(page, 100, 300);
-    
-    // Sometimes scroll element into view first
-    if (Math.random() < 0.3) {
-      await element.scrollIntoViewIfNeeded();
-      await randomDelay(page, 200, 400);
+  try {
+    const box = await element.boundingBox();
+    if (box) {
+      // Move mouse to element with slight randomness
+      const x = box.x + box.width / 2 + (Math.random() - 0.5) * 20;
+      const y = box.y + box.height / 2 + (Math.random() - 0.5) * 20;
+      
+      await moveMouseNaturally(page, x, y);
+      await randomDelay(page, 100, 300);
+      
+      // Sometimes scroll element into view first
+      if (Math.random() < 0.3) {
+        await element.scrollIntoViewIfNeeded();
+        await randomDelay(page, 200, 400);
+      }
+      
+      await element.click();
+    } else {
+      // Fallback if no bounding box
+      await element.click();
     }
-    
-    await element.click();
-  } else {
-    // Fallback if no bounding box
-    await element.click();
+  } catch (error) {
+    console.error(`❌ Click failed: ${error.message}`);
+    throw error;
   }
 }
 
@@ -377,18 +397,31 @@ async function clickNaturally(page, element) {
     
     // Navigate
     console.log('🌐 Navigating to Dzen editor...');
-    await page.goto('https://dzen.ru/profile/editor/potemki', {
-      waitUntil: 'domcontentloaded',
-      timeout: CONFIG.navigationTimeout
-    });
-    
-    console.log('✅ Page loaded');
+    try {
+      await page.goto('https://dzen.ru/profile/editor/potemki', {
+        waitUntil: 'domcontentloaded',
+        timeout: CONFIG.navigationTimeout
+      });
+      console.log('✅ Page loaded');
+    } catch (error) {
+      console.error(`❌ Navigation failed: ${error.message}`);
+      await browser.close();
+      process.exit(1);
+    }
+
     await randomDelay(page, 3000, 5000);
-    
+
     // 🎭 Simulate human-like page exploration
     console.log('🎭 Human simulation: Exploring page...');
-    await scrollNaturally(page, 'down', 100);
-    await randomDelay(page, 800, 1500);
+    try {
+      await scrollNaturally(page, 'down', 100);
+      await randomDelay(page, 800, 1500);
+    } catch (error) {
+      console.error(`❌ Human simulation failed: ${error.message}`);
+      console.error('Stack:', error.stack);
+      await browser.close();
+      process.exit(1);
+    }
     
     // Close modal
     const modalButton = await page.$('[data-testid="close-button"]');
