@@ -20,7 +20,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # Removed cache to avoid path resolution error with '!' character
+          cache: 'npm'
+          cache-dependency-path: '!posts/PRODUCTION_READY/package.json'
           
       - name: 🔐 Validate GitHub Secret (DZEN_COOKIES_JSON)
         run: |
@@ -83,13 +84,6 @@ jobs:
           npx playwright install chromium --with-deps
         continue-on-error: false
       
-      - name: 📋 Copy feed.xml to work directory
-        run: |
-          echo "📋 Copying feed.xml to work directory..."
-          cp public/feed.xml "!posts/PRODUCTION_READY/public/feed.xml"
-          echo "✅ feed.xml copied"
-          echo "   File size: $(wc -c < "!posts/PRODUCTION_READY/public/feed.xml") bytes"
-      
       - name: 🤖 Run auto-publisher
         id: publisher
         env:
@@ -104,13 +98,13 @@ jobs:
           echo "========================================"
           echo ""
           echo "📋 Configuration:"
-          echo "   Feed: public/feed.xml"
+          echo "   Feed: public/feed.xml (from repository root)"
           echo "   Cookies: From DZEN_COOKIES_JSON env variable (encrypted from secret)"
           echo "   Environment: CI/CD (GitHub Actions)"
           echo "   Headless mode: true"
           echo ""
           
-          # Use main.js.ci which reads from env variable
+          # Use main.js.ci which reads from env variable and root /public/feed.xml
           timeout 300 node src/main.js.ci 2>&1 | tee publish.log
           PUBLISHER_EXIT=$?
           
@@ -186,8 +180,8 @@ jobs:
           echo "📋 What happened:"
           echo "   ✅ Validated DZEN_COOKIES_JSON secret"
           echo "   ✅ Checked feed.xml in /public"
-          echo "   ✅ Installed dependencies"
-          echo "   ✅ Copied feed.xml to work directory"
+          echo "   ✅ Installed dependencies (npm cache enabled)"
+          echo "   ✅ Installed Playwright browsers"
           echo "   ✅ Ran auto-publisher (main.js.ci)"
           echo "   ✅ Committed results"
           echo ""
