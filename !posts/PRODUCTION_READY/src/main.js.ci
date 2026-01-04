@@ -132,78 +132,17 @@ async function getPublishedArticles() {
   }
 }
 
-// 🔧 Normalize title for comparison - removes invisible chars, HTML entities, etc.
-function normalizeTitle(title) {
-  if (!title) return '';
-  
-  return title
-    // Remove ANSI escape codes
-    .replace(/\x1b\[[0-9;]*m/g, '')
-    // Remove other control characters
-    .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
-    // Normalize HTML entities
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&apos;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&amp;/gi, '&')
-    // Normalize different types of quotes
-    .replace(/[«»""]/g, '"')
-    .replace(/['']/g, "'")
-    // Normalize different types of dashes
-    .replace(/[—–]/g, '-')
-    // Normalize whitespace (replace multiple spaces with single space)
-    .replace(/\s+/g, ' ')
-    // Trim
-    .trim()
-    // Lowercase for case-insensitive comparison
-    .toLowerCase();
-}
-
 function isArticlePublished(articleTitle, publishedArticles) {
-  const normalizedTarget = normalizeTitle(articleTitle);
-  return publishedArticles.some(pub => {
-    const normalizedPub = normalizeTitle(pub.title);
-    return normalizedPub === normalizedTarget;
-  });
+  return publishedArticles.some(pub => pub.title.trim() === articleTitle.trim());
 }
 
 function getFirstUnpublishedArticle(articles, publishedArticles) {
   console.log('🔍 Checking for unpublished articles:\n');
-  
-  // 🐛 DEBUG: Show published articles
-  console.log('📋 PUBLISHED ARTICLES DEBUG:');
-  if (publishedArticles.length === 0) {
-    console.log('   (no published articles yet)\n');
-  } else {
-    publishedArticles.forEach((pub, idx) => {
-      console.log(`   [${idx + 1}] "${pub.title}"`);
-      console.log(`        Length: ${pub.title.length}`);
-      console.log(`        Normalized: "${normalizeTitle(pub.title)}"`);
-      console.log(`        Hex: ${pub.title.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ')}`);
-    });
-    console.log();
-  }
-  
-  // 🐛 DEBUG: Show articles from feed
-  console.log('📰 ARTICLES FROM FEED DEBUG:');
-  articles.forEach((art, idx) => {
-    const isPublished = isArticlePublished(art.title, publishedArticles);
-    const status = isPublished ? '✋ Already published' : '✅ NEW';
-    
-    console.log(`   [${idx + 1}/${articles.length}] ${status}`);
-    console.log(`        Title: "${art.title}"`);
-    console.log(`        Length: ${art.title.length}`);
-    console.log(`        Normalized: "${normalizeTitle(art.title)}"`);
-    console.log(`        Hex: ${art.title.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ')}`);
-    console.log(`        Published: ${isPublished}`);
-  });
-  console.log();
-  
   for (let i = 0; i < articles.length; i++) {
     const article = articles[i];
+    const status = isArticlePublished(article.title, publishedArticles) ? '✋ Already published' : '✅ NEW';
+    console.log(`  [${i + 1}/${articles.length}] ${status} - "${article.title.substring(0, 40)}..."`);
+    
     if (!isArticlePublished(article.title, publishedArticles)) {
       return article;
     }
@@ -219,92 +158,6 @@ async function savePublishedArticle(article) {
     console.log(`✅ Saved to history: "${article.title.substring(0, 50)}..."`);
   } catch (error) {
     console.error(`❌ Error saving: ${error.message}`);
-  }
-}
-
-// 🎭 HUMAN-LIKE BEHAVIOR FUNCTIONS
-
-// Random delay between actions (simulates human thinking/reading time)
-async function randomDelay(page, min = 500, max = 2000) {
-  const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-  console.log(`   ⏱️  Random delay: ${delay}ms`);
-  await page.waitForTimeout(delay);
-}
-
-// Move mouse naturally (simulates human mouse movement)
-async function moveMouseNaturally(page, x, y) {
-  const steps = Math.floor(Math.random() * 6) + 5; // 5-10 steps
-  const currentPos = await page.evaluate(() => ({ x: window.mouseX || 0, y: window.mouseY || 0 }));
-  
-  for (let i = 0; i < steps; i++) {
-    const progress = (i + 1) / steps;
-    const randomX = currentPos.x + (x - currentPos.x) * progress + (Math.random() - 0.5) * 30;
-    const randomY = currentPos.y + (y - currentPos.y) * progress + (Math.random() - 0.5) * 30;
-    await page.mouse.move(randomX, randomY);
-    await page.waitForTimeout(Math.floor(Math.random() * 30) + 20);
-  }
-  
-  await page.mouse.move(x, y);
-  await page.evaluate((mx, my) => { window.mouseX = mx; window.mouseY = my; }, x, y);
-}
-
-// Type text naturally (simulates human typing with pauses)
-async function typeNaturally(element, text, page) {
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    await element.type(char);
-    
-    // Variable typing speed (faster for common words, slower for complex parts)
-    let delay = Math.floor(Math.random() * 50) + 30; // 30-80ms base
-    
-    // Add pauses at punctuation (simulates thinking)
-    if (['.', ',', '!', '?', ';', ':'].includes(char)) {
-      delay += Math.floor(Math.random() * 200) + 100; // +100-300ms
-    }
-    
-    // Occasional longer pause (simulates re-reading or thinking)
-    if (Math.random() < 0.05) {
-      delay += Math.floor(Math.random() * 300) + 200; // +200-500ms
-    }
-    
-    await page.waitForTimeout(delay);
-  }
-}
-
-// Scroll page naturally (simulates human scrolling)
-async function scrollNaturally(page, direction = 'down', amount = 200) {
-  const scrollSteps = Math.floor(Math.random() * 3) + 3; // 3-5 steps
-  const stepAmount = amount / scrollSteps;
-  
-  for (let i = 0; i < scrollSteps; i++) {
-    await page.evaluate((step, dir) => {
-      window.scrollBy(0, dir === 'down' ? step : -step);
-    }, stepAmount, direction);
-    await page.waitForTimeout(Math.floor(Math.random() * 50) + 30);
-  }
-}
-
-// Click with human-like behavior
-async function clickNaturally(page, element) {
-  const box = await element.boundingBox();
-  if (box) {
-    // Move mouse to element with slight randomness
-    const x = box.x + box.width / 2 + (Math.random() - 0.5) * 20;
-    const y = box.y + box.height / 2 + (Math.random() - 0.5) * 20;
-    
-    await moveMouseNaturally(page, x, y);
-    await randomDelay(page, 100, 300);
-    
-    // Sometimes scroll element into view first
-    if (Math.random() < 0.3) {
-      await element.scrollIntoViewIfNeeded();
-      await randomDelay(page, 200, 400);
-    }
-    
-    await element.click();
-  } else {
-    // Fallback if no bounding box
-    await element.click();
   }
 }
 
@@ -365,46 +218,36 @@ async function clickNaturally(page, element) {
     });
     
     console.log('✅ Page loaded');
-    await randomDelay(page, 3000, 5000);
-    
-    // 🎭 Simulate human-like page exploration
-    console.log('🎭 Human simulation: Exploring page...');
-    await scrollNaturally(page, 'down', 100);
-    await randomDelay(page, 800, 1500);
+    await page.waitForTimeout(5000);
     
     // Close modal
     const modalButton = await page.$('[data-testid="close-button"]');
     if (modalButton) {
-      console.log('🎭 Human simulation: Closing modal...');
-      await clickNaturally(page, modalButton);
-      await randomDelay(page, 1000, 2000);
+      await modalButton.click();
+      await page.waitForTimeout(2000);
     }
     
     // Click add publication
     const addButton = await page.$('[data-testid="add-publication-button"]');
     if (addButton) {
-      console.log('🎭 Human simulation: Clicking add publication...');
-      await clickNaturally(page, addButton);
+      await addButton.click();
       console.log('✅ Add publication button clicked');
-      await randomDelay(page, 2000, 4000);
+      await page.waitForTimeout(3000);
       
       // Click write article
       const writeButton = await page.$('text="Написать статью"');
       if (writeButton) {
-        console.log('🎭 Human simulation: Clicking write article...');
-        await clickNaturally(page, writeButton);
+        await writeButton.click();
         console.log('✅ "Write article" clicked');
-        await randomDelay(page, 6000, 10000);
+        await page.waitForTimeout(8000);
         
         // Close popups
-        console.log('🎭 Human simulation: Closing popups...');
         await page.evaluate(() => {
           const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, .article-editor-desktop--help-popup__overlay-3q');
           overlays.forEach(el => { el.style.display = 'none'; el.remove(); });
         });
-        await randomDelay(page, 300, 700);
         await page.keyboard.press('Escape');
-        await randomDelay(page, 3000, 5000);
+        await page.waitForTimeout(5000);
         
         // Get input fields
         const inputs = await page.$$('input[type="text"], textarea, div[contenteditable="true"]');
@@ -412,61 +255,45 @@ async function clickNaturally(page, element) {
         
         // Fill title
         if (inputs.length > 0) {
-          console.log(`\n📝 1. Filling title with human-like typing...`);
+          console.log(`\n📝 1. Filling title...`);
           await inputs[0].focus();
-          await randomDelay(page, 500, 1000);
-          
-          // 🎭 Use natural typing for title
-          console.log('🎭 Human simulation: Typing title naturally...');
-          await typeNaturally(inputs[0], article.title, page);
-          
+          await inputs[0].fill(article.title);
           console.log(`✅ Title filled`);
-          await randomDelay(page, 800, 1500);
+          await page.waitForTimeout(1000);
         }
         
         // Fill content
         if (inputs.length > 1) {
           console.log(`\n📝 2. Filling content...`);
           await inputs[1].focus();
-          await randomDelay(page, 600, 1200);
-          
-          // 🎭 For long content, use fill() but with random pauses
-          // (Natural typing would take too long for full article)
-          console.log('🎭 Human simulation: Pasting content (simulating Ctrl+V)...');
           await inputs[1].fill(processedContent);
-          
           console.log(`✅ Content filled (${processedContent.length} chars)`);
-          await randomDelay(page, 500, 1000);
           await page.keyboard.press('Enter');
-          await randomDelay(page, 800, 1500);
+          await page.waitForTimeout(1000);
         }
         
-        await randomDelay(page, 1500, 2500);
+        await page.waitForTimeout(2000);
         
         // Insert image
         console.log(`\n🖼️  3. Inserting image...`);
         const imageBtn = await page.$('button.article-editor-desktop--side-button__sideButton-1z[data-tip="Вставить изображение"]');
         if (imageBtn && article.imageUrl) {
-          console.log('🎭 Human simulation: Clicking image button...');
-          await clickNaturally(page, imageBtn);
+          await imageBtn.click();
           console.log(`✅ Image button clicked`);
-          await randomDelay(page, 2000, 4000);
+          await page.waitForTimeout(3000);
           
           const imgInput = await page.$('input[type="text"]');
           if (imgInput) {
-            await imgInput.focus();
-            await randomDelay(page, 300, 700);
             await imgInput.fill(article.imageUrl);
             console.log(`✅ Image URL inserted`);
-            await randomDelay(page, 300, 600);
             await imgInput.press('Enter');
-            await randomDelay(page, 800, 1500);
+            await page.waitForTimeout(1000);
           }
         } else {
           console.log(`ℹ️  Image skipped (button not found or no URL)`);
         }
         
-        await randomDelay(page, 1500, 2500);
+        await page.waitForTimeout(2000);
         
         // PUBLISH BUTTON 1 - First button in editor header
         console.log(`\n📤 4. Clicking first publish button (editor header)...`);
@@ -481,8 +308,7 @@ async function clickNaturally(page, element) {
             const element = await page.$(selector);
             if (element && await element.isVisible()) {
               console.log(`✅ Found with selector: ${selector}`);
-              console.log('🎭 Human simulation: Clicking publish button...');
-              await clickNaturally(page, element);
+              await page.click(selector);
               console.log(`✅ First publish button clicked`);
               publishClicked = true;
               break;
@@ -496,7 +322,7 @@ async function clickNaturally(page, element) {
           console.log(`❌ First publish button not found - skipping confirmation button`);
         } else {
           // ✅ FIX: ONLY PROCEED IF FIRST BUTTON WAS CLICKED
-          await randomDelay(page, 4000, 6000);
+          await page.waitForTimeout(5000);
           
           // PUBLISH BUTTON 2 - Confirmation button in modal
           console.log(`\n📤 5. Clicking confirmation button (modal)...`);
@@ -520,8 +346,7 @@ async function clickNaturally(page, element) {
                   const el = elements[i];
                   if (await el.isVisible() && await el.isEnabled()) {
                     console.log(`✅ Found with selector: ${selector}`);
-                    console.log('🎭 Human simulation: Clicking confirmation button...');
-                    await clickNaturally(page, el);
+                    await page.click(selector);
                     console.log(`✅ Confirmation button clicked`);
                     console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
                     console.log(`   Title: "${article.title.substring(0, 50)}..."`);
@@ -544,7 +369,7 @@ async function clickNaturally(page, element) {
       }
     }
     
-    await randomDelay(page, 3000, 5000);
+    await page.waitForTimeout(5000);
     await browser.close();
     
     console.log('\n✅ Auto-publisher completed!');
