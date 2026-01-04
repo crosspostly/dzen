@@ -1,0 +1,64 @@
+name: Auto-Publish to Dzen Every 3 Hours
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd "!posts\\PRODUCTION_READY"
+          npm install
+        shell: pwsh
+      
+      - name: Install Playwright
+        run: |
+          cd "!posts\\PRODUCTION_READY"
+          npx playwright install chromium
+        shell: pwsh
+      
+      - name: Check cookies from secret
+        run: |
+          Write-Host "Checking GitHub Secret..."
+          if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
+            Write-Host "✅ Secret DZEN_COOKIES_JSON found! Size: $("${{ secrets.DZEN_COOKIES_JSON }}".Length) chars"
+          } else {
+            Write-Host "❌ ERROR: Secret DZEN_COOKIES_JSON not found!"
+            Write-Host "Add it to: Settings > Secrets and variables > Actions"
+            exit 1
+          }
+        shell: pwsh
+      
+      - name: Run auto-publisher
+        env:
+          CI: true
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
+        run: |
+          cd "!posts\\PRODUCTION_READY"
+          node src/main.js
+        shell: pwsh
+        continue-on-error: true
+      
+      - name: Commit changes
+        run: |
+          cd "!posts\\PRODUCTION_READY"
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git add published_articles.txt 2>/dev/null || echo "No changes"
+          git commit -m "Auto-publish: Updated articles" --allow-empty || echo "Nothing to commit"
+          git push || echo "Push failed"
+        shell: pwsh
+        continue-on-error: true
