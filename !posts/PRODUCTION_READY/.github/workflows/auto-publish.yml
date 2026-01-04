@@ -1,4 +1,4 @@
-name: 🧹 Auto-Publish Articles Every 3 Hours
+name: 🤖 Auto-Publish Articles Every 3 Hours
 
 on:
   schedule:
@@ -26,48 +26,118 @@ jobs:
         run: npm install
         working-directory: '!posts/PRODUCTION_READY'
 
-      - name: 🎯 Install Playwright browsers
+      - name: 🎨 Install Playwright browsers
         run: npx playwright install chromium
         working-directory: '!posts/PRODUCTION_READY'
 
-      - name: 📨 Load environment variables
+      - name: 🔐 Load cookies from GitHub Secrets
         run: |
-          echo "Loading secrets and configuration..."
-          echo "Feed path configured"
+          # Create config directory if it doesn't exist
+          if (-not (Test-Path '!posts\PRODUCTION_READY\config')) {
+            New-Item -ItemType Directory -Path '!posts\PRODUCTION_READY\config' | Out-Null
+          }
+          
+          # Decode base64 secret and save to cookies.json
+          $cookiesBase64 = "${{ secrets.DZEN_COOKIES_BASE64 }}"
+          if ($cookiesBase64) {
+            $cookiesJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($cookiesBase64))
+            Set-Content -Path '!posts\PRODUCTION_READY\config\cookies.json' -Value $cookiesJson -Encoding UTF8
+            Write-Host "✅ Cookies loaded from GitHub Secrets (DZEN_COOKIES_BASE64)"
+          } else {
+            Write-Host "⚠️  WARNING: DZEN_COOKIES_BASE64 secret not found!"
+            Write-Host "📖 Please add it to your repository secrets:"
+            Write-Host "   1. Go to: Settings > Secrets and variables > Actions"
+            Write-Host "   2. Click 'New repository secret'"
+            Write-Host "   3. Name: DZEN_COOKIES_BASE64"
+            Write-Host "   4. Value: (base64 encoded cookies.json content)"
+            exit 1
+          }
+        shell: pwsh
 
-      - name: 🧹 Run auto-publisher
+      - name: 📖 Verify cookies were loaded
+        run: |
+          if (Test-Path '!posts\PRODUCTION_READY\config\cookies.json') {
+            $size = (Get-Item '!posts\PRODUCTION_READY\config\cookies.json').Length
+            Write-Host "✅ Cookies file size: $size bytes"
+          } else {
+            Write-Host "❌ Cookies file not found!"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: 📋 Check published articles history
+        run: |
+          $historyFile = '!posts\PRODUCTION_READY\published_articles.txt'
+          if (Test-Path $historyFile) {
+            $count = @(Get-Content $historyFile).Count
+            Write-Host "📖 Found $count previously published articles"
+            Write-Host "📋 Recent articles:"
+            Get-Content $historyFile -Tail 5 | ForEach-Object { Write-Host "   $_" }
+          } else {
+            Write-Host "📄 No history file yet - starting fresh"
+          }
+        shell: pwsh
+
+      - name: 🤖 Run auto-publisher
         run: node src/main.js
         working-directory: '!posts/PRODUCTION_READY'
         env:
           CI: true
-          HEADLESS: false  # Set to true if running headless on CI
-        continue-on-error: true  # Continue even if publish fails
+          HEADLESS: false
+        continue-on-error: true
 
-      - name: 📤 Push published articles history
+      - name: 📝 Check for new published articles
+        run: |
+          $historyFile = '!posts\PRODUCTION_READY\published_articles.txt'
+          if (Test-Path $historyFile) {
+            Write-Host "📖 Updated history (last 5 articles):"
+            Get-Content $historyFile -Tail 5 | ForEach-Object { Write-Host "   $_" }
+          }
+        shell: pwsh
+        continue-on-error: true
+
+      - name: 📤 Commit and push published articles history
         if: always()
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add -A
-          git commit -m "🧹 Auto-publish: Updated published articles history" --allow-empty
+          git add !posts/PRODUCTION_READY/published_articles.txt
+          git commit -m "🤖 Auto-publish: Updated published articles history" --allow-empty
           git push
         continue-on-error: true
 
-      - name: ✍️ Create summary
+      - name: ✨ Workflow summary
         if: always()
         run: |
-          Write-Host "\ud83e\uddf9 Auto-Publisher Run Summary" -ForegroundColor Green
-          Write-Host "Run Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
-          Write-Host "Workflow: Auto-Publish Every 3 Hours" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "🤖 AUTO-PUBLISHER WORKFLOW COMPLETED" -ForegroundColor Green
+          Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "📊 Execution Details:" -ForegroundColor Yellow
+          Write-Host "   Run Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+          Write-Host "   Workflow: Auto-Publish Every 3 Hours"
+          Write-Host "   Status: $(if(${{ job.status }} -eq 'success') { '✅ SUCCESS' } else { '⚠️  CHECK LOGS' })"
+          Write-Host ""
+          Write-Host "🔐 Authentication:" -ForegroundColor Yellow
+          Write-Host "   Cookies Source: GitHub Secrets (DZEN_COOKIES_BASE64)"
+          Write-Host "   Config Path: !posts/PRODUCTION_READY/config/cookies.json"
+          Write-Host ""
+          Write-Host "📖 Article Tracking:" -ForegroundColor Yellow
+          Write-Host "   History File: !posts/PRODUCTION_READY/published_articles.txt"
+          Write-Host "   Deduplication: Automatic (prevents republishing)"
+          Write-Host ""
+          Write-Host "🔗 View full logs:" -ForegroundColor Cyan
+          Write-Host "   https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          Write-Host ""
+          Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host ""
+        shell: pwsh
+        continue-on-error: true
 
-      - name: 🔔 Send notification on failure
+      - name: 🚨 Send notification on failure
         if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const issue = await github.rest.issues.createComment({
-              issue_number: 0,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `❌ Auto-publisher failed at ${new Date().toISOString()}\n\nCheck workflow run: ${context.runId}`
-            });
+        run: |
+          Write-Host "❌ Workflow failed at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+          Write-Host "📖 Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        shell: pwsh
