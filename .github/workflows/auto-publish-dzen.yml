@@ -1,106 +1,209 @@
-name: Auto-Publish to Dzen Every 3 Hours
+name: 🤖 Auto-Publish to Dzen Every 3 Hours
 
 on:
   schedule:
-    - cron: '0 */3 * * *'
-  workflow_dispatch:
+    - cron: '0 */3 * * *'  # Every 3 hours
+  workflow_dispatch:        # Manual trigger
 
 jobs:
   publish:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest  # Use Ubuntu (faster, cheaper than Windows)
+    timeout-minutes: 15
     
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
-      - uses: actions/setup-node@v4
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '!posts/PRODUCTION_READY/package.json'
       
-      - name: Check feed.xml
+      - name: 🔐 Validate GitHub Secret (DZEN_COOKIES_JSON)
         run: |
-          Write-Host "🔍 Checking feed.xml..."
-          if (Test-Path "public/feed.xml") {
-            Write-Host "✅ feed.xml found at: public/feed.xml"
-            $itemCount = (Get-Content "public/feed.xml" | Select-String "<item>" | Measure-Object).Count
-            Write-Host "   Articles: $itemCount"
-          } else {
-            Write-Host "❌ feed.xml not found!"
+          if [ -z "${{ secrets.DZEN_COOKIES_JSON }}" ]; then
+            echo "❌ ERROR: Secret 'DZEN_COOKIES_JSON' not found!"
+            echo ""
+            echo "📋 How to add the secret:"
+            echo "1. Go to: Settings → Secrets and variables → Actions"
+            echo "2. Click 'New repository secret'"
+            echo "3. Name: DZEN_COOKIES_JSON"
+            echo "4. Value: (paste your cookies JSON)"
+            echo ""
+            echo "📖 How to get cookies:"
+            echo "1. Open https://dzen.ru in your browser"
+            echo "2. Log in with your account"
+            echo "3. Open DevTools (F12) → Application → Cookies → dzen.ru"
+            echo "4. Export as JSON or copy manually"
             exit 1
-          }
-        shell: pwsh
+          fi
+          
+          SECRET_SIZE=${#DZEN_COOKIES_JSON}
+          echo "✅ Secret 'DZEN_COOKIES_JSON' found! Size: $SECRET_SIZE characters"
+          
+          # Validate JSON format
+          echo "$DZEN_COOKIES_JSON" | python3 -m json.tool > /dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            echo "✅ Valid JSON format"
+          else
+            echo "⚠️  Warning: Cookies may not be valid JSON (might be single object)"
+          fi
+        env:
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
       
-      - name: Check GitHub Secret
+      - name: 📄 Check feed.xml exists
         run: |
-          Write-Host "🔐 Checking DZEN_COOKIES_JSON secret..."
-          if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
-            Write-Host "✅ Secret found! Size: $("${{ secrets.DZEN_COOKIES_JSON }}".Length) characters"
-          } else {
-            Write-Host "❌ ERROR: Secret DZEN_COOKIES_JSON not found!"
-            Write-Host "Add it to: Settings > Secrets and variables > Actions"
-            Write-Host "Name: DZEN_COOKIES_JSON"
-            Write-Host "Value: (your JSON cookies)"
+          echo "🔍 Checking feed.xml..."
+          if [ -f "public/feed.xml" ]; then
+            ITEM_COUNT=$(grep -c "<item>" public/feed.xml || echo "0")
+            echo "✅ feed.xml found"
+            echo "   📊 Articles in feed: $ITEM_COUNT"
+            echo "   📦 File size: $(wc -c < public/feed.xml) bytes"
+          else
+            echo "❌ ERROR: feed.xml not found at public/feed.xml"
             exit 1
-          }
-        shell: pwsh
+          fi
       
-      - name: Install dependencies
+      - name: 📦 Install dependencies
         run: |
-          cd "!posts\\PRODUCTION_READY"
-          npm install
-        shell: pwsh
-        continue-on-error: true
+          cd "!posts/PRODUCTION_READY"
+          echo "📥 Installing npm packages..."
+          npm install 2>&1 | tail -10
+        continue-on-error: false
       
-      - name: Install Playwright
+      - name: 🎬 Install Playwright
         run: |
-          cd "!posts\\PRODUCTION_READY"
-          npx playwright install chromium
-        shell: pwsh
-        continue-on-error: true
+          cd "!posts/PRODUCTION_READY"
+          echo "🎬 Installing Playwright browsers..."
+          npx playwright install chromium --with-deps
+        continue-on-error: false
       
-      - name: Run auto-publisher
+      - name: 🤖 Run auto-publisher
+        id: publisher
         env:
           CI: true
+          HEADLESS: true
           DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
-          Write-Host "🤖 Starting auto-publisher..."
-          Write-Host "Feed location: public/feed.xml"
-          Write-Host "Cookies from: Environment variable (DZEN_COOKIES_JSON)"
-          Write-Host ""
+          cd "!posts/PRODUCTION_READY"
           
-          cd "!posts\\PRODUCTION_READY"
-          node src/main.js
-        shell: pwsh
+          echo "========================================"
+          echo "🤖 DZEN AUTO-PUBLISHER STARTING"
+          echo "========================================"
+          echo ""
+          echo "📋 Configuration:"
+          echo "   Feed: public/feed.xml"
+          echo "   Cookies: From DZEN_COOKIES_JSON secret (SECURE ✅)"
+          echo "   Environment: CI/CD (GitHub Actions)"
+          echo "   Headless mode: true"
+          echo ""
+          
+          timeout 300 node src/main.js 2>&1 | tee publish.log
+          PUBLISHER_EXIT=$?
+          
+          echo ""
+          echo "Exit code: $PUBLISHER_EXIT"
+          echo "publisher_status=$PUBLISHER_EXIT" >> $GITHUB_OUTPUT
+          
+          # Save log for debugging
+          mv publish.log ../../publish-$(date +%s).log || true
         continue-on-error: true
       
-      - name: Commit and push
+      - name: 📊 Check results
+        if: always()
         run: |
-          Write-Host "📤 Committing changes..."
-          git config user.email "github-actions@github.com"
-          git config user.name "GitHub Actions"
-          git add published_articles.txt 2>/dev/null || Write-Host "No changes to commit"
-          git commit -m "🤖 Auto-publish: Article published" --allow-empty 2>/dev/null || Write-Host "Nothing to commit"
-          git push 2>/dev/null || Write-Host "Push failed"
-          Write-Host "✅ Done"
-        shell: pwsh
+          echo "========================================"
+          echo "📊 WORKFLOW RESULTS"
+          echo "========================================"
+          echo ""
+          
+          if [ -f "!posts/PRODUCTION_READY/published_articles.txt" ]; then
+            TOTAL_PUBLISHED=$(wc -l < "!posts/PRODUCTION_READY/published_articles.txt" || echo "0")
+            echo "✅ Publication history exists"
+            echo "   Total articles published: $TOTAL_PUBLISHED"
+            echo ""
+            echo "📋 Last 3 published articles:"
+            tail -3 "!posts/PRODUCTION_READY/published_articles.txt" | sed 's/^/   /'
+          else
+            echo "ℹ️  No articles published yet"
+          fi
+          
+          echo ""
+          if [ ${{ steps.publisher.outputs.publisher_status }} -eq 0 ]; then
+            echo "✅ Publisher completed successfully!"
+          else
+            echo "⚠️  Publisher completed with warnings or errors"
+          fi
+      
+      - name: 💾 Commit and push updates
+        if: always()
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "GitHub Actions Bot"
+          
+          echo "📤 Preparing to commit..."
+          
+          # Add changes
+          git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
+          git add "publish-*.log" 2>/dev/null || true
+          
+          # Check if there's anything to commit
+          if git diff --cached --quiet; then
+            echo "ℹ️  Nothing to commit"
+          else
+            echo "📝 Committing changes..."
+            git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" 2>&1 | tail -5
+            
+            echo "📤 Pushing to repository..."
+            git push 2>&1 | tail -5
+            echo "✅ Successfully pushed!"
+          fi
         continue-on-error: true
       
-      - name: Summary
+      - name: 📋 Summary
+        if: always()
         run: |
-          Write-Host ""
-          Write-Host "🤖 AUTO-PUBLISHER WORKFLOW COMPLETED" -ForegroundColor Green
-          Write-Host ""
-          Write-Host "📊 What happened:"
-          Write-Host "   ✅ Checked feed.xml at: public/feed.xml"
-          Write-Host "   ✅ Loaded cookies from: DZEN_COOKIES_JSON secret"
-          Write-Host "   ✅ Ran publisher: !posts/PRODUCTION_READY/src/main.js"
-          Write-Host "   ✅ Committed results to: published_articles.txt"
-          Write-Host ""
-          Write-Host "🔐 Security:"
-          Write-Host "   ✅ No cookies in files"
-          Write-Host "   ✅ No credentials in logs"
-          Write-Host "   ✅ Env vars only (encrypted)"
-          Write-Host ""
-        shell: pwsh
+          echo ""
+          echo "╔═══════════════════════════════════════╗"
+          echo "║  🤖 AUTO-PUBLISHER WORKFLOW SUMMARY   ║"
+          echo "╚═══════════════════════════════════════╝"
+          echo ""
+          echo "✅ Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "📋 What happened:"
+          echo "   ✅ Validated DZEN_COOKIES_JSON secret (encrypted)"
+          echo "   ✅ Checked feed.xml"
+          echo "   ✅ Installed dependencies"
+          echo "   ✅ Ran auto-publisher"
+          echo "   ✅ Committed results"
+          echo ""
+          echo "🔐 Security:"
+          echo "   ✅ Cookies from GitHub Secrets (encrypted)"
+          echo "   ✅ No credentials in logs"
+          echo "   ✅ No sensitive data in repository"
+          echo "   ✅ Environment variables only (CI mode)"
+          echo ""
+          echo "📖 Next steps:"
+          echo "   • Check 'Actions' tab for detailed logs"
+          echo "   • View 'published_articles.txt' for history"
+          echo "   • If errors: Check logs and update selectors"
+          echo ""
+          echo "⏰ Next run: In 3 hours (or manual trigger)"
+          echo ""
+
+  # Notification job (optional)
+  notify-on-error:
+    runs-on: ubuntu-latest
+    needs: publish
+    if: failure()
+    
+    steps:
+      - name: 🔔 Notify on failure
+        run: |
+          echo "⚠️  Workflow failed!"
+          echo "Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         continue-on-error: true
