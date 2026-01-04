@@ -86,7 +86,7 @@ function processArticleContent(content) {
     .replace(/&gt;/g, '>')
     .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&#39;/g, "'");  // ✅ FIX: Correct HTML entity replacement
   
   processed = processed.replace(/\n\s*\n\s*\n+/g, '\n\n');
   return processed.trim();
@@ -308,7 +308,6 @@ async function savePublishedArticle(article) {
             const element = await page.$(selector);
             if (element && await element.isVisible()) {
               console.log(`✅ Found with selector: ${selector}`);
-              // Use page.click() on selector directly (handles both button and span)
               await page.click(selector);
               console.log(`✅ First publish button clicked`);
               publishClicked = true;
@@ -320,51 +319,52 @@ async function savePublishedArticle(article) {
         }
         
         if (!publishClicked) {
-          console.log(`❌ First publish button not found`);
-        }
-        
-        await page.waitForTimeout(5000);
-        
-        // PUBLISH BUTTON 2 - Confirmation button in modal
-        console.log(`\n📤 5. Clicking confirmation button (modal)...`);
-        
-        const confirmSelectors = [
-          'button[data-testid="publish-btn"][type="submit"]',
-          'button[data-testid="publish-btn"]',
-          'button:has-text("Опубликовать"):not([disabled])',
-          'button:has-text("Опубликовать сейчас"):not([disabled])',
-          'button.article-editor-desktop--base-button__primary-1Y:not([disabled])',
-          'button[type="submit"]',
-        ];
-        
-        let confirmClicked = false;
-        for (const selector of confirmSelectors) {
-          try {
-            const elements = await page.$$(selector);
-            if (elements.length > 0) {
-              // Get the last visible button (usually the one in modal)
-              for (let i = elements.length - 1; i >= 0; i--) {
-                const el = elements[i];
-                if (await el.isVisible() && await el.isEnabled()) {
-                  console.log(`✅ Found with selector: ${selector}`);
-                  await page.click(selector);
-                  console.log(`✅ Confirmation button clicked`);
-                  console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
-                  console.log(`   Title: "${article.title.substring(0, 50)}..."`);
-                  await savePublishedArticle(article);
-                  confirmClicked = true;
-                  break;
+          console.log(`❌ First publish button not found - skipping confirmation button`);
+        } else {
+          // ✅ FIX: ONLY PROCEED IF FIRST BUTTON WAS CLICKED
+          await page.waitForTimeout(5000);
+          
+          // PUBLISH BUTTON 2 - Confirmation button in modal
+          console.log(`\n📤 5. Clicking confirmation button (modal)...`);
+          
+          const confirmSelectors = [
+            'button[data-testid="publish-btn"][type="submit"]',
+            'button[data-testid="publish-btn"]',
+            'button:has-text("Опубликовать"):not([disabled])',
+            'button:has-text("Опубликовать сейчас"):not([disabled])',
+            'button.article-editor-desktop--base-button__primary-1Y:not([disabled])',
+            'button[type="submit"]',
+          ];
+          
+          let confirmClicked = false;
+          for (const selector of confirmSelectors) {
+            try {
+              const elements = await page.$$(selector);
+              if (elements.length > 0) {
+                // Get the last visible button (usually the one in modal)
+                for (let i = elements.length - 1; i >= 0; i--) {
+                  const el = elements[i];
+                  if (await el.isVisible() && await el.isEnabled()) {
+                    console.log(`✅ Found with selector: ${selector}`);
+                    await page.click(selector);
+                    console.log(`✅ Confirmation button clicked`);
+                    console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
+                    console.log(`   Title: "${article.title.substring(0, 50)}..."`);
+                    await savePublishedArticle(article);
+                    confirmClicked = true;
+                    break;
+                  }
                 }
               }
+              if (confirmClicked) break;
+            } catch (e) {
+              console.log(`   ⚠️  Selector failed: ${selector}`);
             }
-            if (confirmClicked) break;
-          } catch (e) {
-            console.log(`   ⚠️  Selector failed: ${selector}`);
           }
-        }
-        
-        if (!confirmClicked) {
-          console.log(`❌ Confirmation button not found`);
+          
+          if (!confirmClicked) {
+            console.log(`❌ Confirmation button not found`);
+          }
         }
       }
     }
