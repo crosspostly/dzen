@@ -144,23 +144,20 @@ ai_work/
 
 ## 🐛 Известные проблемы
 
-### Критические
+### Полный список
 
-1. **Stage 3 пропущен в MultiAgentService** 🚨
-   - Локация: `services/multiAgentService.ts`, строка 310-311
-   - Решение: См. IMPLEMENTATION_ROADMAP.md, Task 1.1 (2-3 часа)
+**См. [TODO_ISSUES.md](./TODO_ISSUES.md) для полного списка проблем с решениями**
 
-2. **Авто-реставрация не реализована в Stage 1** 🟠
-   - Локация: `services/simpleEpisodeGenerator.ts`
-   - Решение: См. IMPLEMENTATION_ROADMAP.md, Task 1.2 (2-4 часа)
+### Краткий обзор
 
-3. **Levenshtein distance check не реализован** 🟠
-   - Локация: должен быть в `utils/levenshtein-distance.ts`
-   - Решение: См. IMPLEMENTATION_ROADMAP.md, Task 1.3 (1-2 часа)
-
-4. **Нет rate limiting для Gemini API** 🟠
-   - Локация: `services/geminiService.ts`
-   - Решение: См. IMPLEMENTATION_ROADMAP.md, Task 1.4 (1 час)
+| Проблема | Приоритет | Ссылка |
+|----------|-----------|--------|
+| Stage 3 пропущен в MultiAgentService | 🚨 Критический | IMPLEMENTATION_ROADMAP.md, Task 1.1 |
+| Авто-реставрация не реализована в Stage 1 | 🚨 Критический | IMPLEMENTATION_ROADMAP.md, Task 1.2 |
+| Levenshtein distance check не реализован | 🟠 Высокий | IMPLEMENTATION_ROADMAP.md, Task 1.3 |
+| Нет rate limiting для Gemini API | 🟠 Высокий | IMPLEMENTATION_ROADMAP.md, Task 1.4 |
+| Нет unit-тестов | 🟡 Средний | IMPLEMENTATION_ROADMAP.md, Phase 2 |
+| Нет мониторинга и логирования | 🟡 Средний | IMPLEMENTATION_ROADMAP.md, Task 2.2 |
 
 ---
 
@@ -170,6 +167,7 @@ ai_work/
 - Как работает алгоритм? → См. **ARTICLE_GENERATION_ALGORITHM.md**
 - Какое качество нужно? → См. **DZEN_QUALITY_STANDARDS.md**
 - Что реализовано, а что нет? → См. **IMPLEMENTATION_ROADMAP.md**
+- Есть ли известные проблемы? → См. **TODO_ISSUES.md**
 
 **Issues**: https://github.com/crosspostly/dzen/issues
 

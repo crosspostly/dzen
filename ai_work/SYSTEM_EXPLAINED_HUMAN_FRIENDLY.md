@@ -228,11 +228,11 @@ npm run list-projects     # Список проектов
 
 ### Что НЕ работает (критично)
 
-❌ Stage 3 пропущен в MultiAgentService (см. TODO_ISSUES.md)
-❌ Auto-restore в Stage 1 не полностью реализован
-❌ Levenshtein uniqueness check не реализован
-❌ Нет unit-тестов
-❌ Нет мониторинга и логирования
+❌ Stage 3 пропущен в MultiAgentService (см. IMPLEMENTATION_ROADMAP.md, Task 1.1)
+❌ Auto-restore в Stage 1 не полностью реализован (см. IMPLEMENTATION_ROADMAP.md, Task 1.2)
+❌ Levenshtein uniqueness check не реализован (см. IMPLEMENTATION_ROADMAP.md, Task 1.3)
+❌ Нет unit-тестов (см. IMPLEMENTATION_ROADMAP.md, Phase 2)
+❌ Нет мониторинга и логирования (см. IMPLEMENTATION_ROADMAP.md, Task 2.2)
 
 ### Что планируем добавить
 
