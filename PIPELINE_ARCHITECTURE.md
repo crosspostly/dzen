@@ -1,335 +1,421 @@
 # 🎭 ZenMaster v7.1 - Complete Pipeline Architecture
 
-**ТОЧНАЯ логика генерации статей от начала и до конца, как ты просил!**
+**ПОЛНАЯ логика генерации статей: тема → эпизоды → hard restoration → image generation → публикация**
+
+> ℹ️ This document consolidates all ai_work/ documentation into ONE authoritative source  
+> Last Updated: 2026-01-05  
+> Version: 7.1  
+> Status: ✅ Ready for Implementation
 
 ---
 
-## 📐 ОБЩИЙ ПОТОК (Overview)
+## 📋 СОДЕРЖАНИЕ
+
+1. [Overview](#overview-общий-поток)
+2. [Phase A: Theme & Concept](#phase-a--тема-и-концепция)
+3. [Phase B: Episode Generation](#phase-b--генерация-эпизодов)
+4. [Phase C: Assembly & Restoration](#phase-c--сборка--финальная-реставрация)
+5. [Phase D: Image Generation](#phase-d--генерация-изображений)
+6. [Phase E: Export & Publish](#phase-e--export--publish)
+7. [Stage Gates & Quality Standards](#stage-gates--quality-standards)
+8. [Voice Restoration Details](#voice-restoration-details)
+9. [Error Scenarios](#error-scenarios)
+10. [Metrics & Monitoring](#metrics--monitoring)
+
+---
+
+## 📊 OVERVIEW - ОБЩИЙ ПОТОК
 
 ```
-СТАТЬЯ = Множество ЭПИЗОДОВ, которые потом собираются
-
-Для каждого эпизода:
-  [Generate] → [Anti-Detection] → [Voice Polish] → [Restoration] → ✅ Готов
-                                                         ↓
-                                                   Проверка логики
-                                                         
-После всех эпизодов:
-  [Assembly] → [Hard Restoration всей статьи] → [Image Generation] → [Export]
+ТЕМА
+  ↓
+[PHASE A: 5-10 мин] Theme Selection + Research + Plot Bible
+  ↓
+[PHASE B: ~20 мин] Generate 6-8 Episodes (per-episode processing)
+  - B1: Generate Episode Text
+  - B2: Per-Episode Anti-Detection (Phase2 >= 80)
+  - B3: Voice Polish
+  - B4: Per-Episode Light Restoration ← ⚠️ MISSING!
+  ↓
+[PHASE C: ~8 мин] Assembly + Final Restoration
+  - C1: Assembly (join episodes)
+  - C1 CHECK: Logic Continuity
+  - C2: HARD Restoration of FULL article ← ⚠️ CRITICAL MISSING!
+  - C2 VALIDATION: Phase2 >= 85 (iterative)
+  ↓
+[PHASE D: ~5 мин] Image Generation (4 stages)
+  - D1: Extract Key Scene ← NEW
+  - D2a: Generate Base Image (Gemini)
+  - D2b: Canvas Post-Processing
+  - D3: Mobile Photo Authenticity (DYNAMIC device!)
+  - D4: Attach to Article
+  ↓
+[PHASE E: ~2 мин] Export & Publish
+  ↓
+📊 OUTPUT: Ready for Publication
+   - Article: 15-20K chars, Phase2=85+, Grammar=PASS
+   - Image: 1280x720, Device-authentic
+   - Time: 35-40 minutes total
 ```
 
 ---
 
-## 🔄 ФАЗЫ ГЕНЕРАЦИИ
+## ⏱️ PHASE A: Тема и Концепция (5-10 мин)
 
-### **ФАЗА A: ТЕМА И КОНЦЕПЦИЯ** ⏱️ 5-10 мин
-
-```
-1. SELECT THEME
-   ├─ От пользователя (--theme=X)
-   ├─ Или random из config.required_triggers
-   └─ Или hardcoded default: "Я терпела это 20 лет"
-
-2. GATHER DATA & RESEARCH
-   ├─ Perplexity API: Search для реальных фактов
-   ├─ Parse результаты
-   └─ Prepare: narrativeContext, statistics, realExamples
-
-3. CREATE PLOT BIBLE
-   ├─ multiAgentService.generatePlotBible()
-   ├─ Structure: вводная ситуация → кульминация → разрешение
-   ├─ Add: диалоги, детали, психологические повороты
-   └─ Output: detailedPlotBible (используется для всех эпизодов)
+### Step 1: Select Theme
+```typescript
+const theme = getThemeWithPriority({
+  cli: args['--theme'],              // Highest priority
+  config: configService.loadConfig(), // Random from required_triggers
+  default: 'Я терпела это 20 лет'    // Fallback
+});
+// Result: "Я всю жизнь боялась одиночества"
 ```
 
-**Результат:** plotBible для единообразности всех эпизодов
+### Step 2: Gather Research Data
+```typescript
+const research = await perplexityController.search(
+  theme,
+  { factChecking: true, statistics: true }
+);
+// Result: Real facts, statistics, examples
+```
+
+### Step 3: Create Plot Bible
+```typescript
+const plotBible = await multiAgentService.generatePlotBible({
+  theme,
+  research,
+  structure: {
+    opening: 'Ситуация, конфликт',
+    turning_point: 'Первый повод',
+    climax: 'Финальная конфронтация',
+    resolution: 'Новая позиция'
+  }
+});
+// Result: Detailed narrative structure for all episodes
+```
+
+**Result Phase A:** `plotBible` - используется для всех эпизодов
 
 ---
 
-### **ФАЗА B: ГЕНЕРАЦИЯ ЭПИЗОДОВ** ⏱️ 20 мин (для типичного числа эпизодов)
+## 🎬 PHASE B: Генерация Эпизодов (~20 мин)
 
-**КЛЮЧ: Каждый эпизод обрабатывается ПО ПОЛНОМУ ЦИКЛУ перед следующим!**
+**КЛЮЧ: Каждый эпизод обрабатывается ПОЛНОСТЬЮ перед переходом к следующему!**
 
-#### Per-Episode Processing Loop:
+### Per-Episode Processing Loop
 
-```javascript
-// Обработка КАЖДОГО эпизода отдельно (в параллели до 3 одновременно)
-for (let i = 0; i < totalEpisodes; i++) {
+```typescript
+const episodes = [];
+
+for (let i = 0; i < config.episodeCount; i++) {
+  console.log(`\n🎬 Processing Episode ${i+1}/${config.episodeCount}...`);
   
-  // 🎬 STAGE B1: Generate Episode Text
+  // ═══════════════════════════════════════════════════════════════════
+  // 🎭 STAGE B1: Generate Episode Text
+  // ═══════════════════════════════════════════════════════════════════
   const episode = await episodeGeneratorService.generateEpisode({
     plotBible,
     episodeNumber: i,
-    theme,
-    previousEpisode: episodes[i-1],
-    totalEpisodes
+    previousEpisode: episodes[i-1]?.text,
+    totalEpisodes: config.episodeCount
   });
   
-  // ⚠️ B1 CHECK: Validation
-  if (!episode || episode.text.length < 500) {
-    console.error(`Episode ${i} too short, regenerating...`);
-    episode = await regenerateEpisode(i);
-  }
-  
-  // 🎭 STAGE B2: Per-Episode Anti-Detection
-  // !!!! КРИТИЧНО: Это ТОЛЬКО для этого эпизода, не для целой статьи!
-  const antiDetectedEpisode = await phase2AntiDetectionService.processEpisode(
-    episode.text,
-    {
-      targetScore: 85,  // Per-episode target
-      method: 'mixed',   // Обфускация текста
-      perEpisode: true   // ← THIS IS KEY!
-    }
-  );
-  
-  // ⚠️ B2 CHECK: Anti-detection score
-  const phase2Score = await qualityValidator.checkPhase2(antiDetectedEpisode);
-  if (phase2Score < 80) {
-    console.warn(`Episode ${i}: Phase2 score ${phase2Score}, regenerating...`);
-    episode = await regenerateEpisode(i);
-    continue; // Re-process from B1
-  }
-  
-  // 🎤 STAGE B3: Voice Polish (per-episode)
-  const voicePolished = await voiceRestorationService.polishForDzen(
-    antiDetectedEpisode
-  );
-  
-  // ⚠️ B3 CHECK: Format compliance
-  if (!voicePolished || voicePolished.includes('выск')) {
-    console.warn(`Episode ${i}: Voice check failed`);
-    episode = await regenerateEpisode(i);
+  if (!episode || episode.text.length < 1500) {
+    console.error(`❌ Episode ${i} too short, regenerating...`);
+    episodes.push(await regenerateEpisode(i));
     continue;
   }
   
-  // 🔧 STAGE B4: Per-Episode Text Restoration
-  // This is CRUCIAL for natural text feel BEFORE assembly!
+  // ═══════════════════════════════════════════════════════════════════
+  // ⚠️ STAGE B2: Per-Episode Anti-Detection (CRITICAL!)
+  // NOT whole article - EACH EPISODE separately
+  // ═══════════════════════════════════════════════════════════════════
+  const antiDetectedEpisode = await phase2AntiDetectionService
+    .processEpisode(episode.text, {
+      targetScore: 80,
+      method: 'mixed',
+      perEpisode: true  // ← THIS IS KEY!
+    });
+  
+  // CHECK: Phase2 score per episode
+  const phase2Score = await qualityValidator.checkPhase2(antiDetectedEpisode);
+  console.log(`   Phase2: ${phase2Score}/100`);
+  
+  if (phase2Score < 70) {
+    console.warn(`⚠️  Episode ${i}: Phase2=${phase2Score}, regenerating...`);
+    episodes.push(await regenerateEpisode(i));
+    continue;
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════
+  // 🎤 STAGE B3: Voice Polish for Dzen
+  // ═══════════════════════════════════════════════════════════════════
+  const voicePolished = await voiceRestorationService
+    .polishForDzen(antiDetectedEpisode);
+  
+  // CHECK: Format compliance (no forbidden words, proper structure)
+  if (!voicePolished || hasForbidenWords(voicePolished)) {
+    console.warn(`❌ Episode ${i}: Voice check failed`);
+    episodes.push(await regenerateEpisode(i));
+    continue;
+  }
+  
+  // ═══════════════════════════════════════════════════════════════════
+  // 🔧 STAGE B4: Per-Episode Light Restoration (NEW! CRITICAL!)
+  // Prepare each episode BEFORE assembly
+  // ═══════════════════════════════════════════════════════════════════
   const restoredEpisode = await textRestorationService.restoreEpisode(
     voicePolished,
     {
       method: 'light',           // Don't overcook single episode
       preserveStructure: true,
       fixDialogues: true,
-      improveFlow: true
+      improveFlow: true,
+      // Stage B4 is light - full restoration happens in Phase C2
+      iterationLimit: 1          // Single pass only
     }
   );
   
-  // ⚠️ B4 CHECK: Restoration quality
-  const restorationScore = await qualityValidator.checkRestorationQuality(
-    restoredEpisode
-  );
-  if (restorationScore < 70) {
-    console.warn(`Episode ${i}: Restoration score ${restorationScore}`);
-    // Still continue, will be fixed in Phase C hard restoration
-  }
-  
-  // ✅ STORE EPISODE
-  episodes[i] = {
+  // STORE: Complete episode info
+  episodes.push({
     number: i,
     text: restoredEpisode,
     phase2Score,
-    restorationScore,
-    voicePolished,
-    antiDetected: antiDetectedEpisode
-  };
+    metadata: {
+      generatedAt: Date.now(),
+      antiDetected: antiDetectedEpisode,
+      voicePolished,
+      restorationApplied: true
+    }
+  });
   
-  console.log(`✅ Episode ${i+1}/${totalEpisodes}: Phase2=${phase2Score}, Restoration=${restorationScore}`);
-}
-```
-
-**Что происходит:**
-- 🎬 B1: Generate текст эпизода (~1500-2000 слов)
-- 🎭 B2: **Per-episode anti-detection** (не целую статью!) → score >= 80
-- 🎤 B3: Voice polish для Dzen
-- 🔧 B4: Per-episode restoration (легкая, не переделываем)
-- ✅ Храним результат и идем к следующему
-
-**КРИТИЧНО: Каждый эпизод обработан до конца ДО сборки всей статьи!**
-
----
-
-### **ФАЗА C: СБОРКА И ФИНАЛЬНАЯ РЕСТАВРАЦИЯ** ⏱️ 8 мин
-
-```javascript
-// ============================================================================
-// STAGE C1: Assembly - Собрать все эпизоды в одну статью
-// ============================================================================
-
-const assembledText = episodes
-  .map((ep, i) => {
-    if (i === 0) return ep.text; // First episode with intro
-    return ep.text; // Other episodes
-  })
-  .join('\n\n'); // Paragraph break between episodes
-
-// ⚠️ C1 CHECK: Logic consistency
-const logicCheck = await multiAgentService.verifyLogicContinuity(
-  episodes.map(e => e.text)
-);
-if (!logicCheck.isConsistent) {
-  console.warn(`⚠️  Logic breaks detected:`);
-  logicCheck.issues.forEach(issue => console.warn(`  - ${issue}`));
-  // Re-generate specific episodes with continuity prompt
-  const affectedIndices = logicCheck.affectedEpisodes;
-  for (const idx of affectedIndices) {
-    episodes[idx] = await regenerateEpisode(idx, {
-      previousEpisode: episodes[idx-1],
-      nextEpisode: episodes[idx+1]
-    });
-  }
-  continue; // Go back to assembly
-}
-
-// ============================================================================
-// STAGE C2: HARD RESTORATION - Финальная полировка ЦЕЛОЙ статьи
-// !!!!! ЭТОТ ЭТАП КРИТИЧЕН - БЕЗ НЕГО СТАТЬЯ НЕ ГОТОВА!
-// ============================================================================
-
-const hardRestoredArticle = await textRestorationService.hardRestore(
-  assembledText,
-  {
-    method: 'hard',                    // ← Aggressive restoration
-    fixBreaks: true,                    // Break detection & fixing
-    improveFlow: true,                  // Improve narrative flow
-    enhanceDialogues: true,
-    addMissingPunctuation: true,
-    checkGrammar: true,
-    targetPhase2Score: 85,
-    iterative: true,                    // Keep improving until score >= 85
-    maxIterations: 5
-  }
-);
-
-// ⚠️ C2 CHECK: Final breaks detection
-const breakCheck = await textRestorationService.checkForBreaks(
-  hardRestoredArticle
-);
-if (breakCheck.hasBreaks) {
-  console.error(`❌ Hard restoration failed - breaks detected:`);
-  breakCheck.breaks.forEach(b => console.error(`  - Line ${b.line}: ${b.type}`));
-  throw new Error('Hard restoration failed to fix breaks');
-}
-
-// ⚠️ C2 CHECK: Final Phase2 score
-const finalPhase2Score = await qualityValidator.checkPhase2(
-  hardRestoredArticle
-);
-if (finalPhase2Score < 85) {
-  console.warn(`⚠️  Final Phase2 score: ${finalPhase2Score}/100 (target: 85)`);
-  // Iterate again
-  hardRestoredArticle = await textRestorationService.hardRestore(
-    hardRestoredArticle,
-    { method: 'hard', iterative: true, maxIterations: 3 }
+  console.log(
+    `✅ Episode ${i+1}/${config.episodeCount} complete ` +
+    `(Phase2=${phase2Score}, chars=${restoredEpisode.length})`
   );
 }
 
-// ✅ Final validation
-console.log(`
-${"=".repeat(60)}
-✅ ARTICLE READY FOR PUBLICATION
-${"=".repeat(60)}
-Phase2 Score: ${finalPhase2Score}/100
-Grammar Check: PASS
-Logic Continuity: PASS
-Break Detection: PASS
-Voice Polish: PASS
-`);
-
-const finalArticle = {
-  title: generateTitle(theme),
-  content: hardRestoredArticle,
-  charCount: hardRestoredArticle.length,
-  phase2Score: finalPhase2Score,
-  metadata: {
-    theme,
-    episodeCount: episodes.length,
-    generatedAt: Date.now(),
-    qualityMetrics: {
-      phase2: finalPhase2Score,
-      logicContinuity: logicCheck.score,
-      breaksFix: 'PASS',
-      voicePolish: 'PASS'
-    }
-  }
-};
+console.log(`\n✅ Phase B complete: ${episodes.length} episodes ready for assembly`);
 ```
 
-**Что происходит в Phase C:**
-1. 📝 **Assembly:** Собрать все эпизоды в одну большую статью
-2. ⚠️ **Logic Check:** Проверить логику между эпизодами
-3. 🔧 **Hard Restoration:** **ФИНАЛЬНАЯ полировка целой статьи**
-   - Fixing breaks (если есть)
-   - Улучшение Flow
-   - Grammatical fixes
-   - Итеративно до Phase2 >= 85
-4. ✅ **Final Validation:** Проверка всего
+### B1-B4 Gate Criteria
 
-**КРИТИЧНО: Hard restoration - это ФИНАЛЬНЫЙ этап! Без него статья не готова к публикации!**
+| Stage | Metric | Target | Action if Failed |
+|-------|--------|--------|------------------|
+| **B1** | Length | >= 2000 chars | Regenerate |
+| **B1** | Has hook | Yes | Regenerate |
+| **B2** | Phase2 Score | >= 70 | Regenerate |
+| **B2** | Coherence | Logical | Regenerate |
+| **B3** | Voice Polish | Dzen-compliant | Regenerate |
+| **B3** | No forbidden words | 0 violations | Regenerate |
+| **B4** | Flow improved | Yes | Continue |
+| **B4** | Restoration OK | No breaks | Continue |
+
+**Key Rule:** Each episode MUST pass Phase2 >= 70 BEFORE assembly!
 
 ---
 
-### **ФАЗА D: ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЯ** ⏱️ 5 мин
+## 🔨 PHASE C: Assembly + Final Restoration (~8 мин)
 
-**ЦЕЛАЯ СХЕМА с 4 этапами!**
+### C1: Assembly - Join All Episodes
 
-```javascript
-// ============================================================================
-// STAGE D1: Extract Key Moment
-// ============================================================================
+```typescript
+const assembledText = episodes
+  .map(ep => ep.text)
+  .join('\n\n'); // Paragraph break between episodes
 
-const keyMoment = await sceneElementExtractor.extractKeyScene(finalArticle.content);
-// Returns: { scene, emotion, characters, setting, visualDescription }
+console.log(`\n📝 Assembled ${episodes.length} episodes:`);
+console.log(`   Total chars: ${assembledText.length}`);
+console.log(`   Estimated read time: ${Math.ceil(assembledText.length / 2000)} min`);
+```
 
-// Example:
-// {
-//   scene: "Я наконец-то сказала ему правду...",
-//   emotion: 'grief',
-//   characters: { protagonist: 'woman-40s', other: 'husband' },
-//   setting: 'kitchen',
-//   visualDescription: 'Woman by window, tears, golden afternoon light'
-// }
+### C1 CHECK: Logic Continuity Verification
 
-// ============================================================================
-// STAGE D2a: Generate Image using Gemini (Base Image)
-// ============================================================================
-
-const baseImage = await imageGeneratorAgent.generateCoverImage(
-  {
-    prompt: `Create a realistic, emotional image: ${keyMoment.visualDescription}`,
-    style: 'cinematic, emotional, realistic',
-    aspect: '16:9',
-    quality: 'hd',
-    seed: hashTheme(theme) // Reproducible
-  }
+```typescript
+const logicCheck = await multiAgentService.verifyLogicContinuity(
+  episodes.map(e => e.text)
 );
-// Returns: { base64: 'data:image/jpeg;base64,/9j/4AAQSkZJRgA...', width, height, format: 'jpeg' }
 
-// ============================================================================
-// STAGE D2b: Canvas Post-Processing (Remove API metadata)
-// ============================================================================
+if (!logicCheck.isConsistent) {
+  console.error(`\n❌ Logic breaks detected:`);
+  logicCheck.issues.forEach(issue => 
+    console.error(`   - ${issue}`)
+  );
+  
+  // Regenerate affected episodes
+  for (const idx of logicCheck.affectedEpisodes) {
+    console.log(`   Regenerating Episode ${idx+1}...`);
+    episodes[idx] = await regenerateEpisode(idx, {
+      previousEpisode: episodes[idx-1]?.text,
+      nextEpisode: episodes[idx+1]?.text,
+      logicContext: logicCheck
+    });
+  }
+  
+  // Re-assemble
+  console.log(`\n   Re-assembling with fixed episodes...`);
+  continue; // Go back to assembly
+}
 
+console.log(`✅ Logic continuity: PASS`);
+```
+
+### C2: HARD Restoration of FULL Article (🔴 CRITICAL - CURRENTLY MISSING!)
+
+```typescript
+console.log(`\n${'='.repeat(60)}`);
+console.log(`🔧 STAGE C2: HARD RESTORATION of FULL ARTICLE`);
+console.log(`This is CRITICAL - without it, article is not ready!`);
+console.log(`${'='.repeat(60)}\n`);
+
+let hardRestoredArticle = assembledText;
+let phase2Score = 0;
+let iterationCount = 0;
+
+while (phase2Score < 85 && iterationCount < 5) {
+  iterationCount++;
+  console.log(`\n🔄 Iteration ${iterationCount}/5...`);
+  
+  hardRestoredArticle = await textRestorationService.hardRestore(
+    hardRestoredArticle,
+    {
+      method: 'hard',                    // AGGRESSIVE!
+      fixBreaks: true,                    // CRITICAL: Fix all breaks
+      improveFlow: true,                  // Enhance narrative
+      enhanceDialogues: true,
+      addMissingPunctuation: true,
+      checkGrammar: true,
+      targetPhase2Score: 85,
+      iterative: true,
+      maxIterations: 3                    // Within this call
+    }
+  );
+  
+  // CHECK: Breaks detection
+  const breakCheck = await textRestorationService.checkForBreaks(
+    hardRestoredArticle
+  );
+  
+  if (breakCheck.hasBreaks) {
+    console.log(`⚠️  Breaks still detected: ${breakCheck.breaks.length}`);
+    // Continue iterating
+  } else {
+    console.log(`✅ No breaks detected`);
+  }
+  
+  // CHECK: Phase2 Score
+  phase2Score = await qualityValidator.checkPhase2(hardRestoredArticle);
+  console.log(`   Phase2 Score: ${phase2Score}/100 (need >= 85)`);
+  
+  if (phase2Score >= 85) {
+    console.log(`\n✅ HARD RESTORATION SUCCESS!`);
+    break;
+  }
+}
+
+// FINAL VALIDATION
+if (phase2Score < 85) {
+  console.error(`\n❌ CRITICAL FAILURE: Hard restoration could not reach Phase2 >= 85`);
+  console.error(`   Final score: ${phase2Score}/100`);
+  console.error(`   Article NOT READY FOR PUBLICATION`);
+  throw new Error('Hard restoration failed');
+}
+
+console.log(`\n${'='.repeat(60)}`);
+console.log(`✅ ARTICLE READY FOR PUBLICATION`);
+console.log(`${'='.repeat(60)}`);
+console.log(`Phase2 Score: ${phase2Score}/100`);
+console.log(`Grammar Check: PASS`);
+console.log(`Logic Continuity: PASS`);
+console.log(`Break Detection: PASS`);
+console.log(`Voice Polish: PASS`);
+console.log(`Chars: ${hardRestoredArticle.length}`);
+```
+
+### C2 Gate Criteria
+
+```
+✅ Phase2Score >= 85         [MANDATORY]
+✅ No breaks detected        [MANDATORY]
+✅ Grammar check PASS        [MANDATORY]
+✅ Logik continuity PASS     [MANDATORY]
+✅ Character evolution shown [MANDATORY]
+✅ Dialogues 40-50%          [TARGET]
+✅ Sentence variety HIGH     [TARGET]
+✅ Max 3 complex names       [TARGET]
+```
+
+**CRITICAL:** Without Phase C2, article cannot be published!
+
+---
+
+## 🗼️ PHASE D: Image Generation (4 Stages, ~5 мин)
+
+### D1: Extract Key Scene (NEW!)
+
+```typescript
+const keyScene = await sceneElementExtractor.extractKeyScene(
+  hardRestoredArticle
+);
+
+console.log(`\n📸 Extracted Key Scene:`);
+console.log(`   Setting: ${keyScene.setting}`);
+console.log(`   Emotion: ${keyScene.emotion}`);
+console.log(`   Description: ${keyScene.visualDescription}`);
+console.log(`   Characters: ${Object.keys(keyScene.characters).join(', ')}`);
+```
+
+### D2a: Generate Base Image (Gemini API)
+
+```typescript
+const baseImage = await imageGeneratorAgent.generateCoverImage({
+  prompt: `Create realistic emotional image: ${keyScene.visualDescription}`,
+  style: 'cinematic, emotional, realistic',
+  aspect: '16:9',
+  quality: 'hd',
+  seed: hashTheme(theme) // Reproducible
+});
+
+console.log(`\n🎨 Generated Base Image:`);
+console.log(`   Size: ${baseImage.width}x${baseImage.height}`);
+console.log(`   Format: ${baseImage.format}`);
+```
+
+### D2b: Canvas Post-Processing (Remove Metadata)
+
+```typescript
 const canvasProcessed = await imageProcessorService.processImage(
   baseImage.base64
 );
-// 1. Load JPEG from Gemini API
-// 2. Draw on new canvas (removes all metadata)
-// 3. Crop to 16:9 (1280x720)
-// 4. Re-encode to JPEG quality 80%
-// Returns: { buffer, width, height, success, metadata }
 
-// ============================================================================
-// STAGE D3: Mobile Photo Authenticity (Dynamic Device Selection)
-// ============================================================================
+console.log(`\n🎬 Canvas Post-Processing:`);
+console.log(`   Original: ${(baseImage.base64.length * 0.75 / 1024).toFixed(0)} KB`);
+console.log(`   Processed: ${(canvasProcessed.buffer.length / 1024).toFixed(0)} KB`);
+console.log(`   Metadata: REMOVED`);
+console.log(`   Aspect: ${canvasProcessed.width}x${canvasProcessed.height}`);
+```
 
+### D3: Mobile Photo Authenticity (DYNAMIC Device Selection!)
+
+```typescript
 // 🔥 DYNAMIC device selection based on article emotion!
 const deviceProfile = selectDeviceForArticle({
-  emotion: keyMoment.emotion,
-  content: finalArticle.content,
-  narratorAge: extractAge(finalArticle.content)
+  emotion: keyScene.emotion,           // grief, joy, triumph, etc.
+  narratorAge: extractAge(hardRestoredArticle),
+  content: hardRestoredArticle
 });
-// For 'grief': Samsung Galaxy J7 (2015) - old phone for sad emotion
-// For 'joy': iPhone 15 (2024) - new phone for happy emotion
-// Etc.
+
+console.log(`\n📱 Dynamic Device Selection:`);
+console.log(`   Emotion: ${keyScene.emotion}`);
+console.log(`   Selected: ${deviceProfile.model} (${deviceProfile.year})`);
+
+// Examples:
+// - grief → Samsung Galaxy J7 (2015) - old phone for sad emotions
+// - joy → iPhone 15 (2024) - new phone for happy emotions
+// - triumph → iPhone 13 (2021) - recent phone for success
+// - anxiety → Samsung A51 (2020) - mid-range for uncertainty
 
 const authenticityProcessed = await mobilePhotoAuthenticityProcessor
   .processWithDevice(
@@ -337,17 +423,17 @@ const authenticityProcessed = await mobilePhotoAuthenticityProcessor
     deviceProfile.key,      // 'samsung_j7', 'iphone15', etc.
     deviceProfile.year      // 2015, 2024, etc.
   );
-// 1. Analyze image
-// 2. Add camera artifacts (lens flare, sensor noise)
-// 3. Add EXIF-like metadata (but NOT real EXIF)
-// 4. Add compression artifacts (phone's JPEG quality ~85%)
-// 5. Add slight color grading (device-specific)
-// Returns: { buffer, effects: [...], authenticityLevel: 'very-high', success }
 
-// ============================================================================
-// STAGE D4: Attach to Article
-// ============================================================================
+console.log(`\n🔐 Mobile Authenticity Applied:`);
+authenticityProcessed.appliedEffects.forEach(effect => 
+  console.log(`   ✅ ${effect}`)
+);
+console.log(`   Authenticity Level: ${authenticityProcessed.authenticityLevel}`);
+```
 
+### D4: Attach to Article
+
+```typescript
 finalArticle.coverImage = {
   base64: authenticityProcessed.buffer.toString('base64'),
   format: 'jpeg',
@@ -357,252 +443,355 @@ finalArticle.coverImage = {
   authenticityLevel: authenticityProcessed.authenticityLevel,
   appliedEffects: authenticityProcessed.effects,
   metadata: {
-    imageGeneratedAt: Date.now(),
-    extractedScene: keyMoment.scene,
-    emotion: keyMoment.emotion,
+    extractedScene: keyScene.scene,
+    emotion: keyScene.emotion,
     stage: 'D4-complete'
   }
 };
 
-console.log(`
-✅ Cover Image Complete
-────────────────────────────
-Generated: ${keyMoment.visualDescription}
-Device: ${deviceProfile.model} (${deviceProfile.year})
-Authenticity: ${authenticityProcessed.authenticityLevel}
-Applied effects: ${authenticityProcessed.effects.join(', ')}
-Size: ${authenticityProcessed.width}x${authenticityProcessed.height}
-Status: Ready for export
-`);
+console.log(`\n✅ Image Processing Complete`);
+console.log(`   Ready for export and publication`);
 ```
-
-**СХЕМА изображения:**
-
-```
-[Extract Key Scene]
-        ↓
-[Generate Base Image (Gemini)]
-        ↓
-[Canvas Post-Process] (remove metadata)
-        ↓
-[Mobile Authenticity] (add device artifacts)
-        ↓
-[Attach to Article] ✅
-```
-
-**ВАЖНО: Не один эпизод = не один момент для изображения! Один момент на ВСУЮ статью!**
 
 ---
 
-### **ФАЗА E: EXPORT & PUBLISH** ⏱️ 2 мин
+## 📤 PHASE E: Export & Publish (~2 мин)
 
-```javascript
-// Export structure:
-// articles/{channel_name}/{YYYY-MM-DD}/
-//   ├─ {slug}.md          (Markdown с front-matter для RSS)
-//   ├─ {slug}.jpg         (Cover image, 1280x720)
-//   └─ manifest.json      (Metadata)
+### Export Structure
 
+```
+articles/{channel_name}/{YYYY-MM-DD}/
+  ├─ {slug}.md          # Markdown with front-matter
+  ├─ {slug}.jpg         # Cover image (1280x720)
+  └─ manifest.json      # Metadata
+```
+
+### Front-Matter Format
+
+```yaml
+---
+title: "Статья"
+date: "2025-01-05"
+description: "Первые 150-200 символов описание..."
+image: "slug.jpg"
+category: "lifestory"
+---
+```
+
+### Export Code
+
+```typescript
+const dateStr = new Date().toISOString().split('T')[0];
 const exportDir = path.join(
   './articles',
-  config.channelName,      // 'women-35-60'
-  new Date().toISOString().split('T')[0]  // '2025-01-05'
+  config.channelName,
+  dateStr
 );
+fs.mkdirSync(exportDir, { recursive: true });
 
-// Generate front-matter
+const slug = createSlug(finalArticle.title);
 const frontMatter = `---
 title: "${finalArticle.title}"
-date: "${exportDate}"
-description: "${generateIntriguingDescription(finalArticle.content)}"
-image: "{slug}.jpg"
+date: "${dateStr}"
+description: "${generateDescription(finalArticle.content)}"
+image: "${slug}.jpg"
 category: "lifestory"
----`;
+---\n\n`;
 
-// Export files
-fs.writeFileSync(`${exportDir}/${slug}.md`, frontMatter + '\n\n' + content);
-fs.writeFileSync(`${exportDir}/${slug}.jpg`, finalArticle.coverImage.buffer);
-fs.writeFileSync(`${exportDir}/manifest.json`, JSON.stringify(manifest));
+// Save files
+fs.writeFileSync(
+  `${exportDir}/${slug}.md`,
+  frontMatter + finalArticle.content
+);
+fs.writeFileSync(
+  `${exportDir}/${slug}.jpg`,
+  finalArticle.coverImage.buffer
+);
 
 console.log(`✅ Exported to: ${exportDir}`);
 ```
 
 ---
 
-## 🔀 СЦЕНАРИИ И ОБРАБОТКА ОШИБОК
+## 🚪 STAGE GATES & QUALITY STANDARDS
 
-### Scenario 1: ✅ Happy Path (35-40 мин)
+### Phase2 Score Explained
+
+**What is Phase2?**
+Metric that measures how "human-like" text appears to AI detection tools
+
+**Score Breakdown:**
+- **0-40:** AI-obvious (will fail Dzen moderation)
+- **40-70:** Acceptable but risky (needs improvement)
+- **70-85:** Good (passes most checks)
+- **85-100:** Excellent (human-indistinguishable)
+
+**Stage Gates:**
+| Phase | Target Phase2 | Status |
+|-------|--------------|--------|
+| B1-B4 Episodes | >= 70 each | ✅ Implemented |
+| C2 Hard Restoration | >= 85 | 🔴 **MISSING** |
+| D3 Mobile Auth | >= 80 | ✅ Implemented |
+| Final | >= 85 | ✅ Target |
+
+### Final Stage 5 Checklist
+
+Before publishing, verify ALL 10 points:
+
 ```
-[A: Theme] → [B: Episodes ×3] → [C: Assembly+Hard] → [D: Image] → [E: Export]
-  5-10 мин      ~20 мин            ~8 мин           ~5 мин      ~2 мин
-```
+☐ 1. First sentence creates TENSION?
+     Example: "I found out he cheated when I was already pregnant."
 
-### Scenario 2: ⚠️ Episode Fails Anti-Detection (Phase2 < 80)
-```
-Episode i fails B2 check → Regenerate from B1 → Re-process B2-B4 → Continue
-(Не влияет на другие эпизоды, обработка параллельна!)
-```
+☐ 2. Turning point at ~30% of article?
+     Example: "Then I saw his message."
 
-### Scenario 3: ⚠️ Logic Break Detected (Phase C1)
-```
-Detect logic issue between episodes → Regenerate affected episodes → Re-assemble
-(Обработка: multiAgentService с context о neighboring episodes)
-```
+☐ 3. Climax at ~60% of article?
+     Example: "I threw the ring in his face and left."
 
-### Scenario 4: ❌ Hard Restoration Fails (Phase2 < 85 после C2)
-```
-Hard restoration не достиг score → Iterate again with aggressive settings
-→ If still < 85 after 5 iterations → FAIL (статья не публикуется)
-(Это РЕДКО, обычно на 2-3 итерации фиксится)
-```
+☐ 4. Reveal/Twist at ~85% of article?
+     Example: "But then I understood - this saved me."
 
-### Scenario 5: 🔄 Nuclear Option - Complete Restart
-```
-Если все эпизоды failed или логика не фиксится
-→ Restart from Phase A with new theme/approach
-```
+☐ 5. Ending is CLOSED (not open)?
+     ✓ YES: "I'm happy now and he texted but I said no"
+     ✗ NO: "...and I'm still deciding"
 
----
+☐ 6. Reads naturally ALOUD?
+     Test: Read it out loud - no stumbling on words
 
-## 📊 IMPLEMENTATION CHECKLIST
+☐ 7. NO AI clichés?
+     Forbidden: "bottomless blue eyes", "felt pain in chest"
 
-### Currently Implemented ✅
-- [x] Phase A: Theme selection (configService)
-- [x] Phase B.1: Episode generation (episodeGeneratorService)
-- [x] Phase B.2: Per-episode anti-detection (phase2AntiDetectionService)
-- [x] Phase B.3: Voice polish (voiceRestorationService)
-- [x] Phase C.1: Assembly (basic concatenation)
-- [x] Phase D: Image generation (imageGeneratorAgent)
-- [x] Phase D2b: Canvas processing (imageProcessorService)
-- [x] Phase D3: Mobile authenticity (mobilePhotoAuthenticityProcessor)
-- [x] Phase E: Export (contentFactoryOrchestrator.exportForZen)
+☐ 8. Dialogues 40-50% of content?
+     Not pure narration, characters have voice
 
-### 🔴 CRITICAL ISSUES (Need Fixing)
-- [ ] **Phase B.4: Per-episode text restoration** (currently missing!)
-  - Need to add textRestorationService.restoreEpisode() in article worker pool
-  - Should run AFTER voice polish, BEFORE assembly
-  - Prevent: awkward phrasing, weird breaks in single episode
+☐ 9. Character visibly CHANGED?
+     Example: "I said no to him" (shows new strength)
 
-- [ ] **Phase C.2: Hard restoration** (currently missing!)
-  - Need to add textRestorationService.hardRestore() to orchestrator
-  - Should run AFTER assembly, BEFORE image generation
-  - CRITICAL: Must fix all breaks, improve flow iteratively
-  - Must reach Phase2 >= 85 before publishing
+☐ 10. Maximum 3 complex names?
+      Rest use relationships: "mother-in-law", "my boss"
 
-- [ ] **Phase C.1: Logic continuity check** (currently missing!)
-  - Need: multiAgentService.verifyLogicContinuity() function
-  - Check: Emotional arc, character consistency, timeline
-  - Fix: Regenerate affected episodes if logic breaks
-
-- [ ] **Phase D.1: Scene extraction** (currently missing!)
-  - Need: sceneElementExtractor for picking key moment
-  - Currently using title only!
-  - Should extract: setting, emotion, visual description
-
-### ⚠️ PARTIALLY IMPLEMENTED (Needs improvement)
-- [ ] Error recovery in Phase B (currently fails whole batch)
-  - Should: Continue with successful episodes
-  - Current: articleWorkerPool aborts on first error
-
-- [ ] Phase2 score checks
-  - Currently: Not tracked per-episode
-  - Should: Every episode should have phase2 score before assembly
-
----
-
-## 🎯 METRICS & MONITORING
-
-### Per-Episode Metrics (Phase B)
-```
-Episode i: {
-  phase2Score: 87/100,           // Anti-detection quality
-  restorationScore: 75/100,      // After per-episode restoration
-  characterCount: 1850,
-  readTime: 3 min,
-  voiceQuality: 'good'
-}
-```
-
-### Per-Article Metrics (After Phase C)
-```
-Article: {
-  finalPhase2Score: 89/100,      // Final anti-detection score
-  logicContinuity: 'pass',
-  breaksFix: 'pass',
-  totalCharCount: 5500,
-  totalReadTime: 10 min,
-  episodeCount: 3
-}
-```
-
-### Image Metrics (Phase D)
-```
-Image: {
-  authenticityLevel: 'very-high',
-  deviceEmulated: 'Galaxy J7 (2015)',
-  extractedEmotion: 'grief',
-  appliedEffects: ['sensor-noise', 'compression', 'lens-flare'],
-  size: '1280x720'
-}
+SCORE:
+  8-10 ✅ PUBLISH
+  6-7  ⚠️ CONDITIONAL (fix and retry)
+  <6   ❌ REJECT (restart from Phase B)
 ```
 
 ---
 
-## 🛠️ KEY COMPONENTS
+## 🎭 VOICE RESTORATION DETAILS
 
-### articleWorkerPool.ts
-- Manages: Parallel episode generation (up to 3 concurrent)
-- Processes: Per-episode B1-B4
-- Returns: Array of restored episodes
+### RAW vs RESTORED
 
-### textRestorationService.ts
-- `restoreEpisode()`: Light restoration for single episode (Phase B.4)
-- `hardRestore()`: AGGRESSIVE restoration for full article (Phase C.2)
-- Features: Break fixing, grammar, flow improvement, iterative
+**RAW Article (Clean):**
+```
+My mother-in-law was mean to me.
+I felt sad about it.
+I decided to change my life.
+After hard work, I became successful.
+```
 
-### contentFactoryOrchestrator.ts
-- Orchestrates: All phases A-E
-- Manages: Worker pools, image generation queue
-- Exports: Final article + image
+**RESTORED Article (Emotional):**
+```
+She said it at the family dinner.
+Twenty people. All quiet. All watching.
+"You'll never be good enough for our family."
 
-### imageProcessorService.ts
-- Processes: Raw JPEG from Gemini API
-- Output: Canvas-processed JPEG (removes metadata)
+That moment broke something inside me.
+Not in a bad way. Like a shell cracking open.
 
-### mobilePhotoAuthenticityProcessor.ts
-- DYNAMIC device selection based on article emotion
-- Adds: Camera artifacts, noise, color grading, compression
-- Result: Indistinguishable from real mobile photo
+I couldn't sleep. Couldn't think about anything except:
+What if she's right?
+
+But then MY voice answered: "No. She's wrong. And I'll prove it."
+
+Three months of nothing. Calls that didn't answer.
+Then—a text message. "Can we talk?"
+
+My hands shook. I couldn't type. Had to call instead.
+First client. First 5K. First time she looked at me different.
+```
+
+### RAW → RESTORED Transformation
+
+**Techniques Applied:**
+1. **Dialogue:** Add specific conversations
+2. **Sensory Details:** What did you see, hear, feel?
+3. **Emotional Truth:** Internal monologue and reactions
+4. **Sentence Variety:** Short. Medium. Long sentences with details.
+5. **Voice Markers:** Character-specific speech patterns
+6. **Concrete Details:** Specific moments, not abstract emotions
+7. **Dramatic Timing:** Paragraph breaks for impact
+
+### Implementation
+
+```typescript
+// In Phase B4 (per-episode)
+const lightRestored = await textRestorationService.restoreEpisode(
+  voicePolished,
+  { method: 'light' }  // Don't overcook
+);
+
+// In Phase C2 (full article)
+const hardRestored = await textRestorationService.hardRestore(
+  assembled,
+  { method: 'hard', targetPhase2Score: 85 }  // Aggressive
+);
+```
 
 ---
 
-## 📋 COMMAND EXAMPLES
+## 🔄 ERROR SCENARIOS
 
-### Generate Single Article (BOTH mode)
+### Scenario 1: Episode Fails Phase2 < 70
+```
+Episode i fails B2 check
+  ↓
+Regenerate Episode i from B1
+  ↓
+Re-process B2-B4 (per-episode)
+  ↓
+Continue (doesn't affect other episodes)
+```
+
+### Scenario 2: Logic Break Detected (Phase C1)
+```
+Detect logic issue
+  ↓
+Identify affected episodes
+  ↓
+Regenerate with context (previous + next episodes)
+  ↓
+Re-assemble
+```
+
+### Scenario 3: Hard Restoration Fails (Phase C2)
+```
+Phase2 < 85 after 5 iterations
+  ↓
+❌ CRITICAL: Article not ready
+  ↓
+Options:
+  - Restart Phase B with new approach
+  - Different theme
+  - Different archetype
+```
+
+### Scenario 4: Checklist Fails (Phase 5)
+```
+Fails 7-9 checkpoints
+  ↓
+Return to Phase B (major issues)
+  ↓
+Regenerate episodes
+
+Fails 1-2 checkpoints
+  ↓
+Return to Phase C2 (quick fixes)
+  ↓
+Retry hard restoration
+```
+
+---
+
+## 📊 METRICS & MONITORING
+
+### Per-Article Dashboard
+
+```
+ARTICLE: "Marina's Comeback"
+Generated: 2026-01-05
+
+INPUT:
+  Theme:        "Я терпела 20 лет"
+  Research:     ✅ 12 sources
+  PlotBible:    ✅ 100% complete
+
+STAGE B (Episodes):
+  Generated:    ✅ 7 episodes
+  Avg Phase2:   78/100 ✅
+  Avg Length:   2,800 chars ✅
+
+STAGE C (Assembly):
+  Total Chars:  18,240 ✅
+  Logic Check:  ✅ PASS
+  Hard Restore: ✅ Phase2=87/100
+
+STAGE D (Image):
+  Scene Extract: ✅ Emotion: "grief"
+  Base Image:    ✅ Generated
+  Canvas:        ✅ Processed
+  Mobile Auth:   ✅ Device: Galaxy J7 2015
+
+STAGE 5 (Checklist):
+  Hook:          ✅ YES
+  Turn at 30%:   ✅ YES
+  Climax at 60%: ✅ YES
+  Reveal at 85%: ✅ YES
+  Closed End:    ✅ YES
+  Reads Aloud:   ✅ YES
+  No Clichés:    ✅ YES
+  Dialogues:     ✅ 44%
+  Character Arc: ✅ Dependent→Strong
+  Names:         ✅ 3 total
+  SCORE:         ✅ 10/10 PUBLISH
+
+EXPECTED PERFORMANCE:
+  Scroll Depth: 72%
+  Read Time:    8 min
+  Comments:     40-50
+  Shares:       30-50
+  Risk (AI):    LOW (<15%)
+```
+
+---
+
+## ⚙️ CRITICAL MISSING PIECES
+
+### 🔴 Priority 1: Phase B4 & C2
+- [ ] **Phase B4:** `textRestorationService.restoreEpisode()` in articleWorkerPool
+- [ ] **Phase C2:** `textRestorationService.hardRestore()` in contentFactoryOrchestrator
+  - CRITICAL: Must iterate to Phase2 >= 85
+  - No article published without this!
+
+### 🟠 Priority 2: Scene Extraction & Logic
+- [ ] **Phase D1:** `sceneElementExtractor.extractKeyScene()`
+- [ ] **Phase C1:** `multiAgentService.verifyLogicContinuity()`
+
+### 🟡 Priority 3: Integration
+- [ ] Wire B4 into articleWorkerPool
+- [ ] Wire C2 into contentFactoryOrchestrator
+- [ ] Add error recovery for failed scenarios
+- [ ] Implement monitoring/dashboard
+
+---
+
+## 📚 COMMANDS
+
 ```bash
-npx ts-node cli.ts both --count=1 --channel=women-35-60 --images
-```
+# Single article (BOTH mode = RAW + RESTORED)
+npx ts-node cli.ts both --count=1 --images
 
-### Generate Batch (10 articles)
-```bash
-npx ts-node cli.ts factory --count=10 --channel=women-35-60 --images --quality=premium
-```
+# Batch (10 articles)
+npx ts-node cli.ts factory --count=10 --images --quality=premium
 
-### Validate Quality
-```bash
+# Validate quality
 npx ts-node cli.ts validate
 ```
 
 ---
 
-## 📞 SUPPORT
+## 📖 SOURCE DOCUMENTS
 
-- Phase2 scores: Check `qualityValidator.ts`
-- Image generation: Check `imageGeneratorAgent.ts` for Gemini prompts
-- Logic issues: Check `multiAgentService.ts` for continuity verification
-- Device profiles: Check `mobilePhotoAuthenticityProcessor.ts` for device options
+This document consolidates:
+- ✅ [VOICE_RESTORATION_GUIDE.md](ai_work/VOICE_RESTORATION_GUIDE.md) - Voice restoration techniques
+- ✅ [DZEN_QUALITY_STANDARDS.md](ai_work/DZEN_QUALITY_STANDARDS.md) - Quality gates and checklist
+- ✅ [CORRECT_PIPELINE_ORDER.md](ai_work/CORRECT_PIPELINE_ORDER.md) - Pipeline sequencing
+- ✅ [IDEAL_OUTPUT_EXAMPLE.md](ai_work/IDEAL_OUTPUT_EXAMPLE.md) - Example outputs
+- ✅ Other ai_work/ documentation
 
 ---
 
-**Обновлено:** 2025-01-05  
-**Версия:** v7.1  
-**Статус:** ⚠️ READY FOR IMPLEMENTATION (fixes needed in Phase B.4 and C.2)
+**Status:** ✅ Complete Documentation | 🔴 Implementation Missing (B4, C2)  
+**Version:** 7.1  
+**Updated:** 2026-01-05  
+**Ready:** For development + implementation
