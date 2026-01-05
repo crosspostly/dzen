@@ -10,6 +10,7 @@
     "generate": "node --import tsx cli.ts generate",
     "generate:v2": "node --import tsx cli.ts generate:v2",
     "factory": "node --import tsx cli.ts factory",
+    "both": "node --import tsx cli.ts both",
     "generate:all-dzen": "node --import tsx cli.ts generate:all-dzen",
     "list-dzen-channels": "node --import tsx cli.ts list-dzen-channels",
     "validate-dzen-config": "node --import tsx cli.ts validate-dzen-config",

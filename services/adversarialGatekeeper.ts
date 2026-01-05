@@ -28,10 +28,10 @@ export class AdversarialGatekeeper {
   private skazEngine: SkazNarrativeEngine;
 
   // Пороги для Dzen
-  private minContentLength: number = 1500; // символов
-  private maxContentLength: number = 2500; // символов
+  private minContentLength: number = 10000; // символов
+  private maxContentLength: number = 30000; // символов
   private minReadingTime: number = 3; // минут
-  private maxReadingTime: number = 10; // минут
+  private maxReadingTime: number = 20; // минут
 
   // Clickbait стоп-слова
   private clickbaitKeywords: string[] = [

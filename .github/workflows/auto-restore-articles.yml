@@ -1,6 +1,8 @@
 name: 🔧 Auto Restore Articles
 
 on:
+  schedule:
+    - cron: '0 3 * * *' # Каждую ночь в 3 AM
   push:
     paths:
       - 'articles/**/*.md'

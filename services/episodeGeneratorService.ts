@@ -1,4 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
+import * as fs from 'fs';
+import * as path from 'path';
+import { calculateSimilarity } from "../utils/levenshtein-distance";
+import { qualityGate } from "../utils/quality-gate";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
@@ -112,7 +116,7 @@ export class EpisodeGeneratorService {
       }
       
       try {
-        const episode = await this.generateSingleEpisode(
+        let episode = await this.generateSingleEpisode(
           outline, 
           episodes,
           charsForThisEpisode,
@@ -122,6 +126,39 @@ export class EpisodeGeneratorService {
           false,
           options?.plotBible
         );
+
+        // 🆕 v9.0: Uniqueness check
+        let attempts = 0;
+        while (attempts < 3) {
+          const isDuplicate = episodes.some(e => 
+            calculateSimilarity(e.content, episode.content) > 0.75
+          );
+          
+          if (isDuplicate) {
+            console.log(`      ⚠️ Episode ${episodeIndex + 1} is a duplicate, regenerating...`);
+            episode = await this.generateSingleEpisode(
+              outline, 
+              episodes,
+              charsForThisEpisode,
+              episodeIndex + 1,
+              episodeOutlines.length,
+              attempts + 2,
+              false,
+              options?.plotBible
+            );
+            attempts++;
+          } else {
+            break;
+          }
+        }
+
+        // 🆕 v9.0: Quality gate
+        const validation = await qualityGate(episode.content, 70, 1500, episode.title);
+        if (!validation.isValid) {
+          console.log(`      ⚠️ Episode ${episodeIndex + 1} quality low:`, validation.issues);
+          // Optional: we could retry here too, but let's stick to the briefing's logic
+        }
+
         episodes.push(episode);
         
         remainingPool -= episode.charCount;
@@ -161,6 +198,34 @@ export class EpisodeGeneratorService {
     console.log(`   Used: ${charCountSoFar} chars (${utilization}%)`);
     console.log(`   Remaining: ${remainingPool} chars\n`);
     return episodes;
+  }
+
+  /**
+   * 📚 Load shared guidelines for prompts
+   */
+  private loadSharedGuidelines(): string {
+    let guidelines = '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    guidelines += 'ОБЩИЕ ПРАВИЛА КАЧЕСТВА:\n';
+    
+    const files = [
+      'shared/voice-guidelines.md',
+      'shared/anti-detect.md',
+      'shared/archetype-rules.md',
+      'shared/quality-gates.md'
+    ];
+
+    for (const file of files) {
+      try {
+        const filePath = path.join(process.cwd(), 'prompts', file);
+        if (fs.existsSync(filePath)) {
+          guidelines += fs.readFileSync(filePath, 'utf-8') + '\n';
+        }
+      } catch (e) {
+        console.warn(`⚠️ Could not read shared guideline: ${file}`);
+      }
+    }
+
+    return guidelines;
   }
 
   /**
@@ -357,9 +422,21 @@ ${outline.openLoop}...`;
     
     const plotBibleSection = this.buildPlotBibleSection(plotBible);
 
-    return `Напиши художественный эпизод от первого лица.
+    // 🆕 v9.0: Read prompt from file
+    let basePrompt = '';
+    try {
+      const promptPath = path.join(process.cwd(), 'prompts', 'stage-1-episodes.md');
+      basePrompt = fs.readFileSync(promptPath, 'utf-8');
+    } catch (e) {
+      console.warn('⚠️ Could not read stage-1-episodes.md, using hardcoded prompt');
+      basePrompt = 'Напиши художественный эпизод от первого лица.';
+    }
 
-${plotBibleSection}
+    const guidelines = this.loadSharedGuidelines();
+
+    return `${basePrompt}
+
+${guidelines}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 СЮЖЕТ ЭПИЗОДА #${outline.id}
@@ -378,104 +455,11 @@ ${previousContext}
 Начинай СРАЗУ с нового действия или диалога. Не повторяй концовку выше.
 Не начинай с "И тогда" или "После этого".` : 'НАЧАЛО ИСТОРИИ:'}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-СТРУКТУРА (6 частей)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${plotBibleSection}
 
-1. ЗАВЯЗКА (3-4 предложения)
-   Первые слова должны ЗАХВАТЫВАТЬ. Вопрос, шок, интрига.
-   НЕЛЬЗЯ: "Я хочу рассказать...", "Это случилось когда...", "В тот день я..."
-   МОЖНО: "Почему я молчала десять лет?", "Она посмотрела на меня и я всё поняла.", "Только вчера я узнала правду."
-
-2. КОНТЕКСТ (4-5 предложений)
-   Где? Когда? Кто? Конкретные детали. Имена. Места.
-   Начинаются диалоги.
-
-3. РАЗВИТИЕ 1 (4-5 предложений)
-   Сюжет движется вперёд. Диалоги. Сенсорные детали.
-   Что видит? Слышит? Чувствует?
-
-4. РАЗВИТИЕ 2 (4-5 предложений)
-   Напряжение нарастает. Эмоции обостряются.
-   Минимум 2-3 сенсорные детали (зрение, слух, осязание, запах).
-
-5. КУЛЬМИНАЦИЯ (3-4 предложения)
-   Неожиданный поворот. Эмоциональный пик.
-   КОРОТКИЕ предложения для силы. Тизер на следующий эпизод.
-
-6. РАЗВЯЗКА (4-5 предложений)
-   Как героиня справилась? Размышление.
-   Оставь интризу - вопрос для читателя.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-КАЧЕСТВО ПИСЬМА
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ ПРЕДЛОЖЕНИЯ
-   - Разная длина: короткие (5-8 слов) и средние (10-14 слов)
-   - НИКАКИХ обрубленных фраз на середине
-   - НИКАКИХ "ну и", "да вот", "вот только" в начале предложений
-   - Полные, завершённые мысли
-
-✅ ДИАЛОГИ (35-40% текста)
-   - 6-8 обменов репликами
-   - Формат: "— Вопрос? — спросила я."
-   - Естественные, живые
-   - Чередуются с повествованием (не блоками)
-
-✅ СЕНСОРНЫЕ ДЕТАЛИ (10+ на эпизод)
-   - Зрение: "солнце било в окно", "морщинки вокруг глаз"
-   - Слух: "голос дрожал", "хлопнула дверь"
-   - Осязание: "холодные пальцы", "тряслись руки"
-   - Запах: "пахло йодом", "духи Angel"
-   - Вкус: "привкус железа", "горький кофе"
-
-✅ ЭМОЦИИ
-   - Показывай действиями, НЕ объясняй
-   - ПЛОХО: "Я была напугана"
-   - ХОРОШО: "Руки тряслись. Я не могла выговорить ни слова."
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ЗАПРЕЩЕНО
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-❌ Метаданные: [note], [TODO], [pause], ***
-❌ Markdown: **жирный**, ##заголовок, \`код\`
-❌ Фразы-паразиты (НИ РАЗУ):
-   "— может быть, не совсем точно, но..."
-   "— одним словом..."
-   "— не знаю почему, но..."
-   "— вот в чём дело..."
-   "— вот что я хочу сказать..."
-❌ Обрубки в начале: "ну и", "да вот", "вот только", "-то"
-❌ Мат и грубая лексика
-❌ Диалог через несколько абзацев без контекста
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ПРИМЕР ХОРОШЕГО ТОНА
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-"Её голос дрожал. Я смотрела на стекло кабинета. На улице шёл снег. Холодный апрельский снег.
- — Откуда ты это знаешь? — спросила я.
- — Я не могу сказать, — ответила она.
- Письмо было в моих руках. Бумага пахла старостью. Я чувствовала ледяную боль в груди."
-
-ПРИМЕР НАЧАЛА (ЗАХВАТЫВАЕТ):
-"Почему я была такая слепая? Пять лет прошло, а я каждое утро спрашиваю себя."
-"Она открыла рот. Я увидела в её глазах страх. Настоящий страх."
-"Только вчера вечером я поняла, что всё это время он врал."
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ТЕХНИЧЕСКИЕ ТРЕБОВАНИЯ
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+ТЕХНИЧЕСКИЕ ТРЕБОВАНИЯ:
 Объём: ${minChars}-${maxChars} символов
-Абзацы: 4-8 строк каждый
-Диалоги: 6-8 обменов
-Сенсорные детали: 10+
-
 ${retryNote}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ВЫВОД: Только текст эпизода. Без заголовков. Без пояснений.
 Пиши так, будто рассказываешь лучшей подруге в 3 часа ночи.

@@ -82,7 +82,8 @@ export class ArticleWorkerPool {
         // STEP 3: Generate cover image (shared by both versions)
         let coverImageBase64: string | undefined = undefined;
         if (config.includeImages) {
-          const lede = await multiAgentService.generateLede(outline);
+          // Generate lede using first episode outline or temporary lede
+          const lede = await multiAgentService.generateLede(outline, { id: 1, content: outline.theme } as any);
           
           try {
             const generatedImage = await imageGeneratorAgent.generateCoverImage({
@@ -227,7 +228,7 @@ export class ArticleWorkerPool {
             console.log(`     🖼 Generating cover image...`);
             
             // Need lede to generate image - generate it early
-            const lede = await multiAgentService.generateLede(outline);
+            const lede = await multiAgentService.generateLede(outline, { id: 1, content: outline.theme } as any);
             
             const generatedImage = await imageGeneratorAgent.generateCoverImage({
               title: outline.theme,
