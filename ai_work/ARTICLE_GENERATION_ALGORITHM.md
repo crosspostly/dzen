@@ -1,430 +1,532 @@
-# 🎯 ARTICLE GENERATION ALGORITHM (Complete Pipeline)
+# 🎭 ZenMaster: Algorithm for Article Generation
 
-**Version**: 4.0  
-**Last Updated**: January 5, 2026  
-**Status**: ✅ PRODUCTION READY
-
-> **Core**: Generate Dzen articles in ~45 minutes with AI-detection < 15%
+**Purpose**: Complete guide to HOW the article generation pipeline works
+**Target Audience**: Developers, content engineers, AI researchers
+**Version**: 1.0 | **Updated**: January 5, 2026
 
 ---
 
-## 📊 PIPELINE OVERVIEW: 6 STAGES
+## Table of Contents
+
+1. [System Overview](#system-overview)
+2. [6-Stage Pipeline](#6-stage-pipeline)
+3. [Detailed Stage Breakdown](#detailed-stage-breakdown)
+4. [Metric Calculations](#metric-calculations)
+5. [Retry Logic](#retry-logic)
+6. [Code Structure](#code-structure)
+
+---
+
+## 🎯 System Overview
+
+**ZenMaster** generates emotional, human-sounding stories for Dzen with <15% AI-detection.
+
+### Key Capabilities
+
+- **Episode-based storytelling**: Long stories with character development
+- **Voice Restoration**: Emotional depth and natural speech patterns
+- **Phase 2 Anti-Detection**: AI-detection reduction from 72% to 12%
+- **Mobile-authentic images**: Photos that look like real phone shots
+- **Automated publishing**: RSS feed for Dzen
+
+### Story Archetypes (7)
+
+| Archetype | Description | Example Theme |
+|-----------|-------------|----------------|
+| **Comeback Queen** | Return after failure | "I was the worst daughter-in-law, now successful" |
+| **Gold Digger Trap** | Trap for the rich | "Thought I married rich, but he was a scammer" |
+| **Phoenix** | Rebirth from ashes | "Bankrupt to millionaire in 3 years" |
+| **Entrepreneur** | Path to wealth through business | "Courier to CEO" |
+| **Mother Wins** | Mother triumphs | "Won custody battle against all odds" |
+| **Wisdom Earned** | Wisdom through pain | "Endured mother-in-law for 20 years" |
+| **Inheritance Reveal** | Secret inheritance | "Grandpa left me a secret apartment" |
+
+---
+
+## 🔄 6-Stage Pipeline
 
 ```
-┌─────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│ STAGE 0:    │───▶│ STAGE 1:         │───▶│ STAGE 2:         │
-│ PlotBible   │    │ Episodes + Restore   │    │ Article Assembly │
-│ (5 min)     │    │ (15 min)         │    │ (10 min)         │
-└─────────────┘    └──────────────────┘    └──────────────────┘
-                                                    │
-        ┌───────────────────────────────────────────┘
-        │
-        ▼
-┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│ STAGE 3:         │───▶│ STAGE 4:         │───▶│ STAGE 5:         │
-│ Voice + DZEN     │    │ Phase 2 Anti-AI  │    │ Quality Check    │
-│ (5 min)          │    │ (8 min)          │    │ (3 min)          │
-└──────────────────┘    └──────────────────┘    └──────────────────┘
-         │                       │                      │
-         └───────────┬───────────┘                      │
-                     │ IF Score < 80                    │
-                     └──────────────────────────────────┘
-                              (RETRY)
+┌─────────────────────────────────────────────────────────────┐
+│ STAGE 0: PlotBible Engineering                              │
+│ Time: ~5 min                                                │
+│ Goal: Create story skeleton with archetypes                   │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ STAGE 1: Episodes Generation + Auto-Restore                  │
+│ Time: ~15 min                                               │
+│ Goal: Generate 7-12 emotional episodes                      │
+│ Validation: Phase2 >= 70 (auto-restore max 3 attempts)      │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ STAGE 2: Article Assembly                                   │
+│ Time: ~10 min                                               │
+│ Goal: Assemble episodes into article with transitions         │
+│ AI-detection: 60-70% (acceptable at this stage)            │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 🔤 STAGE 3: Voice Restoration + DZEN GURU Rules             │
+│ Time: ~5 min                                                │
+│ Goal: Animate text, add natural speech patterns             │
+│ Validation: Phase2 >= 85 (auto-restore max 2 attempts)    │
+│ Applies: Dialogues, style, character evolution              │
+│ IF FAIL: Return to Stage 2 (regenerate)                    │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 🔥 STAGE 4: Phase 2 Anti-Detection (CRITICAL!)             │
+│ Time: ~8 min                                                │
+│ Goal: Reduce AI-detection to <15%                           │
+│ Steps: Perplexity → Burstiness → Authentic → Gatekeeper       │
+│ Validation: Overall Score >= 80/100                          │
+│ IF FAIL: Return to Stage 3 (re-apply voice, NOT regenerate)│
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 STAGE 5: Quality Checklist                               │
+│ Time: ~3 min                                                │
+│ Goal: Final 10-point checklist                                │
+│ Validation: 8+ checks = publish                             │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+                         🚀 PUBLISH
 ```
 
 ---
 
-## 🔴 STAGE 0: PLOT BIBLE (5 min)
+## 📝 Detailed Stage Breakdown
 
-**Input**: Topic/Theme  
-**Output**: JSON structure with archetype, episodes, characters
+### Stage 0: PlotBible Engineering
 
-### Structure
+**File**: `prompts/stage-0-plan.md` | **Service**: `services/plotBibleBuilder.ts`
+
+**Purpose**: Create story skeleton with narrator, archetypes, and episode outlines.
+
+**Output Structure**:
 ```json
 {
-  "theme": "Betrayal & Comeback",
-  "archetype": "Comeback Queen",
-  "protagonist": {
-    "name": "Marina",
-    "age": 34,
-    "profession": "Interior Designer",
-    "personality": "Independent, strong-willed",
-    "flaw": "Too trusting",
-    "goal": "Rebuild after betrayal"
+  "topic": "Я терпела свекровь 20 лет",
+  "narrator": {
+    "age": 45,
+    "gender": "female",
+    "tone": "exclamatory | sad | ironic | didactic",
+    "habits": ["Я не хотела, но...", "Может, я ошибалась..."]
   },
-  "antagonist": {
-    "role": "Husband",
-    "trigger": "Infidelity revealed",
-    "shame_moment": "Mother-in-law sees her success"
+  "archetype": "Comeback Queen",
+  "sensorPalette": {
+    "smells": ["coffee", "dust", "mother-in-law's perfume"],
+    "sounds": ["silence", "ticking clock"],
+    "textures": ["rough table", "velvet dress"]
   },
   "episodes": [
-    "Discovery of betrayal (week 1)",
-    "Decision to leave (week 2)",
-    "First client after separation",
-    "First major project win",
-    "Public recognition",
-    "Antagonist sees success",
-    "Shame & power reversal",
-    "New life established"
-  ],
-  "timeframe": "3 months",
-  "central_question": "Can she rebuild after losing everything?"
-}
-```
-
-**Key Rules**:
-- 6-8 distinct episodes (not just ideas)
-- Clear timeframe (1-3 months = Comeback archetype)
-- Antagonist reaction visible (not just disappearance)
-
----
-
-## 🟡 STAGE 1: EPISODES + CHARACTER DOSSIER (15 min)
-
-**Input**: PlotBible  
-**Output**: 7-12 episodes (3-4K chars each) + character dossier
-
-### Process
-
-#### A) For Each Episode
-```
-1. Generate episode based on PlotBible
-2. Check Phase2Score:
-   - If >= 70: PASS ✅
-   - If < 70: AUTO-RESTORE (max 3 attempts)
-3. If still < 70 after 3 attempts: REGENERATE
-```
-
-#### B) Character Dossier (Saved for Series Consistency)
-```json
-{
-  "character": "Marina",
-  "traits": [
-    "Speaks in short bursts when anxious",
-    "Uses Russian diminutives (Маришка) when emotional",
-    "Wears vintage jewelry",
-    "Morning coffee ritual"
-  ],
-  "voice_markers": [
-    "Repeats key words when remembering",
-    "Uses metaphors about water/drowning",
-    "Fragments: 'And then... nothing.'"
-  ],
-  "forbidden_descriptions": [
-    "Avoid: blue eyes, long hair, elegant",
-    "Use specific: light hazel eyes with gold flecks, auburn with gray streak"
+    {
+      "hook": "Should I have kept silent?",
+      "conflict": "Mother-in-law says: 'You're too simple'",
+      "turning_point": "I decided to prove her wrong"
+    }
   ]
 }
 ```
 
-### Quality Gate
-- All episodes must have Phase2Score >= 70
-- Dossier saved for Stage 3 (voice consistency)
+**Rules**:
+- Narrator age: 25-65 (realistic)
+- 7-12 episodes with clear conflict
+- Sensor palette: 3-5 smells, sounds, textures
+- Choose one of 7 archetypes
 
 ---
 
-## 🟠 STAGE 2: ARTICLE ASSEMBLY (10 min)
+### Stage 1: Episodes Generation
 
-**Input**: Episodes + Dossier  
-**Output**: RAW article (~18K chars)
+**File**: `prompts/stage-1-episodes.md` | **Service**: `services/simpleEpisodeGenerator.ts`
 
-### Structure
-```
-LEDE (600-900 chars)
-├─ Hook: Emotional opening, not explanation
-├─ Setup: Introduce protagonist & conflict
-└─ Promise: Central question posed
+**Purpose**: Generate 7-12 emotional episodes, each 3000-4000 chars.
 
-EPISODE WEAVING (14-16K chars)
-├─ Episodes 1-3: Build tension
-├─ Episodes 4-5: Escalate stakes
-├─ Episodes 6-7: Climax & revelation
-└─ Episodes 8+: Resolution (if exists)
+**Episode Structure**:
+1. **Hook** (200 chars): Question that hooks reader
+2. **External Conflict** (800 chars): What happened in reality
+3. **Internal Emotion** (800 chars): What I felt
+4. **Turning Point** (600 chars): What I decided to do
+5. **Open Loop** (300 chars): Unsaid, unfinished thought
 
-FINALE (800-1200 chars)
-├─ Closed ending (not open)
-├─ Clear outcome (victory, defeat, or lesson)
-└─ Final thought for reader
-```
-
-### AI-Detection Status
-- **Expected**: 60-70% (acceptable, will be fixed in Stage 3-4)
-- **Note**: Don't worry, this is RAW, not final
-
----
-
-## 🔵 STAGE 3: VOICE RESTORATION + DZEN GURU RULES (5 min)
-
-**Input**: RAW article  
-**Output**: Article with natural human voice
-
-### Apply 6 Rules
-
-#### 1️⃣ DIALOGUE FORMATTING
-```
-✅ Use dashes (not quotes):
-— Где ты был?
-— На даче.
-
-❌ Avoid quotes:
-"Где ты был?" она спросила.
-```
-
-#### 2️⃣ MAXIMUM 3 COMPLEX NAMES
-```
-❌ Too many: Viktor Pavlovich Koltsov, Ekaterina Mikhailovna...
-✅ Better: Marina, Ivan, Mother-in-law (or nickname)
-→ Rest use relationships: "he", "she", "mother", "boss"
-```
-
-#### 3️⃣ SENTENCE VARIATION
-```
-✅ Mix patterns:
-SHORT. Medium sentence. And then a very long sentence that spans multiple ideas and includes specific details about what happened next.
-
-❌ Avoid:
-"I was sad. I felt pain. I didn't know what to do."
-```
-
-#### 4️⃣ NO AI CLICHÉS
-```
-❌ Forbidden phrases:
-- "бездонные голубые глаза" (bottomless blue eyes)
-- "черные атласные волосы" (black satin hair)
-- "я чувствовала боль в груди" (I felt pain in my chest)
-- "жизнь больше не будет прежней" (life will never be the same)
-
-✅ Replace with specific, lived details:
-- "Его глаза смотрели мимо, как обычно" (His eyes looked past, as always)
-- "Я заметила седину в его волосах и поняла" (I noticed gray in his hair and understood)
-- "Не могла дышать, руки тряслись" (Couldn't breathe, hands shaking)
-```
-
-#### 5️⃣ CHARACTER EVOLUTION
-- **Page 1**: Protagonist in problem/conflict
-- **Page 2-3**: Attempts & failures
-- **Page 4**: Turning point (external event)
-- **Page 5**: Actions & consequences
-- **Final**: Changed person (new perspective, new actions)
-
-#### 6️⃣ ORAL DELIVERY TEST
-```
-READ ALOUD SLOWLY:
-├─ Where do you lose breath? = INSERT PERIOD/COMMA
-├─ Where is pronunciation difficult? = REPLACE WORD
-├─ Where would you naturally pause? = PUNCTUATION ADJUSTMENT
-└─ Total flow: Can this be narrated for YouTube? (YES = PASS)
-```
-
-### Auto-Restore Loop
-```
-While Phase2Score < 85:
-├─ Apply voice rules (max 2 attempts)
-├─ Re-check Phase2Score
-└─ If still < 85: REGENERATE from Stage 2
-```
-
-### Gate Check
-- Phase2Score >= 85: **CONTINUE TO STAGE 4** ✅
-- Phase2Score < 85: Auto-restore or regenerate
-
----
-
-## 🔥 STAGE 4: PHASE 2 ANTI-DETECTION (8 min)
-
-**Input**: Voice-restored article (Phase2 >= 85)  
-**Output**: Article with AI-detection < 15%
-
-### Step 1: Perplexity Controller
-**Goal**: Increase word entropy (3.0+)
-```
-BEFORE: "это было очень плохо и я была грустна"
-AFTER: "сия ситуация оказалась крайне неблагоприятна, исполнилась меланхолией я"
-
-Techniques:
-├─ Replace common words with rare synonyms
-├─ Use archaic forms (rarely, for effect)
-└─ Invert sentence structure
-```
-
-### Step 2: Burstiness Optimizer
-**Goal**: Variable sentence length (StdDev >= 6.5)
-```
-BEFORE (monotonous): "Я пришла домой. Открыла дверь. Вошла внутрь."
-           ↑ All ~10 words each
-
-AFTER (bursts): "Дверь. Открыла. Потом вошла в комнату где сидела мама, папа и бабушка."
-       ↑ 1 word → 2 words → 20 words (varied!)
-
-Pattern: SHORT → MEDIUM → LONG → SHORT → etc.
-```
-
-### Step 3: Authentic Narrative Engine ⭐
-**Goal**: Sound like real human, not AI
-
-#### A) Natural Pauses & Rhythm
-```
-✓ Read aloud slowly
-✓ Insert periods where breathing naturally stops
-✓ Max 2-3 complex names
-✓ Simplify difficult words
-```
-
-#### B) Emotional Authenticity
-```
-✓ People repeat key words when anxious: "не знаю, совсем не знаю"
-✓ Use fragments: "Не знаю. Совсем не знаю."
-✓ Add natural particles: ну, блин, ладно, вот
-✓ Show how person remembers (incomplete phrases, repeats)
-```
-
-#### C) Living Character Speech
-```
-✓ Dialogues in dashes (not quotes)
-✓ Add "ааа", "хм", "блин", "ладно" to speech
-✓ People don't speak perfectly - they stammer, repeat
-✓ Different characters speak differently
-   (babushka vs youth, formal vs casual)
-```
-
-#### D) Concrete Details (Anti-AI)
-```
-❌ AI says: "красивое платье" (beautiful dress)
-✅ Human says: "платье с оборками, на пуговицах" (dress with ruffles, buttons)
-
-❌ AI says: "она была грустна" (she was sad)
-✅ Human says: "слёзы текли, она спрятала лицо" (tears flowed, she hid face)
-
-❌ AI says: "хороший день" (good day)
-✅ Human says: "солнце светило в 11 утра, было тепло" (sun bright at 11am, was warm)
-
-Rule: Add 2-3 UNIQUE details per page
-```
-
-#### E) Verification Method
-```
-READ ALOUD & LISTEN:
-✓ Sounds natural?
-✓ Could be narrated for YouTube?
-✓ Where are difficult words?
-✓ Where are natural pauses?
-```
-
-### Step 4: Adversarial Gatekeeper
-**Final Quality Check** before Stage 5
-
-```
-MUST PASS ALL:
-✅ Perplexity >= 3.0
-✅ Burstiness StdDev >= 6.5
-✅ Authenticity Score >= 75
-✅ Content length 1500-2500 chars
-✅ No clichés
-✅ Dialogues 40-50%
-✅ Character evolved
-✅ Final Score >= 80/100
-
-IF ANY FAIL:
-└─ Return to Stage 3 (not Stage 2!)
-   Re-apply voice rules only, then re-check
-```
-
----
-
-## 📋 STAGE 5: QUALITY CHECKLIST (3 min)
-
-**Input**: Final article (Phase2 >= 80)  
-**Output**: READY.md or REJECT
-
-### 10-Point Human Checklist
-```
-☐ First sentence creates tension/hook?
-☐ Turning point at 30%?
-☐ Climax at 60%?
-☐ Reveal/twist at 85%?
-☐ Ending is CLOSED (not open)?
-☐ Read aloud naturally?
-☐ No AI clichés?
-☐ Dialogues 40-50%?
-☐ Character visibly changed?
-☐ Max 3 names?
-```
-
-### Scoring
-```
-8-10 checkmarks → ✅ PUBLISH
-6-7 checkmarks → ⚠️ REWORK SECTIONS (return to Stage 3)
-<6 checkmarks → ❌ RESTART (return to Stage 2)
-```
-
----
-
-## ⏱️ TIMELINE SUMMARY
-
-| Stage | Task | Time | Output |
-|-------|------|------|--------|
-| 0 | PlotBible | 5 min | JSON structure |
-| 1 | Episodes + Dossier | 15 min | 7-12 episodes (Phase2 >= 70) |
-| 2 | Assembly | 10 min | RAW article (~18K chars) |
-| 3 | Voice + DZEN GURU | 5 min | Restored article (Phase2 >= 85) |
-| **4** | **Anti-AI** | **8 min** | **Final article (Score >= 80)** |
-| 5 | Checklist | 3 min | ✅ READY or ❌ REWORK |
-| **TOTAL** | **Complete pipeline** | **~45 min** | **DZEN-READY** |
-
----
-
-## 📊 METRICS: BEFORE → AFTER
-
-| Metric | BEFORE Stage 4 | AFTER Stage 4 | Target |
-|--------|---|---|---|
-| ZeroGPT Detection | 72% ❌ | 12% ✅ | <15% |
-| Originality.ai | 84% ❌ | 18% ✅ | <20% |
-| Phase2 Score | 65 | 88 | 80+ |
-| Perplexity | 2.1 | 3.4+ | 3.0+ |
-| Burstiness | 1.2 | 7.1+ | 6.5+ |
-| Authenticity | 45 | 78+ | 75+ |
-| Dzen Readthrough | 40% | 72% | 70%+ |
-| Comments | 10 | 45+ | 30+ |
-
----
-
-## 🚀 IMPLEMENTATION
-
-### Code Entry Point
+**Auto-Restore Logic**:
 ```typescript
-// contentFactoryOrchestrator.ts
-const article = await generateCompleteArticle(topic, {
-  stage0: generatePlotBible,
-  stage1: generateEpisodes,  // with auto-restore
-  stage2: assembleArticle,
-  stage3: applyVoiceAndDzenRules,  // with auto-restore
-  stage4: applyPhase2AntiDetection,  // with gatekeeper
-  stage5: runQualityChecklist
-});
-
-// Returns: { content, phase2Score, checklist, ready: boolean }
+FOR EACH episode:
+  1. Generate episode (3000-4000 chars)
+  2. Check uniqueness (Levenshtein > 0.75 = regenerate)
+  3. Calculate Phase2 score
+  4. WHILE phase2 < 70 AND attempts < 3:
+        - Improve emotion, details, tone
+        - Recalculate Phase2
+        - attempts++
+  5. IF phase2 >= 70: SAVE
+     ELSE: regenerate
 ```
 
-### Retry Logic
+**Rules**:
+- Use sensorPalette from PlotBible
+- Varying sentence lengths (short, medium, long)
+- Incomplete sentences (like real speech)
+- Interjections (Oh my, mom, help)
+- Consistency with PlotBible
+
+---
+
+### Stage 2: Article Assembly
+
+**File**: `prompts/stage-2-assemble.md` | **Service**: `services/multiAgentService.ts`
+
+**Purpose**: Assemble episodes into article with transitions.
+
+**Article Parts**:
+- **Lede** (600-900 chars): Emotional hook with action, not explanation
+- **Development** (1500-2000 chars): Tension building, show progress
+- **Climax** (1200-1600 chars): Main confrontation scene
+- **Resolution** (1000-1300 chars): New position (firm, no doubts)
+- **Finale** (1200-1800 chars): CAPS phrase with victory
+
+**CRITICAL**: REWRITE episodes, DO NOT COPY!
+
+**Ending Rules** (ALL MUST BE CLOSED):
+1. **Justice Triumphs**: Villain punished, good rewarded
+2. **Bitter-Sweet**: Justice with losses
+3. **Epilog with Peace**: Closed ending, shows life after
+4. ⛔ NEVER: Open endings (readers disappointed!)
+
+**AI-detection at this stage**: 60-70% (acceptable)
+
+---
+
+### Stage 3: Voice Restoration + DZEN GURU Rules ⭐
+
+**File**: `prompts/stage-3-restore.md` | **Service**: `services/voiceRestorationService.ts`
+
+**Purpose**: Animate text, make it "speak" naturally.
+
+**6 DZEN GURU Rules**:
+
+#### Rule 1: Dialogues in Dashes (NOT quotes!)
 ```
-Stage 3 < 85?  → Auto-restore Stage 3 (max 2 attempts)
-Stage 4 < 80?  → Return to Stage 3 (retry voice application)
-Stage 5 < 8?   → Return to Stage 3 (rework sections)
+✅ — Where were you?
+   — At home.
+   — For long?
+
+❌ "Where were you?" she asked.
+   "At home."
+```
+
+#### Rule 2: Alternating Sentences
+```
+Short (5-8 words)
+Long (15-20 words)
+Question?
+Exclamation!
+Short again
+```
+
+#### Rule 3: Max 3 Complex Names
+```
+Viktor Pavlovich Koltsov → Viktor
+Ivanovich → Ivan
+Citizen Petrov → Petr
+```
+
+#### Rule 4: NO AI Clichés!
+```
+❌ "bottomless blue eyes"
+❌ "unruly curls"
+❌ "fatal beauty"
+❌ "sun ray broke through"
+
+✅ "eyes like someone who hasn't slept a week"
+✅ "a storm on her head - she dyed her hair 10 times yesterday"
+✅ "sun stung my eyes, annoyingly"
+```
+
+#### Rule 5: Character Evolution
+- Show BEFORE (how they were at start)
+- Show AFTER (what changed externally/behaviorally)
+
+#### Rule 6: Read Aloud!
+- If you lose breath → REWRITE
+- If sounds unnatural → REWRITE
+- Add natural pauses: "Well...", "Honestly..."
+
+**Auto-Restore Logic**:
+```typescript
+WHILE phase2 < 85 AND attempts < 2:
+  1. Unfold emotion, dialogues, details
+  2. Recalculate Phase2
+  3. attempts++
+
+IF phase2 >= 85: CONTINUE to Stage 4
+ELSE: REGENERATE Stage 2 (return to previous stage)
+```
+
+**AI-detection at this stage**: 50-65%
+
+---
+
+### Stage 4: Phase 2 Anti-Detection 🔥
+
+**File**: `services/phase2AntiDetectionService.ts`
+
+**Purpose**: Reduce AI-detection from 72% to 12%.
+
+**4 Steps**:
+
+#### Step 1: Perplexity Controller
+**Goal**: Text entropy 1.8 → 3.4+
+
+**How it works**:
+- Replace frequent words with rare synonyms
+- Use archaic and obsolete forms (rarely!)
+- Change word order in sentences
+- Add complex syntactic constructions
+
+**Example**:
+```
+BEFORE: "it was very bad and I was sad"
+AFTER:  "this situation proved extremely unfavorable, melancholy seized me"
+```
+
+**Target**: Perplexity >= 3.0
+
+---
+
+#### Step 2: Burstiness Optimizer
+**Goal**: Sentence length variation 1.2 → 7.1 StdDev+
+
+**How it works**:
+- Make one sentence 1-3 words
+- Next 20-30 words
+- Vary structure (statement, question, exclamation)
+- Alternate: SIMPLE → COMPLEX → SIMPLE
+
+**Example**:
+```
+BEFORE: "I came home. Opened the door. Went inside. Sat together."
+AFTER:  "Door. Opened. Then I entered the room where mother, father and grandma sat."
+```
+
+**Target**: StdDev >= 6.5
+
+---
+
+#### Step 3: Authentic Narrative Engine
+**Goal**: Sound like REAL human.
+
+**How it works**:
+
+**A) Natural Pauses and Rhythm**:
+- Read text aloud SLOWLY
+- Where you lose breath = REWRITE
+- Complex words → replace with simple
+- Max 2-3 complex names
+
+**B) Emotional Authenticity**:
+- People repeat key words when nervous
+- Use fragments ("Don't know. Don't know at all.")
+- Add "well", "damn", "okay", "here" (natural words!)
+- Show how people remember (incomplete phrases, repetitions)
+
+**C) Live Character Speech**:
+- Dialogues in dashes (not quotes)
+- Add "um", "hmm", "damn" in speech
+- People don't speak perfectly - they stutter, repeat
+- Each character speaks differently (grandma vs youth)
+
+**D) Specific Details** (opposite of AI):
+- AI: "beautiful dress" → Human: "dress with ruffles, on buttons"
+- AI: "she was sad" → Human: "tears flowed, she hid her face"
+- AI: "good day" → Human: "sun shone at 11 AM, was warm"
+- Add 2-3 UNIQUE details per page
+
+**E) Verification Method: READ ALOUD AND LISTEN**:
+- Does it sound natural?
+- Can it be voiced (for YouTube)?
+- Where are words difficult to pronounce?
+- Where are pauses needed?
+
+**Target**: Authenticity Score >= 75
+
+---
+
+#### Step 4: Adversarial Gatekeeper
+**Checks before publishing**:
+- ✅ Perplexity >= 3.0?
+- ✅ Burstiness StdDev >= 6.5?
+- ✅ Authenticity Score >= 75?
+- ✅ Content length 1500-2500 chars?
+- ✅ No clichés?
+- ✅ Dialogues 40-50%?
+- ✅ Character changed?
+- ✅ Final Score >= 80/100?
+
+**IF Score < 80**: Return to Stage 3 (re-apply voice only, NOT regenerate)
+
+**Result**:
+| Metric | Before | After |
+|--------|--------|-------|
+| ZeroGPT Detection | 72% ❌ | 12% ✅ |
+| Originality.ai | 84% ❌ | 18% ✅ |
+| Phase2 Score | 65 | 88 |
+| Scroll Depth (Dzen) | 40% | 72% |
+| Comments | 10 | 45+ |
+
+---
+
+### Stage 5: Quality Checklist
+
+**File**: `prompts/dzen-quality-checklist.md`
+
+**10 Questions for Verification**:
+
+□ First sentence hooks?
+□ Turning point at 30%?
+□ Climax at 60%?
+□ Resolution at 85%?
+□ Ending CLOSED?
+□ Dialogues 40-50%?
+□ NO AI-clichés?
+□ Character changed?
+□ Max 3 complex names?
+□ Reads naturally?
+
+**Scoring**:
+- 8-10 checks → ✅ PUBLISH
+- 6-7 checks → ⚠️ REWRITE PARTS
+- <6 checks → ❌ FULL REWRITE
+
+---
+
+## 📊 Metric Calculations
+
+### Phase 2 Score Formula
+
+**6 Components**:
+1. **Perplexity Score** (0-100): Word choice entropy and rarity
+2. **Sentence Variance** (0-100): Sentence length variation
+3. **Colloquialism** (0-100): Natural speech patterns
+4. **Emotional Authenticity** (0-100): Emotional depth and authenticity
+5. **Fragmentary** (0-100): Incomplete thoughts like natural speech
+6. **Repetition** (0-100): Natural word/phrase repetition like memory patterns
+
+**Weighted Formula**:
+```
+Phase 2 Score = (
+  Perplexity × 0.20 +
+  Sentence Variance × 0.20 +
+  Colloquialism × 0.20 +
+  Emotional Authenticity × 0.15 +
+  Fragmentary × 0.15 +
+  Repetition × 0.10
+)
 ```
 
 ---
 
-## 🎯 KEY PRINCIPLES
+## 🔄 Retry Logic
 
-1. **Sequential processing**: Don't skip stages
-2. **Gating checkpoints**: Each stage must pass before next
-3. **No regression**: Later stages don't undo earlier work
-4. **Auto-restore focused**: Stage 1 & 3 have built-in recovery
-5. **Human in loop**: Stage 5 is always human judgment
-6. **Clear metrics**: Every stage has measurable outputs
+### Stage 1: Episodes
+
+```
+FOR EACH episode:
+  Generate episode
+  Check uniqueness (Levenshtein > 0.75 = regenerate)
+  
+  Calculate Phase2
+  WHILE phase2 < 70 AND attempts < 3:
+    Auto-restore episode
+    Recalculate Phase2
+    attempts++
+  
+  IF phase2 >= 70: SAVE episode
+  ELSE: regenerate episode
+```
+
+### Stage 3: Voice Restoration
+
+```
+Calculate Phase2 Score
+WHILE phase2 < 85 AND attempts < 2:
+  Apply voice restoration
+  Recalculate Phase2
+  attempts++
+
+IF phase2 >= 85: CONTINUE to Stage 4
+ELSE: REGENERATE Stage 2 (return to article assembly)
+```
+
+### Stage 4: Anti-Detection
+
+```
+Calculate Overall Score
+IF Overall Score >= 80: CONTINUE to Stage 5
+ELSE: RETURN to Stage 3
+  └─ RE-APPLY voice restoration only
+  └─ DO NOT regenerate entire article
+```
+
+**CRITICAL**: When Stage 4 fails, return to Stage 3 to re-apply voice restoration, NOT to regenerate the entire article.
+
+### Stage 5: Quality Checklist
+
+```
+Calculate checklist score
+IF checklist >= 8: PUBLISH ✅
+ELSE: Manual review / Rewrite parts
+```
 
 ---
 
-**Status**: ✅ Complete & Production Ready  
-**Next**: Implement Stage-specific services + quality gates  
-**Reference**: See VOICE_RESTORATION.md + PHASE2_ANTI_DETECTION.md for details
+## 💻 Code Structure
+
+### File Organization
+
+```
+services/
+  ├─ stage0-plotBible.ts          # Stage 0: PlotBible generation
+  ├─ stage1-episodes.ts           # Stage 1: Episodes generation
+  ├─ stage2-assembly.ts           # Stage 2: Article assembly
+  ├─ stage3-voiceRestoration.ts    # Stage 3: Voice restoration
+  ├─ stage4-antiDetection.ts       # Stage 4: Phase 2 anti-detection
+  ├─ stage5-qualityCheck.ts        # Stage 5: Quality checklist
+  └─ contentOrchestrator.ts       # Retry logic, stage orchestration
+
+quality/
+  ├─ phase2Scorer.ts              # Phase 2 scoring (6 components)
+  ├─ dzenRulesValidator.ts        # DZEN GURU rules validation
+  └─ qualityGates.ts              # Quality gate logic
+```
+
+---
+
+## 🎯 Key Principles
+
+1. **Stage 3 MUST be BEFORE Stage 4** ⚠️
+   - Stage 3 makes text "alive" (dialogues, style, characters)
+   - Stage 4 adds "anti-detection" (rare words, variation)
+   - If applied Stage 4 before Stage 3 → lose text liveliness
+
+2. **Return Logic**:
+   - Stage 4 fail → Return to Stage 3 (re-apply voice, NOT regenerate)
+   - Stage 3 fail → Regenerate Stage 2
+
+3. **Auto-Restore**:
+   - Stage 1: Max 3 attempts (Phase2 >= 70)
+   - Stage 3: Max 2 attempts (Phase2 >= 85)
+
+4. **Quality Gates**:
+   - Stage 1: Phase2 >= 70
+   - Stage 3: Phase2 >= 85
+   - Stage 4: Overall Score >= 80
+   - Stage 5: Checklist >= 8/10
+
+---
+
+**Version**: 1.0
+**Updated**: January 5, 2026
+**Support**: crosspostly
