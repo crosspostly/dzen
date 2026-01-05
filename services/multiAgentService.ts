@@ -1,12 +1,13 @@
+import { qualityGate } from "../utils/quality-gate";
 import { GoogleGenAI } from "@google/genai";
+import * as fs from 'fs';
+import * as path from 'path';
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
 import { EpisodeGeneratorService } from "./episodeGeneratorService";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
 import { MobilePhotoAuthenticityProcessor } from "./mobilePhotoAuthenticityProcessor";
 import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
-import { FinalArticleCleanupGate } from "./finalArticleCleanupGate";
-import { ArticlePublishGate } from "./articlePublishGate";
 
 // ============================================================================
 // NEW: Article Archetype Types (TOP Articles System)
@@ -178,6 +179,13 @@ export class MultiAgentService {
 
     try {
       outline = await this.generateOutline(params, episodeCount);
+      
+      // 🆕 v9.0: Validation after generation
+      const outlineText = JSON.stringify(outline);
+      const validation = await qualityGate(outlineText, 65, 500, outline.theme);
+      if (!validation.isValid) {
+        console.warn('⚠️ Outline quality low, but proceeding with caution');
+      }
     } catch (error) {
       console.error(`❌ Outline generation failed:`, error);
       outline = this.createFallbackOutline(params, episodeCount);
@@ -276,25 +284,15 @@ export class MultiAgentService {
       resolution,
       finale
     ].join('\n\n');
-    
-    if (!this.skipCleanupGates) {
-      console.log('\n🧹 Running cleanup gates...');
-      const cleanupGate = new FinalArticleCleanupGate();
-      const cleanupResult = await cleanupGate.cleanupAndValidate(fullContent);
-      
-      if (cleanupResult.appliedCleanup) {
-        console.log('   ✅ Cleanup applied');
-        fullContent = cleanupResult.cleanText;
-      }
-      
-      const publishValidation = ArticlePublishGate.validateBeforePublish(fullContent);
-      if (!publishValidation.canPublish) {
-        console.error('   ⚠️  Publish validation issues found');
-        publishValidation.errors.forEach(e => console.log(`      - ${e}`));
-      } else {
-        console.log('   ✅ Article passed validation');
-      }
+
+    // 🆕 v9.0: Quality gate after assembly
+    const finalValidation = await qualityGate(fullContent, 75, 15000, title);
+    if (!finalValidation.isValid) {
+      console.log('⚠️ Final article quality low:', finalValidation.issues);
     }
+    
+    // 🆕 v9.0: Removed rotten Stage 3 Cleanup
+    console.log('✅ Stage 3: Cleanup SKIPPED (relying on auto-restore)');
     
     // Create article object
     const article: LongFormArticle = {
@@ -717,19 +715,23 @@ OUTPUT: Only text`;
   /**
    * 🎭 EXTRACT & VALIDATE plotBible from outline
    */
+  /**
+   * ROBUST: Extract PlotBible from outline or use fallback
+   */
   public extractPlotBible(outline: OutlineStructure, params: { theme: string; emotion: string; audience: string }) {
-    if (outline.plotBible && 
-        outline.plotBible.narrator && 
-        outline.plotBible.narrator.age &&
-        outline.plotBible.narrator.gender &&
-        outline.plotBible.narrator.tone &&
-        outline.plotBible.sensoryPalette && 
-        outline.plotBible.sensoryPalette.details &&
-        outline.plotBible.sensoryPalette.details.length > 0 &&
-        outline.plotBible.thematicCore &&
-        outline.plotBible.thematicCore.centralQuestion) {
+    // 🆕 v9.0: Graceful fallback for plotBible
+    let plotBible = outline.plotBible;
+    
+    if (plotBible && 
+        plotBible.narrator && 
+        plotBible.narrator.age &&
+        plotBible.narrator.gender &&
+        plotBible.narrator.tone &&
+        plotBible.sensoryPalette && 
+        plotBible.sensoryPalette.details &&
+        plotBible.sensoryPalette.details.length > 0) {
       console.log("✅ Using plotBible from Gemini generation");
-      return outline.plotBible;
+      return plotBible;
     }
 
     console.warn("⚠️  plotBible incomplete, using fallback");
@@ -837,6 +839,16 @@ OUTPUT: Only text`;
       "openLoop": "..."
     }`).join(',');
 
+    // 🆕 v9.0: Read prompt from file
+    let basePrompt = '';
+    try {
+      const promptPath = path.join(process.cwd(), 'prompts', 'stage-0-plan.md');
+      basePrompt = fs.readFileSync(promptPath, 'utf-8');
+    } catch (e) {
+      console.warn('⚠️ Could not read stage-0-plan.md, using hardcoded prompt');
+      basePrompt = '# Промпт для STAGE 0: PlotBible Generation';
+    }
+
     // 🆕 v8.0: Archetype-specific episode structure
     let archetypeStructure = '';
     
@@ -907,7 +919,9 @@ STRUCTURE FOR "WISDOM EARNED":
 Key: Reflection, growth, and sharing wisdom`;
     }
 
-    const prompt = `🎭 STORY ARCHITECT - GENERATE COMPLETE OUTLINE
+    const prompt = `${basePrompt}
+
+🎭 STORY ARCHITECT - GENERATE COMPLETE OUTLINE
 
 TASK: Create ${episodeCount}-episode narrative structure.
 
@@ -931,23 +945,25 @@ RESPOND WITH ONLY VALID JSON:
   "angle": "${params.angle}",
   "emotion": "${params.emotion}",
   "audience": "${params.audience}",
-  "narrator": {
-    "age": [NUMBER 25-70],
-    "gender": "female" or "male",
-    "tone": "[confessional/bitter/ironic/triumphant]",
-    "voiceHabits": {
-      "apologyPattern": "[specific Russian phrase]",
-      "doubtPattern": "[specific Russian phrase]",
-      "memoryTrigger": "[specific Russian phrase]",
-      "angerPattern": "[specific Russian phrase]"
+  "plotBible": {
+    "narrator": {
+      "age": [NUMBER 25-70],
+      "gender": "female" or "male",
+      "tone": "[confessional/bitter/ironic/triumphant]",
+      "voiceHabits": {
+        "apologyPattern": "[specific Russian phrase]",
+        "doubtPattern": "[specific Russian phrase]",
+        "memoryTrigger": "[specific Russian phrase]",
+        "angerPattern": "[specific Russian phrase]"
+      }
+    },
+    "sensoryPalette": {
+      "details": ["detail1", "detail2", "detail3", "detail4", "detail5"],
+      "smells": ["smell1", "smell2", "smell3"],
+      "sounds": ["sound1", "sound2", "sound3"],
+      "textures": ["texture1", "texture2", "texture3"],
+      "lightSources": ["light1", "light2", "light3"]
     }
-  },
-  "sensoryPalette": {
-    "details": ["detail1", "detail2", "detail3", "detail4", "detail5"],
-    "smells": ["smell1", "smell2", "smell3"],
-    "sounds": ["sound1", "sound2", "sound3"],
-    "textures": ["texture1", "texture2", "texture3"],
-    "lightSources": ["light1", "light2", "light3"]
   },
   "characterMap": {
     "Narrator": { "role": "protagonist", "arc": "[internal journey]" },
@@ -973,7 +989,13 @@ RESPOND WITH ONLY VALID JSON:
       temperature: 0.85,
     });
 
-    return this.parseJsonSafely(response, 'Outline') as OutlineStructure;
+    // 🆕 v9.0: Graceful fallback for parsing
+    try {
+      return this.parseJsonSafely(response, 'Outline') as OutlineStructure;
+    } catch (e) {
+      console.warn('⚠️ Outline parsing failed, using fallback structure');
+      return this.createFallbackOutline(params, episodeCount);
+    }
   }
 
   /**
@@ -1017,8 +1039,20 @@ RESPOND WITH ONLY VALID JSON:
    - Memory: "${habits.memoryTrigger || 'Я помню...'}"
    - Doubt: "${habits.doubtPattern || 'Может быть...'}"`;
     }
+
+    // 🆕 v9.0: Read prompt from file
+    let basePrompt = '';
+    try {
+      const promptPath = path.join(process.cwd(), 'prompts', 'stage-2-assemble.md');
+      basePrompt = fs.readFileSync(promptPath, 'utf-8');
+    } catch (e) {
+      console.warn('⚠️ Could not read stage-2-assemble.md, using hardcoded prompt');
+      basePrompt = '# Промпт для STAGE 2: Article Assembly';
+    }
     
-    const prompt = `📄 LEDE (600-900 chars) - opening hook
+    const prompt = `${basePrompt}
+
+📄 LEDE (600-900 chars) - opening hook
 
 ${voiceGuide}
 

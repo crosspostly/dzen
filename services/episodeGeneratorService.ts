@@ -1,4 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
+import * as fs from 'fs';
+import * as path from 'path';
+import { calculateSimilarity } from "../utils/levenshtein-distance";
+import { qualityGate } from "../utils/quality-gate";
 import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
@@ -112,7 +116,7 @@ export class EpisodeGeneratorService {
       }
       
       try {
-        const episode = await this.generateSingleEpisode(
+        let episode = await this.generateSingleEpisode(
           outline, 
           episodes,
           charsForThisEpisode,
@@ -122,6 +126,39 @@ export class EpisodeGeneratorService {
           false,
           options?.plotBible
         );
+
+        // 🆕 v9.0: Uniqueness check
+        let attempts = 0;
+        while (attempts < 3) {
+          const isDuplicate = episodes.some(e => 
+            calculateSimilarity(e.content, episode.content) > 0.75
+          );
+          
+          if (isDuplicate) {
+            console.log(`      ⚠️ Episode ${episodeIndex + 1} is a duplicate, regenerating...`);
+            episode = await this.generateSingleEpisode(
+              outline, 
+              episodes,
+              charsForThisEpisode,
+              episodeIndex + 1,
+              episodeOutlines.length,
+              attempts + 2,
+              false,
+              options?.plotBible
+            );
+            attempts++;
+          } else {
+            break;
+          }
+        }
+
+        // 🆕 v9.0: Quality gate
+        const validation = await qualityGate(episode.content, 70, 1500, episode.title);
+        if (!validation.isValid) {
+          console.log(`      ⚠️ Episode ${episodeIndex + 1} quality low:`, validation.issues);
+          // Optional: we could retry here too, but let's stick to the briefing's logic
+        }
+
         episodes.push(episode);
         
         remainingPool -= episode.charCount;

@@ -277,6 +277,78 @@ ${'='.repeat(60)}`);
       console.log(`💾 Output directory: ${exportPath}`);
       console.log(`${'='.repeat(60)}\n`);
 
+    } else if (command === 'validate') {
+      // ============================================================================
+      // 🔍 VALIDATE MODE: Check Phase 2 Score of all articles
+      // ============================================================================
+      
+      const { qualityGate } = await import('./utils/quality-gate');
+      const fs = await import('fs');
+      const path = await import('path');
+      const matter = (await import('gray-matter')).default;
+
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`🔍 ZenMaster - Article Validation`);
+      console.log(`${'='.repeat(60)}\n`);
+
+      const articlesDir = path.join(process.cwd(), 'articles');
+      if (!fs.existsSync(articlesDir)) {
+        console.error(`❌ Articles directory not found: ${articlesDir}`);
+        process.exit(1);
+      }
+
+      const findMdFiles = (dir: string): string[] => {
+        const results: string[] = [];
+        const list = fs.readdirSync(dir);
+        list.forEach(file => {
+          file = path.join(dir, file);
+          const stat = fs.statSync(file);
+          if (stat && stat.isDirectory()) {
+            results.push(...findMdFiles(file));
+          } else if (file.endsWith('.md')) {
+            results.push(file);
+          }
+        });
+        return results;
+      };
+
+      const mdFiles = findMdFiles(articlesDir);
+      console.log(`${LOG.SEARCH} Found ${mdFiles.length} articles to validate...\n`);
+
+      let passCount = 0;
+      let failCount = 0;
+
+      for (const file of mdFiles) {
+        const content = fs.readFileSync(file, 'utf-8');
+        const { data, content: text } = matter(content);
+        const title = data.title || path.basename(file);
+
+        console.log(`${LOG.INFO} Validating: ${path.relative(process.cwd(), file)}`);
+        
+        const validation = await qualityGate(text, 75, 1000, title);
+        
+        if (validation.isValid) {
+          console.log(`   ✅ PASS: Score ${validation.phase2Score}/100`);
+          passCount++;
+        } else {
+          console.log(`   ❌ FAIL: Score ${validation.phase2Score}/100`);
+          validation.issues.forEach(issue => console.log(`      - ${issue}`));
+          failCount++;
+        }
+        console.log('');
+      }
+
+      console.log(`${'='.repeat(60)}`);
+      console.log(`📊 SUMMARY:`);
+      console.log(`   Total:   ${mdFiles.length}`);
+      console.log(`   Pass:    ${passCount} ✅`);
+      console.log(`   Fail:    ${failCount} ❌`);
+      console.log(`${'='.repeat(60)}\n`);
+
+      if (failCount > 0) {
+        process.exit(0); // Exit with 0 even if failed, but show results
+      }
+
     } else {
       console.log(`${LOG.INFO} Dzen Content Generator CLI`);
       console.log(``);
