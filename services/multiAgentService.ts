@@ -212,43 +212,72 @@ export class MultiAgentService {
     
     this.printPhase2Summary(episodes);
     
-    // Generate Development, Climax & Resolution
-    console.log("🎯 Generating development, climax & resolution...");
+    // Generate Title early for quality gates
+    console.log("🗰 Generating title...");
+    let title: string;
+    try {
+      // Use lede-like info for title if lede not yet ready
+      title = await this.generateTitle(outline, episodes[0]?.content.substring(0, 500) || "");
+      console.log(`✅ Title: "${title}"`);
+    } catch (error) {
+      title = outline.theme;
+      console.log(`✅ Title (fallback): "${title}"`);
+    }
+
+    // Stage 2: Synchronized Article Assembly (Block D)
+    console.log("🎯 Stage 2: Synchronized Article Assembly...");
+    
+    let lede: string;
     let development: string;
     let climax: string;
     let resolution: string;
-
-    try {
-      development = await this.generateDevelopment(outline, episodes);
-    } catch (error) {
-      development = this.getFallbackDevelopment(outline);
-    }
-
-    try {
-      climax = await this.generateClimax(outline, development, episodes);
-    } catch (error) {
-      climax = this.getFallbackClimax(outline);
-    }
-
-    try {
-      resolution = await this.generateResolution(outline, climax);
-    } catch (error) {
-      resolution = this.getFallbackResolution(outline);
-    }
-    
-    // Generate Lede & Finale
-    console.log("🎯 Generating lede and finale...");
-    let lede: string;
     let finale: string;
 
     try {
-      lede = await this.generateLede(outline);
+      console.log("   📝 Generating LEDE...");
+      lede = await this.generateLede(outline, episodes[0]);
+      const ledeGate = await qualityGate(lede, 70, 600, title + " [LEDE]");
+      if (!ledeGate.isValid) console.warn('   ⚠️ LEDE quality low:', ledeGate.issues);
     } catch (error) {
       lede = this.getFallbackLede(outline);
     }
 
     try {
-      finale = await this.generateFinale(outline, episodes);
+      console.log("   📝 Generating DEVELOPMENT...");
+      // Use episodes 1 to N-4 for development
+      const devRange = episodes.slice(1, Math.max(2, episodes.length - 4));
+      development = await this.generateDevelopment(outline, devRange);
+      const devGate = await qualityGate(development, 70, 1500, title + " [DEV]");
+      if (!devGate.isValid) console.warn('   ⚠️ DEVELOPMENT quality low:', devGate.issues);
+    } catch (error) {
+      development = this.getFallbackDevelopment(outline);
+    }
+
+    try {
+      console.log("   📝 Generating CLIMAX...");
+      // Use last few episodes for climax
+      const climaxRange = episodes.slice(Math.max(1, episodes.length - 4), Math.max(1, episodes.length - 1));
+      climax = await this.generateClimax(outline, development, climaxRange);
+      const climaxGate = await qualityGate(climax, 70, 1200, title + " [CLIMAX]");
+      if (!climaxGate.isValid) console.warn('   ⚠️ CLIMAX quality low:', climaxGate.issues);
+    } catch (error) {
+      climax = this.getFallbackClimax(outline);
+    }
+
+    try {
+      console.log("   📝 Generating RESOLUTION...");
+      resolution = await this.generateResolution(outline, climax);
+      const resGate = await qualityGate(resolution, 70, 1000, title + " [RES]");
+      if (!resGate.isValid) console.warn('   ⚠️ RESOLUTION quality low:', resGate.issues);
+    } catch (error) {
+      resolution = this.getFallbackResolution(outline);
+    }
+
+    try {
+      console.log("   📝 Generating FINALE...");
+      finale = await this.generateFinale(outline, episodes[episodes.length - 1]);
+      const finaleGate = await qualityGate(finale, 75, 1200, title + " [FINALE]");
+      if (!finaleGate.isValid) console.warn('   ⚠️ FINALE quality low:', finaleGate.issues);
     } catch (error) {
       finale = this.getFallbackFinale(outline);
     }
@@ -262,31 +291,18 @@ export class MultiAgentService {
     } catch (error) {
       voicePassport = this.getFallbackVoicePassport();
     }
-
-    // Generate Title
-    console.log("🗰 Generating title...");
-    let title: string;
-
-    try {
-      title = await this.generateTitle(outline, lede);
-      console.log(`✅ Title: "${title}"`);
-    } catch (error) {
-      title = outline.theme;
-      console.log(`✅ Title (fallback): "${title}"`);
-    }
     
-    // Assemble full content
+    // Assemble full content - STAGE 2 NO LONGER COPIES, IT REWRITES (Block D)
     let fullContent = [
       lede,
       development,
-      ...episodes.map(ep => ep.content),
       climax,
       resolution,
       finale
     ].join('\n\n');
 
     // 🆕 v9.0: Quality gate after assembly
-    const finalValidation = await qualityGate(fullContent, 75, 15000, title);
+    const finalValidation = await qualityGate(fullContent, 75, 12000, title);
     if (!finalValidation.isValid) {
       console.log('⚠️ Final article quality low:', finalValidation.issues);
     }
@@ -308,7 +324,7 @@ export class MultiAgentService {
       voicePassport,
       coverImage: undefined,
       metadata: {
-        totalChars: lede.length + development.length + climax.length + resolution.length + episodes.reduce((sum, ep) => sum + ep.charCount, 0) + finale.length,
+        totalChars: fullContent.length,
         totalReadingTime: this.calculateReadingTime(lede, episodes, finale),
         episodeCount: episodes.length,
         sceneCount: this.countScenes(lede, episodes, finale),
@@ -504,10 +520,8 @@ export class MultiAgentService {
   /**
    * 🎯 TASK 1: generateDevelopment() с учётом timeline (v8.0)
    */
-  async generateDevelopment(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
+  async generateDevelopment(outline: OutlineStructure, devEpisodes: Episode[]): Promise<string> {
     const plotBible = outline.plotBible;
-    const lastEpisode = episodes[episodes.length - 1];
-    const previousContext = lastEpisode ? lastEpisode.content.substring(0, 150) : 'Начало истории';
     const timeline = this.timeline;
     
     // 🆕 v8.0: Timeline-specific instructions
@@ -523,7 +537,7 @@ export class MultiAgentService {
    - Early results: first clients, first money
    - Building momentum visible
 
-📏 TARGET LENGTH: 1500-2000 chars (SHORT, ACTIVE!)`;
+📏 TARGET LENGTH: 3000-5000 chars`;
     } else if (timeline === 'gradual') {
       timelineInstruction = `
 ⏱️ TIMELINE: GRADUAL (6-12 months)
@@ -533,7 +547,7 @@ export class MultiAgentService {
    - Building client base (10→50→100)
    - Visible income growth
 
-📏 TARGET LENGTH: 2000-2500 chars`;
+📏 TARGET LENGTH: 4000-6000 chars`;
     } else if (timeline === 'cyclical') {
       timelineInstruction = `
 ⏱️ TIMELINE: CYCLICAL (Years of silence → sudden change)
@@ -543,7 +557,7 @@ export class MultiAgentService {
    - 70% NEW PHASE (transformation visible)
    - The turning point that changed everything
 
-📏 TARGET LENGTH: 2000-2500 chars`;
+📏 TARGET LENGTH: 4000-6000 chars`;
     } else {
       timelineInstruction = `
 ⏱️ TIMELINE: REVELATION (Was hidden, now revealed)
@@ -575,11 +589,13 @@ export class MultiAgentService {
 
     const guidelines = this.loadSharedGuidelines();
 
+    const episodesContent = devEpisodes.map(e => e.content).join('\n\n---\n\n');
+
     const prompt = `${basePrompt}
 
 ${guidelines}
 
-📄 DEVELOPMENT - middle of story (1500-2500 chars)
+📄 DEVELOPMENT - middle of story rewrite
 
 ARCHETYPE: ${this.heroArchetype || 'standard'}
 TIMELINE: ${timeline}
@@ -588,9 +604,9 @@ ${plotBibleSection}
 ${antiDetection}
 ${timelineInstruction}
 
-🎯 TASK: Write DEVELOPMENT
-Previous: "${previousContext}"
-Theme: "${outline.theme}"
+🎯 TASK: Rewrite the following episodes into a cohesive DEVELOPMENT section.
+Source Episodes:
+${episodesContent}
 
 REQUIREMENTS:
 - Continue from previous episode
@@ -599,6 +615,7 @@ REQUIREMENTS:
 - Include 2-3 incomplete sentences
 - Include 2 interjections
 - End with moment leading to climax
+- Target length: 4000-6000 characters
 
 OUTPUT: Only text`;
 
@@ -612,9 +629,9 @@ OUTPUT: Only text`;
   /**
    * 🎯 TASK 2: generateClimax() с РЕАКЦИЕЙ АНТАГОНИСТА (v8.0)
    */
-  async generateClimax(outline: OutlineStructure, development: string, episodes: Episode[]): Promise<string> {
+  async generateClimax(outline: OutlineStructure, development: string, climaxEpisodes: Episode[]): Promise<string> {
     const plotBible = outline.plotBible;
-    const previousContext = development.substring(0, 150);
+    const previousContext = development.substring(development.length - 200);
     const reaction = this.antagonistReaction;
 
     // 🆕 v8.0: Antagonist reaction guide
@@ -685,11 +702,13 @@ OUTPUT: Only text`;
 
     const guidelines = this.loadSharedGuidelines();
 
+    const episodesContent = climaxEpisodes.map(e => e.content).join('\n\n---\n\n');
+
     const prompt = `${basePrompt}
 
 ${guidelines}
 
-📄 CLIMAX - turning point (1200-1600 chars)
+📄 CLIMAX - turning point rewrite
 
 ARCHETYPE: ${this.heroArchetype || 'standard'}
 ANTAGONIST REACTION: ${reaction}
@@ -697,8 +716,11 @@ ANTAGONIST REACTION: ${reaction}
 ${plotBibleSection}
 ${antiDetection}
 
-🎯 TASK: Write CLIMAX
-Previous: "${previousContext}"
+🎯 TASK: Rewrite the following episodes into a powerful CLIMAX section.
+Previous Context: "${previousContext}"
+
+Source Episodes:
+${episodesContent}
 
 🎬 CLIMAX STRUCTURE:
 1. THE ENCOUNTER (theatrical moment)
@@ -724,6 +746,7 @@ REQUIREMENTS:
 - Physical/sensory breakdown
 - Fast-paced sentences (many short)
 - Antagonist SEES and REACTS visibly
+- Target length: 3000-5000 characters
 
 OUTPUT: Only text`;
 
@@ -1165,21 +1188,9 @@ RESPOND WITH ONLY VALID JSON:
   /**
    * ✅ v4.5: Generate opening (lede): 600-900 chars
    */
-  async generateLede(outline: OutlineStructure): Promise<string> {
-    const firstEpisode = outline.episodes[0];
+  async generateLede(outline: OutlineStructure, episode: Episode): Promise<string> {
     const plotBible = outline.plotBible;
     
-    let voiceGuide = '';
-    if (plotBible?.narrator?.voiceHabits) {
-      const habits = plotBible.narrator.voiceHabits;
-      voiceGuide = `
-🎭 NARRATOR VOICE:
-   Age: ${plotBible.narrator.age || '40-50'}
-   Tone: ${plotBible.narrator.tone || 'confessional'}
-   - Memory: "${habits.memoryTrigger || 'Я помню...'}"
-   - Doubt: "${habits.doubtPattern || 'Может быть...'}"`;
-    }
-
     // 🆕 v9.0: Read prompt from file
     let basePrompt = '';
     try {
@@ -1198,7 +1209,7 @@ RESPOND WITH ONLY VALID JSON:
 
 ${guidelines}
 
-📄 LEDE (600-900 chars) - opening hook
+📄 LEDE (600-900 chars) - opening hook rewrite
 
 ${plotBibleSection}
 
@@ -1210,9 +1221,8 @@ ARCHETYPE: ${this.heroArchetype || 'standard'}
 ✅ INTERJECTIONS: "Боже, как я была слепа."
 ✅ START WITH: ACTION, DIALOGUE, or QUESTION
 
-🎯 TASK: Write LEDE
-Hook: "${firstEpisode?.hookQuestion || 'Почему это случилось?'}"
-Theme: "${outline.theme}"
+🎯 TASK: Rewrite the following episode into a compelling LEDE.
+Source Episode: "${episode.content.substring(0, 1000)}..."
 
 REQUIREMENTS:
 - Start with PARADOX, ACTION, DIALOGUE, or QUESTION
@@ -1220,6 +1230,7 @@ REQUIREMENTS:
 - Vary sentence length
 - End with intrigue (reader scrolls)
 - NO "I decided to share" or meta-commentary
+- 600-900 characters
 
 OUTPUT: Only text`;
 
@@ -1234,7 +1245,7 @@ OUTPUT: Only text`;
    * ✅ v4.5: Generate closing (finale): 1200-1800 chars
    * 🆕 v8.0: FIRM VICTORY ENDING
    */
-  async generateFinale(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
+  async generateFinale(outline: OutlineStructure, episode: Episode): Promise<string> {
     const plotBible = outline.plotBible;
     const victory = this.victoryType;
     
@@ -1282,7 +1293,7 @@ MULTI VICTORY:
 
 ${guidelines}
 
-📄 FINALE (1200-1800 chars) - firm conclusion
+📄 FINALE (1200-1800 chars) - firm conclusion rewrite
 
 🏆 ARCHETYPE: ${this.heroArchetype || 'standard'}
 VICTORY TYPE: ${victory}
@@ -1312,6 +1323,16 @@ ${victoryExamples}
 ✅ GRAPHIC FORMATTING:
    - End with CAPS statement: "Я ПОБЕДИЛА."
    - Final question: "Смогли бы ВЫ так?"
+
+🎯 TASK: Rewrite the following episode into a powerful FINALE.
+Source Episode: "${episode.content.substring(0, 1500)}..."
+
+REQUIREMENTS:
+- Firm, confident tone
+- No doubts or moralizing
+- Clear victory statement
+- End with powerful punchline
+- 1200-1800 characters
 
 OUTPUT: Only text`;
 
