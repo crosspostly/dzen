@@ -12,7 +12,7 @@
 ```
 БЫЛО:                           СТАНЕТ:
 - 5 разных промптов            → 1 система промптов
-- Cleanup портит статьи        → Auto-restore живой
+- Cleanup портит статьи        → Auto-Restore встроена ПО-ЭПИЗОДНО
 - Дубли эпизодов              → Проверка уникальности
 - Нет Phase2 контроля          → Quality gate на каждом этапе
 - Парсинг падает              → Graceful fallback
@@ -22,7 +22,7 @@
 
 ---
 
-## 🏗️ АРХИТЕКТУРА СИСТЕМЫ (текущая)
+## 🏗️ АРХИТЕКТУРА СИСТЕМЫ (ИСПРАВЛЕННАЯ!)
 
 ### Этапы генерации:
 
@@ -36,44 +36,107 @@ STAGE 1: Episode Writing (15 мин)
 ├─ INPUT: PlotBible JSON
 ├─ OUTPUT: 7-12 .md файлов
 ├─ ПРОБЛЕМА 1: Эпизоды могут быть дублями
-└─ ПРОБЛЕМА 2: Нет проверки качества (Phase2 Score)
+├─ ПРОБЛЕМА 2: Нет проверки качества (Phase2 Score)
+└─ ✨ НОВОЕ: Auto-Restore для КАЖДОГО эпизода!
+│  ├─ Если Phase2 < 70 → восстанавливаем
+│  └─ Если Phase2 >= 70 → OK, идём дальше
 
 STAGE 2: Article Assembly (10 мин)
-├─ INPUT: 7-12 эпизодов
-├─ OUTPUT: Собранная статья
+├─ INPUT: 7-12 эпизодов (уже улучшенных!)
+├─ OUTPUT: Собранная RAW статья
 ├─ ПРОБЛЕМА: Копирует текст STAGE 1 вместо переписи
 └─ ПРОБЛЕМА: Нет синхронизации с PlotBible
 
-STAGE 3: Voice Restoration (5 мин) ← КРИТИЧНЫЙ ШАГ
-├─ INPUT: Собранная статья
+STAGE 3: Voice Restoration (5 мин) ← ФИНАЛЬНАЯ ПОЛИРОВКА
+├─ INPUT: RAW статья (18-20K знаков)
 ├─ OUTPUT: RESTORED статья (эмоциональная)
 ├─ КОД: services/voiceRestorationService.ts (новый)
 ├─ ЦЕЛЬ: Трансформировать RAW → RESTORED для A/B тестирования
 └─ РЕЗУЛЬТАТ: 2 версии (RAW + RESTORED) для выбора
-
-GITHUB WORKFLOW: Auto-Restore (каждую ночь) ← СПАСАТЕЛЬ
-├─ INPUT: Уже опубликованные статьи (articles/*.md)
-├─ PROCESS: scripts/restore-articles.js
-├─ ЦЕЛЬ: Техническая чистка (удаляет мусор, оформляет)
-└─ OUTPUT: Улучшенные статьи (Phase2 75+)
+   + Финальный прогон через Auto-Restore
 ```
 
 ---
 
-## 🎯 РАЗДЕЛЕНИЕ ОТВЕТСТВЕННОСТИ (КРИТИЧНО!)
+## 🎯 ПРАВИЛЬНОЕ РАЗДЕЛЕНИЕ ОТВЕТСТВЕННОСТИ
 
-### ⚠️ ВНИМАНИе: Два разных процесса, не путать!
+### ⚠️ КЛЮЧЕВОЕ УТОЧНЕНИЕ:
 
-| STAGE 3: Voice Restoration | Auto-Restore Workflow |
-|:---|:---|
-| **Когда**: Во время генерации (STAGE 3) | **Когда**: Каждую ночь на GitHub |
-| **Где**: `services/voiceRestorationService.ts` | **Где**: `.github/workflows/auto-restore-articles.yml` |
-| **Что делает**: RAW → RESTORED (эмоциональная трансфо | **Что делает**: Техническая чистка уже опубликованных |
-| **Input**: Собранная статья (18-20K знаков) | **Input**: Файлы в `articles/` (с Phase2 Score) |
-| **Output**: RESTORED версия (+15-50% эмоции) | **Output**: Чистка (удаляет мусор, исправляет верстку) |
-| **Промпт**: 6-stage transformation | **Скрипт**: Chunked mode (3000 знаков на кусок) |
-| **Цель**: A/B тестирование RAW vs RESTORED | **Цель**: Улучшение низкокачественных статей |
-| **Когда успешна**: Phase2 RAW 68 → RESTORED 84 | **Когда успешна**: Phase2 было 52 → стало 78 |
+| Параметр | Auto-Restore PER-EPISODE | STAGE 3: Voice Restoration |
+|:---|:---|:---|
+| **Когда запускается** | После генерации КАЖДОГО эпизода | После сборки финальной статьи |
+| **Где находится** | `services/autoRestoreService.ts` (встроенная) | `services/voiceRestorationService.ts` |
+| **Что принимает** | Один эпизод (3-4K знаков) | Полная статья (18-20K знаков) |
+| **Что проверяет** | Phase2 Score >= 70 | Phase2 Score + Качество эмоций |
+| **Что делает если плохо** | Восстанавливает эмоцию, переписывает | Добавляет глубину, детали |
+| **Сколько попыток** | До 3 раз (пока не >= 70) | 1 проход (финальная полировка) |
+| **Output** | Чистый, эмоциональный эпизод | RAW версия + RESTORED версия |
+| **Результат** | Phase2: 45 → 75 | Phase2: 75 → 88 |
+
+---
+
+## 📊 ПОТОК ДАННЫХ (ВИЗУАЛЬНО)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 0: Generate PlotBible                                     │
+│ Input: "Тема"  →  Output: JSON с архетипом, эпизодами        │
+└─────────────────────────────────────────────────────────────────┘
+                              ⬇️
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 1: Generate Episodes (7-12 эпизодов)                     │
+│                                                                 │
+│ FOR EACH episode:                                              │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Generate episode (3-4K знаков)                          │ │
+│ │                                                             │ │
+│ │ 2. Check uniqueness (Levenshtein distance)                 │ │
+│ │    if duplicate: regenerate                                │ │
+│ │                                                             │ │
+│ │ 3. 🆕 AUTO-RESTORE (встроена!)                            │ │
+│ │    ┌────────────────────────────────────────────────────┐ │ │
+│ │    │ WHILE phase2Score < 70:                            │ │ │
+│ │    │   ├─ Промпт: "Улучши эмоцию, тон, детали"        │ │ │
+│ │    │   ├─ Сохрани все факты                             │ │ │
+│ │    │   ├─ Добавь сенсорные ощущения                     │ │ │
+│ │    │   ├─ Вариируй длину предложений                    │ │ │
+│ │    │   └─ Проверь Phase2 Score                          │ │ │
+│ │    │ MAX 3 попытки                                       │ │ │
+│ │    └────────────────────────────────────────────────────┘ │ │
+│ │                                                             │ │
+│ │ 4. OK, эпизод готов (Phase2 >= 70)                        │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│ Output: 7-12 УЛУЧШЕННЫХ эпизодов (уже хорошего качества)      │
+└─────────────────────────────────────────────────────────────────┘
+                              ⬇️
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 2: Article Assembly                                       │
+│ Input: 7-12 хороших эпизодов  →  Output: RAW статья (~18K)   │
+│ (Переписываем, НЕ копируем)                                    │
+└─────────────────────────────────────────────────────────────────┘
+                              ⬇️
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 3: Voice Restoration (ФИНАЛЬНАЯ ПОЛИРОВКА)               │
+│                                                                 │
+│ 🆕 AUTO-RESTORE на ВСЕЙ СТАТЬЕ                                 │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ WHILE phase2Score < 85:                                    │ │
+│ │   ├─ Промпт: "Раскрой эмоциональную истину"              │ │
+│ │   ├─ Добавь диалоги, монологи                             │ │
+│ │   ├─ Сенсорные детали (запахи, звуки, тактильные)        │ │
+│ │   ├─ Инъектируй голос рассказчика                         │ │
+│ │   └─ Проверь Phase2 Score                                 │ │
+│ │ MAX 2 попытки                                              │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│ Output: RESTORED версия (Phase2: 75 → 88)                     │
+│ + RAW версия для A/B тестирования                              │
+└─────────────────────────────────────────────────────────────────┘
+                              ⬇️
+          ✨ ОБЕ ВЕРСИИ ГОТОВЫ К ПУБЛИКАЦИИ ✨
+          (выбираешь лучшую или публикуешь обе)
+```
 
 ---
 
@@ -117,9 +180,9 @@ const normalized = text.replace(/,\s+/g, ' ')  // ← KILL
 
 **Последствие**: Теряется эмоция, статья звучит роботно
 
-**Решение**: Удалить cleanup.ts, использовать только:
-1. **STAGE 3**: VoiceRestorationService (новое)
-2. **Ночью**: Auto-Restore workflow (существующее)
+**Решение**: Удалить cleanup.ts ПОЛНОСТЬЮ, использовать только:
+1. **Auto-Restore встроен в STAGE 1** (на каждый эпизод)
+2. **Voice Restoration в STAGE 3** (на финальную статью)
 
 ---
 
@@ -153,15 +216,13 @@ for (let i = 0; i < 7; i++) {
 **Проблема**:
 ```
 STAGE 1 выдаёт эпизод с Phase2 Score 45
-↓ (БЕЗ ПРОВЕРКИ)
+↓ (БЕЗ ПРОВЕРКИ И ВОССТАНОВЛЕНИЯ)
 STAGE 2 собирает его
-↓ (БЕЗ ПРОВЕРКИ)
-STAGE 3 пытается исправить (НО УЖЕ ПОЗДНО)
 ↓
 В базу попадает говно
 ```
 
-**Решение**: Добавить Quality Gate после каждого этапа
+**Решение**: Auto-Restore в STAGE 1 (ПРЯМО ПОСЛЕ генерации эпизода)
 
 ---
 
@@ -171,7 +232,7 @@ STAGE 3 пытается исправить (НО УЖЕ ПОЗДНО)
 
 **Проблемы**:
 ```
-cleanup.ts           ← ЖИВОЙ (используется в STAGE 3)
+cleanup.ts           ← ЖИВОЙ (портит статьи!)
 cleanup-old.ts       ← МЕРТВЕЦ (не используется)
 cleanup-v2.ts        ← МЕРТВЕЦ (не используется)
 
@@ -184,7 +245,7 @@ normalizeText() в restore.ts
 ↓ (3 разные версии = CHAOS)
 ```
 
-**Решение**: 1 функция в 1 месте, все используют эту
+**Решение**: Удалить cleanup.ts ПОЛНОСТЬЮ, использовать Voice Restoration
 
 ---
 
@@ -198,6 +259,7 @@ normalizeText() в restore.ts
 prompts/
 ├── stage-0-plan.md           ← Промпт для STAGE 0
 ├── stage-1-episodes.md       ← Промпт для STAGE 1
+├── stage-1-auto-restore.md   ← 🆕 Промпт для Auto-Restore (встроена!)
 ├── stage-2-assemble.md       ← Промпт для STAGE 2
 ├── stage-3-restore.md        ← Промпт для Voice Restoration
 └── shared/
@@ -251,91 +313,255 @@ if (validation.phase2Score < 65) {
 
 ---
 
-### ЭТАП C: Исправление STAGE 1
+### ЭТАП C: STAGE 1 с встроенной Auto-Restore
 
 **Файл**: `src/services/stage-1/generate-episodes.ts`
 
 **Изменения**:
 
-1. **Проверка уникальности эпизодов**
 ```typescript
-const episodes = []
+import { qualityGate } from '../../utils/quality-gate'
+import { autoRestoreEpisode } from './auto-restore-episode'
+import { calculateSimilarity } from '../../utils/levenshtein-distance'
 
-for (let i = 0; i < targetCount; i++) {
-  let episode = await generateEpisode(plotBible)
-  let attempts = 0
+export async function generateEpisodes(plotBible: any): Promise<any[]> {
+  const episodes: any[] = []
   
-  // Пока не будет уникальным:
-  while (attempts < 3) {
-    const isDuplicate = episodes.some(e => 
-      levenshteinDistance(e.text, episode.text) > 0.75
-    )
+  for (let i = 0; i < plotBible.episodes.length; i++) {
+    let episode = await generateOneEpisode(plotBible.episodes[i])
+    let attempts = 0
     
-    if (isDuplicate) {
-      console.log(`⚠️ Эпизод ${i} - дубль, генерируем заново...`)
-      episode = await generateEpisode(plotBible)
-      attempts++
+    // ПРОВЕРКА 1: Уникальность
+    while (attempts < 3) {
+      const isDuplicate = episodes.some(e => 
+        calculateSimilarity(e.text, episode.text) > 0.75
+      )
+      
+      if (isDuplicate) {
+        console.log(`⚠️ Эпизод ${i} - дубль, генерируем заново...`)
+        episode = await generateOneEpisode(plotBible.episodes[i])
+        attempts++
+      } else {
+        break
+      }
+    }
+    
+    // 🆕 ПРОВЕРКА 2: Auto-Restore (встроена!)
+    let validation = await qualityGate(episode.text, 70, 3000)
+    let restoreAttempts = 0
+    
+    while (!validation.isValid && restoreAttempts < 3) {
+      console.log(`⚠️ Эпизод ${i}: Phase2=${validation.phase2Score}, восстанавливаем...`)
+      
+      // Auto-restore: улучши эмоцию, сохрани факты
+      episode.text = await autoRestoreEpisode(
+        episode.text,
+        plotBible.narrator,
+        plotBible.sensorPalette
+      )
+      
+      validation = await qualityGate(episode.text, 70, 3000)
+      restoreAttempts++
+    }
+    
+    if (validation.isValid) {
+      console.log(`✅ Эпизод ${i}: Phase2=${validation.phase2Score} (OK)")
+      episodes.push(episode)
     } else {
-      break  // Уникален, берём его
+      console.warn(`⚠️ Эпизод ${i}: не смогли восстановить, используем как есть`)
+      episodes.push(episode)
     }
   }
   
-  episodes.push(episode)
+  return episodes
 }
 ```
 
-2. **Quality gate после каждого эпизода**
+**Новый файл**: `src/services/stage-1/auto-restore-episode.ts`
+
 ```typescript
-// После generateEpisode:
-while (episode.phase2Score < 70) {
-  console.log(`⚠️ Эпизод ${i}: Phase2=${episode.phase2Score} < 70`)
-  episode = await restoreVoice(episode, plotBible)
+// Auto-restore для одного эпизода
+// Цель: улучшить Phase2 Score с минимальными изменениями
+
+export async function autoRestoreEpisode(
+  episodeText: string,
+  narrator: any,
+  sensorPalette: any
+): Promise<string> {
+  const prompt = fs.readFileSync(
+    path.join(__dirname, '../../prompts/stage-1-auto-restore.md'),
+    'utf-8'
+  )
+
+  const response = await callGemini(`
+${prompt}
+
+## Контекст рассказчика
+Возраст: ${narrator.age}
+Тон: ${narrator.tone}
+Привычки: ${narrator.habits.join(', ')}
+
+## Сенсорная палитра
+Запахи: ${sensorPalette.smells.join(', ')}
+Звуки: ${sensorPalette.sounds.join(', ')}
+Текстуры: ${sensorPalette.textures.join(', ')}
+
+## Эпизод для восстановления
+${episodeText}
+
+## Инструкция
+1. СОХРАНИ все факты и события
+2. ДОБАВЬ эмоцию (междометия, сенсорные детали)
+3. ВАРИИРУЙ длину предложений
+4. ИНЪЕКТИРУЙ голос рассказчика
+5. Вернись ТОЛЬКО с текстом эпизода (без комментариев)
+  `)
+
+  return response.trim()
+}
+```
+
+**Новый промпт**: `prompts/stage-1-auto-restore.md`
+
+```markdown
+# Промпт для Auto-Restore: Улучшение Эпизода
+
+## Цель
+Улучшить Phase2 Score эпизода с 45-65 до 70+
+
+## Правила
+1. СОХРАНИ ВСЕ ФАКТЫ (имена, даты, события)
+2. ДОБАВЬ ЭМОЦИЮ:
+   - Междометия (Боже, мама, спасите)
+   - Сенсорные детали из палитры
+   - Незаконченные предложения
+   - Реальный голос рассказчика
+3. ВАРИИРУЙ ПРЕДЛОЖЕНИЯ:
+   - Short.
+   - Medium sentence for development.
+   - Longer sentence to add more detail and context.
+4. НЕ ДОБАВЛЯЙ ФИКЦИЮ (только раскрывай скрытую эмоцию)
+5. Вернись ТОЛЬКО С ТЕКСТОМ (без объяснений)
+```
+
+---
+
+### ЭТАП D: STAGE 2 Assembly
+
+**Файл**: `src/services/stage-2/assemble-article.ts`
+
+**Изменения**:
+
+```typescript
+// STAGE 2: Собираем RAW статью из эпизодов
+// ВАЖНО: НЕ копируем эпизоды, переписываем их!
+
+export async function assembleArticle(
+  episodes: any[],
+  plotBible: any
+): Promise<string> {
+  const prompt = fs.readFileSync(
+    path.join(__dirname, '../../prompts/stage-2-assemble.md'),
+    'utf-8'
+  )
+
+  const episodesText = episodes.map((ep, i) => 
+    `### Эпизод ${i + 1}\n${ep.text}`
+  ).join('\n\n')
+
+  const response = await callGemini(`
+${prompt}
+
+## PlotBible
+${JSON.stringify(plotBible, null, 2)}
+
+## Эпизоды (для контекста)
+${episodesText}
+
+## Инструкция
+1. Создай 5 частей: LEDE, DEVELOPMENT, CLIMAX, RESOLUTION, FINALE
+2. НЕ КОПИРУЙ эпизоды, ПЕРЕПИСЫВАЙ их синтезируя лучшие части
+3. Добавь переходы между эпизодами
+4. Синхронизируй с архетипом из PlotBible
+5. Вернись с RAW статьёй (~18K знаков)
+  `)
+
+  return response.trim()
 }
 ```
 
 ---
 
-### ЭТАП D: STAGE 3 Voice Restoration (NEW!)
+### ЭТАП E: STAGE 3 Voice Restoration + Auto-Restore
 
-**Файл**: `services/voiceRestorationService.ts` ✅ СОЗДАН
+**Файл**: `src/services/stage-3/voice-restoration-service.ts` (уже создан!)
 
-**Что делает**:
-1. ✅ Парсит RAW статью на 6 секций (lede, dev, episodes, climax, resolution, finale)
-2. ✅ Трансформирует каждую с эмоциональной глубиной
-3. ✅ Сохраняет 100% фактов (имена, даты, события)
-4. ✅ Добавляет сенсорные детали, диалоги, монолог
-5. ✅ Вариирует длину предложений (Short. Medium. Longer.)
-6. ✅ Инъектирует голос рассказчика
-7. ✅ Возвращает RESTORED версию
+**Добавить встроенную Auto-Restore**:
 
-**Использование в STAGE 2**:
 ```typescript
-// После сборки RAW статьи
-const rawArticle = assembleArticle(episodes, plotBible)
+import { qualityGate } from '../../utils/quality-gate'
 
-// Генерируем RESTORED версию (v7.1 "both" mode)
-const restorer = new VoiceRestorationService(apiKey)
-const restoredArticle = await restorer.restore(rawArticle)
+export class VoiceRestorationService {
+  async restore(rawArticle: string): Promise<string> {
+    // 1️⃣ STAGE 3: Генерируем RESTORED версию
+    const restored = await this.performVoiceRestoration(rawArticle)
+    
+    // 2️⃣ 🆕 AUTO-RESTORE на финальной статье
+    const validation = await qualityGate(restored, 85, 18000)
+    let finalRestored = restored
+    let attempts = 0
+    
+    while (!validation.isValid && attempts < 2) {
+      console.log(`⚠️ STAGE 3: Phase2=${validation.phase2Score}, финальная полировка...`)
+      
+      finalRestored = await this.performVoiceRestoration(finalRestored)
+      validation = await qualityGate(finalRestored, 85, 18000)
+      attempts++
+    }
+    
+    return finalRestored
+  }
 
-// Output: обе версии
-return {
-  raw: rawArticle,
-  restored: restoredArticle
+  private async performVoiceRestoration(article: string): Promise<string> {
+    const prompt = fs.readFileSync(
+      path.join(__dirname, '../../prompts/stage-3-restore.md'),
+      'utf-8'
+    )
+
+    // Парсим статью на 6 частей
+    const sections = this.parseSections(article)
+    
+    // Трансформируем каждую
+    const restored = await Promise.all(
+      sections.map(section => this.restoreSection(section, prompt))
+    )
+    
+    return restored.join('\n\n')
+  }
+
+  private async restoreSection(section: string, prompt: string): Promise<string> {
+    const response = await callGemini(`
+${prompt}
+
+## Секция для восстановления
+${section}
+
+## Инструкция
+1. Раскрой эмоциональную истину
+2. Добавь сенсорные детали, диалоги
+3. Инъектируй голос рассказчика
+4. Сохрани ВСЕ факты
+5. Вернись ТОЛЬКО с текстом
+    `)
+    
+    return response.trim()
+  }
 }
-```
-
-**Метрики улучшения**:
-```
-Phase2 Score:      68 → 84 (+16 points) ✅
-Sensory Details:   2 → 15 (+650%) ✅
-Est. Comments:     12 → 38 (+217%) ✅
-Est. Shares:       5 → 18 (+260%) ✅
-Scroll Depth:      55% → 78% (+23%) ✅
 ```
 
 ---
 
-### ЭТАП E: Убрать старый cleanup, оставить Auto-Restore
+### ЭТАП F: Удалить cleanup.ts
 
 **Что удалить**:
 - ❌ `src/services/stage-3/cleanup.ts`
@@ -343,35 +569,59 @@ Scroll Depth:      55% → 78% (+23%) ✅
 - ❌ `src/services/stage-3/cleanup-v2.ts`
 
 **Что оставить**:
-- ✅ `.github/workflows/auto-restore-articles.yml` (существующий)
-- ✅ `scripts/restore-articles.js` (существующий)
+- ✅ Auto-Restore встроена в STAGE 1
+- ✅ Voice Restoration встроена в STAGE 3
 
-**Как это работает**:
+---
+
+## 📊 ФИНАЛЬНЫЙ ПОТОК (ВСЁ ВСТРОЕНО!)
+
 ```
-Generation Pipeline (STAGE 0-2):
-┌─────────────────────┐
-│ RAW article ready   │  (Phase2: 68-75)
-└─────────────────────┘
-         ⬇️
-┌─────────────────────────────────────┐
-│ STAGE 3: VoiceRestoration (NEW!)    │
-│ services/voiceRestorationService.ts │
-└─────────────────────────────────────┘
-         ⬇️
-  ✨ RAW + RESTORED ready
-     (обе для A/B тестирования)
-         ⬇️
-   Экспорт в articles/
-         ⬇️
-┌──────────────────────────────────────┐
-│ GitHub Workflow (каждую ночь)        │
-│ auto-restore-articles.yml (EXISTING) │
-│ scripts/restore-articles.js          │
-└──────────────────────────────────────┘
-         ⬇️
-  🔧 Техническая чистка
-     (удаляет мусор, оформляет)
-     (для уже опубликованных статей)
+┌────────────────────────────────────────────────────────────┐
+│ STAGE 0: PlotBible                                        │
+│ (5 мин)                                                   │
+└────────────────────────────────────────────────────────────┘
+                        ⬇️
+┌────────────────────────────────────────────────────────────┐
+│ STAGE 1: Generate Episodes + Auto-Restore                │
+│ (15 мин)                                                  │
+│                                                            │
+│ FOR EACH episode (7-12 раз):                             │
+│ ├─ Generate episode                                       │
+│ ├─ Check uniqueness                                       │
+│ └─ 🔄 Auto-Restore (встроена!):                          │
+│    WHILE phase2 < 70:                                     │
+│    ├─ Улучши эмоцию                                       │
+│    ├─ Добавь детали                                       │
+│    └─ Проверь Phase2                                      │
+│    MAX 3 попытки                                          │
+│                                                            │
+│ Output: 7-12 эпизодов (Phase2 >= 70)                     │
+└────────────────────────────────────────────────────────────┘
+                        ⬇️
+┌────────────────────────────────────────────────────────────┐
+│ STAGE 2: Article Assembly                                │
+│ (10 мин)                                                  │
+│ RAW статья из лучших частей эпизодов                     │
+└────────────────────────────────────────────────────────────┘
+                        ⬇️
+┌────────────────────────────────────────────────────────────┐
+│ STAGE 3: Voice Restoration + Auto-Restore                │
+│ (5 мин)                                                   │
+│                                                            │
+│ 1. Генерируем RESTORED версию                            │
+│ 2. 🔄 Auto-Restore на финальной статье:                  │
+│    WHILE phase2 < 85:                                     │
+│    ├─ Раскрой эмоцию                                      │
+│    ├─ Добавь деталей                                      │
+│    └─ Проверь Phase2                                      │
+│    MAX 2 попытки                                          │
+│                                                            │
+│ Output: RAW + RESTORED (обе готовы)                      │
+└────────────────────────────────────────────────────────────┘
+                        ⬇️
+            ✨ ГОТОВО К ПУБЛИКАЦИИ ✨
+       (выбираешь лучшую или публикуешь обе)
 ```
 
 ---
@@ -494,6 +744,29 @@ JSON:
 
 ### FINALE (финал): 1200-1800 знаков
 - Победа и вызов читателю
+```
+
+**Создай файл**: `prompts/stage-1-auto-restore.md`
+
+```markdown
+# Промпт для Auto-Restore: Улучшение Эпизода
+
+## Цель
+Улучшить Phase2 Score эпизода с 45-65 до 70+
+
+## Правила
+1. СОХРАНИ ВСЕ ФАКТЫ (имена, даты, события)
+2. ДОБАВЬ ЭМОЦИЮ:
+   - Междометия (Боже, мама, спасите)
+   - Сенсорные детали из палитры
+   - Незаконченные предложения
+   - Реальный голос рассказчика
+3. ВАРИИРУЙ ПРЕДЛОЖЕНИЯ:
+   - Short.
+   - Medium sentence for development.
+   - Longer sentence to add more detail and context.
+4. НЕ ДОБАВЛЯЙ ФИКЦИЮ (только раскрывай скрытую эмоцию)
+5. Вернись ТОЛЬКО С ТЕКСТОМ (без объяснений)
 ```
 
 **Создай файл**: `prompts/stage-3-restore.md`
@@ -654,73 +927,20 @@ export async function qualityGate(
 
 ---
 
-### Блок 4: Интеграция в STAGE 1
-
-**Изменить файл**: `src/services/stage-1/generate-episodes.ts`
-
-```typescript
-import { qualityGate } from '../../utils/quality-gate'
-import { restoreVoice } from '../restore/restore-voice'
-import { calculateSimilarity } from '../../utils/levenshtein-distance'
-
-export async function generateEpisodes(plotBible: any): Promise<any[]> {
-  const episodes: any[] = []
-  
-  for (let i = 0; i < plotBible.episodes.length; i++) {
-    let episode = await generateOneEpisode(plotBible.episodes[i])
-    let attempts = 0
-    
-    // ПРОВЕРКА 1: Уникальность
-    while (attempts < 3) {
-      const isDuplicate = episodes.some(e => 
-        calculateSimilarity(e.text, episode.text) > 0.75
-      )
-      
-      if (isDuplicate) {
-        console.log(`⚠️ Эпизод ${i} - дубль, регенерируем...`)
-        episode = await generateOneEpisode(plotBible.episodes[i])
-        attempts++
-      } else {
-        break
-      }
-    }
-    
-    // ПРОВЕРКА 2: Качество
-    let validation = await qualityGate(episode.text, 70, 3000)
-    
-    if (!validation.isValid) {
-      console.log(`⚠️ Эпизод ${i} - качество низкое:`, validation.issues)
-      
-      // Auto-restore:
-      while (!validation.isValid && attempts < 3) {
-        episode.text = await restoreVoice(episode.text, plotBible)
-        validation = await qualityGate(episode.text, 70, 3000)
-        attempts++
-      }
-    }
-    
-    episodes.push(episode)
-  }
-  
-  return episodes
-}
-```
-
----
-
 ## 🎬 ДЕТАЛЬНОЕ ВЫПОЛНЕНИЕ
 
 ### Сроки по блокам:
 
 | Блок | Описание | Время | Приоритет |
 |------|----------|-------|----------|
-| **A** | Вынести промпты в /prompts | 4ч | 🔴 ПЕРВЫЙ |
+| **A** | Вынести промпты в /prompts (5 файлов) | 4ч | 🔴 ПЕРВЫЙ |
 | **B** | Исправить парсинг STAGE 0 | 2ч | 🔴 ПЕРВЫЙ |
-| **C** | Добавить проверку уникальности STAGE 1 | 3ч | 🔴 ПЕРВЫЙ |
-| **D** | Voice Restoration STAGE 3 | ✅ ГОТОВО | 🔴 ГОТОВО |
-| **E** | Убрать cleanup, оставить auto-restore | 2ч | 🟠 ВТОРОЙ |
+| **C** | STAGE 1 с встроенной Auto-Restore (2 файла) | 4ч | 🔴 ПЕРВЫЙ |
+| **D** | STAGE 2 Assembly (переписываем эпизоды) | 3ч | 🟠 ВТОРОЙ |
+| **E** | STAGE 3 Voice Restoration + Auto-Restore | ✅ ГОТОВО | 🔴 ГОТОВО |
+| **F** | Удалить cleanup.ts ПОЛНОСТЬЮ | 1ч | 🔴 ПЕРВЫЙ |
 
-**Всего**: 11 часов работы (Блок D уже готов!)
+**Всего**: 14 часов работы (E уже готово!)
 
 ---
 
@@ -735,13 +955,16 @@ ls -la prompts/
 # 2. Генерировать тестовую статью
 npm run both --count=1 --topic="Test topic"
 
-# 3. Проверить Phase2 Score
-cat articles/*/latest.md | grep phase2_score
+# 3. Проверить Phase2 Score каждого эпизода + финальной статьи
+cat articles/*/latest.md | grep -A1 phase2_score
 
-# 4. Убедиться, что Score >= 75
-npm run validate
+# 4. Убедиться, что STAGE 1 с Auto-Restore работает
+grep -r "Auto-Restore" src/services/stage-1/
 
-# 5. Сгенерировать 5 статей, все должны быть >= 70
+# 5. Убедиться, что STAGE 3 с Auto-Restore работает
+grep -r "Auto-Restore" src/services/stage-3/
+
+# 6. Сгенерировать 5 статей, все должны быть >= 75
 npm run factory --count=5
 ```
 
@@ -750,11 +973,12 @@ npm run factory --count=5
 ```
 ✅ Все промпты вынесены в /prompts
 ✅ Парсинг не падает (graceful fallback работает)
+✅ Auto-Restore в STAGE 1 восстанавливает эпизоды (Phase2: 45 → 75)
 ✅ Дубли эпизодов удаляются (Levenshtein > 0.75)
-✅ Quality gate работает на каждом этапе
+✅ Quality gate работает на каждом эпизоде
+✅ Auto-Restore в STAGE 3 полирует финальную (Phase2: 75 → 88)
 ✅ Phase2 Score 75+ на всех статьях
-✅ Voice Restoration работает (RAW + RESTORED генерируются)
-✅ Auto-restore восстанавливает статьи ночью
+✅ RAW + RESTORED версии генерируются
 ✅ cleanup.ts удалён
 ```
 
@@ -762,17 +986,13 @@ npm run factory --count=5
 
 ## ⚡ КРИТИЧЕСКОЕ ДЛЯ УСПЕХА
 
-1. **Не путай STAGE 3 Voice Restoration с Auto-Restore Workflow**
-   - STAGE 3 = генерация (RAW → RESTORED)
-   - Auto-Restore = техническая чистка уже опубликованных
-   - Обе работают параллельно, разные процессы!
-
-2. **Не игнорируй Quality Gate** - если Phase2 < 70, восстанавливай, не публикуй
-3. **Синхронизируй PlotBible** - все части должны использовать тот же PlotBible
-4. **Переписывай в STAGE 2** - не копируй из эпизодов
-5. **Auto-Restore каждую ночь** - это твоя спасация для низкокачественных статей
-6. **Промпты из файлов** - одна версия истины, все скрипты её используют
+1. **Auto-Restore встроена в STAGE 1** - восстанавливает КАЖДЫЙ эпизод после генерации
+2. **Auto-Restore встроена в STAGE 3** - финальная полировка ВСЕЙ статьи
+3. **Оба процесса работают встроено**, НЕ как отдельные workflow'ы
+4. **Удали cleanup.ts** - он портит статьи, используй только Voice Restoration
+5. **Промпты из файлов** - одна версия истины, все скрипты её используют
+6. **Quality gate на каждом этапе** - Phase2 < 70 = восстанавливаем
 
 ---
 
-**Выполни ВСЕ блоки А-Е по порядку. После этого система будет работать как часы.** ⏰
+**Выполни ВСЕ блоки А-F по порядку. После этого система будет работать идеально.** ✨
