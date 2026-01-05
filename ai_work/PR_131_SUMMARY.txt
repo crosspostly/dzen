@@ -1,0 +1,157 @@
+╯╲❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱╮╳
+║                   PR #131: 5-BLOCK OVERHAUL A-E ANALYSIS                   ║
+║                         STATUS: DRAFT, INCOMPLETE                          ║
+╰╲❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱❰❱╰╯
+
+IMPLEMENTATION PROGRESS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ BLOCK A (100%): Prompt Migration to Individual Files
+   • stage-0-plan.md (PlotBible generation)
+   • stage-1-episodes.md (episode writing)
+   • archetype-rules.md (7 archetypes)
+   • voice-guidelines.md (zhivoy golos)
+   • quality-gates.md (length, phase2, content, narrative)
+   • anti-detect.md (AI-detection avoidance)
+
+⚠️  BLOCK B (30%): STAGE 0 Parsing with Graceful Fallback
+   • Test scaffold created (test-fallback-plotbible.ts)
+   • NOT integrated into main generation flow
+   • Missing: try-catch, fallback defaults, post-validation
+
+❌ BLOCK C (0%): Levenshtein Uniqueness Check (STAGE 1)
+   • Infrastructure referenced but NOT implemented
+   • Missing: utils/levenshtein-distance.ts
+   • Missing: Quality gate integration in STAGE 1
+
+❌ BLOCK D (0%): STAGE 2 PlotBible Sync & Rewrite Enforcement
+   • NO changes in PR
+   • Missing: PlotBible synchronization
+   • Missing: Rewrite vs Copy enforcement
+
+❌ BLOCK E (0%): Remove STAGE 3 Cleanup, Auto-Restore
+   • STAGE 3 still exists
+   • Cleanup gates NOT removed
+   • Auto-restore NOT implemented
+   • BREAKING CHANGE mentioned but NOT executed
+
+
+KEY METRICS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Lines Added:       +710
+Lines Removed:     -784
+Files Changed:     19
+Test Coverage:     ⚠️ PARTIAL (scaffolds exist but incomplete)
+Ready to Merge:    ❌ NO (incomplete blocks, missing integration)
+
+
+ADDED FEATURES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 NEW VALIDATION COMMAND:
+   Command: npm run validate
+   Function: Scan all articles, check Phase 2 score >= 75
+   Output: Pass/fail report per article
+   Useful: Testing quality gates
+
+
+WHAT WORKS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Prompt files are well-documented with examples
+✓ Phase 2 scoring framework is defined
+✓ Voice guidelines include specific Russian techniques
+✓ Archetype rules provide clear narrative patterns
+✓ Validation command infrastructure ready
+
+
+WHAT'S BROKEN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ Only 1 of 5 blocks fully implemented
+✗ Levenshtein utility not created
+✗ STAGE 2 synchronization missing
+✗ STAGE 3 removal (breaking change) not applied
+✗ Graceful fallback incomplete
+✗ No integration tests for blocks C, D, E
+✗ Large deletion block (-784) unexplained
+
+
+CRITICAL BLOCKERS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. BLOCK C: utils/levenshtein-distance.ts MISSING
+   → Need: String distance algorithm for episode deduplication
+   → Impact: Episodes could be duplicates without detection
+
+2. BLOCK D: STAGE 2 NOT UPDATED
+   → Need: PlotBible data sync, rewrite enforcement
+   → Impact: Content might copy previous stage instead of rewriting
+
+3. BLOCK E: BREAKING CHANGE NOT APPLIED
+   → Need: Remove STAGE 3 cleanup, add nightly auto-restore
+   → Impact: Could break existing cleanup workflow if merged
+
+4. INTEGRATION TESTS: MISSING
+   → Need: Test suite for all 5 blocks end-to-end
+   → Impact: Unknown behavior in production
+
+
+RISK ASSESSMENT: 🟠 MEDIUM-HIGH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Draft PR with incomplete implementation
+• Breaking changes mentioned but not executed
+• Missing critical utilities (Levenshtein)
+• Could break production if merged as-is
+• Recommendation: DO NOT MERGE until all blocks complete
+
+
+NEXT STEPS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FOR CONTINUATION:
+  1. Review this analysis (done ✓)
+  2. Await NEW BRIEF with updated requirements
+  3. Assess gap analysis (old brief vs new brief)
+  4. Plan implementation of remaining blocks
+  5. Create GitHub issues for each block
+
+TO MAKE MERGEABLE:
+  [ ] Implement Block C: Levenshtein uniqueness check
+  [ ] Implement Block D: STAGE 2 PlotBible sync
+  [ ] Implement Block E: Remove STAGE 3, add auto-restore
+  [ ] Add comprehensive integration tests
+  [ ] Update documentation (ARCHITECTURE.md)
+  [ ] Create GitHub Actions for auto-restore workflow
+  [ ] Change from Draft to Ready for Review
+
+
+════════════════════════════════════════════════════════════════════════════════
+
+QUICK CHECKLIST:
+
+What was done well:
+  [✓] Prompt structure and documentation
+  [✓] Voice guidelines with examples
+  [✓] Quality gates definition
+  [✓] Archetype rules
+  [✓] Validation command
+
+What still needs work:
+  [ ] Levenshtein distance implementation (Block C)
+  [ ] STAGE 2 PlotBible sync (Block D)
+  [ ] STAGE 3 removal & auto-restore (Block E)
+  [ ] Complete graceful fallback (Block B)
+  [ ] Integration tests for all blocks
+  [ ] GitHub Actions for auto-restore
+  [ ] Architecture documentation update
+
+════════════════════════════════════════════════════════════════════════════════
+
+Status: WAITING FOR NEW BRIEF TO CONTINUE
+
+Created: January 5, 2026, 11:11 AM MSK
+Analysis: Complete PR #131 review of old brief implementation
+Next: Await new brief + gap analysis + continue implementation
