@@ -97,6 +97,9 @@ ai_work/
 ├── ARTICLE_GENERATION_ALGORITHM.md              # 📘 Алгоритм (HOW)
 ├── DZEN_QUALITY_STANDARDS.md                  # 📊 Качество (WHAT)
 ├── IMPLEMENTATION_ROADMAP.md                   # 🚀 Разработка (HOW-TO)
+├── TODO_ISSUES.md                               # 🐛 Проблемы
+├── SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md          # 📖 Для не-технических
+├── project_review.md                            # 📊 SWOT и roadmap
 └── config/                                    # Конфигурация
 ```
 
