@@ -416,6 +416,92 @@ export class MultiAgentService {
   }
 
   /**
+   * 🎭 Build PlotBible section for prompt
+   */
+  private buildPlotBibleSection(plotBible?: any): string {
+    if (!plotBible) {
+      return '';
+    }
+    
+    const narrator = plotBible.narrator;
+    const sensory = plotBible.sensoryPalette;
+    const thematic = plotBible.thematicCore;
+    
+    let section = '';
+    
+    if (narrator) {
+      section += `\n📖 ГОЛОС РАССКАЗЧИКА (${narrator.age || '40-50'} лет, ${narrator.tone || 'исповедальный'})`;
+      if (narrator.voiceHabits) {
+        if (narrator.voiceHabits.doubtPattern) {
+          section += `\n   При сомнении: "${narrator.voiceHabits.doubtPattern}"`;
+        }
+        if (narrator.voiceHabits.memoryTrigger) {
+          section += `\n   Триггер памяти: "${narrator.voiceHabits.memoryTrigger}"`;
+        }
+        if (narrator.voiceHabits.angerPattern) {
+          section += `\n   При гневе: "${narrator.voiceHabits.angerPattern}"`;
+        }
+      }
+    }
+    
+    if (sensory) {
+      section += `\n🎨 СЕНСОРНАЯ ПАЛИТРА:`;
+      if (sensory.details && sensory.details.length > 0) {
+        section += `\n   Зрение: ${sensory.details.slice(0, 3).join(', ')}`;
+      }
+      if (sensory.smells && sensory.smells.length > 0) {
+        section += `\n   Запахи: ${sensory.smells.slice(0, 2).join(', ')}`;
+      }
+      if (sensory.sounds && sensory.sounds.length > 0) {
+        section += `\n   Звуки: ${sensory.sounds.slice(0, 2).join(', ')}`;
+      }
+      if (sensory.textures && sensory.textures.length > 0) {
+        section += `\n   Осязание: ${sensory.textures.slice(0, 2).join(', ')}`;
+      }
+    }
+    
+    if (thematic) {
+      section += `\n🎯 ТЕМАТИЧЕСКОЕ ЯДРО:`;
+      if (thematic.centralQuestion) {
+        section += `\n   Главный вопрос: "${thematic.centralQuestion}"`;
+      }
+      if (thematic.emotionalArc) {
+        section += `\n   Эмоциональная дуга: ${thematic.emotionalArc}`;
+      }
+    }
+    
+    return section;
+  }
+
+  /**
+   * 📚 Load shared guidelines for prompts
+   */
+  private loadSharedGuidelines(): string {
+    let guidelines = '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+    guidelines += 'ОБЩИЕ ПРАВИЛА КАЧЕСТВА:\n';
+    
+    const files = [
+      'shared/voice-guidelines.md',
+      'shared/anti-detect.md',
+      'shared/archetype-rules.md',
+      'shared/quality-gates.md'
+    ];
+
+    for (const file of files) {
+      try {
+        const filePath = path.join(process.cwd(), 'prompts', file);
+        if (fs.existsSync(filePath)) {
+          guidelines += fs.readFileSync(filePath, 'utf-8') + '\n';
+        }
+      } catch (e) {
+        console.warn(`⚠️ Could not read shared guideline: ${file}`);
+      }
+    }
+
+    return guidelines;
+  }
+
+  /**
    * 🎯 TASK 1: generateDevelopment() с учётом timeline (v8.0)
    */
   async generateDevelopment(outline: OutlineStructure, episodes: Episode[]): Promise<string> {
@@ -467,11 +553,7 @@ export class MultiAgentService {
    - Shifting dynamics between characters`;
     }
 
-    let voiceGuide = '';
-    if (plotBible?.narrator?.voiceHabits) {
-      const h = plotBible.narrator.voiceHabits;
-      voiceGuide = `🎭 NARRATOR: ${plotBible.narrator.age} y/o ${plotBible.narrator.gender}, tone: ${plotBible.narrator.tone}`;
-    }
+    const plotBibleSection = this.buildPlotBibleSection(plotBible);
 
     const antiDetection = `
 ⚠️ ANTI-DETECTION:
@@ -481,12 +563,28 @@ export class MultiAgentService {
 ✅ EMOTIONS AS ACTIONS: ✅ "Руки тряслись." NOT ❌ "I was scared."
 ✅ START WITH ACTION/DIALOGUE: NOT description`;
 
-    const prompt = `📄 DEVELOPMENT - middle of story (1500-2500 chars)
+    // 🆕 v9.0: Read prompt from file
+    let basePrompt = '';
+    try {
+      const promptPath = path.join(process.cwd(), 'prompts', 'stage-2-assemble.md');
+      basePrompt = fs.readFileSync(promptPath, 'utf-8');
+    } catch (e) {
+      console.warn('⚠️ Could not read stage-2-assemble.md, using hardcoded prompt');
+      basePrompt = '# Промпт для STAGE 2: Article Assembly';
+    }
+
+    const guidelines = this.loadSharedGuidelines();
+
+    const prompt = `${basePrompt}
+
+${guidelines}
+
+📄 DEVELOPMENT - middle of story (1500-2500 chars)
 
 ARCHETYPE: ${this.heroArchetype || 'standard'}
 TIMELINE: ${timeline}
 
-${voiceGuide}
+${plotBibleSection}
 ${antiDetection}
 ${timelineInstruction}
 
@@ -566,6 +664,8 @@ OUTPUT: Only text`;
    - Frustration and rage at being surpassed`;
     }
 
+    const plotBibleSection = this.buildPlotBibleSection(plotBible);
+
     const antiDetection = `
 ⚠️ ANTI-DETECTION:
 ✅ SHORT PUNCHY SENTENCES: "Она открыла рот. Ничего."
@@ -573,11 +673,28 @@ OUTPUT: Only text`;
 ✅ DIALOGUE OVERLAP: "— Ты... — Нет! Ты не знаешь!"
 ✅ INTERNAL + ACTION MIX: "Я должна уйти. Уйти сейчас."`;
 
-    const prompt = `📄 CLIMAX - turning point (1200-1600 chars)
+    // 🆕 v9.0: Read prompt from file
+    let basePrompt = '';
+    try {
+      const promptPath = path.join(process.cwd(), 'prompts', 'stage-2-assemble.md');
+      basePrompt = fs.readFileSync(promptPath, 'utf-8');
+    } catch (e) {
+      console.warn('⚠️ Could not read stage-2-assemble.md, using hardcoded prompt');
+      basePrompt = '# Промпт для STAGE 2: Article Assembly';
+    }
+
+    const guidelines = this.loadSharedGuidelines();
+
+    const prompt = `${basePrompt}
+
+${guidelines}
+
+📄 CLIMAX - turning point (1200-1600 chars)
 
 ARCHETYPE: ${this.heroArchetype || 'standard'}
 ANTAGONIST REACTION: ${reaction}
 
+${plotBibleSection}
 ${antiDetection}
 
 🎯 TASK: Write CLIMAX
@@ -641,6 +758,8 @@ OUTPUT: Only text`;
       victoryPosition = `✅ "Я выиграла. Полностью. На всех фронтах."`;
     }
 
+    const plotBibleSection = this.buildPlotBibleSection(plotBible);
+
     const antiDetection = `
 ⚠️ ANTI-DETECTION:
 ✅ SLOWER PACE: "Я сидела. Просто сидела..."
@@ -648,11 +767,28 @@ OUTPUT: Only text`;
 ✅ NO MORALIZING: Realization without preachy lesson
 ✅ WHAT CHANGED FOREVER: "Я стала другой. Факт."`;
 
-    const prompt = `📄 RESOLUTION - aftermath of climax (1000-1300 chars)
+    // 🆕 v9.0: Read prompt from file
+    let basePrompt = '';
+    try {
+      const promptPath = path.join(process.cwd(), 'prompts', 'stage-2-assemble.md');
+      basePrompt = fs.readFileSync(promptPath, 'utf-8');
+    } catch (e) {
+      console.warn('⚠️ Could not read stage-2-assemble.md, using hardcoded prompt');
+      basePrompt = '# Промпт для STAGE 2: Article Assembly';
+    }
+
+    const guidelines = this.loadSharedGuidelines();
+
+    const prompt = `${basePrompt}
+
+${guidelines}
+
+📄 RESOLUTION - aftermath of climax (1000-1300 chars)
 
 ARCHETYPE: ${this.heroArchetype || 'standard'}
 VICTORY TYPE: ${victory}
 
+${plotBibleSection}
 ${antiDetection}
 
 🎯 TASK: Write RESOLUTION (FIRM VICTORY - v8.0!)
@@ -919,7 +1055,11 @@ STRUCTURE FOR "WISDOM EARNED":
 Key: Reflection, growth, and sharing wisdom`;
     }
 
+    const guidelines = this.loadSharedGuidelines();
+
     const prompt = `${basePrompt}
+
+${guidelines}
 
 🎭 STORY ARCHITECT - GENERATE COMPLETE OUTLINE
 
@@ -1049,12 +1189,18 @@ RESPOND WITH ONLY VALID JSON:
       console.warn('⚠️ Could not read stage-2-assemble.md, using hardcoded prompt');
       basePrompt = '# Промпт для STAGE 2: Article Assembly';
     }
+
+    const guidelines = this.loadSharedGuidelines();
+    
+    const plotBibleSection = this.buildPlotBibleSection(plotBible);
     
     const prompt = `${basePrompt}
 
+${guidelines}
+
 📄 LEDE (600-900 chars) - opening hook
 
-${voiceGuide}
+${plotBibleSection}
 
 ARCHETYPE: ${this.heroArchetype || 'standard'}
 
@@ -1118,11 +1264,30 @@ MULTI VICTORY:
       victoryExamples = `Focus on clear victory based on ${victory}`;
     }
 
-    const prompt = `📄 FINALE (1200-1800 chars) - firm conclusion
+    const plotBibleSection = this.buildPlotBibleSection(plotBible);
+
+    // 🆕 v9.0: Read prompt from file
+    let basePrompt = '';
+    try {
+      const promptPath = path.join(process.cwd(), 'prompts', 'stage-2-assemble.md');
+      basePrompt = fs.readFileSync(promptPath, 'utf-8');
+    } catch (e) {
+      console.warn('⚠️ Could not read stage-2-assemble.md, using hardcoded prompt');
+      basePrompt = '# Промпт для STAGE 2: Article Assembly';
+    }
+
+    const guidelines = this.loadSharedGuidelines();
+
+    const prompt = `${basePrompt}
+
+${guidelines}
+
+📄 FINALE (1200-1800 chars) - firm conclusion
 
 🏆 ARCHETYPE: ${this.heroArchetype || 'standard'}
 VICTORY TYPE: ${victory}
 
+${plotBibleSection}
 ${victoryExamples}
 
 ⚠️ ANTI-DETECTION FINALE RULES (v8.0):

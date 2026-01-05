@@ -129,9 +129,6 @@ export class ContentSanitizer {
       /\bну да\b/g,
       /\bи то\b/g,
       /\bно вот\b/g,
-      /\bведь\b/g,
-      /\bже\b/g,
-      /\bну\b/g,
     ];
 
     // Strategy 1: Remove orphaned fragments that appear on their own line
@@ -159,7 +156,7 @@ export class ContentSanitizer {
 
     // Strategy 4: Clean up line breaks that got mangled
     // If we have: "text\nну и\nmore text" → "text\nmore text"
-    cleaned = cleaned.replace(/\n(?:ну и|да вот|вот|ну|и то|но вот|ведь|же)\s+/g, '\n');
+    cleaned = cleaned.replace(/\n(?:ну и|да вот|вот|и то|но вот)\s+/g, '\n');
 
     // Strategy 5: Remove fragments that are clearly dialogue markers floating incorrectly
     // If "— фраза" appears but фраза is just one word from previous sentence, remove it
@@ -182,7 +179,7 @@ export class ContentSanitizer {
         // If line is ONLY an OCR fragment (like just "ну и" or "вот только"), remove it
         const trimmed = line.trim();
         const fragmentPatterns = [
-          /^(?:ну и|да вот|вот только|вот это|вот что|ну да|и то|но вот|ведь|же|ну)$/,
+          /^(?:ну и|да вот|вот только|вот это|вот что|ну да|и то|но вот)$/,
           /^— (?:вот в чём дело|одним словом|может быть|не знаю почему)\.\.\.$/,
         ];
         

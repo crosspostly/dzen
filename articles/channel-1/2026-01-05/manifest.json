@@ -1,8 +1,8 @@
 {
   "version": "4.0",
-  "generatedAt": 1767600237160,
+  "generatedAt": 1767601740186,
   "config": {
-    "articleCount": 5,
+    "articleCount": 1,
     "parallelEpisodes": 3,
     "imageGenerationRate": 1,
     "includeImages": false,
