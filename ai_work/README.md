@@ -12,6 +12,30 @@ This directory contains everything needed to understand, implement, and optimize
 
 ### 📋 Core Documents
 
+#### 🆕 0. **`DZEN_GURU_INTEGRATION_TASK.md`** (📚 QUALITY METHODOLOGY INTEGRATION)
+
+**For**: AI/ML Engineers, Content Strategists, QA Team
+**Size**: 29 KB | **Read Time**: 60 minutes
+
+**Contains**:
+- 📊 3 Blocks for Critical Implementation (1.5h - tomorrow)
+- 🎭 3 Blocks for High Priority (3h - this week)
+- 🎯 2 Blocks for Medium Priority (4h - 2-3 weeks)
+- 📝 Complete DZEN GURU methodology (9 document templates)
+- ✅ Checklist system for quality control
+- ✨ Character development (dosier system)
+- 🎬 Composition types (3 main + 6 additional)
+- 🔊 Voiceover guide for production-ready text
+- 📈 Emotional curve visualization
+- 🎓 5 types of finals with A/B testing metrics
+- 🗂️ Lore Wiki system for character/location consistency
+
+**Use This To**: Implement DZEN GURU quality standards, improve article quality by +40%, prepare system for monetization
+
+**Phase 2 (parallel with PR #131)**: Integration of DZEN GURU methodology
+
+---
+
 #### 1. **`AI_TASK_BRIEFING.md`** (✨ START HERE FOR IMPLEMENTATION)
 
 **For**: AI/ML Engineers, Full-stack developers
@@ -100,17 +124,19 @@ This directory contains everything needed to understand, implement, and optimize
 ### If You're a Developer
 
 ```
-1. Read: AI_TASK_BRIEFING.md (full)
+1. Read: DZEN_GURU_INTEGRATION_TASK.md (quick overview)
    ↓
-2. Read: VOICE_RESTORATION_GUIDE.md (implementation section)
+2. Read: AI_TASK_BRIEFING.md (full - blocks A-E)
    ↓
-3. Implement blocks A-E from briefing
+3. Read: VOICE_RESTORATION_GUIDE.md (implementation section)
    ↓
-4. Integrate VoiceRestorationService
+4. Implement blocks A-E from briefing + DZEN GURU quality standards
    ↓
-5. Test: npm run both --count=5
+5. Integrate VoiceRestorationService
    ↓
-6. Verify: Phase 2 Score ≥ 75 on all articles
+6. Test: npm run both --count=5
+   ↓
+7. Verify: Phase 2 Score ≥ 75 on all articles
 ```
 
 ### If You're a Product Manager
@@ -120,25 +146,29 @@ This directory contains everything needed to understand, implement, and optimize
    ↓
 2. Read: project_review.md (full)
    ↓
-3. Share SYSTEM_EXPLAINED with team
+3. Read: DZEN_GURU_INTEGRATION_TASK.md (strategic section)
    ↓
-4. Use CONTENT_QUALITY_MATRIX for KPIs
+4. Share SYSTEM_EXPLAINED with team
    ↓
-5. Plan scaling based on roadmap
+5. Use CONTENT_QUALITY_MATRIX for KPIs
+   ↓
+6. Plan scaling based on roadmap + DZEN GURU integration
 ```
 
 ### If You're QA/Quality
 
 ```
-1. Read: CONTENT_QUALITY_MATRIX.md (full)
+1. Read: DZEN_GURU_INTEGRATION_TASK.md (quality checklist)
    ↓
-2. Read: VOICE_RESTORATION_GUIDE.md (quality metrics section)
+2. Read: CONTENT_QUALITY_MATRIX.md (full)
    ↓
-3. Read: AI_TASK_BRIEFING.md (Stage 3 & 4 sections)
+3. Read: VOICE_RESTORATION_GUIDE.md (quality metrics section)
    ↓
-4. Build quality checks based on matrix
+4. Read: AI_TASK_BRIEFING.md (Stage 3 & 4 sections)
    ↓
-5. Set up Phase 2 scoring dashboard
+5. Build quality checks based on matrix + DZEN GURU checklist
+   ↓
+6. Set up Phase 2 scoring dashboard
 ```
 
 ---
@@ -178,6 +208,9 @@ npm run validate
 
 # Check Phase 2 Score on generated articles
 # Should be ≥ 75/100 for publication
+
+# Check DZEN GURU quality checklist
+# (implement checklist from DZEN_GURU_INTEGRATION_TASK.md)
 ```
 
 ---
@@ -186,6 +219,13 @@ npm run validate
 
 ```
 📖 This README (You are here)
+    │
+    ├─ 🆕 📚 DZEN_GURU_INTEGRATION_TASK.md (QUALITY METHODOLOGY)
+    │  │
+    │  ├─ Block 1 (Critical): Checklist, Dosier, Style (1.5h)
+    │  ├─ Block 2 (High): Composition, Voiceover, Emotional Curve (3h)
+    │  ├─ Block 3 (Medium): Finals, Lore Wiki, Templates (4h)
+    │  └─ Phase 2 parallel with PR #131
     │
     ├─ 📋 AI_TASK_BRIEFING.md (IMPLEMENTATION)
     │  │
@@ -233,37 +273,50 @@ npm run validate
 
 | Document | Version | Updated | Status |
 |----------|---------|---------|--------|
+| DZEN_GURU_INTEGRATION_TASK.md | 1.0 | Jan 5, 2026 | ✅ Ready (NEW) |
 | AI_TASK_BRIEFING.md | 1.0 | Jan 5, 2026 | ✅ Ready |
 | VOICE_RESTORATION_GUIDE.md | 1.0 | Jan 5, 2026 | ✅ Ready |
 | CONTENT_QUALITY_MATRIX.md | 1.0 | Jan 5, 2026 | ✅ Ready |
 | SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md | 1.0 | Jan 5, 2026 | ✅ Ready |
 | project_review.md | 1.0 | Jan 5, 2026 | ✅ Ready |
-| README.md | 1.0 | Jan 5, 2026 | ✅ Ready |
+| README.md | 1.1 | Jan 5, 2026 | ✅ Updated |
 
 ---
 
 ## 🚀 Implementation Phases
 
-### Phase 1: Foundation (Days 1-3)
+### Phase 1: Foundation (Days 1-3) - PR #131
 - [ ] Read all 5 core documents
+- [ ] Implement blocks A-E from AI_TASK_BRIEFING.md
 - [ ] Set up development environment
 - [ ] Deploy VoiceRestorationService
 - [ ] Test basic generation (both mode)
 
-### Phase 2: Integration (Days 4-5)
-- [ ] Implement blocks A-E from briefing
-- [ ] Integrate quality gates
-- [ ] Build Phase 2 scoring system
-- [ ] Test on 10 articles
+### Phase 2: DZEN GURU Integration (Days 4-7) - DZEN_GURU_INTEGRATION_TASK
+- [ ] Read DZEN_GURU_INTEGRATION_TASK.md
+- [ ] Implement Block 1 (Critical - 1.5h)
+  - [ ] Create dzen-quality-checklist.md
+  - [ ] Update stage-1-episodes.md with dosier
+  - [ ] Update stage-3-restore.md with style requirements
+- [ ] Implement Block 2 (High Priority - 3h)
+  - [ ] Create COMPOSITION_TYPES.md
+  - [ ] Create VOICEOVER_GUIDE.md
+  - [ ] Create EMOTION_CURVE.md
+- [ ] Test on 5-10 articles
 
-### Phase 3: Validation (Days 6-7)
+### Phase 3: Quality Validation (Days 8-10)
 - [ ] Verify facts preservation (100%)
 - [ ] Check Phase 2 scores (75+)
-- [ ] Validate emotional restoration
+- [ ] Validate DZEN GURU checklist compliance
 - [ ] Compare RAW vs RESTORED metrics
+- [ ] Validate emotional restoration
 
-### Phase 4: Production (Days 8-10)
+### Phase 4: Production (Days 11-14)
 - [ ] Deploy to staging
+- [ ] Implement Block 3 (Medium Priority - 4h)
+  - [ ] Create FINAL_TYPES.md
+  - [ ] Set up Lore Wiki (Google Sheet)
+  - [ ] Configure A/B testing framework
 - [ ] Monitor article generation
 - [ ] Collect engagement metrics
 - [ ] Optimize based on data
@@ -278,6 +331,12 @@ npm run validate
 - **Techniques**: 6-stage process covering all sections
 - **Output**: RAW + RESTORED pairs for A/B testing
 
+### 🎓 DZEN GURU Methodology (NEW - Phase 2)
+- **Impact**: +40% quality improvement
+- **Method**: 9-document system with checklists
+- **Timeline**: 3-4 weeks for full integration
+- **Result**: Production-ready articles with monetization readiness
+
 ### 🔧 CLI Command: `npm run both`
 - **Default mode** (v7.1)
 - Generates 2 articles per request (RAW + RESTORED)
@@ -289,6 +348,7 @@ npm run validate
 - Character count: 15,000-25,000
 - Scroll depth estimate: 70%+
 - Comments estimate: 30+
+- DZEN GURU Checklist: 10/10 ✓
 
 ---
 
@@ -297,14 +357,17 @@ npm run validate
 **Technical Questions?**
 - Read AI_TASK_BRIEFING.md blocks A-E
 - Check VOICE_RESTORATION_GUIDE.md implementation
+- See DZEN_GURU_INTEGRATION_TASK.md for methodology
 
 **Quality Issues?**
 - Consult CONTENT_QUALITY_MATRIX.md
 - Compare against VOICE_RESTORATION_GUIDE quality metrics
+- Use DZEN GURU quality checklist from DZEN_GURU_INTEGRATION_TASK.md
 
 **Strategic Planning?**
 - Use project_review.md roadmap
 - Reference SYSTEM_EXPLAINED for team briefing
+- Follow DZEN_GURU_INTEGRATION_TASK.md phases
 
 ---
 
@@ -316,6 +379,16 @@ npm run validate
 - Core service: `services/voiceRestorationService.ts`
 - CLI entry: `cli.ts` (both & factory commands)
 - Config: `config/dzen-channels.config.ts`
+- AI Work docs: `ai_work/*.md`
+- Prompts: `prompts/*.md`
+
+---
+
+## 📋 PR #131 Status
+
+**Main PR**: Implementation of blocks A-E (ZenMaster 5-block architecture)
+**Phase 2**: DZEN GURU Integration (parallel, in progress)
+**Status**: ✅ PR #131 ready for merge → Phase 2 implementation next
 
 ---
 
