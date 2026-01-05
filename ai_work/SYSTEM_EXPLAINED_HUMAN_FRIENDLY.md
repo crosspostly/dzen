@@ -247,13 +247,16 @@ npm run list-projects     # Список проектов
 
 ### Документация для разработчиков
 
-- **MASTER_PIPELINE_GUIDE.md** - Полное описание пайплайна (Stage 0-5)
-- **SYSTEM_OVERVIEW.md** - Архитектура системы
-- **QUALITY_METRICS.md** - Метрики качества
+- **ARTICLE_GENERATION_ALGORITHM.md** - Полный алгоритм (HOW) - Stage 0-5, retry logic, формулы расчёта
+- **DZEN_QUALITY_STANDARDS.md** - Стандарты качества (WHAT) - метрики, правила, чеклисты
+- **IMPLEMENTATION_ROADMAP.md** - План разработки (HOW-TO) - что реализовано, что нужно сделать
+
+### Для объяснения не-технической аудитории
+
+- **SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md** - Этот файл (простое объяснение)
 
 ### Стратегическое планирование
 
-- **TODO_ISSUES.md** - Известные проблемы и план исправления
 - **project_review.md** - SWOT анализ и roadmap
 
 ### Внешние ссылки
