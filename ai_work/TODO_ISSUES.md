@@ -141,7 +141,7 @@ Stage 4: Phase 2 Anti-Detection (Overall Score >= 80)
 - **ARTICLE_GENERATION_ALGORITHM.md** - Полный алгоритм генерации
 - **DZEN_QUALITY_STANDARDS.md** - Стандарты качества
 - **IMPLEMENTATION_ROADMAP.md** - Полный план разработки с кодом
-- **SYSTEM_OVERVIEW.md** - Архитектура системы
+- **SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md** - Простое объяснение для не-технических людей
 
 ---
 
