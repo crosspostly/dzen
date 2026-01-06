@@ -182,14 +182,12 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       const factory = new ContentFactoryOrchestrator();
       await factory.initialize(config, channelName); // 🔥 PASS CHANNEL NAME!
 
-      // Start generation
+      // Start generation (+ streaming export)
       const startTime = Date.now();
       const articles = await factory.start();
       const duration = Date.now() - startTime;
 
-      // Export articles
-      console.log(`\n${LOG.SAVE} Exporting articles...`);
-      const exportPath = await factory.exportForZen('./articles');
+      const exportPath = factory.getZenExportDir() || path.join('./articles', channelName, new Date().toISOString().split('T')[0]);
 
       // Print summary
       console.log(`\n${'='.repeat(60)}`);
@@ -198,7 +196,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`📄 Articles generated: ${articles.length}`);
       console.log(`⏱️  Total time: ${formatTime(duration)}`);
       console.log(`💾 Output directory: ${exportPath}`);
-      console.log(`📊 Average time/article: ${formatTime(duration / articles.length)}`);
+      console.log(`📊 Average time/article: ${formatTime(duration / Math.max(articles.length, 1))}`);
       console.log(`${'='.repeat(60)}\n`);
 
     } else if (command === 'both') {
@@ -256,14 +254,12 @@ ${'='.repeat(60)}`);
       const factory = new ContentFactoryOrchestrator();
       await factory.initialize(config, channelName);
 
-      // Start BOTH mode
+      // Start BOTH mode (+ streaming export)
       const startTime = Date.now();
       const pairs = await factory.startBoth();
       const duration = Date.now() - startTime;
 
-      // Export articles (both versions)
-      console.log(`\n${LOG.SAVE} Exporting article pairs...`);
-      const exportPath = await factory.exportForZen('./articles');
+      const exportPath = factory.getZenExportDir() || path.join('./articles', channelName, new Date().toISOString().split('T')[0]);
 
       // Print summary
       console.log(`\n${'='.repeat(60)}`);

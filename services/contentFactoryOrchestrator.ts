@@ -12,6 +12,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawnSync } from 'child_process';
 import { ArticleWorkerPool, BothModeResult } from './articleWorkerPool';
 import { ImageWorkerPool } from './imageWorkerPool';
 import { ImageProcessorService } from './imageProcessorService';
@@ -36,6 +37,23 @@ export class ContentFactoryOrchestrator {
   private errors: FactoryError[] = [];
   private apiKey?: string;
   private channelName: string = 'channel-1'; // 🆕 Channel name for folder structure
+
+  // 🔥 Streaming export state (Variant A)
+  private zenStreamingExportQueue: Article[] = [];
+  private zenStreamingState?: {
+    baseOutputDir: string;
+    dateStr: string;
+    finalDir: string;
+    batchSize: number;
+    totalArticles: number;
+    nextArticleNumber: number;
+    pendingBatchStart: number;
+    pendingBatchArticleCount: number;
+    pendingGitFiles: string[];
+    pushes: number;
+    startedAt: number;
+  };
+  private zenGitConfigured: boolean = false;
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey;
@@ -115,65 +133,70 @@ export class ContentFactoryOrchestrator {
 
   /**
    * 🚀 Start generation process
+   *
+   * 🔥 v7.2+: STREAMING EXPORT (Variant A)
+   * - Generates article → processes image → saves to disk → git commit/push in small batches
+   * - Each push triggers GitHub Actions auto-restore in parallel
    */
   async start(): Promise<Article[]> {
     if (this.progress.state !== "running") {
       throw new Error("Factory not initialized. Call initialize() first.");
     }
 
-    console.log(`🚀 Starting content generation...\n`);
+    const outputDir = './articles';
+    const gitConfig = { autoCommit: true, autoPush: true };
+
+    this.initZenStreamingState(outputDir, this.config.articleCount);
+
+    console.log(`
+${"=".repeat(60)}`);
+    console.log(`🏭 FACTORY MODE - Streaming Export`);
+    console.log(`${"=".repeat(60)}`);
+    console.log(`📁 Output folder: ${this.zenStreamingState?.finalDir}`);
+    console.log(`📦 Git batch size: ${this.zenStreamingState?.batchSize}`);
+    console.log(`${"=".repeat(60)}\n`);
 
     try {
-      // Stage 1: Generate articles (parallel)
-      console.log(`
-${"=".repeat(60)}`);
-      console.log(`📝 STAGE 1: Article Generation (${this.config.articleCount} articles)`);
-      console.log(`${"=".repeat(60)}\n`);
+      this.articles = [];
+      this.progress.imagesCompleted = 0;
 
-      this.articles = await this.generateArticles();
+      const onProgress = (completed: number, total: number) => {
+        this.progress.articlesCompleted = completed;
+        this.progress.percentComplete = (completed / total) * 100;
+        this.updateEstimatedTime();
+      };
 
-      console.log(`
-✅ Stage 1 complete: ${this.articles.length} articles generated
-`);
+      await this.articleWorkerPool.executeBatch(
+        this.config.articleCount,
+        this.config,
+        onProgress,
+        async (article, index, total) => {
+          console.log(`\n📝 Article ${index}/${total}: "${article.title}"`);
 
-      // Stage 2: Generate COVER images (serial, 1 per article!)
-      if (this.config.includeImages && this.articles.length > 0) {
-        console.log(`
-${"=".repeat(60)}`);
-        console.log(`🗼️  STAGE 2: COVER Image Generation (${this.articles.length} covers, not ${this.articles.length * 12}!)`);
-        console.log(`${"=".repeat(60)}\n`);
+          if (this.config.includeImages && article.coverImage?.base64) {
+            await this.processCoverImagePipelineForArticle(article, index, total);
+            this.progress.imagesCompleted++;
+          }
 
-        // ✅ STAGE 2: Generate cover images from article title + lede
-        await this.generateCoverImages();
+          this.articles.push(article);
+          this.zenStreamingExportQueue.push(article);
 
-        console.log(`
-✅ Stage 2 complete: Cover images generated and attached (1 per article)\n`);
+          await this.exportForZenStreaming(outputDir, gitConfig);
 
-        // ✅ STAGE 3: Post-process images through Canvas (remove metadata, apply filters)
-        await this.postProcessCoverImages();
+          this.minimizeArticleInMemory(article);
+        }
+      );
 
-        console.log(`
-✅ Stage 3 complete: All images post-processed and ready for export
-`);
+      await this.finalizeZenStreamingExport(gitConfig);
 
-        // 🆕 STAGE 4: Mobile Authenticity - Make images look like real mobile photos
-        await this.applyMobileAuthenticityProcessing();
-
-        console.log(`
-✅ Stage 4 complete: All images processed for mobile authenticity
-`);
-      }
-
-      // Mark as completed
       this.progress.state = "completed";
       this.progress.completedAt = Date.now();
       this.progress.percentComplete = 100;
 
-      // Print final summary
+      this.printStreamingExportSummary('FACTORY');
       this.printFinalSummary();
 
       return this.articles;
-
     } catch (error) {
       this.progress.state = "failed";
       const factoryError: FactoryError = {
@@ -206,54 +229,52 @@ ${"=".repeat(60)}`);
       throw new Error("Factory not initialized. Call initialize() first.");
     }
 
+    const outputDir = './articles';
+    const gitConfig = { autoCommit: true, autoPush: true };
+
+    const totalArticles = this.config.articleCount * 2;
+    this.initZenStreamingState(outputDir, totalArticles);
+
     console.log(`
 ${"=".repeat(60)}`);
-    console.log(`🎭 ZENMASTER v7.1 - BOTH MODE`);
+    console.log(`🎭 BOTH MODE - Streaming Export`);
     console.log(`Generating ${this.config.articleCount} article pairs (RAW + RESTORED)`);
+    console.log(`📁 Output folder: ${this.zenStreamingState?.finalDir}`);
+    console.log(`📦 Git batch size: ${this.zenStreamingState?.batchSize}`);
     console.log(`${"=".repeat(60)}\n`);
 
     try {
-      // Stage 1: Generate article pairs (RAW + RESTORED)
-      console.log(`
-${"=".repeat(60)}`);
-      console.log(`📝 STAGE 1: Article Pair Generation`);
-      console.log(`${"=".repeat(60)}\n`);
+      this.articles = [];
+      this.progress.imagesCompleted = 0;
 
-      const pairResults = await this.generateArticlePairs();
-      const allArticles = pairResults.flatMap(p => [p.rawArticle, p.restoredArticle]);
-      
-      console.log(`
-✅ Stage 1 complete: ${pairResults.length} article pairs generated (${allArticles.length} total articles)
-      `);
+      const pairResults = await this.generateArticlePairs(async (pair, index, total) => {
+        const title = pair.rawArticle.title || pair.restoredArticle.title;
+        console.log(`\n📝 Pair ${index}/${total}: "${title}"`);
 
-      // Store all articles for export
-      this.articles = allArticles;
+        if (this.config.includeImages && pair.rawArticle.coverImage?.base64) {
+          await this.processCoverImagePipelineForBothArticles(pair.rawArticle, pair.restoredArticle, index, total);
+          this.progress.imagesCompleted++;
+        }
 
-      // Stage 2: Process images for both versions (share same image)
-      if (this.config.includeImages && allArticles.length > 0) {
-        console.log(`
-${"=".repeat(60)}`);
-        console.log(`🗼️  STAGE 2: Image Processing (shared cover for both versions)`);
-        console.log(`${"=".repeat(60)}\n`);
+        this.articles.push(pair.rawArticle, pair.restoredArticle);
+        this.zenStreamingExportQueue.push(pair.rawArticle, pair.restoredArticle);
 
-        await this.postProcessCoverImages();
-        await this.applyMobileAuthenticityProcessing();
+        await this.exportForZenStreaming(outputDir, gitConfig);
 
-        console.log(`
-✅ Stage 2 complete: All images processed
-        `);
-      }
+        this.minimizeArticleInMemory(pair.rawArticle);
+        this.minimizeArticleInMemory(pair.restoredArticle);
+      });
 
-      // Mark as completed
+      await this.finalizeZenStreamingExport(gitConfig);
+
       this.progress.state = "completed";
       this.progress.completedAt = Date.now();
       this.progress.percentComplete = 100;
 
-      // Print final summary
+      this.printStreamingExportSummary('BOTH');
       this.printFinalSummaryBoth(pairResults);
 
       return pairResults;
-
     } catch (error) {
       this.progress.state = "failed";
       const factoryError: FactoryError = {
@@ -275,7 +296,9 @@ ${"=".repeat(60)}`);
   /**
    * Generate article pairs (RAW + RESTORED)
    */
-  private async generateArticlePairs(): Promise<BothModeResult[]> {
+  private async generateArticlePairs(
+    onPairGenerated?: (pair: BothModeResult, index: number, total: number) => Promise<void> | void
+  ): Promise<BothModeResult[]> {
     const results: BothModeResult[] = [];
     const onProgress = (completed: number, total: number) => {
       this.progress.articlesCompleted = completed;
@@ -287,7 +310,8 @@ ${"=".repeat(60)}`);
       results.push(...await this.articleWorkerPool.executeBatchBoth(
         this.config.articleCount,
         this.config,
-        onProgress
+        onProgress,
+        onPairGenerated
       ));
     } catch (error) {
       console.error(`❌ Article pair generation error: ${(error as Error).message}`);
@@ -297,6 +321,7 @@ ${"=".repeat(60)}`);
         timestamp: Date.now(),
         recovered: false
       });
+      throw error;
     }
 
     return results;
@@ -772,11 +797,61 @@ ${"=".repeat(60)}`);
   }
 
   /**
-   * 📄 Export articles for Zen
-   * ✅ UPDATED v4.0: Save to articles/{channel_name}/{YYYY-MM-DD}/ with flat structure
-   * - ONE .md file (article content with front-matter for RSS)
-   * - ONE .jpg file (processed cover image via Canvas, or original JPEG if Canvas fails)
-   * - Same filename for both (only extension differs)
+   * 📁 Last Zen export directory (streaming)
+   */
+  getZenExportDir(): string | undefined {
+    return this.zenStreamingState?.finalDir;
+  }
+
+  /**
+   * 📄 Export articles for Zen (STREAMING MODE)
+   * ✨ Saves and pushes articles one by one as they're generated
+   * - Create article → Save to disk → Git commit/push (batched) → Auto-Restore triggers
+   */
+  async exportForZenStreaming(
+    outputDir: string = './articles',
+    gitConfig?: { autoCommit?: boolean; autoPush?: boolean }
+  ): Promise<string[]> {
+    if (!this.zenStreamingState) {
+      this.initZenStreamingState(outputDir, this.config?.articleCount || this.progress.articlesTotal || 0);
+    }
+
+    const state = this.zenStreamingState!;
+    const autoCommit = gitConfig?.autoCommit !== false;
+    const autoPush = gitConfig?.autoPush !== false;
+
+    const exported: string[] = [];
+
+    while (this.zenStreamingExportQueue.length > 0) {
+      const article = this.zenStreamingExportQueue.shift()!;
+      const articleNumber = state.nextArticleNumber;
+
+      if (state.pendingBatchArticleCount === 0) {
+        state.pendingBatchStart = articleNumber;
+      }
+
+      const filePaths = this.exportSingleArticleForZen(article, state.finalDir, state.dateStr);
+      exported.push(...filePaths);
+
+      for (const filePath of filePaths) {
+        const rel = path.relative(process.cwd(), filePath);
+        state.pendingGitFiles.push(rel);
+        console.log(`   💾 Saved: ${rel}`);
+      }
+
+      state.pendingBatchArticleCount++;
+      state.nextArticleNumber++;
+
+      if (autoCommit && state.pendingBatchArticleCount >= state.batchSize) {
+        await this.commitAndPushZenStreamingBatch({ autoCommit, autoPush });
+      }
+    }
+
+    return exported;
+  }
+
+  /**
+   * @deprecated Use exportForZenStreaming() (streaming export) instead.
    */
   async exportForZen(outputDir: string = './articles'): Promise<string> {
     console.log(`
@@ -875,6 +950,420 @@ ${version ? `version: "${version}"` : ''}
     console.log(`   📋 Report: ${reportPath}\n`);
 
     return finalDir;
+  }
+
+  private getZenStreamingBatchSize(): number {
+    const raw = process.env.ZEN_STREAMING_BATCH_SIZE;
+    const parsed = raw ? parseInt(raw, 10) : NaN;
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+    return 2;
+  }
+
+  private initZenStreamingState(baseOutputDir: string, totalArticles: number): void {
+    this.zenStreamingExportQueue = [];
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    const finalDir = path.join(baseOutputDir, this.channelName, dateStr);
+    fs.mkdirSync(finalDir, { recursive: true });
+
+    this.zenStreamingState = {
+      baseOutputDir,
+      dateStr,
+      finalDir,
+      batchSize: this.getZenStreamingBatchSize(),
+      totalArticles,
+      nextArticleNumber: 1,
+      pendingBatchStart: 1,
+      pendingBatchArticleCount: 0,
+      pendingGitFiles: [],
+      pushes: 0,
+      startedAt: Date.now(),
+    };
+  }
+
+  private exportSingleArticleForZen(article: Article, finalDir: string, dateStr: string): string[] {
+    const exported: string[] = [];
+
+    const slug = this.createSlug(article.title);
+
+    const version = (article.metadata as any)?.articleVersion;
+    const filename = version ? `${slug}-${String(version).toLowerCase()}` : slug;
+
+    const description = this.generateIntriguingDescription(article.content || '');
+    const imageFileName = `${slug}.jpg`;
+
+    const frontMatter = `---
+title: "${article.title}"
+date: "${dateStr}"
+description: "${description}"
+image: "${imageFileName}"
+category: "lifestory"
+${version ? `version: "${version}"\n` : ''}---
+`;
+
+    const contentLines = (article.content || '').split('\n');
+    const articleBody = contentLines.slice(1).join('\n').trim();
+    const markdownContent = `${frontMatter}\n${articleBody}`;
+
+    const mdPath = path.join(finalDir, `${filename}.md`);
+    fs.writeFileSync(mdPath, markdownContent);
+    exported.push(mdPath);
+
+    if (article.coverImage) {
+      let jpegBuffer: Buffer;
+
+      if (article.coverImage.processedBuffer) {
+        jpegBuffer = article.coverImage.processedBuffer;
+      } else {
+        const base64Data = (article.coverImage.base64 || '').replace(/^data:image\/\w+;base64,/, '');
+        jpegBuffer = Buffer.from(base64Data, 'base64');
+      }
+
+      const jpgPath = path.join(finalDir, imageFileName);
+      fs.writeFileSync(jpgPath, jpegBuffer);
+      exported.push(jpgPath);
+    }
+
+    return exported;
+  }
+
+  private isGitRepo(): boolean {
+    const res = spawnSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: process.cwd(),
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
+    return res.status === 0 && (res.stdout || '').trim() === 'true';
+  }
+
+  private getGitBranchName(): string {
+    if (process.env.GITHUB_REF_NAME) {
+      return process.env.GITHUB_REF_NAME;
+    }
+
+    const res = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+      cwd: process.cwd(),
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
+
+    return (res.stdout || 'main').trim() || 'main';
+  }
+
+  private ensureZenGitConfigured(): void {
+    if (this.zenGitConfigured) return;
+
+    spawnSync('git', ['config', '--local', 'user.email', 'github-actions[bot]@users.noreply.github.com'], {
+      cwd: process.cwd(),
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
+    spawnSync('git', ['config', '--local', 'user.name', 'github-actions[bot]'], {
+      cwd: process.cwd(),
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
+
+    this.zenGitConfigured = true;
+  }
+
+  private async commitAndPushZenStreamingBatch(config: { autoCommit: boolean; autoPush: boolean }): Promise<void> {
+    const state = this.zenStreamingState;
+    if (!state || state.pendingBatchArticleCount === 0) return;
+
+    if (!this.isGitRepo()) {
+      console.warn(`⚠️  Git repo not detected - skipping commit/push (streaming export still saved files).`);
+      state.pendingGitFiles = [];
+      state.pendingBatchArticleCount = 0;
+      return;
+    }
+
+    if (!config.autoCommit) {
+      state.pendingGitFiles = [];
+      state.pendingBatchArticleCount = 0;
+      return;
+    }
+
+    this.ensureZenGitConfigured();
+
+    const batchStart = state.pendingBatchStart;
+    const batchEnd = state.nextArticleNumber - 1;
+    const totalBatches = Math.max(1, Math.ceil(state.totalArticles / state.batchSize));
+    const currentBatch = state.pushes + 1;
+
+    const message = `feat: Add articles ${batchStart}-${batchEnd} (streaming export)`;
+
+    const uniqueFiles = Array.from(new Set(state.pendingGitFiles));
+
+    const addRes = spawnSync('git', ['add', '--', ...uniqueFiles], {
+      cwd: process.cwd(),
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
+
+    if (addRes.status !== 0) {
+      const err = (addRes.stderr || addRes.stdout || '').trim();
+      console.warn(`⚠️  git add failed: ${err}`);
+      state.pendingGitFiles = [];
+      state.pendingBatchArticleCount = 0;
+      return;
+    }
+
+    const commitRes = spawnSync('git', ['commit', '-m', message], {
+      cwd: process.cwd(),
+      stdio: 'pipe',
+      encoding: 'utf-8',
+    });
+
+    if (commitRes.status !== 0) {
+      const out = `${commitRes.stdout || ''}${commitRes.stderr || ''}`;
+      if (out.includes('nothing to commit')) {
+        state.pendingGitFiles = [];
+        state.pendingBatchArticleCount = 0;
+        return;
+      }
+
+      console.warn(`⚠️  git commit failed: ${out.trim()}`);
+      state.pendingGitFiles = [];
+      state.pendingBatchArticleCount = 0;
+      return;
+    }
+
+    console.log(`   📤 Git push (batch ${currentBatch}/${totalBatches})`);
+
+    if (!config.autoPush) {
+      state.pushes++;
+      state.pendingGitFiles = [];
+      state.pendingBatchArticleCount = 0;
+      console.log(`   ⏳ GitHub Actions will trigger after push (autoPush disabled)`);
+      return;
+    }
+
+    const branch = this.getGitBranchName();
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const fetchRes = spawnSync('git', ['fetch', 'origin', branch], {
+        cwd: process.cwd(),
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      });
+
+      if (fetchRes.status !== 0) {
+        const err = (fetchRes.stderr || fetchRes.stdout || '').trim();
+        if (process.env.GITHUB_ACTIONS === 'true') {
+          throw new Error(`git fetch failed: ${err}`);
+        }
+        console.warn(`⚠️  git fetch failed: ${err}`);
+        break;
+      }
+
+      const rebaseRes = spawnSync('git', ['rebase', `origin/${branch}`], {
+        cwd: process.cwd(),
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      });
+
+      if (rebaseRes.status !== 0) {
+        spawnSync('git', ['rebase', '--abort'], { cwd: process.cwd(), stdio: 'pipe', encoding: 'utf-8' });
+        const err = (rebaseRes.stderr || rebaseRes.stdout || '').trim();
+        if (process.env.GITHUB_ACTIONS === 'true') {
+          throw new Error(`git rebase failed: ${err}`);
+        }
+        console.warn(`⚠️  git rebase failed: ${err}`);
+        break;
+      }
+
+      const pushRes = spawnSync('git', ['push', 'origin', branch], {
+        cwd: process.cwd(),
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      });
+
+      if (pushRes.status === 0) {
+        state.pushes++;
+        state.pendingGitFiles = [];
+        state.pendingBatchArticleCount = 0;
+        console.log(`   ⏳ GitHub Actions triggered for restoration...`);
+        return;
+      }
+
+      const err = (pushRes.stderr || pushRes.stdout || '').trim();
+
+      if (attempt === maxRetries) {
+        if (process.env.GITHUB_ACTIONS === 'true') {
+          throw new Error(`git push failed: ${err}`);
+        }
+        console.warn(`⚠️  git push failed: ${err}`);
+        break;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    state.pushes++;
+    state.pendingGitFiles = [];
+    state.pendingBatchArticleCount = 0;
+  }
+
+  private async finalizeZenStreamingExport(gitConfig: { autoCommit: boolean; autoPush: boolean }): Promise<void> {
+    if (!this.zenStreamingState) return;
+
+    await this.exportForZenStreaming(this.zenStreamingState.baseOutputDir, gitConfig);
+
+    if (gitConfig.autoCommit !== false && this.zenStreamingState.pendingBatchArticleCount > 0) {
+      await this.commitAndPushZenStreamingBatch({
+        autoCommit: gitConfig.autoCommit !== false,
+        autoPush: gitConfig.autoPush !== false,
+      });
+    }
+  }
+
+  private printStreamingExportSummary(mode: 'FACTORY' | 'BOTH'): void {
+    const state = this.zenStreamingState;
+    if (!state) return;
+
+    const durationMs = Date.now() - state.startedAt;
+    const totalBatches = Math.max(1, Math.ceil(state.totalArticles / state.batchSize));
+
+    console.log(`\n${"=".repeat(60)}`);
+    console.log(`✅ STREAMING EXPORT COMPLETE (${mode})`);
+    console.log(`${"=".repeat(60)}`);
+    console.log(`📄 Total articles: ${state.totalArticles}`);
+    console.log(`📤 Git pushes: ${state.pushes} (batches of ${state.batchSize}, expected ~${totalBatches})`);
+    console.log(`⏱️  Total time: ${(durationMs / 1000).toFixed(1)}s`);
+    console.log(`🚀 Articles are now being restored in parallel by GitHub Actions`);
+    console.log(`${"=".repeat(60)}\n`);
+  }
+
+  private minimizeArticleInMemory(article: Article): void {
+    article.content = '';
+    if (article.coverImage) {
+      article.coverImage.base64 = '';
+      article.coverImage.processedBuffer = undefined;
+    }
+  }
+
+  private async processCoverImagePipelineForArticle(article: Article, index: number, total: number): Promise<void> {
+    await this.postProcessCoverImageForArticle(article, index, total);
+    await this.applyMobileAuthenticityForArticle(article, index, total);
+  }
+
+  private async processCoverImagePipelineForBothArticles(
+    rawArticle: Article,
+    restoredArticle: Article,
+    index: number,
+    total: number
+  ): Promise<void> {
+    await this.processCoverImagePipelineForArticle(rawArticle, index, total);
+
+    if (rawArticle.coverImage && restoredArticle.coverImage) {
+      restoredArticle.coverImage.processedBuffer = rawArticle.coverImage.processedBuffer;
+      restoredArticle.coverImage.format = rawArticle.coverImage.format;
+      restoredArticle.coverImage.size = rawArticle.coverImage.size;
+    }
+
+    if (rawArticle.metadata && restoredArticle.metadata) {
+      restoredArticle.metadata.mobileAuthenticityApplied = rawArticle.metadata.mobileAuthenticityApplied;
+      restoredArticle.metadata.authenticityLevel = rawArticle.metadata.authenticityLevel;
+      restoredArticle.metadata.appliedAuthenticityEffects = rawArticle.metadata.appliedAuthenticityEffects;
+      restoredArticle.metadata.authenticityError = rawArticle.metadata.authenticityError;
+      restoredArticle.metadata.mobileCameraEmulated = rawArticle.metadata.mobileCameraEmulated;
+      restoredArticle.metadata.imageProcessingStatus = rawArticle.metadata.imageProcessingStatus;
+      restoredArticle.metadata.imageProcessingError = rawArticle.metadata.imageProcessingError;
+    }
+  }
+
+  private async postProcessCoverImageForArticle(article: Article, index: number, total: number): Promise<void> {
+    if (!article.coverImage?.base64) return;
+
+    const imageProcessorService = new ImageProcessorService();
+
+    let dataUrl = article.coverImage.base64;
+    const hasDataPrefix = dataUrl.startsWith('data:');
+
+    if (!hasDataPrefix) {
+      const binaryString = Buffer.from(dataUrl.substring(0, 28), 'base64');
+      const magic = binaryString.toString('hex').toUpperCase();
+
+      let mimeType = 'image/jpeg';
+      if (magic.startsWith('89504E47')) {
+        mimeType = 'image/png';
+      } else if (magic.startsWith('FFD8FF')) {
+        mimeType = 'image/jpeg';
+      } else if (magic.startsWith('52494646') && magic.includes('57454250')) {
+        mimeType = 'image/webp';
+      }
+
+      dataUrl = `data:${mimeType};base64,${dataUrl}`;
+    }
+
+    try {
+      console.log(`   🎨 Canvas post-processing (${index}/${total})...`);
+      const processorResult = await imageProcessorService.processImage(dataUrl);
+
+      if (processorResult.success && processorResult.buffer) {
+        article.coverImage.processedBuffer = processorResult.buffer;
+        article.coverImage.format = 'jpeg';
+      }
+
+      if (!article.metadata) {
+        article.metadata = { generatedAt: Date.now() } as any;
+      }
+
+      (article.metadata as any).imageProcessingStatus = processorResult.processingStatus;
+      (article.metadata as any).imageProcessingError = processorResult.errorMessage;
+
+    } catch (error) {
+      console.warn(`   ⚠️  Canvas post-processing failed: ${(error as Error).message}`);
+    }
+  }
+
+  private async applyMobileAuthenticityForArticle(article: Article, index: number, total: number): Promise<void> {
+    if (!article.coverImage?.base64) return;
+
+    const authenticityProcessor = new MobilePhotoAuthenticityProcessor();
+
+    try {
+      console.log(`   📱 Mobile authenticity (${index}/${total})...`);
+
+      const device = this.selectDeviceForArticle(article);
+      const deviceKey = this.mapDeviceToKey(device.model);
+
+      let currentBuffer: Buffer;
+      if (article.coverImage.processedBuffer) {
+        currentBuffer = article.coverImage.processedBuffer;
+      } else {
+        const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
+        currentBuffer = Buffer.from(base64Data, 'base64');
+      }
+
+      const authenticityResult: AuthenticityResult = await authenticityProcessor.processWithDevice(
+        currentBuffer.toString('base64'),
+        deviceKey,
+        device.year
+      );
+
+      if (authenticityResult.success && authenticityResult.processedBuffer) {
+        article.coverImage.processedBuffer = authenticityResult.processedBuffer;
+        article.coverImage.format = 'jpeg';
+      }
+
+      if (!article.metadata) {
+        article.metadata = { generatedAt: Date.now() } as any;
+      }
+
+      (article.metadata as any).mobileAuthenticityApplied = authenticityResult.success;
+      (article.metadata as any).authenticityLevel = authenticityResult.authenticityLevel;
+      (article.metadata as any).appliedAuthenticityEffects = authenticityResult.appliedEffects;
+      (article.metadata as any).authenticityError = authenticityResult.errorMessage;
+      (article.metadata as any).mobileCameraEmulated = `${device.model} (${device.year})`;
+
+    } catch (error) {
+      console.warn(`   ⚠️  Mobile authenticity processing failed: ${(error as Error).message}`);
+    }
   }
 
   /**

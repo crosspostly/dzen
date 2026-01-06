@@ -66,18 +66,43 @@ jobs:
           node scripts/restore-articles.js ${{ steps.files.outputs.files }}
           echo "exit_code=$?" >> $GITHUB_OUTPUT
 
-      - name: 📤 Commit if changed
+      - name: 📤 Commit if changed (with rebase + retry)
         if: steps.files.outputs.files != '' && steps.restore.outputs.exit_code == '0'
         run: |
+          set -e
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
-          if ! git diff --quiet; then
-            git add articles/
-            git commit -m "🔧 Auto-restore: Fixed formatting" || true
-            git push origin main || true
-            echo "✅ Pushed"
+
+          if git diff --quiet; then
+            echo "✅ No changes after restore"
+            exit 0
           fi
+
+          git add articles/
+          git commit -m "🔧 Auto-restore: Fixed formatting"
+
+          MAX_RETRIES=3
+          RETRY_DELAY=2
+
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo "\n🔄 Push attempt $attempt/$MAX_RETRIES..."
+
+            git fetch origin main
+            git rebase origin/main || (git rebase --abort && false)
+
+            if git push origin HEAD:main; then
+              echo "✅ Pushed"
+              exit 0
+            fi
+
+            if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+              echo "⚠️  Push failed, retrying in ${RETRY_DELAY}s..."
+              sleep $RETRY_DELAY
+            fi
+          done
+
+          echo "❌ Push failed after ${MAX_RETRIES} attempts"
+          exit 1
 
       - name: ✅ Done
         if: always()
