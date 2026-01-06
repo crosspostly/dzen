@@ -319,41 +319,42 @@ function escapeXml(str) {
     .trim();
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// 📅 TIMELINE PUBLISHING INTEGRATION
+// ════════════════════════════════════════════════════════════════════════════════
+
+import { getNextPublishingSlot, getTimelineForArticle } from './timeline-manager.js';
+
 /**
- * ✅ ЗАДАЧА 5 v2.10: Generate pubDate starting from NOW + 3 hours
+ * ✅ TASK #135: Timeline-aware pubDate generation
  * 
  * LOGIC:
- * - 1st article: NOW + 3 hours
- * - 2nd article: 1st article pubDate + 90 minutes
- * - 3rd article: 2nd article pubDate + 90 minutes
- * - etc...
- * 
- * Example: Current time 11:11 AM MSK
- * - Article 1: 14:11 (11:11 + 3 hours)
- * - Article 2: 15:41 (14:11 + 90 minutes)
- * - Article 3: 17:11 (15:41 + 90 minutes)
+ * - Each article category can have its own timeline
+ * - Select appropriate timeline based on article path
+ * - Generate pubDates sequentially with timeline-specific intervals
+ * - Respect publishing windows and constraints
  * 
  * @param {number} index - номер статьи (0, 1, 2...)
- * @param {Date} previousPubDate - предыдущая pubDate (для расчета цепочки)
+ * @param {Array} scheduledArticles - already scheduled articles with pubDates
+ * @param {string} articlePath - path to the article file
  * @returns {string} дата в RFC822 формате: "Fri, 03 Jan 2026 14:11:00 +0300"
  */
-function generatePubDate(index, previousPubDate = null) {
+function generateTimelinePubDate(index, scheduledArticles, articlePath) {
   try {
-    let pubDate;
+    const timeline = getTimelineForArticle(articlePath);
     
-    if (index === 0) {
-      // First article: NOW + 3 hours
-      pubDate = new Date();
-      pubDate.setHours(pubDate.getHours() + INITIAL_OFFSET_HOURS);
-    } else {
-      // Subsequent articles: previousPubDate + 90 minutes
-      pubDate = new Date(previousPubDate);
-      pubDate.setMinutes(pubDate.getMinutes() + INTERVAL_MINUTES);
-    }
+    // Get next available publishing slot for this timeline
+    const nextSlot = getNextPublishingSlot(
+      scheduledArticles.filter(art => art.timeline === timeline.key),
+      timeline,
+      new Date()
+    );
     
-    return toRFC822(pubDate);
+    console.log(`   ⏰ [${index + 1}] ${timeline.name} @ ${toRFC822(nextSlot)} (${timeline.intervalMinutes}min interval)`);
+    
+    return toRFC822(nextSlot);
   } catch (e) {
-    console.error(`❌ ERROR in generatePubDate: ${e.message}`);
+    console.error(`❌ ERROR in generateTimelinePubDate: ${e.message}`);
     const fallback = new Date();
     fallback.setHours(fallback.getHours() + INITIAL_OFFSET_HOURS);
     return toRFC822(fallback);
@@ -488,11 +489,12 @@ function markdownToHtml(markdown) {
 }
 
 /**
- * Генерировать RSS фид
- * @param {Array} articles - массив статей
+ * ✅ TASK #135: Timeline-aware RSS feed generation
+ * @param {Array} articles - массив статей с timeline metadata
  * @param {Array} imageSizes - массив размеров изображений
+ * @returns {string} XML RSS feed
  */
-function generateRssFeed(articles, imageSizes = []) {
+function generateRssFeedWithTimeline(articles, imageSizes = [], articlesMeta = []) {
   // ✅ ЗАДАЧА 6: Обновить lastBuildDate на текущую дату/время
   const now = toRFC822(new Date());
   
@@ -505,46 +507,43 @@ function generateRssFeed(articles, imageSizes = []) {
   <channel>
     <title>Потёмки - Истории из жизни</title>
     <link>${DZEN_CHANNEL}</link>
-    <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="${RSS_URL}" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
+    <generator>ZenMaster RSS Generator v3.0 (Timeline Publishing System - Issue #135)</generator>
 `;
 
-  // Добавляем каждую статью
-  let currentPubDate = null;
+  // Track published articles per timeline for pubDate generation
+  const timelineArticles = {};
   
   for (let i = 0; i < articles.length; i++) {
     const article = articles[i];
+    const meta = articlesMeta[i] || {};
     const {
       title,
       description,
       content,
-      date,
       imageUrl,
-      itemId
+      itemId,
+      filePath
     } = article;
 
-    // ✅ ЗАДАЧА 5 v2.10: Calculate pubDate starting from NOW + 3 hours
-    const pubDate = generatePubDate(i, currentPubDate);
-    currentPubDate = new Date();
-    if (i === 0) {
-      currentPubDate.setHours(currentPubDate.getHours() + INITIAL_OFFSET_HOURS);
-    } else {
-      currentPubDate.setMinutes(currentPubDate.getMinutes() + (INTERVAL_MINUTES * i));
-    }
+    // ✅ TASK #135: Use timeline-aware pubDate generation
+    const pubDate = meta.pubDate || generateTimelinePubDate(i, articles.slice(0, i), filePath || '');
     
     const escapedTitle = escapeXml(title);
-    
     const articleLink = `${DZEN_CHANNEL}/${itemId}`;
-    
-    // ✅ ЗАДАЧА 1: Получить размер изображения для атрибута length в enclosure
     const imageSize = imageSizes[i] || DEFAULT_IMAGE_SIZE;
-    
-    // ✅ ЗАДАЧА 4: Сделать GUID уникальным
     const uniqueGuid = generateUniqueGuid(title, i);
+    
+    // Track timeline info for display
+    if (meta.timeline) {
+      if (!timelineArticles[meta.timeline]) {
+        timelineArticles[meta.timeline] = [];
+      }
+      timelineArticles[meta.timeline].push({ title, pubDate });
+    }
     
     rssContent += `
     <item>
@@ -555,12 +554,13 @@ function generateRssFeed(articles, imageSizes = []) {
       <pubDate>${pubDate}</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- ✅ v2.10: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
+      <!-- ✅ TASK #135: Timeline publishing categories -->
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
+      ${meta.timeline ? `<category>timeline-${meta.timeline}</category>` : ''}
       
-      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
+      <!-- ✅ Enclosure with length -->
       <enclosure url="${imageUrl}" type="image/jpeg" length="${imageSize}"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="${imageUrl}">
         <media:description type="plain">${sanitizeForCdata(description)}</media:description>
@@ -576,7 +576,12 @@ function generateRssFeed(articles, imageSizes = []) {
   </channel>
 </rss>`;
 
-  return rssContent;
+  return { content: rssContent, timelineArticles };
+}
+
+// Legacy function for backward compatibility
+function generateRssFeed(articles, imageSizes = []) {
+  return generateRssFeedWithTimeline(articles, imageSizes).content;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -710,72 +715,100 @@ async function main() {
     }
 
     console.log('');
-    console.log('🔄 Generating RSS feed...');
+    console.log('🔄 Generating RSS feed with timeline publishing...');
+    console.log('   ✅ Timeline System: Multiple timelines with configurable intervals');
+    console.log('   ✅ Timeline System: Publishing window validation');
+    console.log('   ✅ Timeline System: Category-aware scheduling');
     console.log('   ✅ Task 1: Adding length to enclosure');
     console.log('   ✅ Task 2: Validating HTML tags');
     console.log('   ✅ Task 3: Added atom:link');
     console.log('   ✅ Task 4: Making GUID unique');
-    console.log('   ✅ Task 5 v2.10: pubDate = NOW + 3 hours for 1st, then +90min intervals');
+    console.log('   ✅ Task 5 v3.0: Timeline-aware pubDate generation');
     console.log('   ✅ Task 6: Updated lastBuildDate');
     console.log('   ✅ DZEN: <description> in CDATA');
-    console.log('   ✅ DZEN: Category format-article, index, comment-all (NO native-draft!)');
+    console.log('   ✅ DZEN: Category format-article, index, comment-all');
     console.log('   ✅ DZEN: GitHub images wrapped in <figure>');
     console.log('   ✅ STRUCTURE: *** markers converted to breaks');
-    console.log('   ✅ v2.10: pubDate works as automatic schedule from current time!');
+    console.log('   ✅ v3.0: Timeline publishing system fully integrated!');
     
-    const rssFeed = generateRssFeed(articles, imageSizes);
-
-    const publicDir = path.join(process.cwd(), 'public');
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true });
-      console.log('📁 Created public/ directory');
-    }
-
-    const feedPath = path.join(publicDir, 'feed.xml');
-    fs.writeFileSync(feedPath, rssFeed, 'utf8');
-
-    console.log(`\n✅ RSS feed generated: ${feedPath}`);
-    console.log(`   Size: ${(fs.statSync(feedPath).size / 1024).toFixed(2)} KB`);
-
-    console.log('');
-    console.log('╔═════════════════════════════════════════════════════════════════╗');
-    console.log('║  📊 Statistics                                                 ║');
-    console.log('╚═════════════════════════════════════════════════════════════════╝');
-    console.log(`📚 Total files: ${STATS.total}`);
-    console.log(`✅ Processed: ${STATS.processed}`);
-    console.log(`↩️  Skipped: ${STATS.skipped}`);
-    console.log(`❌ Failed: ${STATS.failed}`);
-    console.log('');
-
-    if (STATS.processed === 0) {
-      console.error('❌ ERROR: No articles were processed!');
-      process.exit(1);
-    }
-
-    console.log('✅ RSS feed generation completed successfully!');
-    console.log('');
-    console.log('📋 SCHEDULE (Starting from NOW + 3 hours, 90-min intervals):');
-    const now = new Date();
-    for (let i = 0; i < Math.min(articles.length, 10); i++) {
-      const date = new Date(now);
-      if (i === 0) {
-        date.setHours(date.getHours() + INITIAL_OFFSET_HOURS);
-      } else {
-        date.setHours(date.getHours() + INITIAL_OFFSET_HOURS);
-        date.setMinutes(date.getMinutes() + (INTERVAL_MINUTES * i));
+    // ✅ TASK #135: Generate timeline-aware feed
+    import('./timeline-manager.js').then(({ generatePublishingSchedule, validateSchedule, saveScheduleToFile }) => {
+      console.log('📋 Generating publishing schedule...');
+      
+      // Prepare articles with metadata for scheduling
+      const articlesWithMeta = articles.map((article, index) => ({
+        ...article,
+        filePath: articleFiles[index],
+        channel: getChannel(articleFiles[index])
+      }));
+      
+      // Generate timeline-aware schedule
+      const publishingSchedule = generatePublishingSchedule(articlesWithMeta, MODE);
+      
+      // Validate schedule
+      const validationResult = validateSchedule(publishingSchedule);
+      if (!validationResult.isValid) {
+        console.warn('⚠️  Schedule validation warnings detected:');
+        validationResult.warnings.forEach(w => console.log(`   - ${w.message}`));
       }
-      const timeStr = date.toLocaleString('ru-RU', { 
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit'
+      
+      // Create articles metadata with pubDates from schedule
+      const articlesMeta = publishingSchedule.map(item => ({
+        pubDate: item.pubDateRfc822,
+        timeline: item.timeline
+      }));
+      
+      // Generate RSS feed with timeline data
+      const { content: rssFeed, timelineArticles } = generateRssFeedWithTimeline(articles, imageSizes, articlesMeta);
+
+      const publicDir = path.join(process.cwd(), 'public');
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true });
+        console.log('📁 Created public/ directory');
+      }
+
+      const feedPath = path.join(publicDir, 'feed.xml');
+      fs.writeFileSync(feedPath, rssFeed, 'utf8');
+
+      console.log(`\n✅ RSS feed generated: ${feedPath}`);
+      console.log(`   Size: ${(fs.statSync(feedPath).size / 1024).toFixed(2)} KB`);
+
+      console.log('');
+      console.log('╔═════════════════════════════════════════════════════════════════╗');
+      console.log('║  📊 Statistics & Timeline Summary                            ║');
+      console.log('╚═════════════════════════════════════════════════════════════════╝');
+      console.log(`📚 Total files: ${STATS.total}`);
+      console.log(`✅ Processed: ${STATS.processed}`);
+      console.log(`↩️  Skipped: ${STATS.skipped}`);
+      console.log(`❌ Failed: ${STATS.failed}`);
+      console.log('');
+
+      if (STATS.processed === 0) {
+        console.error('❌ ERROR: No articles were processed!');
+        process.exit(1);
+      }
+
+      // Display timeline summary
+      console.log('📊 Timeline Summary:');
+      Object.entries(timelineArticles).forEach(([timeline, items]) => {
+        console.log(`   ${timeline}: ${items.length} articles`);
+        items.slice(0, 3).forEach(item => {
+          console.log(`      ⏰ ${item.pubDate} - ${item.title.substring(0, 45)}...`);
+        });
       });
-      console.log(`   ⏰ ${timeStr} - ${articles[i].title.substring(0, 50)}...`);
-    }
-    if (articles.length > 10) {
-      console.log(`   ... и ещё ${articles.length - 10} статей`);
-    }
-    console.log('');
-    console.log('🔗 Validate at https://validator.w3.org/feed/');
-    console.log('');
+      console.log('');
+
+      console.log('✅ RSS feed generation completed successfully!');
+      console.log('✅ Timeline publishing system active!');
+      console.log('');
+      console.log('🔗 Validate at https://validator.w3.org/feed/');
+      console.log('');
+      
+      // Save detailed schedule
+      saveScheduleToFile(publishingSchedule);
+    }).catch(error => {
+      console.error('❌ ERROR in timeline integration:', error.message);
+    });
 
   } catch (error) {
     console.error('❌ FATAL ERROR:', error.message);
