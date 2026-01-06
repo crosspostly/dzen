@@ -1,17 +1,27 @@
 #!/usr/bin/env node
 
 /**
- * 🚀 Article Restoration Script - SAFE 5-RETRY STRATEGY
+ * 🚀 Article Restoration Script - SAFE 5-RETRY STRATEGY (Updated 2026)
  * Агрессивное восстановление с гарантией успеха через 5 попыток разными моделями
  * 
- * Стратегия:
- * 1. Попытка 1: gemini-3-flash-preview (3000 chars, 85% ratio) - рабочая лошадка
- * 2. Попытка 2: gemini-3-flash-preview (2000 chars, 85% ratio) - меньше chunks
- * 3. Попытка 3: gemini-2.5-pro (2000 chars, 80% ratio) - продакшн-флагман
- * 4. Попытка 4: gemini-2.5-flash (1500 chars, 75% ratio) - быстрая
- * 5. Попытка 5: gemini-2.5-flash-lite (1000 chars, 70% ratio, мягкий промпт)
+ * МОДЕЛИ (актуальные 2026):
+ * ✅ Gemini 3 Pro Preview: gemini-3-pro-preview (максимальное качество)
+ * ✅ Gemini 3 Flash Preview: gemini-3-flash-preview (рабочая лошадка)
+ * ✅ Gemini 2.5 Pro: gemini-2.5-pro (продакшн-флагман)
+ * ✅ Gemini 2.5 Flash: gemini-2.5-flash (быстрая универсальная)
+ * ✅ Gemini 2.5 Flash-Lite: gemini-2.5-flash-lite (максимальная скорость)
  * 
- * Результат: 100% файлов сохранены, 0% потерь ✅
+ * СТРАТЕГИЯ (5 попыток с разными подходами):
+ * 1. gemini-3-pro-preview (полный текст, строгий промпт, 85% минимум)
+ * 2. gemini-3-flash-preview (chunks 2500, средний промпт, 85% минимум)
+ * 3. gemini-2.5-pro (chunks 2000, средний промпт, 80% минимум)
+ * 4. gemini-2.5-flash (chunks 1500, мягкий промпт, 75% минимум)
+ * 5. gemini-2.5-flash-lite (chunks 1000, очень мягкий, 70% минимум)
+ * 
+ * ЗАЩИТА:
+ * ❌ Пропускает: REPORT.md, README.md, .jpg, .png, .webp, .gif
+ * ✅ Обрабатывает только: articles/**/*.md (статьи)
+ * ❌ Потери: 0% (fallback на оригинал если все попытки сбойны)
  */
 
 import fs from 'fs';
@@ -27,44 +37,86 @@ if (!GEMINI_API_KEY) {
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 /**
- * 🎯 Мощный промпт для реставрации (строгий)
+ * 🎯 Список файлов, которые НЕ трогаем
  */
-const RESTORATION_PROMPT_STRICT = `Действуй как выпускающий редактор Яндекс Дзен. Ниже — часть статьи, которую нужно отреставрить. Проведи техническую чистку и верстку.
+const SKIP_FILES = ['REPORT.md', 'README.md', 'readme.md', 'report.md'];
+const SKIP_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.pdf'];
 
-✅ УДАЛИ:
-✂️ Мусор: "вот что я хочу сказать", "одним словом"
-✂️ Двойные пробелы, слипшиеся слова, лишние символы
+/**
+ * 🎯 Промпт для реставрации (строгий, для Pro моделей)
+ */
+const RESTORATION_PROMPT_STRICT = `Действуй как выпускающий редактор Яндекс Дзен. Ниже — часть статьи, которую нужно отреставрировать. Проведи ТЕХНИЧЕСКУЮ чистку и верстку.
 
-✅ ОФОРМЛЕНИЕ:
-💬 Диалоги с тире (—) на новой строке
-📱 Абзацы 3-5 предложений, оптимально для мобильных
+✅ ДЕЙСТВИЯ:
+✂️ Удали: двойные пробелы, лишние символы, "вот что я хочу сказать", "одним словом"
+💬 Оформи диалоги: тире (—) на новой строке
+📱 Абзацы: 3-5 предложений (оптимально для мобильных)
+✍️ Исправь: очевидные опечатки, но НЕ переписывай текст
 
-✅ НИКОГДА НЕ НАРУШАЙ:
-❌ Не сокращай, не удаляй, не переписывай
+❌ НИКОГДА НЕ НАРУШАЙ:
+🚫 Не сокращай контент
+🚫 Не удаляй идеи
+🚫 Не переписывай смысл
+🚫 Не добавляй своё
 
-Когда готов - выведи ТОЛЬКО ГОТОВЫЙ ТЕКСТ БЕЗ КОММЕНТАРИЕВ.
+ВЫВЕД ТОЛЬКО ГОТОВЫЙ ТЕКСТ БЕЗ КОММЕНТАРИЕВ И ПОЯСНЕНИЙ.
 
-Начни с этого:
+Текст для реставрации:
 `;
 
 /**
- * 🧘 Мягкий промпт для финальной попытки (lite модель)
+ * 📝 Промпт средний (для Flash моделей с chunks)
  */
-const RESTORATION_PROMPT_SOFT = `Пожалуйста, просто улучши форматирование этого текста:
+const RESTORATION_PROMPT_MEDIUM = `Улучши форматирование этого фрагмента статьи. Сохрани весь текст целиком.
+
+Действия:
+- Разбей на читаемые абзацы
+- Оформи диалоги (тире на новой строке если есть)
+- Исправь очевидные ошибки
+- НИКОГДА не удаляй и не сокращай контент
+
+Выведи ТОЛЬКО готовый текст:
+`;
+
+/**
+ * 🧘 Промпт мягкий (для Lite модели, финальная попытка)
+ */
+const RESTORATION_PROMPT_SOFT = `Пожалуйста, улучши форматирование этого текста:
 - Разбей на абзацы
 - Исправь очевидные ошибки
-- Сохрани весь контент
+- Сохрани весь контент целиком
 
-ВАЖНО: Выведи ТОЛЬКО готовый текст, без комментариев.
-
-Текст:
+Выведи ТОЛЬКО готовый текст без комментариев:
 `;
 
 /**
- * Разделить текст на chunks по параграфам
+ * 🧠 Определить минимальный chunk size исходя из длины текста
  */
-function splitIntoChunks(text, maxSize = 3000) {
+function getSmartChunkSize(textLength, baseSize) {
+  // Если текст уже меньше базового размера, не режем
+  if (textLength < baseSize) {
+    return textLength;
+  }
+  
+  // Если текст очень большой, уменьшаем chunk size
+  if (textLength > 50000) {
+    return Math.min(baseSize, Math.floor(textLength / 15));
+  }
+  
+  return baseSize;
+}
+
+/**
+ * Разделить текст на chunks по параграфам (SMART)
+ */
+function splitIntoChunks(text, maxSize = 2500) {
   const paragraphs = text.split('\n\n').filter(p => p.trim().length > 0);
+  
+  // Если очень мало абзацев и текст не очень большой, не режем
+  if (paragraphs.length <= 2 && text.length < maxSize) {
+    return [text];
+  }
+  
   const chunks = [];
   let currentChunk = '';
 
@@ -85,7 +137,7 @@ function splitIntoChunks(text, maxSize = 3000) {
     chunks.push(currentChunk.trim());
   }
 
-  return chunks;
+  return chunks.length > 0 ? chunks : [text];
 }
 
 /**
@@ -96,7 +148,7 @@ function mergeChunks(chunks) {
 }
 
 /**
- * Парсинг frontmatter
+ * Парсинг frontmatter (YAML между ---)
  */
 function parseFrontmatter(content) {
   const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
@@ -120,10 +172,8 @@ function parseFrontmatter(content) {
 /**
  * 🤖 Отреставрировать один chunk
  */
-async function restoreChunk(chunkText, model, useSoftPrompt = false, timeout = 30000) {
-  const prompt = useSoftPrompt 
-    ? `${RESTORATION_PROMPT_SOFT}\n\n${chunkText}`
-    : `${RESTORATION_PROMPT_STRICT}\n\n${chunkText}`;
+async function restoreChunk(chunkText, model, prompt, timeout = 30000) {
+  const fullPrompt = `${prompt}\n\n${chunkText}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -131,7 +181,7 @@ async function restoreChunk(chunkText, model, useSoftPrompt = false, timeout = 3
   try {
     const response = await genAI.models.generateContent({
       model: model,
-      contents: prompt,
+      contents: fullPrompt,
       config: { responseMimeType: "text/plain" }
     });
     
@@ -149,14 +199,16 @@ async function restoreChunk(chunkText, model, useSoftPrompt = false, timeout = 3
  */
 async function restoreWithAttempt(bodyText, attempt) {
   try {
-    const chunks = splitIntoChunks(bodyText, attempt.chunkSize);
+    // SMART определение chunk size
+    const smartChunkSize = getSmartChunkSize(bodyText.length, attempt.chunkSize);
+    const chunks = splitIntoChunks(bodyText, smartChunkSize);
     const restoredChunks = [];
 
     for (let i = 0; i < chunks.length; i++) {
       const result = await restoreChunk(
         chunks[i], 
         attempt.model, 
-        attempt.softPrompt || false,
+        attempt.prompt,
         attempt.timeout
       );
 
@@ -166,9 +218,9 @@ async function restoreWithAttempt(bodyText, attempt) {
 
       restoredChunks.push(result.text);
 
-      // Задержка между chunks
+      // Задержка между chunks для избежания rate limiting
       if (i < chunks.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
@@ -180,49 +232,87 @@ async function restoreWithAttempt(bodyText, attempt) {
 }
 
 /**
- * 🔄 Восстановление файла с 5 попытками разными моделями
+ * ✅ Проверить, должен ли файл быть обработан
+ */
+function shouldProcessFile(filePath) {
+  const fileName = path.basename(filePath);
+  const ext = path.extname(filePath).toLowerCase();
+  
+  // Пропускаем специальные файлы
+  if (SKIP_FILES.some(f => fileName.toLowerCase() === f.toLowerCase())) {
+    return false;
+  }
+  
+  // Пропускаем изображения и другие не-md файлы
+  if (SKIP_EXTENSIONS.includes(ext)) {
+    return false;
+  }
+  
+  // Обрабатываем только .md из articles/
+  if (ext !== '.md' || !filePath.includes('articles/')) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * 🔄 Восстановление файла с 5 попыток разными моделями
  */
 async function restoreFileWithRetry(filePath) {
+  // ✅ Проверка: нужно ли обрабатывать этот файл?
+  if (!shouldProcessFile(filePath)) {
+    return { 
+      status: 'SKIPPED', 
+      reason: 'not_article',
+      note: `Пропущен: ${path.basename(filePath)} (не статья или защищённый файл)`
+    };
+  }
+
   const originalContent = fs.readFileSync(filePath, 'utf8');
   const { hasFrontmatter, frontmatter, body } = parseFrontmatter(originalContent);
 
-  // ✅ ПРАВИЛЬНЫЕ API ID (Gemini 2026)
+  // ✅ АКТУАЛЬНЫЕ API ID (Gemini 2026) и УМНАЯ СТРАТЕГИЯ
   const attempts = [
     { 
-      model: 'gemini-3-flash-preview', 
-      chunkSize: 3000, 
+      model: 'gemini-3-pro-preview', 
+      chunkSize: 100000,  // Полный текст в одну попытку
       minRatio: 0.85, 
-      timeout: 30000,
-      description: 'Gemini 3 Flash Preview (рабочая лошадка)'
+      timeout: 35000,
+      prompt: RESTORATION_PROMPT_STRICT,
+      description: 'Gemini 3 Pro Preview (максимальное качество, полный текст)'
     },
     { 
       model: 'gemini-3-flash-preview', 
-      chunkSize: 2000, 
+      chunkSize: 2500, 
       minRatio: 0.85, 
       timeout: 30000,
-      description: 'Gemini 3 Flash Preview (меньше chunks)'
+      prompt: RESTORATION_PROMPT_MEDIUM,
+      description: 'Gemini 3 Flash Preview (рабочая лошадка, chunks 2500)'
     },
     { 
       model: 'gemini-2.5-pro', 
       chunkSize: 2000, 
       minRatio: 0.80, 
       timeout: 30000,
-      description: 'Gemini 2.5 Pro (продакшн-флагман)'
+      prompt: RESTORATION_PROMPT_MEDIUM,
+      description: 'Gemini 2.5 Pro (продакшн-флагман, chunks 2000)'
     },
     { 
       model: 'gemini-2.5-flash', 
       chunkSize: 1500, 
       minRatio: 0.75, 
       timeout: 25000,
-      description: 'Gemini 2.5 Flash (быстрая)'
+      prompt: RESTORATION_PROMPT_MEDIUM,
+      description: 'Gemini 2.5 Flash (быстрая универсальная, chunks 1500)'
     },
     { 
       model: 'gemini-2.5-flash-lite', 
       chunkSize: 1000, 
       minRatio: 0.70, 
-      timeout: 20000, 
-      softPrompt: true,
-      description: 'Gemini 2.5 Flash-Lite (максимальная скорость, мягкий)'
+      timeout: 20000,
+      prompt: RESTORATION_PROMPT_SOFT,
+      description: 'Gemini 2.5 Flash-Lite (максимальная скорость, chunks 1000, мягкий)'
     },
   ];
 
@@ -278,9 +368,11 @@ async function restoreFileWithRetry(filePath) {
  */
 function printDetailedReport(results, files) {
   const stats = {
-    total: results.length,
+    total: files.length,
+    processed: results.filter(r => r.status !== 'SKIPPED').length,
     restored: results.filter(r => r.status === 'RESTORED').length,
     fallback: results.filter(r => r.status === 'FALLBACK').length,
+    skipped: results.filter(r => r.status === 'SKIPPED').length,
     byAttempt: {}
   };
 
@@ -289,22 +381,26 @@ function printDetailedReport(results, files) {
     stats.byAttempt[i] = results.filter(r => r.attempt === i).length;
   }
 
-  console.log(`\n${'='.repeat(70)}`);
+  console.log(`\n${'='.repeat(80)}`);
   console.log(`✅ RESTORATION COMPLETE`);
-  console.log(`${'='.repeat(70)}\n`);
+  console.log(`${'='.repeat(80)}\n`);
 
   console.log(`📊 SUMMARY:`);
-  console.log(`   📄 Total files: ${stats.total}`);
-  console.log(`   ✅ Successfully restored: ${stats.restored} (${(stats.restored/stats.total*100).toFixed(1)}%)`);
-  console.log(`   ⚠️  Fallback (original): ${stats.fallback} (${(stats.fallback/stats.total*100).toFixed(1)}%)`);
+  console.log(`   📄 Total files provided: ${stats.total}`);
+  console.log(`   🔧 Files processed: ${stats.processed}`);
+  console.log(`   ✅ Successfully restored: ${stats.restored} (${stats.processed > 0 ? (stats.restored/stats.processed*100).toFixed(1) : 0}%)`);
+  console.log(`   ⚠️  Fallback (original): ${stats.fallback} (${stats.processed > 0 ? (stats.fallback/stats.processed*100).toFixed(1) : 0}%)`);
+  console.log(`   ⏭️  Skipped (protected): ${stats.skipped}`);
   console.log(`   ❌ Lost: 0 (100% saved!)\n`);
 
-  console.log(`📈 BREAKDOWN BY ATTEMPT:`);
-  for (let i = 1; i <= 5; i++) {
-    const count = stats.byAttempt[i] || 0;
-    if (count > 0) {
-      const model = results.find(r => r.attempt === i)?.model || 'unknown';
-      console.log(`   Attempt ${i}: ${count} file(s) restored (${model})`);
+  if (stats.restored > 0) {
+    console.log(`📈 BREAKDOWN BY ATTEMPT:`);
+    for (let i = 1; i <= 5; i++) {
+      const count = stats.byAttempt[i] || 0;
+      if (count > 0) {
+        const model = results.find(r => r.attempt === i)?.model || 'unknown';
+        console.log(`   Attempt ${i}: ${count} file(s) restored (${model})`);
+      }
     }
   }
 
@@ -312,40 +408,43 @@ function printDetailedReport(results, files) {
   results.forEach((r, idx) => {
     const fileName = path.basename(files[idx]);
     if (r.status === 'RESTORED') {
-      console.log(`   ✅ ${fileName}: RESTORED on attempt ${r.attempt} (${r.ratio} ratio, ${r.model})`);
-    } else {
+      console.log(`   ✅ ${fileName}: RESTORED on attempt ${r.attempt} (ratio ${r.ratio}, ${r.model})`);
+    } else if (r.status === 'FALLBACK') {
       console.log(`   ⚠️  ${fileName}: FALLBACK (original preserved, all 5 attempts failed)`);
+    } else if (r.status === 'SKIPPED') {
+      console.log(`   ⏭️  ${fileName}: SKIPPED (${r.note})`);
     }
   });
 
-  console.log(`\n${'='.repeat(70)}`);
-  console.log(`🎯 RESULT: All ${stats.total} file(s) saved (0 lost) ✅`);
-  console.log(`${'='.repeat(70)}\n`);
+  console.log(`\n${'='.repeat(80)}`);
+  console.log(`🎯 RESULT: All ${stats.total} file(s) safe (0 lost) ✅`);
+  console.log(`${'='.repeat(80)}\n`);
 }
 
 /**
  * 🚀 Основная функция
  */
 async function main() {
-  console.log(`\n${'='.repeat(70)}`);
+  console.log(`\n${'='.repeat(80)}`);
   console.log(`🚀 PARALLEL RESTORATION (5-attempt strategy with 2026 models)`);
-  console.log(`${'='.repeat(70)}\n`);
+  console.log(`${'='.repeat(80)}\n`);
 
-  const files = process.argv.slice(2).filter(f => f.endsWith('.md') && f.includes('articles/'));
+  const files = process.argv.slice(2);
 
   if (files.length === 0) {
-    console.log('⚠️  No article files specified');
+    console.log('⚠️  No files specified');
     process.exit(0);
   }
 
-  console.log(`📄 Files: ${files.length}`);
-  console.log(`⚡ Each file: 5 attempts with different models`);
-  console.log(`📡 Models used:`);
-  console.log(`   1. gemini-3-flash-preview (рабочая лошадка)`);
-  console.log(`   2. gemini-3-flash-preview (меньше chunks)`);
+  console.log(`📄 Files provided: ${files.length}`);
+  console.log(`⚡ Strategy: 5 attempts per file with different models`);
+  console.log(`📡 Models used (2026):`);
+  console.log(`   1. gemini-3-pro-preview (максимальное качество)`);
+  console.log(`   2. gemini-3-flash-preview (рабочая лошадка)`);
   console.log(`   3. gemini-2.5-pro (продакшн-флагман)`);
-  console.log(`   4. gemini-2.5-flash (быстрая)`);
-  console.log(`   5. gemini-2.5-flash-lite (максимальная скорость)\n`);
+  console.log(`   4. gemini-2.5-flash (быстрая универсальная)`);
+  console.log(`   5. gemini-2.5-flash-lite (максимальная скорость)`);
+  console.log(`🛡️  Protection: Skips REPORT.md, README.md, images\n`);
 
   // ✅ ПАРАЛЛЕЛЬНАЯ обработка всех файлов одновременно
   const results = await Promise.all(
