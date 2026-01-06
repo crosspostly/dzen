@@ -57,23 +57,52 @@ Welcome to the comprehensive ZenMaster documentation suite. This index provides 
 
 ---
 
-## 🏛️ Documentation Structure
+## 📚 Documentation Structure
 
-```
-docs/
-├── INDEX.md                              ← This file (Navigation hub)
-├── ROADMAP.md                           ← Complete development timeline
-├── DOCUMENTATION_INDEX.md               ← Full documentation catalog
-├── IMAGE_ARCHITECTURE.md                ← Existing image system docs
-├── guides/
-│   ├── V4.9_QUALITY_VALIDATOR_GUIDE.md  ← v4.9 implementation
-│   ├── QUALITY_METRICS_IN_PROMPT.md     ← Prompt-led quality targets
-│   ├── CONTENT_SANITIZER.md             ← Cleaning + validation + metrics
-│   └── SERVICE_CLEANUP.md               ← Cleanup action plan
-└── architecture/
-    ├── ORPHANED_SERVICES_ANALYSIS.md    ← Detailed service analysis
-    └── ORPHANED_SERVICES_QUICK.md       ← Quick reference
-```
+### 🎯 Core Documentation
+
+- **[PIPELINE_ARCHITECTURE.md](core/PIPELINE_ARCHITECTURE.md)** — complete system pipeline (Phase A–E)
+- **[ARCHITECTURE.md](core/ARCHITECTURE.md)** — consolidated architecture notes (services + RSS)
+- **[SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md](guides/SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md)** — non-technical overview
+
+### 🚀 Getting Started
+
+- **[SETUP_GUIDE.md](getting-started/SETUP_GUIDE.md)** — installation / secrets setup
+- **[QUICK_START.md](getting-started/QUICK_START.md)** — first run / first publication
+
+### 📋 Quality & Standards
+
+- **[CONTENT_QUALITY_MATRIX.md](standards/CONTENT_QUALITY_MATRIX.md)** — quality metrics and checklist
+
+### 🔧 Development
+
+- **[REFACTOR_GUIDE.md](development/REFACTOR_GUIDE.md)** — code/content refactoring guidelines
+
+### ⚙️ Systems
+
+- **[RSS_GENERATION.md](systems/RSS_GENERATION.md)** — RSS feed generation modes
+- **[RSS_DZEN_COMPLIANCE.md](systems/RSS_DZEN_COMPLIANCE.md)** — Dzen compliance requirements
+- **[RSS_VALIDATION_REPORT.md](systems/RSS_VALIDATION_REPORT.md)** — validation rules & checklist
+- **[FEED_QUICK_START.md](guides/FEED_QUICK_START.md)** — feed generation quick start
+
+### 🚀 Workflows
+
+- **[GITHUB-ACTIONS-INTEGRATION.md](workflows/GITHUB-ACTIONS-INTEGRATION.md)** — GitHub Actions setup
+- **[GITHUB-ACTIONS-READY.md](workflows/GITHUB-ACTIONS-READY.md)** — deployment checklist
+
+### 📖 References
+
+- **[EXISTING_SERVICES_ANALYSIS.md](references/EXISTING_SERVICES_ANALYSIS.md)** — competitive / service analysis
+
+### 🔬 Technical Deep-Dives
+
+- **[FIX_DEDUPE_HUMAN_BEHAVIOR_SUMMARY.md](technical/FIX_DEDUPE_HUMAN_BEHAVIOR_SUMMARY.md)** — deduplication & behavior simulation
+
+### 🎯 Release Notes
+
+- **[IMPLEMENTATION-SUMMARY.md](releases/IMPLEMENTATION-SUMMARY.md)** — implementation notes (v6.1 cleanup pipeline)
+- **[v7.0-SUMMARY.md](releases/v7.0-SUMMARY.md)** — v7.0 highlights
+- **[PHASE2_INTEGRATION_SUMMARY.md](releases/PHASE2_INTEGRATION_SUMMARY.md)** — Phase 2 integration
 
 ---
 
