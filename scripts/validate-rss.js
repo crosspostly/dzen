@@ -32,6 +32,8 @@ class RssValidator {
     this.filePath = filePath;
     this.errors = [];
     this.warnings = [];
+    this.successChecks = 0;
+    this.totalChecks = 0;
     this.content = '';
   }
 
@@ -84,8 +86,10 @@ class RssValidator {
 
   checkXmlDeclaration() {
     console.log('\n1. XML декларация');
+    this.totalChecks++;
     if (this.content.startsWith('<?xml version="1.0"')) {
       console.log('   ✅ Корректная XML декларация');
+      this.successChecks++;
     } else {
       this.errors.push('XML должна начинаться с <?xml version="1.0" encoding="UTF-8"?>');
     }
@@ -93,14 +97,18 @@ class RssValidator {
 
   checkRootElement() {
     console.log('2. Корневой элемент <rss>');
+    this.totalChecks++;
     if (this.content.includes('<rss version="2.0"')) {
       console.log('   ✅ Корневой элемент присутствует');
+      this.successChecks++;
     } else {
       this.errors.push('Отсутствует корневой элемент <rss version="2.0">');
     }
 
+    this.totalChecks++;
     if (this.content.includes('</rss>')) {
       console.log('   ✅ Закрывающий </rss> присутствует');
+      this.successChecks++;
     } else {
       this.errors.push('Отсутствует закрывающий тег </rss>');
     }
@@ -114,9 +122,13 @@ class RssValidator {
       'xmlns:atom="http://www.w3.org/2005/Atom"',
     ];
 
+    let namespacePassed = 0;
     for (const ns of required) {
+      this.totalChecks++;
       if (this.content.includes(ns)) {
         console.log(`   ✅ ${ns.split('=')[0]}`);
+        namespacePassed++;
+        this.successChecks++;
       } else {
         this.warnings.push(`Отсутствует namespace: ${ns}`);
       }
@@ -127,20 +139,26 @@ class RssValidator {
     console.log('4. Элемент <channel>');
     const requiredFields = ['<title>', '<link>', '<description>', '<language>'];
 
+    let channelPassed = 0;
     for (const field of requiredFields) {
+      this.totalChecks++;
       if (this.content.includes(`<channel>`) && this.content.includes(field)) {
         console.log(`   ✅ ${field}`);
+        channelPassed++;
+        this.successChecks++;
       } else {
         this.warnings.push(`${field} может отсутствовать в <channel>`);
       }
     }
 
     // Проверить atom:link с rel="self" (обязательно для Дзена)
+    this.totalChecks++;
     const atomLinkMatch = this.content.match(/<atom:link[^>]*href="([^"]*)"[^>]*rel="self"[^>]*>/) ||
                           this.content.match(/<atom:link[^>]*rel="self"[^>]*href="([^"]*)"[^>]*>/);
     
     if (atomLinkMatch) {
       console.log(`   ✅ <atom:link rel="self"> присутствует: ${atomLinkMatch[1]}`);
+      this.successChecks++;
     } else {
       this.errors.push('❌ Отсутствует <atom:link rel="self"> (обязательно для Яндекс Дзен)');
     }
@@ -151,14 +169,22 @@ class RssValidator {
     const itemMatches = this.content.match(/<item>/g) || [];
     const itemCount = itemMatches.length;
 
+    this.totalChecks++;
     console.log(`   ✅ Количество <item>: ${itemCount}`);
+    this.successChecks++;
 
+    this.totalChecks++;
     if (itemCount > 500) {
       this.warnings.push(`⚠️  Больше 500 item'ов (${itemCount}), Дзен возьмет только первые 500`);
+    } else {
+      this.successChecks++;
     }
 
+    this.totalChecks++;
     if (itemCount === 0) {
       this.errors.push('В RSS нет элементов <item>');
+    } else {
+      this.successChecks++;
     }
 
     // Проверить обязательные поля в каждом item
@@ -176,14 +202,19 @@ class RssValidator {
     ];
 
     let itemsWithMissingFields = 0;
+    let itemsChecked = 0;
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
+      itemsChecked++;
 
       for (const field of requiredFields) {
+        this.totalChecks++;
         if (!field.check.test(item)) {
           itemsWithMissingFields++;
           this.errors.push(`Item #${i + 1}: отсутствует ${field.name}`);
+        } else {
+          this.successChecks++;
         }
       }
     }
@@ -198,11 +229,14 @@ class RssValidator {
     const enclosures = this.content.match(/<enclosure[^>]*>/g) || [];
 
     if (enclosures.length === 0) {
+      this.totalChecks++;
       this.warnings.push('В RSS нет элементов <enclosure>');
       return;
     }
 
+    this.totalChecks++;
     console.log(`   Всего <enclosure>: ${enclosures.length}`);
+    this.successChecks++;
 
     let withLength = 0;
     let withoutLength = 0;
@@ -211,6 +245,7 @@ class RssValidator {
 
     for (const enclosure of enclosures) {
       // Проверяем наличие атрибута length
+      this.totalChecks++;
       const lengthMatch = enclosure.match(/length="(\d+)"/);
       if (lengthMatch) {
         withLength++;
@@ -227,14 +262,20 @@ class RssValidator {
           invalidLength++;
           this.errors.push(`❌ enclosure с невалидным length: ${lengthMatch[1]}`);
         }
+        
+        if (lengthValue > 0 && !isNaN(lengthValue)) {
+          this.successChecks++;
+        }
       } else {
         withoutLength++;
         this.errors.push(`❌ enclosure без атрибута length: ${enclosure.substring(0, 80)}...`);
       }
     }
 
+    this.totalChecks++;
     if (withLength === enclosures.length && zeroLength === 0 && invalidLength === 0) {
       console.log(`   ✅ ВСЕ ${withLength} <enclosure> имеют корректный length > 0`);
+      this.successChecks++;
     } else if (withoutLength === 0 && zeroLength > 0) {
       this.errors.push(`❌ ${zeroLength} <enclosure> имеют length="0" (требуется реальный размер файла)`);
     } else if (withoutLength > 0) {
@@ -246,9 +287,12 @@ class RssValidator {
     console.log('7. Элемент <content:encoded>');
     const contentCount = (this.content.match(/<content:encoded>/g) || []).length;
 
+    this.totalChecks++;
     if (contentCount === 0) {
       this.errors.push('Отсутствуют элементы <content:encoded>');
       return;
+    } else {
+      this.successChecks++;
     }
 
     console.log(`   ✅ Количество <content:encoded>: ${contentCount}`);
@@ -256,8 +300,10 @@ class RssValidator {
     // Проверить что контент в CDATA - ищем <content:encoded><![CDATA[
     const cdataCount = (this.content.match(/<content:encoded><!\[CDATA\[/g) || []).length;
 
+    this.totalChecks++;
     if (cdataCount === contentCount) {
       console.log(`   ✅ Весь контент обёрнут в CDATA`);
+      this.successChecks++;
     } else {
       this.warnings.push(`Только ${cdataCount} из ${contentCount} контентов в CDATA`);
     }
@@ -266,8 +312,10 @@ class RssValidator {
     const openCdata = (this.content.match(/<!\[CDATA\[/g) || []).length;
     const closeCdata = (this.content.match(/\]\]>/g) || []).length;
     
+    this.totalChecks++;
     if (openCdata === closeCdata) {
       console.log(`   ✅ Все CDATA секции закрыты (${openCdata} открыто, ${closeCdata} закрыто)`);
+      this.successChecks++;
     } else {
       this.errors.push(`❌ Дисбаланс CDATA: ${openCdata} открыто, ${closeCdata} закрыто`);
     }
@@ -277,20 +325,27 @@ class RssValidator {
     let shortContents = 0;
 
     for (const content of contents) {
+      this.totalChecks++;
       // Извлекаем текст между CDATA тегами
       const textMatch = content.match(/<!\[CDATA\[([\s\S]*?)\]\]>/);
       if (textMatch) {
         const textOnly = textMatch[1].replace(/<[^>]*>/g, '');
         if (textOnly.length < 300) {
           shortContents++;
+        } else {
+          this.successChecks++;
         }
+      } else {
+        this.successChecks++;
       }
     }
 
+    this.totalChecks++;
     if (shortContents > 0) {
       console.log(`   ⚠️  ${shortContents} контентов короче 300 символов`);
     } else {
       console.log('   ✅ Все контенты ≥ 300 символов');
+      this.successChecks++;
     }
   }
 
@@ -299,7 +354,9 @@ class RssValidator {
     const draftItems = (this.content.match(/<category>native-draft<\/category>/g) || []).length;
     const otherCategories = (this.content.match(/<category>(?!native-draft)[^<]*<\/category>/g) || []).length;
 
+    this.totalChecks++;
     console.log(`   Категория native-draft: ${draftItems}`);
+    this.successChecks++;
 
     if (otherCategories > 0) {
       console.log(`   ⚠️  Другие категории: ${otherCategories}`);
@@ -316,21 +373,28 @@ class RssValidator {
     const rfc822Regex = /\d{2}\s\w{3}\s\d{4}\s\d{2}:\d{2}:\d{2}\s[+-]\d{4}/;
     const dates = this.content.match(/<pubDate>([^<]*)<\/pubDate>/g) || [];
 
+    this.totalChecks++;
     if (dates.length === 0) {
       this.errors.push('Отсутствуют элементы <pubDate>');
       return;
+    } else {
+      this.successChecks++;
     }
 
     let validDates = 0;
 
     for (const date of dates) {
+      this.totalChecks++;
       if (rfc822Regex.test(date)) {
         validDates++;
+        this.successChecks++;
       }
     }
 
+    this.totalChecks++;
     if (validDates === dates.length) {
       console.log(`   ✅ Все ${dates.length} дат в формате RFC822`);
+      this.successChecks++;
     } else {
       this.errors.push(`❌ ${dates.length - validDates} дат не в формате RFC822`);
     }
@@ -340,9 +404,12 @@ class RssValidator {
     console.log('10. Размер изображений');
     const images = this.content.match(/<img[^>]*src="([^"]*)"[^>]*>/g) || [];
 
+    this.totalChecks++;
     if (images.length === 0) {
       this.warnings.push('В контенте нет изображений');
       return;
+    } else {
+      this.successChecks++;
     }
 
     console.log(`   ✅ Количество <img>: ${images.length}`);
@@ -350,8 +417,10 @@ class RssValidator {
     // Проверить что изображения в figure
     const figureImages = (this.content.match(/<figure>[\s\S]*?<img[\s\S]*?<\/figure>/g) || []).length;
 
+    this.totalChecks++;
     if (figureImages === images.length) {
       console.log(`   ✅ Все ${images.length} изображений обёрнуты в <figure>`);
+      this.successChecks++;
     } else {
       console.log(`   ⚠️  Только ${figureImages} из ${images.length} в <figure>`);
     }
@@ -362,9 +431,12 @@ class RssValidator {
     // Ищем guid с атрибутами или без: <guid> или <guid isPermaLink="false">
     const guids = this.content.match(/<guid[^>]*>[\s\S]*?<\/guid>/g) || [];
 
+    this.totalChecks++;
     if (guids.length === 0) {
       this.errors.push('Отсутствуют элементы <guid>');
       return;
+    } else {
+      this.successChecks++;
     }
 
     console.log(`   ✅ Количество GUID: ${guids.length}`);
@@ -373,8 +445,10 @@ class RssValidator {
     const guidValues = guids.map(g => g.replace(/<guid[^>]*>|<\/guid>/g, '').trim());
     const uniqueGuids = new Set(guidValues);
     
+    this.totalChecks++;
     if (uniqueGuids.size === guidValues.length) {
       console.log(`   ✅ Все GUID уникальны`);
+      this.successChecks++;
     } else {
       this.errors.push(`❌ Найдены дубликаты GUID (${guidValues.length - uniqueGuids.size})`);
     }
@@ -389,6 +463,7 @@ class RssValidator {
     const tagsToCheck = ['p', 'ul', 'ol', 'li', 'figure', 'blockquote'];
     let hasImbalance = false;
 
+    this.totalChecks++;
     for (const tag of tagsToCheck) {
       const openCount = (combinedContent.match(new RegExp(`<${tag}[^>]*>`, 'gi')) || []).length;
       const closeCount = (combinedContent.match(new RegExp(`</${tag}>`, 'gi')) || []).length;
@@ -406,6 +481,9 @@ class RssValidator {
 
     if (!hasImbalance) {
       console.log('   ✅ HTML теги сбалансированы');
+      this.successChecks++;
+    } else {
+      // hasImbalance уже добавил ошибки
     }
   }
 
@@ -416,10 +494,12 @@ class RssValidator {
 
     console.log(`   Размер: ${sizeKb} KB (${sizeMb} MB)`);
 
+    this.totalChecks++;
     if (this.content.length > 5242880) {
       this.warnings.push('⚠️  RSS больше 5 MB (Дзен может отклонить)');
     } else {
       console.log('   ✅ Размер в норме');
+      this.successChecks++;
     }
   }
 
@@ -432,7 +512,7 @@ class RssValidator {
     console.log('📊 РЕЗУЛЬТАТЫ ВАЛИДАЦИИ');
     console.log('='.repeat(70));
 
-    console.log(`\n✅ УСПЕШНО: ${0} проверок`);
+    console.log(`\n✅ УСПЕШНО: ${this.successChecks}/${this.totalChecks} проверок`);
     console.log(`❌ ОШИБОК: ${this.errors.length}`);
     console.log(`⚠️  ПРЕДУПРЕЖДЕНИЙ: ${this.warnings.length}`);
 
