@@ -9,6 +9,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      fix_all:
+        description: 'Fix ALL articles in articles/ directory'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   restore-articles:
@@ -36,12 +42,21 @@ jobs:
       - name: 🔍 Get changed files
         id: files
         run: |
-          echo "📊 Detecting changed articles..."
+          echo "📊 Detecting articles..."
           
-          if git rev-parse --verify HEAD~1 &> /dev/null; then
-            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'articles/**/*.md')
+          # Если включен режим "fix all" - берём ВСЕ статьи
+          if [ "${{ github.event.inputs.fix_all }}" = "true" ]; then
+            echo "🔄 MODE: Fix ALL articles"
+            CHANGED=$(find articles -name "*.md" -type f | sort)
+            echo "mode=all" >> $GITHUB_OUTPUT
           else
-            CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- 'articles/**/*.md')
+            echo "📝 MODE: Fix changed articles"
+            if git rev-parse --verify HEAD~1 &> /dev/null; then
+              CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'articles/**/*.md')
+            else
+              CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- 'articles/**/*.md')
+            fi
+            echo "mode=changed" >> $GITHUB_OUTPUT
           fi
           
           if [ -z "$CHANGED" ]; then
@@ -62,7 +77,14 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          echo "🚀 Restoring with 5-attempt strategy..."
+          MODE="${{ steps.files.outputs.mode }}"
+          
+          if [ "$MODE" = "all" ]; then
+            echo "🚀 Restoring ALL articles with 5-attempt strategy..."
+          else
+            echo "🚀 Restoring changed articles with 5-attempt strategy..."
+          fi
+          
           node scripts/restore-articles-safe.js ${{ steps.files.outputs.files }}
           echo "exit_code=$?" >> $GITHUB_OUTPUT
 
@@ -74,14 +96,30 @@ jobs:
           
           if ! git diff --quiet; then
             git add articles/
-            git commit -m "🔧 Auto-restore: Fixed formatting" || true
+            
+            # Разные сообщения для разных режимов
+            if [ "${{ steps.files.outputs.mode }}" = "all" ]; then
+              git commit -m "🔧 Auto-restore: Fixed ALL articles" || true
+            else
+              git commit -m "🔧 Auto-restore: Fixed formatting" || true
+            fi
+            
             git push origin main || true
             echo "✅ Pushed"
           fi
 
-      - name: ✅ Done
+      - name: 📊 Summary
         if: always()
         run: |
           echo ""
+          echo "=========================================="
           echo "✅ Auto-restore complete"
-          echo "Files: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
+          echo "=========================================="
+          MODE="${{ steps.files.outputs.mode }}"
+          if [ "$MODE" = "all" ]; then
+            echo "📋 Mode: Fix ALL articles"
+          else
+            echo "📋 Mode: Fix changed articles"
+          fi
+          echo "📁 Files: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
+          echo "=========================================="
