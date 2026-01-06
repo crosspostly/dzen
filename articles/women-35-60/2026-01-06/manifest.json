@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1767667286839,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 18186,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-06/naivnaya-ya-pomogla-podruge-iz-zhalosti-i-teper-et.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-06/REPORT.md"
+  }
+}
