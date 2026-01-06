@@ -39,7 +39,8 @@ export class ArticleWorkerPool {
   async executeBatchBoth(
     count: number,
     config: ContentFactoryConfig,
-    onProgress?: (completed: number, total: number) => void
+    onProgress?: (completed: number, total: number) => void,
+    onPairGenerated?: (pair: BothModeResult, index: number, total: number) => Promise<void> | void
   ): Promise<BothModeResult[]> {
     const results: BothModeResult[] = [];
     const maxChars = config.maxChars || CHAR_BUDGET;
@@ -47,6 +48,8 @@ export class ArticleWorkerPool {
     console.log(`\n🎭 [BOTH MODE] Generating ${count} article pairs (RAW + RESTORED)...\n`);
 
     for (let i = 1; i <= count; i++) {
+      let generatedPair: BothModeResult | null = null;
+
       try {
         console.log(`\n${"=".repeat(60)}`);
         console.log(`🎬 Article Pair ${i}/${count}`);
@@ -145,15 +148,27 @@ export class ArticleWorkerPool {
         };
         restoredArticleObj.metadata.restorationDiagnostics = restorationResult.diagnostics;
 
-        results.push({
+        const pair: BothModeResult = {
           rawArticle: rawArticleObj,
           restoredArticle: restoredArticleObj
-        });
+        };
+        results.push(pair);
+        generatedPair = pair;
 
         const duration = Date.now() - startTime;
-        console.log(`\n✅ Article Pair ${i} complete (${(duration / 1000).s}s)`);
+        console.log(`\n✅ Article Pair ${i} complete (${(duration / 1000).toFixed(1)}s)`);
         console.log(`   📄 RAW: ${rawArticleObj.charCount} chars`);
         console.log(`   🔧 RESTORED: ${restoredArticleObj.charCount} chars (${restorationResult.improvements.length} improvements)`);
+
+
+      } catch (error) {
+        console.error(`\n❌ Article Pair ${i} failed: ${(error as Error).message}`);
+      }
+
+      if (generatedPair) {
+        if (onPairGenerated) {
+          await onPairGenerated(generatedPair, i, count);
+        }
 
         if (onProgress) {
           onProgress(i, count);
@@ -163,9 +178,6 @@ export class ArticleWorkerPool {
         if (i < count) {
           await this.sleep(3000);
         }
-
-      } catch (error) {
-        console.error(`\n❌ Article Pair ${i} failed: ${(error as Error).message}`);
       }
     }
 
@@ -179,7 +191,8 @@ export class ArticleWorkerPool {
   async executeBatch(
     count: number,
     config: ContentFactoryConfig,
-    onProgress?: (completed: number, total: number) => void
+    onProgress?: (completed: number, total: number) => void,
+    onArticleGenerated?: (article: Article, index: number, total: number) => Promise<void> | void
   ): Promise<Article[]> {
     const articles: Article[] = [];
     const maxChars = config.maxChars || CHAR_BUDGET; // ✅ Use config value, fallback to central budget
@@ -196,6 +209,8 @@ export class ArticleWorkerPool {
 
     // Generate articles sequentially (since Gemini API has rate limits)
     for (let i = 1; i <= count; i++) {
+      let generatedArticle: Article | null = null;
+
       try {
         console.log(`  🎬 Article ${i}/${count} - Generating...`);
         const startTime = Date.now();
@@ -330,6 +345,8 @@ export class ArticleWorkerPool {
         };
 
         articles.push(article);
+        generatedArticle = article;
+
         console.log(`     ✅ Complete (${(duration / 1000).toFixed(1)}s, ${article.charCount} chars)`);
         if (article.coverImage) {
           console.log(`     🖼 Cover: ${article.coverImage.size} bytes`);
@@ -338,7 +355,18 @@ export class ArticleWorkerPool {
         // 📊 v4.4: Show quality metrics summary
         console.log(`     📊 Quality: ${metrics.readabilityScore}/100 | Dialogue: ${metrics.dialoguePercentage}% | Sensory: ${metrics.sensoryDensity}/10`);
 
-        // Call progress callback
+
+
+      } catch (error) {
+        console.error(`  ❌ Article ${i} failed: ${(error as Error).message}`);
+        // Continue with next article
+      }
+
+      if (generatedArticle) {
+        if (onArticleGenerated) {
+          await onArticleGenerated(generatedArticle, i, count);
+        }
+
         if (onProgress) {
           onProgress(i, count);
         }
@@ -348,9 +376,6 @@ export class ArticleWorkerPool {
           console.log(`     ⏳ Waiting 3 seconds...\n`);
           await this.sleep(3000);
         }
-      } catch (error) {
-        console.error(`  ❌ Article ${i} failed: ${(error as Error).message}`);
-        // Continue with next article
       }
     }
 
