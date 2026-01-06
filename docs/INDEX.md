@@ -1,157 +1,145 @@
-# 📚 ZenMaster Documentation Index
+# 📚 ZenMaster Documentation Hub
 
-Welcome to the comprehensive ZenMaster documentation suite. This index provides quick navigation to all documentation resources, organized by use case and reading time.
+**Welcome to ZenMaster v7.1 - Complete Documentation Hub**
 
-## 🚀 Quick Links
-
-- **[📋 Full Documentation Index](./DOCUMENTATION_INDEX.md)** - Complete navigation and detailed summaries
-- **[🚀 Development Roadmap](./ROADMAP.md)** - Full v4.0 through v5.0+ timeline
-- **[⚡ v4.9 QualityValidator Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md)** - Implementation details
-- **[🎯 Quality Metrics in Prompt](./guides/QUALITY_METRICS_IN_PROMPT.md)** - How prompt-led quality works
-- **[🧼 ContentSanitizer Guide](./guides/CONTENT_SANITIZER.md)** - Cleaning + validation + metrics
-- **[🧹 Service Cleanup Guide](./guides/SERVICE_CLEANUP.md)** - Step-by-step cleanup plan
+All documentation organized by purpose. Start with guides, then dive into specifics.
 
 ---
 
-## 📖 Documentation by Use Case
+## 🚀 Getting Started
 
-### 🔍 "What are these orphaned services?"
-→ **Start**: [Quick Summary](./architecture/ORPHANED_SERVICES_QUICK.md) *(3 min read)*
-→ **Then**: [Detailed Analysis](./architecture/ORPHANED_SERVICES_ANALYSIS.md) *(30 min read)*
+New to ZenMaster? Start here.
 
-### ⚡ "How do I use v4.9 QualityValidator?"
-→ **Read**: [v4.9 Implementation Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md) *(20 min read)*
-
-### 🧹 "How do I implement the service cleanup?"
-→ **Follow**: [Action Plan - Service Cleanup](./guides/SERVICE_CLEANUP.md) *(step-by-step implementation)*
-
-### 🗺️ "What's the development plan for the project?"
-→ **Read**: [Complete Roadmap](./ROADMAP.md) *(30 min read)*
-
-### 🏗️ "Where do I find everything?"
-→ **This page** or **[Full Index](./DOCUMENTATION_INDEX.md)**
+- **[SETUP_GUIDE.md](getting-started/SETUP_GUIDE.md)** - Installation and environment setup
+- **[QUICK_START.md](getting-started/QUICK_START.md)** - First article generation in 5 minutes
 
 ---
 
-## 📊 Reading Time Matrix
+## 👍 Guides & Tutorials
 
-| Document | Reading Time | Complexity | Use Case |
-|----------|-------------|------------|----------|
-| **[Quick Summary](./architecture/ORPHANED_SERVICES_QUICK.md)** | 3 min | ⭐ | Quick overview |
-| **[Service Cleanup Guide](./guides/SERVICE_CLEANUP.md)** | 15 min | ⭐⭐ | Implementation |
-| **[v4.9 Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md)** | 20 min | ⭐⭐ | New feature |
-| **[Complete Roadmap](./ROADMAP.md)** | 30 min | ⭐⭐⭐ | Planning |
-| **[Detailed Analysis](./architecture/ORPHANED_SERVICES_ANALYSIS.md)** | 30 min | ⭐⭐⭐ | Deep dive |
-| **[Full Index](./DOCUMENTATION_INDEX.md)** | 45 min | ⭐⭐⭐⭐ | Complete reference |
+Learn how to use the system.
+
+- **[SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md](guides/SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md)** - Non-technical overview for product managers
+- **[FEED_QUICK_START.md](guides/FEED_QUICK_START.md)** - Generate and publish RSS feeds
 
 ---
 
-## 🎯 Version Timeline
+## 📌 Core Architecture
 
-| Version | Status | Release Date | Key Features |
-|---------|--------|--------------|--------------|
-| **v4.0.2** | ✅ Production | Current | Content Factory, Canvas post-processing |
-| **v4.9** | ✨ Just Added | Dec 20, 2025 | QualityValidator authenticity scoring |
-| **v4.5** | 🔄 Planned | Dec 22-23, 2025 | Phase 2 Anti-Detection System |
-| **v5.0+** | 🔮 Vision | Early 2026 | Auto-publish with Playwright |
+Understand how the system works internally.
+
+- **[PIPELINE_ARCHITECTURE.md](core/PIPELINE_ARCHITECTURE.md)** - Complete pipeline: Phases A-E
+- **[ARCHITECTURE.md](core/ARCHITECTURE.md)** - System design and components
 
 ---
 
-## 📚 Documentation Structure
+## 🎆 Quality Standards
 
-### 🎯 Core Documentation
+Maintain quality and consistency.
 
-- **[PIPELINE_ARCHITECTURE.md](core/PIPELINE_ARCHITECTURE.md)** — complete system pipeline (Phase A–E)
-- **[ARCHITECTURE.md](core/ARCHITECTURE.md)** — consolidated architecture notes (services + RSS)
-- **[SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md](guides/SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md)** — non-technical overview
-
-### 🚀 Getting Started
-
-- **[SETUP_GUIDE.md](getting-started/SETUP_GUIDE.md)** — installation / secrets setup
-- **[QUICK_START.md](getting-started/QUICK_START.md)** — first run / first publication
-
-### 📋 Quality & Standards
-
-- **[CONTENT_QUALITY_MATRIX.md](standards/CONTENT_QUALITY_MATRIX.md)** — quality metrics and checklist
-
-### 🔧 Development
-
-- **[REFACTOR_GUIDE.md](development/REFACTOR_GUIDE.md)** — code/content refactoring guidelines
-
-### ⚙️ Systems
-
-- **[RSS_GENERATION.md](systems/RSS_GENERATION.md)** — RSS feed generation modes
-- **[RSS_DZEN_COMPLIANCE.md](systems/RSS_DZEN_COMPLIANCE.md)** — Dzen compliance requirements
-- **[RSS_VALIDATION_REPORT.md](systems/RSS_VALIDATION_REPORT.md)** — validation rules & checklist
-- **[FEED_QUICK_START.md](guides/FEED_QUICK_START.md)** — feed generation quick start
-
-### 🚀 Workflows
-
-- **[GITHUB-ACTIONS-INTEGRATION.md](workflows/GITHUB-ACTIONS-INTEGRATION.md)** — GitHub Actions setup
-- **[GITHUB-ACTIONS-READY.md](workflows/GITHUB-ACTIONS-READY.md)** — deployment checklist
-
-### 📖 References
-
-- **[EXISTING_SERVICES_ANALYSIS.md](references/EXISTING_SERVICES_ANALYSIS.md)** — competitive / service analysis
-
-### 🔬 Technical Deep-Dives
-
-- **[FIX_DEDUPE_HUMAN_BEHAVIOR_SUMMARY.md](technical/FIX_DEDUPE_HUMAN_BEHAVIOR_SUMMARY.md)** — deduplication & behavior simulation
-
-### 🎯 Release Notes
-
-- **[IMPLEMENTATION-SUMMARY.md](releases/IMPLEMENTATION-SUMMARY.md)** — implementation notes (v6.1 cleanup pipeline)
-- **[v7.0-SUMMARY.md](releases/v7.0-SUMMARY.md)** — v7.0 highlights
-- **[PHASE2_INTEGRATION_SUMMARY.md](releases/PHASE2_INTEGRATION_SUMMARY.md)** — Phase 2 integration
+- **[CONTENT_QUALITY_MATRIX.md](standards/CONTENT_QUALITY_MATRIX.md)** - Quality metrics, scoring, checklist
 
 ---
 
-## 🔗 Cross-References
+## 🔧 Development
 
-### From Roadmap
-- → [Quick Summary](./architecture/ORPHANED_SERVICES_QUICK.md) for overview
-- → [v4.9 Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md) for implementation
-- → [Full Index](./DOCUMENTATION_INDEX.md) for navigation
+For developers working on the codebase.
 
-### From v4.9 Guide
-- → [Complete Roadmap](./ROADMAP.md) for planning context
-- → [Service Analysis](./architecture/ORPHANED_SERVICES_ANALYSIS.md) for background
-- → [Documentation Index](./DOCUMENTATION_INDEX.md) for everything
-
-### From Orphaned Services Analysis
-- → [Quick Summary](./architecture/ORPHANED_SERVICES_QUICK.md) for quick reference
-- → [Action Plan](../guides/SERVICE_CLEANUP.md) for implementation
-- → [Complete Roadmap](../ROADMAP.md) for context
+- **[REFACTOR_GUIDE.md](development/REFACTOR_GUIDE.md)** - Code refactoring guidelines
+- **[COMMIT-MESSAGE.md](development/COMMIT-MESSAGE.md)** - Git commit message standards
 
 ---
 
-## 🎨 Getting Started
+## ⚙️ Workflows & CI/CD
 
-### New to the Project?
-1. Start with **[Quick Summary](./architecture/ORPHANED_SERVICES_QUICK.md)** (3 min)
-2. Read **[v4.9 Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md)** (20 min)
-3. Explore **[Complete Roadmap](./ROADMAP.md)** (30 min)
+Automation and deployment.
 
-### Need to Clean Up Services?
-1. Read **[Quick Summary](./architecture/ORPHANED_SERVICES_QUICK.md)** (3 min)
-2. Follow **[Action Plan](./guides/SERVICE_CLEANUP.md)** (step-by-step)
-3. Reference **[Detailed Analysis](./architecture/ORPHANED_SERVICES_ANALYSIS.md)** (30 min)
-
-### Planning Future Development?
-1. Read **[Complete Roadmap](./ROADMAP.md)** (30 min)
-2. Check **[Full Index](./DOCUMENTATION_INDEX.md)** (45 min)
-3. Review **[v4.9 Guide](./guides/V4.9_QUALITY_VALIDATOR_GUIDE.md)** (20 min)
+- **[GITHUB-ACTIONS-INTEGRATION.md](workflows/GITHUB-ACTIONS-INTEGRATION.md)** - GitHub Actions setup
+- **[GITHUB-ACTIONS-READY.md](workflows/GITHUB-ACTIONS-READY.md)** - Deployment checklist
 
 ---
 
-## 📞 Navigation Tips
+## 🗠️ Systems
 
-- **Use relative links** when viewing locally
-- **Check back often** - documentation updates with each release
-- **Start with your use case** - choose the shortest path that fits your needs
-- **Follow the breadcrumbs** - each document links to related content
+Specific system documentation.
+
+- **[RSS_GENERATION.md](systems/RSS_GENERATION.md)** - RSS feed generation
+- **[RSS_DZEN_COMPLIANCE.md](systems/RSS_DZEN_COMPLIANCE.md)** - Дзен compliance
+- **[RSS_VALIDATION_REPORT.md](systems/RSS_VALIDATION_REPORT.md)** - Validation and error handling
 
 ---
 
-*Last updated: December 20, 2025*  
-*For questions about this documentation, see [Full Index](./DOCUMENTATION_INDEX.md)*
+## 🔬 Technical Deep-Dives
+
+Advanced technical documentation.
+
+- **[FIX_DEDUPE_HUMAN_BEHAVIOR_SUMMARY.md](technical/FIX_DEDUPE_HUMAN_BEHAVIOR_SUMMARY.md)** - Deduplication and behavior simulation
+
+---
+
+## 📖 Release Notes & History
+
+Version information and changes.
+
+- **[CHANGELOG.md](releases/CHANGELOG.md)** - Complete version history
+- **[v7.0-SUMMARY.md](releases/v7.0-SUMMARY.md)** - v7.0 highlights
+- **[IMPLEMENTATION-SUMMARY.md](releases/IMPLEMENTATION-SUMMARY.md)** - Current version notes
+- **[PHASE2_INTEGRATION_SUMMARY.md](releases/PHASE2_INTEGRATION_SUMMARY.md)** - Phase 2 integration
+
+---
+
+## 📖 References
+
+Analysis, reviews, and reference documents.
+
+- **[EXISTING_SERVICES_ANALYSIS.md](references/EXISTING_SERVICES_ANALYSIS.md)** - Competitive landscape analysis
+- **[TASK_SUMMARY.md](references/TASK_SUMMARY.md)** - Project task tracking
+- **[project_review.md](references/project_review.md)** - Comprehensive project review
+
+---
+
+## 🗄️ Archive
+
+Outdated documentation - for historical reference only.
+
+- **[Archive Folder](archive/)** - Contains v5.4 notes, completed fixes, and old analysis
+
+---
+
+## 📐 Projects
+
+Project-specific documentation.
+
+- Subproject documentation (see `/projects` folder)
+
+---
+
+## 🔍 Quick Navigation
+
+**By Role**:
+- **Product Manager**: Start with [SYSTEM_EXPLAINED_HUMAN_FRIENDLY](guides/SYSTEM_EXPLAINED_HUMAN_FRIENDLY.md)
+- **Developer**: See [ARCHITECTURE](core/ARCHITECTURE.md) and [REFACTOR_GUIDE](development/REFACTOR_GUIDE.md)
+- **QA/Validator**: Check [CONTENT_QUALITY_MATRIX](standards/CONTENT_QUALITY_MATRIX.md)
+- **DevOps**: Review [GITHUB-ACTIONS-INTEGRATION](workflows/GITHUB-ACTIONS-INTEGRATION.md)
+
+**By Task**:
+- **Setting up**: [SETUP_GUIDE](getting-started/SETUP_GUIDE.md)
+- **First article**: [QUICK_START](getting-started/QUICK_START.md)
+- **Publishing**: [FEED_QUICK_START](guides/FEED_QUICK_START.md)
+- **Quality check**: [CONTENT_QUALITY_MATRIX](standards/CONTENT_QUALITY_MATRIX.md)
+- **Understanding system**: [PIPELINE_ARCHITECTURE](core/PIPELINE_ARCHITECTURE.md)
+
+---
+
+## 🔗 Related Resources
+
+- **README.md** (root) - Project overview
+- **GitHub Issues** - Feature requests and bug reports
+- **GitHub Discussions** - Community questions
+- **Source Code** - /src directory
+
+---
+
+**Last Updated**: January 6, 2026
+**Maintained By**: Documentation team
+**Status**: Complete and organized
