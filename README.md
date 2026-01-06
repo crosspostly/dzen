@@ -26,6 +26,7 @@
 | **📏 SELECTORS** | Все селекторы & надёжность | [🔍](./SELECTORS.md) |
 | **📊 WHAT_CHANGED** | Что исправлено и почему | [🔍](./WHAT_CHANGED.md) |
 | **📋 CLEANUP_SUMMARY** | Очистка и оптимизация | [🔍](./CLEANUP_SUMMARY.md) |
+| **🔧 RESTORE_ARTICLES_SAFE** | 5-попыточная стратегия восстановления | [🔍](./docs/RESTORE_ARTICLES_SAFE.md) |
 
 ---
 
@@ -39,6 +40,7 @@
 - 📌 **RSS Feed** - источник статей
 - 🔐 **Secrets** - безопасные куки (AES-256)
 - 📚 **History** - тракинг опубликованных статей
+- 🔧 **Auto-Restore** - агрессивное восстановление статей с 5-попыточной стратегией (Gemini 2026)
 
 ---
 

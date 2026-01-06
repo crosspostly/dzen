@@ -56,15 +56,15 @@ jobs:
             echo "files=$FILES_STR" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🤖 Restore articles
-        if: steps.files.outputs.files != ''
-        id: restore
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          echo "🚀 Restoring..."
-          node scripts/restore-articles.js ${{ steps.files.outputs.files }}
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
+      - name: 🤖 Restore articles (5-retry strategy)
+       if: steps.files.outputs.files != ''
+       id: restore
+       env:
+         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+       run: |
+         echo "🚀 Restoring with 5-attempt strategy..."
+         node scripts/restore-articles-safe.js ${{ steps.files.outputs.files }}
+         echo "exit_code=$?" >> $GITHUB_OUTPUT
 
       - name: 📤 Commit if changed
         if: steps.files.outputs.files != '' && steps.restore.outputs.exit_code == '0'
