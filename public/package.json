@@ -1,0 +1,19 @@
+{
+  "name": "dzen-feed-parser",
+  "version": "2.0.0",
+  "description": "Parse Yandex Zen RSS feed and extract article data with view counts",
+  "main": "parse-feed-with-views.js",
+  "scripts": {
+    "parse": "node parse-feed.js",
+    "parse:views": "node parse-feed-with-views.js"
+  },
+  "keywords": ["zen", "rss", "parser", "dzen"],
+  "author": "crosspostly",
+  "license": "MIT",
+  "dependencies": {
+    "xml2js": "^0.6.2",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "devDependencies": {}
+}
