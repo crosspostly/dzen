@@ -14,6 +14,7 @@ import { TextRestorationService } from './textRestorationService';
 import { Article } from '../types/ContentFactory';
 import { ContentFactoryConfig } from '../types/ContentFactory';
 import { CHAR_BUDGET } from '../constants/BUDGET_CONFIG';
+import { PlotBibleBuilder } from './plotBibleBuilder';
 
 export interface BothModeResult {
   rawArticle: Article;
@@ -77,6 +78,20 @@ export class ArticleWorkerPool {
           emotion: outline.emotion,
           audience: 'Women 35-60',
         });
+
+        // 🔥 CRITICAL FIX: Enrich with Visual DNA (Stage 0)
+        // multiAgentService doesn't generate coverVisual, so we build it here
+        const visualBible = PlotBibleBuilder.buildFromTheme({
+          theme, 
+          angle: 'confession',
+          emotion: outline.emotion,
+          audience: 'Women 35-60'
+        });
+        if (visualBible.coverVisual) {
+          plotBible.coverVisual = visualBible.coverVisual;
+          console.log(`     🎨 Visual DNA attached: ${plotBible.coverVisual.where} / ${plotBible.coverVisual.mood}`);
+        }
+        
         console.log(`✅ Outline ready`);
 
         // STEP 3: Generate cover image (shared by both versions)
@@ -219,6 +234,19 @@ export class ArticleWorkerPool {
           emotion: outline.emotion,
           audience: 'Women 35-60',
         });
+
+        // 🔥 CRITICAL FIX: Enrich with Visual DNA (Stage 0)
+        const visualBible = PlotBibleBuilder.buildFromTheme({
+          theme, 
+          angle: 'confession',
+          emotion: outline.emotion,
+          audience: 'Women 35-60'
+        });
+        if (visualBible.coverVisual) {
+          plotBible.coverVisual = visualBible.coverVisual;
+          console.log(`     🎨 Visual DNA attached: ${plotBible.coverVisual.where} / ${plotBible.coverVisual.mood}`);
+        }
+
         console.log(`     ✅ Outline ready with plotBible`);
 
         // 🖼 STEP 3: Generate COVER IMAGE (BEFORE episodes!)
