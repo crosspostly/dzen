@@ -20,7 +20,16 @@ JSON:
     "age": NUMBER (25-65),
     "gender": "female",
     "tone": "exclamatory | sad | ironic | didactic",
-    "habits": ["привычка 1", "привычка 2", "привычка 3"]
+    "habits": ["привычка 1", "привычка 2", "привычка 3"],
+    "dossier": {
+      "fullName": "ФИО",
+      "appearance": "Одна запоминающаяся деталь (как трубка Шерлока)",
+      "profession": "Профессия/Хобби",
+      "evolution": {
+        "before": "Какой была ДО",
+        "after": "Какой стала ПОСЛЕ"
+      }
+    }
   },
   "archetype": "Comeback Queen | Gold Digger Trap | Phoenix",
   "sensorPalette": {
