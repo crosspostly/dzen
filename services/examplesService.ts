@@ -62,16 +62,61 @@ export class ExamplesService {
   }
 
   /**
-   * Выбирает лучшие примеры по качеству
+   * Загружает примеры из parsed_examples.json (автоматически распарсенные)
+   */
+  loadParsedExamples(jsonPath: string): ExampleArticle[] {
+    if (!fs.existsSync(jsonPath)) {
+      console.warn(`Examples JSON not found at: ${jsonPath}`);
+      return [];
+    }
+
+    try {
+      const rawData = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+      const examples: ExampleArticle[] = rawData.map((item: any) => {
+        // Parse views: "301,4 тыс читали" -> 301400
+        let viewCount = 0;
+        if (item.views) {
+          const numStr = item.views.replace(/[^\d,]/g, '').replace(',', '.');
+          const multiplier = item.views.includes('тыс') ? 1000 : 1;
+          viewCount = parseFloat(numStr) * multiplier;
+        }
+
+        return {
+          title: item.title,
+          content: item.excerpt || item.snippet || '', // Use excerpt as content content
+          metadata: {
+            views: viewCount,
+            likes: Math.round(viewCount * 0.05), // Estimate likes
+            date: item.date || new Date().toISOString(),
+            engagement_rate: 0.1, // Default high engagement
+            sentiment: 'neutral',
+            quality_score: 90, // Real successful articles get high score
+            url: item.link,
+            image: item.image
+          }
+        };
+      });
+
+      console.log(`${'✅'} Loaded ${examples.length} parsed examples from JSON`);
+      return examples;
+
+    } catch (error) {
+      console.error('Failed to load parsed_examples.json:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Выбирает лучшие примеры по качеству и просмотрам
    */
   selectBestExamples(articles: ExampleArticle[], count: number): ExampleArticle[] {
     if (articles.length === 0) return [];
 
-    // Сортируем по engagement_rate и quality_score
+    // Сортируем по просмотрам (views) и quality_score
     const sorted = [...articles].sort((a, b) => {
-      const scoreA = (a.metadata?.quality_score ?? 0) * 0.5 + (a.metadata?.engagement_rate ?? 0) * 0.5;
-      const scoreB = (b.metadata?.quality_score ?? 0) * 0.5 + (b.metadata?.engagement_rate ?? 0) * 0.5;
-      return scoreB - scoreA;
+      const viewsA = a.metadata?.views || 0;
+      const viewsB = b.metadata?.views || 0;
+      return viewsB - viewsA;
     });
 
     return sorted.slice(0, count);

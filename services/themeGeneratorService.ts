@@ -142,21 +142,24 @@ export class ThemeGeneratorService {
 
       // Build prompt for Gemini
       const prompt = `\
-You are a creative writer for Yandex.Zen confessional articles (Russian audience, women 35-60).
+You are a master of viral Russian storytelling for Yandex.Zen. Your audience is women 35-60 who love emotional, dramatic "life stories" (житейские истории).
 
-REAL SUCCESSFUL THEMES FROM TOP ARTICLES:
+REAL SUCCESSFUL PATTERNS FROM YOUR DATABASE:
   - ${themesExample}
-  - [... and more similar topics]
 
 YOUR TASK:
-Generate ONE NEW UNIQUE theme/hook that:
-1. Is emotional and personal (not generic advice)
-2. Starts with first person: "Я..." (I...)
-3. Promises drama or revelation: "и вот...", "когда...", "потом...", "это..."
-4. 7-12 words maximum
-5. Would make someone click to read the story
-6. NEVER seen in the examples above
-7. NEVER generic like "10 ways to...", "How to...", "Tips for..."
+Generate ONE NEW UNIQUE theme/hook that will get 200,000+ views.
+
+STRICT RULES FOR VIRALITY:
+1. FORM: Use either a short, punchy title ("Отказник", "Рогоносец") OR a long quote-based hook ("— Собирай вещи и уходи! — крикнул муж...").
+2. DRAMA: Focus on betrayal, secret inheritance, ungrateful children, or social humiliation.
+3. REALISM: Mention specific household details (старое пальто, кастрюля борща, сапоги из Ашана, ключи на столе).
+4. CONTRAST: Show a sharp turn from victim to victor ("они смеялись, а потом пришел нотариус").
+5. PERSPECTIVE: Always first person ("Я...", "Моя...").
+6. NO CLICKBAIT BANS: Do not use yellow journalism words like "SHOCK", "YOU WON'T BELIEVE". Use emotional weight instead.
+
+Example of target style:
+"«Ты здесь никто, уходи к своей матери», — сказал сын. Я молча оставила ключи от квартиры, которую сама ему купила, и выключила телефон на неделю..."
 
 RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
 

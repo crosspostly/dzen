@@ -761,7 +761,35 @@ export class ImageGeneratorAgent {
    * Uses variation methods to ensure unique images
    */
   private buildStorySpecificPrompt(context: any, plotBible?: PlotBible): string {
-    // 🎨 Apply variations for diversity
+    // 🔥 PRIORITY: Use visual plan from PlotBible (Stage 0) if available
+    if (plotBible?.coverVisual) {
+      const v = plotBible.coverVisual;
+      return `
+🎬 PLANNED STORY SCENE (from PlotBible Stage 0):
+
+📖 STORY: ${context.title}
+👤 SUBJECT: ${v.who}, emotional state matches ${v.mood}
+📍 LOCATION: ${v.where}
+💡 LIGHTING: ${v.lighting}
+🎭 ACTION: ${v.what}
+👁️ DETAILS:
+${v.details.map(d => `• ${d}`).join('\n')}
+
+🎨 VISUAL DIRECTION:
+- Capture this SPECIFIC moment planned at Stage 0
+- High realism, authentic mobile photo aesthetic
+- No studio lighting, no filters
+- Match the emotional tone: ${v.mood}
+- The image must perfectly illustrate the story theme
+
+🚫 ABSOLUTE RULES:
+- NO text, captions, watermarks
+- NO perfect posing
+- NO generic "woman portrait"
+      `.trim();
+    }
+
+    // 🎨 Fallback to random variations if no coverVisual
     const variedLocation = this.varyLocation(context.location, plotBible);
     const variedLighting = this.varyLighting(context.emotionalArc.primary);
     const variedComposition = this.varyComposition();

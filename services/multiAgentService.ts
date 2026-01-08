@@ -8,6 +8,7 @@ import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
 import { MobilePhotoAuthenticityProcessor } from "./mobilePhotoAuthenticityProcessor";
 import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
+import { examplesService, ExampleArticle } from "./examplesService";
 
 // ============================================================================
 // NEW: Article Archetype Types (TOP Articles System)
@@ -98,6 +99,42 @@ export class MultiAgentService {
     this.phase2Service = new Phase2AntiDetectionService();
     this.authenticityProcessor = new MobilePhotoAuthenticityProcessor();
     this.useAntiDetection = options?.useAntiDetection ?? false;
+    this.skipCleanupGates = options?.skipCleanupGates ?? false;
+    
+    // Initialize examples
+    const jsonPath = path.join(process.cwd(), 'parsed_examples.json');
+    if (fs.existsSync(jsonPath)) {
+       examplesService.loadParsedExamples(jsonPath);
+    }
+  }
+
+  /**
+   * 🧠 RAG Lite: Get relevant example for inspiration
+   */
+  private getRelevantExample(theme: string): ExampleArticle | null {
+    // 1. Load examples if not loaded
+    const jsonPath = path.join(process.cwd(), 'parsed_examples.json');
+    const examples = examplesService.loadParsedExamples(jsonPath);
+    
+    if (examples.length === 0) return null;
+
+    // 2. Try to find semantic match by keywords
+    const keywords = theme.toLowerCase().split(' ').filter(w => w.length > 4);
+    const match = examples.find(ex => {
+       const titleLower = ex.title.toLowerCase();
+       return keywords.some(k => titleLower.includes(k));
+    });
+
+    if (match) {
+       console.log(`🧠 Found relevant example: "${match.title}" for theme "${theme}"`);
+       return match;
+    }
+
+    // 3. Fallback: Return top 1 by views (Best of the Best)
+    const top = examplesService.selectBestExamples(examples, 1)[0];
+    console.log(`🧠 Using top example: "${top.title}" (${top.metadata?.views} views)`);
+    return top;
+  }
     this.skipCleanupGates = options?.skipCleanupGates ?? false;
     
     this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
@@ -1080,9 +1117,25 @@ Key: Reflection, growth, and sharing wisdom`;
 
     const guidelines = this.loadSharedGuidelines();
 
+    // 🧠 RAG: Inject One-Shot Example
+    let exampleContext = '';
+    const bestExample = this.getRelevantExample(params.theme);
+    if (bestExample) {
+      exampleContext = `
+📚 ONE-SHOT EXAMPLE (INSPIRATION - DO NOT COPY):
+This is a high-performing article (${bestExample.metadata?.views?.toLocaleString()} views).
+Observe the tone, the immediate hook in the lede, and the specific details.
+
+Title: "${bestExample.title}"
+Style/Lede (Exceprt): "${bestExample.content.substring(0, 800)}..."
+--------------------------------------------------`;
+    }
+
     const prompt = `${basePrompt}
 
 ${guidelines}
+
+${exampleContext}
 
 🎭 STORY ARCHITECT - GENERATE COMPLETE OUTLINE
 

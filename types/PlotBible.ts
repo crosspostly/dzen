@@ -12,6 +12,7 @@ export interface PlotBible {
   sensoryPalette: SensoryPalette;
   timeline: TimelineStructure;
   forbiddenThemes: string[];
+  coverVisual: SceneVisual; // 🎨 Planned at Stage 0
 }
 
 export interface NarratorProfile {

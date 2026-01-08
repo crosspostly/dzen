@@ -40,6 +40,9 @@ export class PlotBibleBuilder {
       flashbacks: []
     };
 
+    // Build visual plan for cover image 🆕
+    const coverVisual = this.buildCoverVisual(context, narrator);
+
     // Define forbidden themes
     const forbiddenThemes = [
       "убийство",
@@ -56,7 +59,46 @@ export class PlotBibleBuilder {
       antagonist,
       sensoryPalette,
       timeline,
-      forbiddenThemes
+      forbiddenThemes,
+      coverVisual
+    };
+  }
+
+  /**
+   * 🎨 Build visual plan for the cover image
+   * Decided at Stage 0 to ensure narrative-visual consistency
+   */
+  private static buildCoverVisual(context: ThemeContext, narrator: NarratorProfile) {
+    const isBetrayal = context.emotionalTone === 'betrayal';
+    const isGrief = context.emotionalTone === 'grief';
+    const isJoy = context.emotionalTone === 'joy';
+
+    // Determine location
+    let where = 'современная кухня с мягким светом';
+    if (context.setting === 'rural') where = 'веранда загородного дома';
+    if (context.setting === 'office') where = 'рабочий стол в офисе';
+    if (isBetrayal) where = 'прихожая с зеркалом, тусклый свет';
+
+    // Determine lighting
+    let lighting = 'утренний естественный свет';
+    if (isBetrayal) lighting = 'контрастный вечерний свет от лампы';
+    if (isGrief) lighting = 'холодный дневной свет из окна';
+    if (isJoy) lighting = 'теплый «золотой час»';
+
+    // Determine details from sensory palette
+    const details = [
+      'кружка на столе',
+      narrator.age > 45 ? 'старый фотоальбом' : 'смартфон в руке',
+      context.setting === 'rural' ? 'занавески в цветочек' : 'минималистичные жалюзи'
+    ];
+
+    return {
+      who: `женщина ${narrator.age} лет`,
+      where,
+      what: isBetrayal ? 'смотрит на телефон с тревогой' : 'сидит в раздумьях',
+      lighting,
+      mood: context.emotionalTone,
+      details
     };
   }
 

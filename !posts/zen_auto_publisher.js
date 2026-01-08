@@ -1,11 +1,13 @@
 const { chromium } = require('playwright');
 const fs = require('fs').promises;
+const path = require('path');
 const PublicationHistory = require('./modules/publication_history.js');
 
 // Функция для извлечения данных из XML с правильной обработкой текста
 async function getArticlesFromFeed() {
   try {
-    const feedContent = await fs.readFile('C:\\Users\\varsm\\OneDrive\\Desktop\\projects\\dzen\\public\\feed.xml', 'utf8');
+    const feedPath = path.join(__dirname, '../public/feed.xml');
+    const feedContent = await fs.readFile(feedPath, 'utf8');
     
     // Извлекаем статьи с помощью регулярных выражений
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -59,7 +61,8 @@ async function getArticlesFromFeed() {
 // Функция для извлечения данных из XML с правильной обработкой текста
 async function getArticlesFromFeed() {
   try {
-    const feedContent = await fs.readFile('C:\\Users\\varsm\\OneDrive\\Desktop\\projects\\dzen\\public\\feed.xml', 'utf8');
+    const feedPath = path.join(__dirname, '../public/feed.xml');
+    const feedContent = await fs.readFile(feedPath, 'utf8');
 
     // Извлекаем статьи с помощью регулярных выражений
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
