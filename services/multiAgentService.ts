@@ -106,6 +106,18 @@ export class MultiAgentService {
     if (fs.existsSync(jsonPath)) {
        examplesService.loadParsedExamples(jsonPath);
     }
+
+    this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
+    console.log(`📊 Dynamic episode allocation: ${this.episodeCount} episodes for ${this.maxChars} chars`);
+    
+    if (!this.useAntiDetection) {
+      console.log('🚫 Anti-detection DISABLED - clean generation mode');
+    }
+    if (this.skipCleanupGates) {
+      console.log('🚫 Cleanup gates DISABLED - direct output');
+    }
+    
+    this.initializeAgents(this.episodeCount);
   }
 
   /**
@@ -134,20 +146,6 @@ export class MultiAgentService {
     const top = examplesService.selectBestExamples(examples, 1)[0];
     console.log(`🧠 Using top example: "${top.title}" (${top.metadata?.views} views)`);
     return top;
-  }
-    this.skipCleanupGates = options?.skipCleanupGates ?? false;
-    
-    this.episodeCount = this.calculateOptimalEpisodeCount(this.maxChars);
-    console.log(`📊 Dynamic episode allocation: ${this.episodeCount} episodes for ${this.maxChars} chars`);
-    
-    if (!this.useAntiDetection) {
-      console.log('🚫 Anti-detection DISABLED - clean generation mode');
-    }
-    if (this.skipCleanupGates) {
-      console.log('🚫 Cleanup gates DISABLED - direct output');
-    }
-    
-    this.initializeAgents(this.episodeCount);
   }
 
   /**
