@@ -823,7 +823,6 @@ Interior Style: ${interiorStyle}
 💔 EMOTIONAL TONE:
 Primary emotion: ${context.emotionalArc.primary}
 Mood: ${variedMood}
-Secondary emotions: ${context.emotionalArc.secondary.join(', ')}
 
 👁️ WHAT WE SEE (VISIBLE DETAILS):
 ${context.visibleDetails.map((d: string) => `• ${d}`).join('\n')}
@@ -832,34 +831,33 @@ ${sensoryDetails ? '\n' + sensoryDetails : ''}
 🎯 KEY FOCAL POINT:
 ${context.focalPoint}
 
-📐 COMPOSITION:
+🎥 CAMERA & ANGLE (CRITICAL):
 ${variedComposition}
+- Depth of field: Shallow (bokeh background) to focus on emotion
+- Framing: Cinematic, rule of thirds
 
 🎭 ART STYLE:
 ${variedArtStyle}
 
 🎨 VISUAL DIRECTION:
-Don't show generic "woman sitting with tea"
-Show THIS SPECIFIC MOMENT from the story:
+- 🚫 AVOID: Person just sitting at table looking at camera (BORING!)
+- ✅ DO: Show ACTION or REACTION (packing, crying, laughing, turning away)
+- ✅ DO: Use dramatic lighting (shadows, silhouettes, window light)
+- ✅ DO: Make it look like a still frame from a high-quality movie about real life
 - Capture the EXACT emotion of this scene
 - Include visible details that show WHAT HAPPENED
-- The focal point should draw attention naturally
-- Lighting should match the emotional tone
-- Everything in frame should serve the story
-- Make this image VISUALLY DISTINCT from previous images
 
 🚫 ABSOLUTE RULES:
 - NO text, captions, watermarks
-- NO filters or Instagram effects
-- NO perfect posing (real moment, not posed)
-- NO ambiguity (image should clearly show THIS story's emotion)
+- NO looking directly at camera (candid look only)
+- NO stock photo aesthetic (must look authentic/raw)
+- NO perfect studio lighting
 - NO generic "woman portrait"
 
 ✅ SUCCESS:
 When viewer sees this image, they immediately FEEL the emotion
 They understand SOMETHING HAPPENED
 They can sense the CONTEXT without reading
-The image matches EXACTLY what the story describes
 
 🎯 TONE GUIDE by emotion:
 ${this.getToneGuide(context.emotionalArc.primary)}

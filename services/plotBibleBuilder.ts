@@ -72,30 +72,85 @@ export class PlotBibleBuilder {
     const isBetrayal = context.emotionalTone === 'betrayal';
     const isGrief = context.emotionalTone === 'grief';
     const isJoy = context.emotionalTone === 'joy';
+    const isAnxiety = context.emotionalTone === 'anxiety';
 
-    // Determine location
-    let where = 'современная кухня с мягким светом';
-    if (context.setting === 'rural') where = 'веранда загородного дома';
-    if (context.setting === 'office') where = 'рабочий стол в офисе';
-    if (isBetrayal) where = 'прихожая с зеркалом, тусклый свет';
+    // 1. Determine Location (More Variety)
+    const locations = [
+      'современная кухня с мягким светом',
+      'уютная спальня, кровать не заправлена',
+      'гостиная, на диване плед',
+      'окно с видом на вечерний город',
+      'столик в небольшом кафе'
+    ];
+    
+    if (context.setting === 'rural') {
+      locations.push('веранда загородного дома', 'крыльцо деревянного дома', 'сад с яблонями', 'деревенская кухня с печкой');
+    }
+    if (context.setting === 'office') {
+      locations.push('рабочий стол в офисе', 'пустой коридор офиса', 'лифт с зеркалом');
+    }
+    
+    // Pick random base location
+    let where = locations[Math.floor(Math.random() * locations.length)];
 
-    // Determine lighting
+    // Override for strong emotions
+    if (isBetrayal) {
+      const betrayalLocs = ['прихожая с зеркалом', 'спальня с открытым шкафом', 'кухня, пустой стул напротив', 'окно в дождливый день'];
+      where = betrayalLocs[Math.floor(Math.random() * betrayalLocs.length)];
+    }
+    if (isGrief) {
+      const griefLocs = ['пустая комната', 'скамейка в парке осенью', 'окно с задернутыми шторами', 'кресло в углу'];
+      where = griefLocs[Math.floor(Math.random() * griefLocs.length)];
+    }
+
+    // 2. Determine Lighting (Atmosphere)
     let lighting = 'утренний естественный свет';
-    if (isBetrayal) lighting = 'контрастный вечерний свет от лампы';
-    if (isGrief) lighting = 'холодный дневной свет из окна';
-    if (isJoy) lighting = 'теплый «золотой час»';
+    if (Math.random() > 0.5) lighting = 'мягкий вечерний свет от торшера';
+
+    if (isBetrayal) lighting = 'контрастный вечерний свет, длинные тени';
+    if (isGrief) lighting = 'холодный серый свет из окна (пасмурно)';
+    if (isJoy) lighting = 'теплый, заливающий все солнце (золотой час)';
+    if (isAnxiety) lighting = 'тусклый свет настольной лампы в темноте';
+
+    // 3. Determine Action/Subject (NO MORE JUST SITTING!)
+    const actions = [
+      'сидит в раздумьях',
+      'смотрю в окно, отвернувшись',
+      'держу чашку двумя руками',
+      'поправляю волосы, глядя в зеркало',
+      'читаю письмо или документ'
+    ];
+    
+    let what = actions[Math.floor(Math.random() * actions.length)];
+
+    if (isBetrayal) {
+      const betrayalActions = [
+        'смотрю на телефон с тревогой',
+        'собираю вещи в чемодан',
+        'сижу на полу, обхватив колени',
+        'стою спиной, плечи опущены',
+        'держу в руках чужую вещь'
+      ];
+      what = betrayalActions[Math.floor(Math.random() * betrayalActions.length)];
+    }
+    
+    if (isJoy) {
+      what = 'улыбаюсь, глядя вверх'; 
+      if (Math.random() > 0.5) what = 'смеюсь, прикрыв рот рукой';
+    }
 
     // Determine details from sensory palette
     const details = [
       'кружка на столе',
       narrator.age > 45 ? 'старый фотоальбом' : 'смартфон в руке',
-      context.setting === 'rural' ? 'занавески в цветочек' : 'минималистичные жалюзи'
+      context.setting === 'rural' ? 'занавески в цветочек' : 'минималистичные жалюзи',
+      isBetrayal ? 'небрежно брошенные ключи' : 'аккуратно сложенная салфетка'
     ];
 
     return {
       who: `женщина ${narrator.age} лет`,
       where,
-      what: isBetrayal ? 'смотрит на телефон с тревогой' : 'сидит в раздумьях',
+      what,
       lighting,
       mood: context.emotionalTone,
       details
