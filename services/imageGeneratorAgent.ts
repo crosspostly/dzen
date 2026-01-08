@@ -68,14 +68,14 @@ export class ImageGeneratorAgent {
       'apartment interior': [
         'bedroom with soft morning light',
         'kitchen with steam from kettle',
-        'living room with worn sofa',
-        'balcony with potted plants',
-        'narrow hallway with coat rack',
-        'bathroom with mirror reflection',
-        'home office corner with laptop',
-        'staircase landing',
-        'old bedroom with nostalgic items',
-        'small kitchen table with tea'
+        'living room with comfortable sofa',
+        'balcony with fresh plants',
+        'hallway with mirror',
+        'bathroom with clean surfaces',
+        'home office corner with technology',
+        'staircase with natural light',
+        'cozy bedroom with personal details',
+        'kitchen table with breakfast setting'
       ],
       'intimate cafe with candlelight': [
         'cozy corner cafe with warm lighting',
@@ -86,24 +86,24 @@ export class ImageGeneratorAgent {
       ],
       'bridge over river, evening light': [
         'riverside walkway at sunset',
-        'old stone bridge with patina',
+        'stone bridge with texture',
         'wooden dock by calm water',
         'city bridge with traffic lights',
         'seaside promenade at dusk'
       ],
       'kitchen with table': [
-        'family kitchen with warm lighting',
+        'bright family kitchen',
         'small kitchen with breakfast prep',
-        'rustic kitchen with herbs',
-        'modern kitchen with island',
-        'grandmother\'s traditional kitchen'
+        'spacious kitchen with island',
+        'modern kitchen with clean lines',
+        'traditional kitchen with warmth'
       ],
       'office building': [
         'corporate office with city view',
         'lawyer\'s office with files',
         'reception area with plants',
         'meeting room with big table',
-        'desk with scattered papers'
+        'modern desk with workspace'
       ],
       'park bench': [
         'autumn park with fallen leaves',
@@ -134,7 +134,7 @@ export class ImageGeneratorAgent {
         'bus stop with shelter'
       ],
       'artist studio': [
-        'messy creative studio with paints',
+        'creative studio with paints',
         'well-organized workshop',
         'pottery studio with clay',
         'photography studio with lights',
@@ -163,13 +163,29 @@ export class ImageGeneratorAgent {
   }
 
   /**
+   * 🏠 Vary interior style for diversity
+   */
+  private varyInteriorStyle(): string {
+    const styles = [
+      'Modern Scandinavian (clean lines, light wood, white walls)',
+      'Classic Traditional (warm wood, cozy textures, family details)',
+      'Minimalist Contemporary (uncluttered, sleek, neutral tones)',
+      'Eclectic Boheme (colorful textiles, plants, personal art)',
+      'Soft Industrial (exposed textures, metal accents, warm lighting)',
+      'Bright & Airy (large windows, pastel tones, open space)',
+      'Cozy Rustic (natural materials, stone, linen, comfort)'
+    ];
+    return styles[Math.floor(Math.random() * styles.length)];
+  }
+
+  /**
    * 💡 Vary lighting based on emotion
    * Different emotions need different lighting atmospheres
    */
   private varyLighting(emotion: string): string {
     const lightingOptions: Record<string, string[]> = {
       'grief and pain': [
-        'cold harsh overhead lighting',
+        'cold overhead lighting',
         'dim corner with shadows',
         'grey daylight from window',
         'single lamp with weak bulb',
@@ -752,6 +768,7 @@ export class ImageGeneratorAgent {
     const variedArtStyle = this.varyArtStyle();
     const variedMood = this.varyMood(context.emotionalArc.primary);
     const sensoryDetails = this.varySensoryPalette(plotBible);
+    const interiorStyle = this.varyInteriorStyle();
 
     // Create a UNIQUE prompt for THIS specific story
     const prompt = `
@@ -773,6 +790,7 @@ ${context.presenceContext !== 'alone' ? `\nWith: ${context.presenceContext}` : '
 Where: ${variedLocation}
 When: ${context.timeContext}
 Lighting: ${variedLighting}
+Interior Style: ${interiorStyle}
 
 💔 EMOTIONAL TONE:
 Primary emotion: ${context.emotionalArc.primary}
@@ -829,7 +847,7 @@ ${this.getToneGuide(context.emotionalArc.primary)}
     const toneGuides: Record<string, string> = {
       'grief and pain': `
 GRIEF scene:
-- Cold, clinical apartment lighting (no warmth)
+- Cold, clinical lighting (no warmth)
 - Empty spaces, silence visible
 - Body language: frozen, numb, shock
 - Eyes: red, empty, distant look
