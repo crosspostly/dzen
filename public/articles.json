@@ -1,0 +1,34 @@
+{
+  "total": 3,
+  "articles": [
+    {
+      "title": "Больно, я скрывала правду тридцать лет, пока этот желтый конверт не выдал всё дочери",
+      "description": "Резкий хруст бумаги. Секунда. Темнота. — Мама, что с тобой?! — испуганный крик дочери доносился словно из-под толщи воды. Я лежала на холодном кафеле прихожей, сжимая в кулаке обрывок желтого...",
+      "link": "https://dzen.ru/potemki/bolno-ya-skryvala-pravdu-tridtsat-let-poka-etot-zh-20260104",
+      "views": null,
+      "views_note": "View count not available in RSS feed"
+    },
+    {
+      "title": "Горько я плакала в своей роскоши, пока один звонок не раскрыл мне страшную правду",
+      "description": "'У тебя же всё есть,' — говорили подруги, глядя на мой новый Porsche и безупречный маникюр. А я смотрела в зеркало и видела там покойницу. Дорогой крем на мертвой коже. Шелк на остывшем теле....",
+      "link": "https://dzen.ru/potemki/gorko-ya-plakala-v-svoey-roskoshi-poka-odin-zvonok-20260104",
+      "views": null,
+      "views_note": "View count not available in RSS feed"
+    },
+    {
+      "title": "Мне было страшно, что я считала себя обычной, пока мои руки не раскрыли призвание",
+      "description": "Почему я так долго прятала свои руки под столом? Сжимала пальцы. Прятала в рукава. Лишь бы никто не заметил эту странную дрожь. Тридцать лет я прилежно играл",
+      "link": "https://dzen.ru/potemki/mne-bylo-strashno-chto-ya-schitala-sebya-obychnoy",
+      "views": null,
+      "views_note": "View count not available in RSS feed"
+    }
+  ],
+  "metadata": {
+    "channel_title": "Потёмки - Истории из жизни",
+    "channel_link": "https://dzen.ru/potemki",
+    "description": "Личные истории и переживания из жизни",
+    "last_updated": "Tue, 06 Jan 2026 09:49:49 +0300",
+    "generator": "ZenMaster RSS Generator v2.10",
+    "note": "View counts are not included in RSS feed format. To get view statistics, you'll need to use Yandex Zen API or parse the actual article pages."
+  }
+}
