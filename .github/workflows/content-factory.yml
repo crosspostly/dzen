@@ -1,6 +1,9 @@
 name: Content Factory - Batch Articles (Dzen)
 
 on:
+  schedule:
+    # Runs at 05:00 UTC every day
+    - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       count:
@@ -56,9 +59,18 @@ jobs:
       
       - name: Generate articles
         run: |
-          COUNT="${{ inputs.count }}"
-          CHANNEL="${{ inputs.channel }}"
-          IMAGES="${{ inputs.images }}"
+          # Determine parameters based on trigger
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            COUNT="10"
+            CHANNEL="women-35-60"
+            IMAGES="true"
+            echo "⏰ Scheduled Run: Using defaults (10 articles, women-35-60, images)"
+          else
+            COUNT="${{ inputs.count }}"
+            CHANNEL="${{ inputs.channel }}"
+            IMAGES="${{ inputs.images }}"
+            echo "👋 Manual Run: Using inputs"
+          fi
           
           echo "====================================================="
           echo "Content Factory - Batch Generation"
@@ -89,6 +101,16 @@ jobs:
           CLEANUP_MODEL: gemini-2.0-flash
           CLEANUP_TEMPERATURE: 0.3
           CLEANUP_MAX_RETRIES: 2
+
+      - name: Generate RSS Feed
+        run: |
+           echo "====================================================="
+           echo "RSS Feed Generation (Incremental)"
+           echo "====================================================="
+           node scripts/generate-feed.js incremental
+
+      - name: Validate RSS Feed
+        run: node scripts/validate-rss.js public/feed.xml
       
       - name: Count results
         if: always()
@@ -108,7 +130,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: articles-${{ inputs.channel }}-${{ github.run_id }}
+          name: articles-${{ inputs.channel || 'scheduled' }}-${{ github.run_id }}
           path: articles/
           retention-days: 90
           if-no-files-found: warn
@@ -146,9 +168,9 @@ jobs:
                     stdio: 'inherit' 
                   });
                   
-                  // Step 3: Add files
-                  console.log('📂 Adding articles...');
-                  execSync('git add articles/', { 
+                  // Step 3: Add files (articles + feed)
+                  console.log('📂 Adding articles and feed...');
+                  execSync('git add articles/ public/feed.xml', { 
                     stdio: 'inherit' 
                   });
                   
@@ -164,9 +186,20 @@ jobs:
                   // Step 5: Commit
                   console.log('💾 Committing...');
                   const timestamp = new Date().toISOString().split('T')[0];
-                  const channel = '${{ inputs.channel }}';
-                  const count = '${{ inputs.count }}';
-                  execSync(`git commit -m "📝 Generated articles: ${timestamp} - ${count} articles (${channel})"`, { 
+                  
+                  // Determine commit message based on trigger
+                  let message = '';
+                  const eventName = '${{ github.event_name }}';
+                  
+                  if (eventName === 'schedule') {
+                     message = `🤖 Daily Content: 10 articles + RSS update (${timestamp})`;
+                  } else {
+                     const channel = '${{ inputs.channel }}';
+                     const count = '${{ inputs.count }}';
+                     message = `📝 Generated articles: ${timestamp} - ${count} articles (${channel}) + RSS`;
+                  }
+                  
+                  execSync(`git commit -m "${message}"`, { 
                     stdio: 'inherit' 
                   });
                   
