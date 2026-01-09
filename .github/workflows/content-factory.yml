@@ -147,16 +147,6 @@ jobs:
             echo "⚠️ Папка $TARGET_DIR не найдена (возможно, генерация не создала файлы?)"
           fi
 
-      - name: 📡 Генерация RSS фида
-        run: |
-           echo "====================================================="
-           echo "📡 Обновление RSS фида (Incremental)"
-           echo "====================================================="
-           node scripts/generate-feed.js incremental
-
-      - name: 🔍 Валидация RSS фида
-        run: node scripts/validate-rss.js public/feed.xml
-      
       - name: 📊 Подсчет результатов
         if: always()
         run: |
@@ -207,11 +197,8 @@ jobs:
                   console.log('⚙️  Слияние изменений (Rebase)...');
                   execSync('git rebase origin/${{ github.ref_name }}', { stdio: 'inherit' });
                   
-                  console.log('🔍 Проверка статуса feed.xml перед добавлением:');
-                  try { execSync('ls -l public/feed.xml', { stdio: 'inherit' }); } catch (e) {}
-                  
-                  console.log('📂 Добавление файлов (статьи + фид)...');
-                  execSync('git add articles/ public/feed.xml', { stdio: 'inherit' });
+                  console.log('📂 Добавление файлов (только статьи)...');
+                  execSync('git add articles/', { stdio: 'inherit' });
                   
                   console.log('📊 Статус git после add:');
                   execSync('git status', { stdio: 'inherit' });
@@ -230,11 +217,11 @@ jobs:
                   const eventName = '${{ github.event_name }}';
                   
                   if (eventName === 'schedule') {
-                     message = `🤖 Ежедневный контент: 10 статей + обновление RSS (${timestamp})`;
+                     message = `🤖 Ежедневный контент: 10 статей (${timestamp})`;
                   } else {
                      const channel = '${{ inputs.channel }}';
                      const count = '${{ inputs.count }}';
-                     message = `📝 Генерация статей: ${timestamp} - ${count} шт. (${channel}) + RSS`;
+                     message = `📝 Генерация статей: ${timestamp} - ${count} шт. (${channel})`;
                   }
                   
                   execSync(`git commit -m "${message}"`, { stdio: 'inherit' });

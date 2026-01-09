@@ -11,9 +11,16 @@ on:
         options:
           - full
           - incremental
+  workflow_run:
+    workflows: ["Фабрика контента - Генерация статей (Дзен)"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
   generate-feed:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -48,7 +55,13 @@ jobs:
         echo "GITHUB_REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
 
     - name: Generate RSS feed
-      run: node scripts/generate-feed.js ${{ github.event.inputs.mode }}
+      run: |
+        MODE="${{ github.event.inputs.mode }}"
+        if [ -z "$MODE" ]; then
+          MODE="incremental"
+        fi
+        echo "🚀 Running RSS generator in $MODE mode..."
+        node scripts/generate-feed.js $MODE
 
     - name: Validate RSS feed
       run: node scripts/validate-rss.js public/feed.xml
