@@ -138,16 +138,39 @@ export class PlaywrightService {
     // 3. Image
     if (article.imageUrl) {
       console.log('🖼️ Inserting image...');
-      const imageBtn = await this.page.$('button.article-editor-desktop--side-button__sideButton-1z[data-tip="Вставить изображение"]');
+      
+      // Try multiple selectors for the image button
+      const imageBtnSelectors = [
+        'button[data-tip="Вставить изображение"]',
+        'button[aria-label="Вставить изображение"]',
+        '.article-editor-desktop--side-button__sideButton-1z', // Legacy class
+        'button:has(svg)' // Generic fallback (risky but better than nothing)
+      ];
+
+      let imageBtn = null;
+      for (const selector of imageBtnSelectors) {
+        imageBtn = await this.page.$(selector);
+        if (imageBtn && await imageBtn.isVisible()) break;
+      }
+
       if (imageBtn) {
         await imageBtn.click();
         await this.page.waitForTimeout(2000);
-        const urlInput = await this.page.$('input[type="text"]');
+        
+        // Wait for input to appear
+        const urlInput = await this.page.waitForSelector('input[type="text"][placeholder*="ссылка"]', { timeout: 5000 }).catch(() => null) || 
+                         await this.page.$('input[type="text"]'); // Fallback
+
         if (urlInput) {
           await urlInput.fill(article.imageUrl);
           await urlInput.press('Enter');
-          await this.page.waitForTimeout(2000);
+          await this.page.waitForTimeout(3000); // Wait for image to load
+          console.log('✅ Image URL submitted');
+        } else {
+          console.warn('⚠️ Image input field not found after clicking button');
         }
+      } else {
+        console.warn('⚠️ Image button not found');
       }
     }
   }
