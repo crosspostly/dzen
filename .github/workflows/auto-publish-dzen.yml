@@ -73,33 +73,17 @@ jobs:
             exit 1
           fi
       
-      - name: 📝 Initialize history file
-        run: |
-          HISTORY_FILE="!posts/PRODUCTION_READY/published_articles.txt"
-          if [ ! -f "$HISTORY_FILE" ]; then
-            echo "📝 Creating history file..."
-            touch "$HISTORY_FILE"
-            echo "✅ History file created: $HISTORY_FILE"
-          else
-            echo "✅ History file already exists"
-            echo "📊 Current entries: $(wc -l < "$HISTORY_FILE")"
-          fi
-      
       - name: 📦 Install dependencies
         run: |
-          cd "!posts/PRODUCTION_READY"
           echo "📥 Installing npm packages..."
-          npm install 2>&1 | tail -20
+          npm ci
           echo "✅ Dependencies installed"
-        continue-on-error: false
       
       - name: 🎬 Install Playwright
         run: |
-          cd "!posts/PRODUCTION_READY"
           echo "🎬 Installing Playwright browsers..."
-          npx playwright install chromium --with-deps 2>&1 | tail -20
+          npx playwright install chromium --with-deps
           echo "✅ Playwright installed"
-        continue-on-error: false
       
       - name: 🤖 Run auto-publisher
         id: publisher
@@ -108,21 +92,12 @@ jobs:
           HEADLESS: true
           DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
-          cd "!posts/PRODUCTION_READY"
-          
           echo "========================================"
           echo "🤖 DZEN AUTO-PUBLISHER STARTING"
           echo "========================================"
-          echo ""
-          echo "📋 Configuration:"
-          echo "   Feed: public/feed.xml (from repository root)"
-          echo "   Cookies: From DZEN_COOKIES_JSON env variable (encrypted from secret)"
-          echo "   Environment: CI/CD (GitHub Actions)"
-          echo "   Headless mode: true"
-          echo ""
           
-          # Use main.js.ci which reads from env variable and root /public/feed.xml
-          timeout 300 node src/main.js.ci 2>&1 | tee publish.log
+          # Run the new TypeScript script
+          timeout 300 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
           PUBLISHER_EXIT=$?
           
           echo ""
@@ -130,7 +105,7 @@ jobs:
           echo "publisher_status=$PUBLISHER_EXIT" >> $GITHUB_OUTPUT
           
           # Save log for debugging
-          mv publish.log ../../publish-$(date +%s).log || true
+          mv publish.log publish-$(date +%s).log || true
         continue-on-error: true
       
       - name: 📊 Check results
@@ -139,15 +114,16 @@ jobs:
           echo "========================================"
           echo "📊 WORKFLOW RESULTS"
           echo "========================================"
-          echo ""
           
-          if [ -f "!posts/PRODUCTION_READY/published_articles.txt" ]; then
-            TOTAL_PUBLISHED=$(wc -l < "!posts/PRODUCTION_READY/published_articles.txt" || echo "0")
+          HISTORY_FILE="!posts/PRODUCTION_READY/published_articles.txt"
+          
+          if [ -f "$HISTORY_FILE" ]; then
+            TOTAL_PUBLISHED=$(wc -l < "$HISTORY_FILE" || echo "0")
             echo "✅ Publication history exists"
             echo "   Total articles published: $TOTAL_PUBLISHED"
             echo ""
             echo "📋 Last 3 published articles:"
-            tail -3 "!posts/PRODUCTION_READY/published_articles.txt" | sed 's/^/   /'
+            tail -3 "$HISTORY_FILE" | sed 's/^/   /'
           else
             echo "ℹ️  No articles published yet"
           fi
@@ -167,27 +143,23 @@ jobs:
           
           echo "📤 Preparing to commit history and logs..."
           
-          # Add history file - MUST EXIST NOW
-          git add "!posts/PRODUCTION_READY/published_articles.txt"
-          echo "✅ Added published_articles.txt"
+          # Add history file
+          git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
           
           # Add logs if they exist
           git add "publish-*.log" 2>/dev/null || true
           
           # Check if there's anything to commit
           if git diff --cached --quiet; then
-            echo "ℹ️  No changes to commit (all articles already published)"
+            echo "ℹ️  No changes to commit"
           else
             echo "📝 Committing changes..."
-            git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed (might be empty)"
+            git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed"
             
             echo "📤 Pushing to repository..."
             git push origin main
             echo "✅ Successfully pushed!"
           fi
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: 📋 Summary
         if: always()
