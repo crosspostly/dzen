@@ -1,179 +1,134 @@
-# ZenMaster v7.0 - Simplified Generation - Quick Start Guide
+# 🚀 QUICK START - Автопубликация в Дзен
 
-## 🎯 One-Line Command for Clean Text
+## ✅ 3 ПРОСТЫХ ШАГА
 
-```bash
-npx ts-node cli.ts factory --count=1 --no-anti-detection --no-cleanup --theme="Я нашла своё лицо на чужом фото"
+### 1️⃣ Добавь куки в GitHub Secret
+
+```
+https://github.com/crosspostly/dzen/settings/secrets/actions
+↓
+"New repository secret"
+↓
+Name: DZEN_COOKIES_JSON
+Value: (твой JSON из браузера)
+↓
+Save
 ```
 
-**That's it!** Your article will be ready to publish.
+### 2️⃣ Тестируй
 
----
-
-## 📋 What Each Flag Does
-
-### `--no-anti-detection`
-- ❌ Disables Phase 2 processing (perplexity, burstiness, skaz)
-- ✅ Episodes are clean from the first generation
-- ✅ No text corruption from post-processing
-
-### `--no-cleanup`
-- ❌ Disables cleanup gates (FinalArticleCleanupGate, ArticlePublishGate)
-- ✅ Direct output from AI
-- ✅ No "fixing" that introduces errors
-
-### `--theme="Your theme"`
-- Specific theme for the article
-- Higher priority than config
-- Example: `--theme="Я нашла своё лицо на чужом фото. Теперь я знаю правду"`
-
----
-
-## 🚀 Common Use Cases
-
-### 1. Generate 1 Article (Quick Test)
-```bash
-npx ts-node cli.ts factory --count=1 --no-anti-detection --no-cleanup --theme="Тема"
+```
+https://github.com/crosspostly/dzen/actions
+↓
+Найди workflow: "Test Dzen Setup"
+↓
+"Run workflow" > main > "Run workflow"
+↓
+Жди 1-2 минуты
 ```
 
-### 2. Generate with Cover Image
-```bash
-npx ts-node cli.ts factory --count=1 --no-anti-detection --no-cleanup --images --theme="Тема"
-```
+### 3️⃣ Публикуй!
 
-### 3. Generate 5 Articles
-```bash
-npx ts-node cli.ts factory --count=5 --no-anti-detection --no-cleanup
 ```
+Workflow "Auto-Publish to Dzen Every 3 Hours"
+будет запускаться автоматически каждые 3 часа
 
-### 4. For Specific Channel
-```bash
-npx ts-node cli.ts factory --count=1 --channel=women-35-60 --no-anti-detection --no-cleanup
+Или запусти вручную:
+"Run workflow" > main > "Run workflow"
 ```
 
 ---
 
-## 📝 Example Output
+## 📄 ЧТО ДАЛЬШЕ?
 
+### Просмотри логи тестов:
 ```
-╔════════════════════════════════════════════════════════════════╗
-║   🏭 ZenMaster v4.0 - Content Factory                           ║
-╚════════════════════════════════════════════════════════════════╝
-
-📑 Generating 1 articles (SIMPLIFIED mode, 3 parallel workers) with 19000 char budget...
-
-📊 Dynamic episode allocation: 10 episodes for 19000 chars
-🚫 Anti-detection DISABLED - simplified generation mode
-🚫 Cleanup gates DISABLED - direct output
-
-  🎬 Article 1/1 - Generating...
-     📑 Theme: Тема
-     📋 Generating outline + plotBible...
-     ✅ Outline ready with plotBible
-        - Narrator: 45 y/o female
-        - Tone: confessional, intimate
-        - Sensory palette: холодный чай, телефон, зеркало, старое фото...
-🔄 Stage 1: Generating 10 episodes sequentially...
-   🎬 Episode 1/10 - Starting generation...
-      🚫 Skipping Phase 2 (anti-detection disabled)
-      ✅ Episode 1: 3124 chars
-   🎬 Episode 2/10 - Starting generation...
-      🚫 Skipping Phase 2 (anti-detection disabled)
-      ✅ Episode 2: 2891 chars
-   ...
-🎯 Generating lede (600-900) and finale (1200-1800)...
-🗰 Generating title (55-90 chars)...
-
-🚫 Skipping cleanup gates (simplified mode)
-
-✅ ARTICLE COMPLETE
-📊 Metrics:
-   - Episodes: 10
-   - Characters: 18745 (target: 19000)
-   - Utilization: 98.7%
-   - Reading time: 9 min
-   - Scenes: 10
-   - Dialogues: 60
-   - Phase 2 Score: 0/100
-   - Anti-Detection: ❌ Not applied
-   - Cover image: Pending (will be generated in orchestrator)
-
-     ✅ Complete (142.3s, 18745 chars)
+https://github.com/crosspostly/dzen/actions/workflows/test-dzen.yml
 ```
+
+### Просмотри логи публикации:
+```
+https://github.com/crosspostly/dzen/actions/workflows/auto-publish-dzen.yml
+```
+
+### Документация:
+- `!posts/PRODUCTION_READY/GITHUB_SECRETS_SETUP.md` - подробно про секреты
+- `!posts/PRODUCTION_READY/test-setup.js` - что тестируется
+- `!posts/PRODUCTION_READY/src/main.js.ci` - как работает CI/CD
 
 ---
 
-## 🎭 First Person Perspective
+## 🔐 GitHub Secret
 
-**Always enforced!** The prompts ensure:
-- ✅ "я увидела", "мне показалось", "я думала"
-- ❌ No "героиня увидела", "персонаж почувствовал"
-- ✅ Confessional tone throughout
-- ✅ Personal diary style
+**Что вставлять в secret:**
+
+Ввести JSON из браузера (DevTools > Application > Cookies > dzen.ru):
+
+```json
+[
+  {
+    "name": "mda2_beacon",
+    "value": "1765685032529",
+    "domain": ".dzen.ru",
+    ...
+  },
+  ...
+]
+```
+
+**Весь массив целиком** (от `[` до `]`)
 
 ---
 
-## 🔍 Quality Checks
+## 📊 Что проверяется при тесте?
 
-The simplified mode automatically checks for:
-1. ✅ First person perspective (no third-person slips)
-2. ✅ No artifacts ([note], [TODO], markdown)
-3. ✅ No repeated phrases ("вот в чём дело", etc.)
-4. ✅ Proper episode length (1500-3500 chars)
+✅ feed.xml существует
+✅ Куки загружаются из secret
+✅ JSON правильный формат
+✅ История готова
+✅ Статьи парсятся
+✅ Дедублирование работает
+✅ Окружение правильное
+✅ Все файлы на месте
 
 ---
 
-## 📂 Output Location
+## 🔌 Структура
 
-Articles are saved to:
 ```
-./articles/<channel-name>/<YYYY-MM-DD>/<article-title>.md
-```
-
-Example:
-```
-./articles/women-35-60/2025-12-25/ya-nashla-svoe-litso-na-chuzhom-foto.md
+GitHub Actions:
+  Test Dzen Setup (вручную)
+    ↓
+  Auto-Publish to Dzen (каждые 3 часа)
+    ↓
+  Читает: DZEN_COOKIES_JSON secret
+    ↓
+  Запускает: !posts/PRODUCTION_READY/src/main.js
+    ↓
+  Публикует в Дзен
+    ↓
+  Обновляет: published_articles.txt
 ```
 
 ---
 
-## ⚡️ Performance
+## ✅ Status
 
-**Simplified Mode:**
-- Generation time: ~2-3 minutes per article
-- API calls: ~10 per article
-- Text quality: Clean, direct from AI
-
-**Full Mode:**
-- Generation time: ~5-7 minutes per article
-- API calls: ~55 per article
-- Text quality: Risk of corruption from processing
+- ✅ GitHub Secret: `DZEN_COOKIES_JSON`
+- ✅ Test Workflow: `.github/workflows/test-dzen.yml`
+- ✅ Auto-Publish Workflow: `.github/workflows/auto-publish-dzen.yml`
+- ✅ Безопасность: Максимальная (env vars, no files)
+- ✅ Дедублирование: Включено (3 уровня проверки)
+- ✅ Автоматизация: Каждые 3 часа
 
 ---
 
-## 🐛 Troubleshooting
+## 🚀 ГОТОВО!
 
-### Text is still corrupted?
-1. Check theme is clear and specific
-2. Try shorter episode count: `--count=5` instead of `--count=10`
-3. Verify first person is used in theme
+1. Добавь secret
+2. Запусти тест
+3. Наслаждайся автопубликацией!
 
-### Article too short?
-- Increase episode count in generator (default 10)
-- Or use full mode for anti-detection to expand text
+**Вопросы?** Смотри документацию в `!posts/PRODUCTION_READY/`
 
-### First person lost?
-- Check prompt includes "ОТ ПЕРВОГО ЛИЦА"
-- Try using SimpleArticleGenerator directly
-
----
-
-## 📖 Full Documentation
-
-See: `docs/v7.0-simplified-generation.md`
-
----
-
-**Version**: 7.0  
-**Status**: ✅ Production Ready  
-**Recommended**: Use simplified mode for clean, natural text
+Last updated: 2026-01-04 08:30 UTC

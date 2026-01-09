@@ -56,12 +56,12 @@ npx ts-node cli.ts factory --count=1 --no-anti-detection --no-cleanup --images -
 | **📖 Guides** | How to use RSS, Setup, Config | [`docs/guides/`](./docs/guides/) |
 | **🏗 Architecture** | System design and logic | [`docs/architecture/`](./docs/architecture/) |
 | **⚖️ Standards** | Quality matrix and rules | [`docs/standards/`](./docs/standards/) |
-| **📊 Reports** | Issue fixes and summaries | [`archive/reports/`](./archive/reports/) |
+| **📊 Reports** | Issue fixes and summaries | [`docs/reports/`](./docs/reports/) |
 
 ### Essential Docs
-- [**v7.0 Simplified Generation Guide**](./docs/v7.0-simplified-generation.md)
-- [**Safe Restore Documentation**](./docs/RESTORE_ARTICLES_SAFE.md)
-- [**RSS Feed Guide**](./docs/guides/rss/RSS_GENERATION.md)
+- [**Quick Start Guide**](./docs/guides/QUICK_START.md)
+- [**Setup Guide**](./docs/guides/SETUP_GUIDE.md)
+- [**RSS Feed Specification**](./docs/project/RSS_FEED_SPEC.md)
 
 ---
 

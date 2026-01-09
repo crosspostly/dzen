@@ -19,7 +19,7 @@ const LOG = {
 
 export class ThemeGeneratorService {
   private geminiClient: GoogleGenAI;
-  private csvPath = path.join(process.cwd(), 'top_articles.csv');
+  private csvPath = path.join(process.cwd(), 'projects', 'women-35-60', 'top_articles.csv');
   private cachedThemes: string[] = [];
   private lastFetchTime: number = 0;
   private cacheDuration = 3600000; // 1 hour
