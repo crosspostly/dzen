@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1767941526689,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 241353,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-09/s-bolyu-ya-ushla-ot-syna-skryv-pod-rvanym-palto-sv.jpg",
+      "articles/women-35-60/2026-01-09/obida-zhgla-serdtse-kogda-doch-vygnala-menya-no-te.jpg",
+      "articles/women-35-60/2026-01-09/s-bolyu-ya-smotrela-na-vybroshennuyu-vesch-kotoray.jpg",
+      "articles/women-35-60/2026-01-09/mne-bylo-bolno-slyshat-ih-smeh-no-ya-kupila-ih-dom.jpg",
+      "articles/women-35-60/2026-01-09/unizhenie-szhigalo-menya-ya-ushla-v-nikuda-a-chere.jpg",
+      "articles/women-35-60/2026-01-09/predatelstvo-syna-ranilo-menya-no-moya-volya-u-not.jpg",
+      "articles/women-35-60/2026-01-09/mne-stalo-gorko-ya-dvadtsat-let-molchala-no-posle-.jpg",
+      "articles/women-35-60/2026-01-09/mne-stalo-obidno-no-ya-molcha-vzyala-klyuchi-ot-kv.jpg",
+      "articles/women-35-60/2026-01-09/menya-unizhali-za-starye-sapogi-iz-ashana-no-moi-n.jpg",
+      "articles/women-35-60/2026-01-09/ya-byla-razdavlena-ego-zhestokostyu-poka-zapiska-v.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-09/REPORT.md"
+  }
+}
