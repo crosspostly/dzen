@@ -8,18 +8,18 @@
     <title>Потёмки - Истории из жизни</title>
     <link>https://dzen.ru/potemki</link>
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
-    <atom:link href="https://crosspostly.github.io/dzen/feed.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Fri, 09 Jan 2026 10:29:37 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 09 Jan 2026 10:41:00 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
     <item>
       <title>Больно, я скрывала правду тридцать лет, пока этот желтый конверт не выдал всё дочери</title>
       <description><![CDATA[Резкий хруст бумаги. Секунда. Темнота. — Мама, что с тобой?! — испуганный крик дочери доносился словно из-под толщи воды. Я лежала на холодном кафеле прихожей, сжимая в кулаке обрывок желтого...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/bolno-ya-skryvala-pravdu-tridtsat-let-poka-etot-zh-20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/bolno-ya-skryvala-pravdu-tridtsat-let-poka-etot-zh-20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 13:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/bolno-ya-skryvala-pravdu-tridtsat-let-poka-etot-zh-20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/bolno-ya-skryvala-pravdu-tridtsat-let-poka-etot-zh-20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 13:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -41,9 +41,9 @@
     <item>
       <title>Горько я плакала в своей роскоши, пока один звонок не раскрыл мне страшную правду</title>
       <description><![CDATA['У тебя же всё есть,' — говорили подруги, глядя на мой новый Porsche и безупречный маникюр. А я смотрела в зеркало и видела там покойницу. Дорогой крем на мертвой коже. Шелк на остывшем теле....]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/gorko-ya-plakala-v-svoey-roskoshi-poka-odin-zvonok-20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/gorko-ya-plakala-v-svoey-roskoshi-poka-odin-zvonok-20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 14:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/gorko-ya-plakala-v-svoey-roskoshi-poka-odin-zvonok-20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/gorko-ya-plakala-v-svoey-roskoshi-poka-odin-zvonok-20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 15:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -65,9 +65,9 @@
     <item>
       <title>Мне было страшно, что я считала себя обычной, пока мои руки не раскрыли призвание</title>
       <description><![CDATA[Почему я так долго прятала свои руки под столом? Сжимала пальцы. Прятала в рукава. Лишь бы никто не заметил эту странную дрожь. Тридцать лет я прилежно играла роль «обычного человека». Дом,...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/mne-bylo-strashno-chto-ya-schitala-sebya-obychnoy--20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/mne-bylo-strashno-chto-ya-schitala-sebya-obychnoy--20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 13:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/mne-bylo-strashno-chto-ya-schitala-sebya-obychnoy--20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-strashno-chto-ya-schitala-sebya-obychnoy--20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 13:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -89,9 +89,9 @@
     <item>
       <title>Мне было стыдно, но я бросила идеальную жизнь и наконец-то выбрала себя</title>
       <description><![CDATA[«Почему я чувствую себя преступницей в собственном доме?» — этот вопрос обжигал изнутри, пока я расправляла идеально накрахмаленную скатерть. У меня было всё. Красивый муж, послушные дети, дом с...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/mne-bylo-stydno-no-ya-brosila-idealnuyu-zhizn-i-na-20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/mne-bylo-stydno-no-ya-brosila-idealnuyu-zhizn-i-na-20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 14:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/mne-bylo-stydno-no-ya-brosila-idealnuyu-zhizn-i-na-20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-stydno-no-ya-brosila-idealnuyu-zhizn-i-na-20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 15:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -113,9 +113,9 @@
     <item>
       <title>С горечью я считала мать святой, пока её старый дневник не открыл мне всю правду о ней</title>
       <description><![CDATA[«Она была святой женщиной», — шептали соседи на поминках. Верите? Я кивала. Смиренно опускала глаза. А внутри — выжженная пустыня. Пустота. Почему после смерти матери я чувствовала только удушающий...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/s-gorechyu-ya-schitala-mat-svyatoy-poka-eyo-staryy-20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/s-gorechyu-ya-schitala-mat-svyatoy-poka-eyo-staryy-20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 16:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/s-gorechyu-ya-schitala-mat-svyatoy-poka-eyo-staryy-20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/s-gorechyu-ya-schitala-mat-svyatoy-poka-eyo-staryy-20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 16:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -137,9 +137,9 @@
     <item>
       <title>Шок: я нашла мамин дневник и поняла, что вся моя жизнь была лишь красивым обманом</title>
       <description><![CDATA[Зачем мама хранила этот дневник под двойным дном старой швейной машинки? Слой пыли. Запах затхлой бумаги. Скрип дерева. Я просто хотела передвинуть тяжелый «Зингер», а в итоге разрушила свою...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/shok-ya-nashla-mamin-dnevnik-i-ponyala-chto-vsya-m-20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/shok-ya-nashla-mamin-dnevnik-i-ponyala-chto-vsya-m-20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 17:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/shok-ya-nashla-mamin-dnevnik-i-ponyala-chto-vsya-m-20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/shok-ya-nashla-mamin-dnevnik-i-ponyala-chto-vsya-m-20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 18:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -161,9 +161,9 @@
     <item>
       <title>Слёзы раскаяния: я отдала родную дочь и теперь мой статус ничего не стоит</title>
       <description><![CDATA[— Примерьте это, даме вашего статуса очень пойдет. Продавец лучезарно улыбалась. Я смотрела на крошечный золотой крестик на синем бархате. И вдруг — всхлип. Громкий. Позорный. Почему благополучная...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/slyozy-raskayaniya-ya-otdala-rodnuyu-doch-i-teper--20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/slyozy-raskayaniya-ya-otdala-rodnuyu-doch-i-teper--20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 19:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/slyozy-raskayaniya-ya-otdala-rodnuyu-doch-i-teper--20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/slyozy-raskayaniya-ya-otdala-rodnuyu-doch-i-teper--20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 19:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -185,9 +185,9 @@
     <item>
       <title>Тихая ярость: я поняла, что живу не своей, а чужой жизнью, подавая мужу соль</title>
       <description><![CDATA[«Дорогая, передай соль». Голос мужа звучал мягко. Уютно. Как в рекламе дорогого парфюма. Почему же в этот момент мне захотелось швырнуть солонку в стену? Посреди идеального семейного ужина, под...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/tihaya-yarost-ya-ponyala-chto-zhivu-ne-svoey-a-chu-20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/tihaya-yarost-ya-ponyala-chto-zhivu-ne-svoey-a-chu-20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 20:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/tihaya-yarost-ya-ponyala-chto-zhivu-ne-svoey-a-chu-20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/tihaya-yarost-ya-ponyala-chto-zhivu-ne-svoey-a-chu-20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 21:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -209,9 +209,9 @@
     <item>
       <title>Ужас сковал меня: я открыла шкатулку и поняла, что всё моё счастье — лишь обман</title>
       <description><![CDATA[Щелчок. Глухой, пыльный, почти забытый звук. Почему идеальная жизнь вдруг кажется декорацией? Стою посреди своей безупречной кухни, где пахнет дорогим кофе и безмятежностью, и чувствую: пол уходит...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/uzhas-skoval-menya-ya-otkryla-shkatulku-i-ponyala--20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/uzhas-skoval-menya-ya-otkryla-shkatulku-i-ponyala--20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 22:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/uzhas-skoval-menya-ya-otkryla-shkatulku-i-ponyala--20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/uzhas-skoval-menya-ya-otkryla-shkatulku-i-ponyala--20260104</guid>
+      <pubDate>Fri, 09 Jan 2026 22:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -233,9 +233,9 @@
     <item>
       <title>Я считала наш брак идеальным 25 лет, пока не нашла письмо и не прозрела</title>
       <description><![CDATA[Почему на этом снимке мы кажемся такими счастливыми? Четверть века плечом к плечу. Дети. Общий дом. Планы на старость. И вдруг — могильный холод. Боже, как я была слепа. Все изменилось вчера....]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/ya-schitala-nash-brak-idealnym-25-let-poka-ne-nash-20260104</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/ya-schitala-nash-brak-idealnym-25-let-poka-ne-nash-20260104</guid>
-      <pubDate>Fri, 09 Jan 2026 23:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/ya-schitala-nash-brak-idealnym-25-let-poka-ne-nash-20260104</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-schitala-nash-brak-idealnym-25-let-poka-ne-nash-20260104</guid>
+      <pubDate>Sat, 10 Jan 2026 00:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -257,9 +257,9 @@
     <item>
       <title>Наивная я помогла подруге из жалости, и теперь эта встреча разрушила мою жизнь</title>
       <description><![CDATA[— Помоги... Пожалуйста... Мне совсем некуда идти, — Марина разрыдалась прямо у меня на глазах. Двадцать лет. Мы не виделись целую жизнь, а она всё та же. Стоит у моего подъезда, скукожилась, как...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/naivnaya-ya-pomogla-podruge-iz-zhalosti-i-teper-et-20260106</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/naivnaya-ya-pomogla-podruge-iz-zhalosti-i-teper-et-20260106</guid>
-      <pubDate>Sat, 10 Jan 2026 01:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/naivnaya-ya-pomogla-podruge-iz-zhalosti-i-teper-et-20260106</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/naivnaya-ya-pomogla-podruge-iz-zhalosti-i-teper-et-20260106</guid>
+      <pubDate>Sat, 10 Jan 2026 01:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -281,9 +281,9 @@
     <item>
       <title>Больно, я нашла его дневник во время ремонта: вся моя жизнь оказалась ложью</title>
       <description><![CDATA[Двадцать лет. Ровно двадцать лет я была уверена, что сплю с честным человеком. А потом случился этот чертов потоп. Иронично, да? Соседи сверху залили нашу «образцовую» жизнь, и под горой мокрого...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/bolno-ya-nashla-ego-dnevnik-vo-vremya-remonta-vsya-20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/bolno-ya-nashla-ego-dnevnik-vo-vremya-remonta-vsya-20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 02:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/bolno-ya-nashla-ego-dnevnik-vo-vremya-remonta-vsya-20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/bolno-ya-nashla-ego-dnevnik-vo-vremya-remonta-vsya-20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 03:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -305,9 +305,9 @@
     <item>
       <title>Больно, я всегда была сильной, пока одна СМС мужа не разрушила мой мир на юбилее</title>
       <description><![CDATA[— Я скучаю по твоим рукам. — Пять слов. Всего пять слов на экране, заливающем спальню мертвенным синим светом. Три часа ночи. Тишина такая, что в ушах звенит. В нашей гостиной всё ещё пахнет...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/bolno-ya-vsegda-byla-silnoy-poka-odna-sms-muzha-ne-20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/bolno-ya-vsegda-byla-silnoy-poka-odna-sms-muzha-ne-20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 04:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/bolno-ya-vsegda-byla-silnoy-poka-odna-sms-muzha-ne-20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/bolno-ya-vsegda-byla-silnoy-poka-odna-sms-muzha-ne-20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 04:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -329,9 +329,9 @@
     <item>
       <title>Горько быть мебелью: я годами жила для других, пока зеркало не открыло мне правду</title>
       <description><![CDATA[— Опять пересолила? — муж даже глаз от телефона не поднял. Я стояла у плиты, и в нос бил этот тошнотворный, липкий запах пережаренного лука. Пальцы сжимали шершавое, застиранное полотенце так, что...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/gorko-byt-mebelyu-ya-godami-zhila-dlya-drugih-poka-20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/gorko-byt-mebelyu-ya-godami-zhila-dlya-drugih-poka-20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 05:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/gorko-byt-mebelyu-ya-godami-zhila-dlya-drugih-poka-20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/gorko-byt-mebelyu-ya-godami-zhila-dlya-drugih-poka-20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 06:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -353,9 +353,9 @@
     <item>
       <title>Мне больно, ведь я променяла любовь всей жизни на миллионы и это моё проклятие</title>
       <description><![CDATA[Вот полная версия статьи, собранная по всем правилам Stage 2 и интегрированная с метриками Voice Restoration. Вы когда-нибудь хотели плеснуть шампанским в лицо абсолютно незнакомому человеку?...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/mne-bolno-ved-ya-promenyala-lyubov-vsey-zhizni-na--20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/mne-bolno-ved-ya-promenyala-lyubov-vsey-zhizni-na--20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 07:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/mne-bolno-ved-ya-promenyala-lyubov-vsey-zhizni-na--20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bolno-ved-ya-promenyala-lyubov-vsey-zhizni-na--20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 07:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -377,9 +377,9 @@
     <item>
       <title>Мне жаль себя: я получила титул Женщина года, когда счастье было совсем рядом</title>
       <description><![CDATA[Золотая рамка. Тяжелая, зараза. Впивается в ладонь холодным краем. «Женщина года» — звучит-то как, а? Дорого, пафосно. А мне выть хочется. Прямо там, под софитами, перед всей этой напудренной...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/mne-zhal-sebya-ya-poluchila-titul-zhenschina-goda--20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/mne-zhal-sebya-ya-poluchila-titul-zhenschina-goda--20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 08:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/mne-zhal-sebya-ya-poluchila-titul-zhenschina-goda--20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-zhal-sebya-ya-poluchila-titul-zhenschina-goda--20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 09:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -401,9 +401,9 @@
     <item>
       <title>Моя боль: я смогла простить измену, но дети нанесли удар в спину за семейным столом</title>
       <description><![CDATA[Вы когда-нибудь чувствовали, как земля уходит из-под ног? Прямо вот так. Раз — и нет опоры. Стоишь, дура, тарелку с супом держишь, а внутри всё... рушится. Игорек мой, муж (честное слово, 25 лет...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/moya-bol-ya-smogla-prostit-izmenu-no-deti-nanesli--20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/moya-bol-ya-smogla-prostit-izmenu-no-deti-nanesli--20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 10:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/moya-bol-ya-smogla-prostit-izmenu-no-deti-nanesli--20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/moya-bol-ya-smogla-prostit-izmenu-no-deti-nanesli--20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 10:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -425,9 +425,9 @@
     <item>
       <title>С ужасом я ждала его слов: тест ДНК вскрыл тайну, которую я хранила десятилетиями</title>
       <description><![CDATA[— Ты же знаешь, о чем я, мам. Артем вошел на кухню, как в клетку. В руках — желтая папка. Господи, как я ненавижу этот цвет. Дешевый, больничный, как приговор. Сын молчит. Сверлит меня взглядом,...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/s-uzhasom-ya-zhdala-ego-slov-test-dnk-vskryl-taynu-20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/s-uzhasom-ya-zhdala-ego-slov-test-dnk-vskryl-taynu-20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 11:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/s-uzhasom-ya-zhdala-ego-slov-test-dnk-vskryl-taynu-20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/s-uzhasom-ya-zhdala-ego-slov-test-dnk-vskryl-taynu-20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 12:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -449,9 +449,9 @@
     <item>
       <title>Я была жалкой мебелью для мужа, пока один подслушанный разговор не изменил мою жизнь</title>
       <description><![CDATA[— Опять не то, — бросил он, даже не повернув головы. Я стояла посреди гостиной, и в горле медленно разливалась знакомая горечь. Знаете, такая... металлическая. Как будто лизнула батарейку на...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/ya-byla-zhalkoy-mebelyu-dlya-muzha-poka-odin-podsl-20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/ya-byla-zhalkoy-mebelyu-dlya-muzha-poka-odin-podsl-20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 13:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/ya-byla-zhalkoy-mebelyu-dlya-muzha-poka-odin-podsl-20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-byla-zhalkoy-mebelyu-dlya-muzha-poka-odin-podsl-20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 13:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -473,9 +473,9 @@
     <item>
       <title>Я ненавидела эти притворные лица, пока на юбилее мамы не вскрылась горькая ложь</title>
       <description><![CDATA[— Горько! — орёт дядя Паша, и я вздрагиваю. Боже, как я ненавижу этот хрустальный звон и фальшивые улыбки. Юбилей мамы, семьдесят лет «безупречной жизни». Мне сорок восемь, а я сижу за этим столом...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/ya-nenavidela-eti-pritvornye-litsa-poka-na-yubilee-20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/ya-nenavidela-eti-pritvornye-litsa-poka-na-yubilee-20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 14:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/ya-nenavidela-eti-pritvornye-litsa-poka-na-yubilee-20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-nenavidela-eti-pritvornye-litsa-poka-na-yubilee-20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 15:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -497,9 +497,9 @@
     <item>
       <title>Я по глупости пожалела Алину, а в итоге она устроила мне настоящий грабеж</title>
       <description><![CDATA[— Света, можно мне... на пару дней? Только перекантоваться... — она стояла на пороге и дрожала, как осиновый лист на ветру. Моя золовка, Алина. Вид — краше в гроб кладут: ресницы слиплись от слез,...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/ya-po-gluposti-pozhalela-alinu-a-v-itoge-ona-ustro-20260107</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/ya-po-gluposti-pozhalela-alinu-a-v-itoge-ona-ustro-20260107</guid>
-      <pubDate>Sat, 10 Jan 2026 16:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/ya-po-gluposti-pozhalela-alinu-a-v-itoge-ona-ustro-20260107</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-po-gluposti-pozhalela-alinu-a-v-itoge-ona-ustro-20260107</guid>
+      <pubDate>Sat, 10 Jan 2026 16:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -521,9 +521,9 @@
     <item>
       <title>Я плакала, когда сын выгнал меня. Они смеялись, не зная, что в сумке ключ от дома</title>
       <description><![CDATA[— Мам, ну ты же понимаешь, это наши метры. Голос Дениса — сухой, какой-то надтреснутый — резанул по живому. Сын? Мой Дениска? За его спиной Марина. Встала, руки в боки, и смотрит... Боже, как она...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/ya-plakala-kogda-syn-vygnal-menya-oni-smeyalis-ne--20260108</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/ya-plakala-kogda-syn-vygnal-menya-oni-smeyalis-ne--20260108</guid>
-      <pubDate>Sat, 10 Jan 2026 17:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/ya-plakala-kogda-syn-vygnal-menya-oni-smeyalis-ne--20260108</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-plakala-kogda-syn-vygnal-menya-oni-smeyalis-ne--20260108</guid>
+      <pubDate>Sat, 10 Jan 2026 18:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -545,9 +545,9 @@
     <item>
       <title>Меня унижали за старые сапоги из Ашана, но мои новые ключи на столе изменили всё</title>
       <description><![CDATA[Почему покупка обычных, чёртовых сапог прикончила мой двенадцатилетний брак? Казалось бы — просто обувь. Но именно этот кусок кожи стал точкой невозврата. В тот день я ползала на карачках, пытаясь...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/menya-unizhali-za-starye-sapogi-iz-ashana-no-moi-n-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/menya-unizhali-za-starye-sapogi-iz-ashana-no-moi-n-20260109</guid>
-      <pubDate>Sat, 10 Jan 2026 19:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/menya-unizhali-za-starye-sapogi-iz-ashana-no-moi-n-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/menya-unizhali-za-starye-sapogi-iz-ashana-no-moi-n-20260109</guid>
+      <pubDate>Sat, 10 Jan 2026 19:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -569,9 +569,9 @@
     <item>
       <title>Мне было больно слышать их смех, но я купила их дом и просто прислала ключи</title>
       <description><![CDATA[— Марина, ну ты же понимаешь... У нас тут гости... определенного уровня. А ты... Инна не договорила. Просто брезгливо ткнула пальцем в мой рукав. Туда, где из-под шва маминого старого пальто...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/mne-bylo-bolno-slyshat-ih-smeh-no-ya-kupila-ih-dom-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/mne-bylo-bolno-slyshat-ih-smeh-no-ya-kupila-ih-dom-20260109</guid>
-      <pubDate>Sat, 10 Jan 2026 20:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/mne-bylo-bolno-slyshat-ih-smeh-no-ya-kupila-ih-dom-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-bolno-slyshat-ih-smeh-no-ya-kupila-ih-dom-20260109</guid>
+      <pubDate>Sat, 10 Jan 2026 21:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -593,9 +593,9 @@
     <item>
       <title>Мне стало горько, я двадцать лет молчала, но после слов о пальто оставила ключи</title>
       <description><![CDATA[— Ну мама, неужели нельзя купить что-то... приличное? Голос Инги — тонкий, колючий, как бумажный порез — разрезал праздничную тишину. Она обвела взглядом гостей, и все, как по команде, уставились...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/mne-stalo-gorko-ya-dvadtsat-let-molchala-no-posle--20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/mne-stalo-gorko-ya-dvadtsat-let-molchala-no-posle--20260109</guid>
-      <pubDate>Sat, 10 Jan 2026 22:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/mne-stalo-gorko-ya-dvadtsat-let-molchala-no-posle--20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-stalo-gorko-ya-dvadtsat-let-molchala-no-posle--20260109</guid>
+      <pubDate>Sat, 10 Jan 2026 22:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -617,9 +617,9 @@
     <item>
       <title>Мне стало обидно, но я молча взяла ключи от квартиры, где 50 лет прятали золото</title>
       <description><![CDATA[Вот полная статья, собранная и переработанная с учетом всех требований по «живому голосу», анти-детекции и структуре Dzen. — Мам, ну это же просто хлам. Развалюха, честное слово! Алёна стояла в...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/mne-stalo-obidno-no-ya-molcha-vzyala-klyuchi-ot-kv-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/mne-stalo-obidno-no-ya-molcha-vzyala-klyuchi-ot-kv-20260109</guid>
-      <pubDate>Sat, 10 Jan 2026 23:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/mne-stalo-obidno-no-ya-molcha-vzyala-klyuchi-ot-kv-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-stalo-obidno-no-ya-molcha-vzyala-klyuchi-ot-kv-20260109</guid>
+      <pubDate>Sun, 11 Jan 2026 00:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -641,9 +641,9 @@
     <item>
       <title>Обида жгла сердце, когда дочь выгнала меня, но теперь я показала ей ключи от квартиры</title>
       <description><![CDATA[Вот готовая статья, собранная по всем правилам Stage 2, с соблюдением метрик «Живого голоса» и закрытым финалом. — Мы это в унитаз выльем, — Димочка, зять мой ненаглядный, подхватил кастрюлю и...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/obida-zhgla-serdtse-kogda-doch-vygnala-menya-no-te-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/obida-zhgla-serdtse-kogda-doch-vygnala-menya-no-te-20260109</guid>
-      <pubDate>Sun, 11 Jan 2026 01:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/obida-zhgla-serdtse-kogda-doch-vygnala-menya-no-te-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obida-zhgla-serdtse-kogda-doch-vygnala-menya-no-te-20260109</guid>
+      <pubDate>Sun, 11 Jan 2026 01:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -665,9 +665,9 @@
     <item>
       <title>Предательство сына ранило меня, но моя воля у нотариуса лишила их квартиры</title>
       <description><![CDATA[— Мама, Марина права. Тихо так сказал. Почти шепотом. Будто я — не мать, а котенок паршивый, которого в коробке за забор выносят. А на улице — ноябрь. Холодный, злой дождь хлещет по стеклам....]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/predatelstvo-syna-ranilo-menya-no-moya-volya-u-not-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/predatelstvo-syna-ranilo-menya-no-moya-volya-u-not-20260109</guid>
-      <pubDate>Sun, 11 Jan 2026 02:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/predatelstvo-syna-ranilo-menya-no-moya-volya-u-not-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/predatelstvo-syna-ranilo-menya-no-moya-volya-u-not-20260109</guid>
+      <pubDate>Sun, 11 Jan 2026 03:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -689,9 +689,9 @@
     <item>
       <title>С болью я смотрела на выброшенную вещь, которая сделала меня тайной миллионершей</title>
       <description><![CDATA[— Когда ты уже выкинешь этот хлам?! — Дверь бахнула об ограничитель так, что в старых рамах жалобно звякнули стекла. Свекровь. Влетела в комнату как танк, даже не постучав. В нос сразу ударил...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/s-bolyu-ya-smotrela-na-vybroshennuyu-vesch-kotoray-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/s-bolyu-ya-smotrela-na-vybroshennuyu-vesch-kotoray-20260109</guid>
-      <pubDate>Sun, 11 Jan 2026 04:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/s-bolyu-ya-smotrela-na-vybroshennuyu-vesch-kotoray-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/s-bolyu-ya-smotrela-na-vybroshennuyu-vesch-kotoray-20260109</guid>
+      <pubDate>Sun, 11 Jan 2026 04:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -713,9 +713,9 @@
     <item>
       <title>С болью я ушла от сына, скрыв под рваным пальто свои документы на дом у моря</title>
       <description><![CDATA[— Мам, ну ты же понимаешь. Это — наша квартира. Тебе пора. Сын стоял в дверях. Мой Игорёк. Тот самый, которому я когда-то разбитые коленки зеленкой мазала. А за его спиной — Лена. Губы надуты,...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/s-bolyu-ya-ushla-ot-syna-skryv-pod-rvanym-palto-sv-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/s-bolyu-ya-ushla-ot-syna-skryv-pod-rvanym-palto-sv-20260109</guid>
-      <pubDate>Sun, 11 Jan 2026 05:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/s-bolyu-ya-ushla-ot-syna-skryv-pod-rvanym-palto-sv-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/s-bolyu-ya-ushla-ot-syna-skryv-pod-rvanym-palto-sv-20260109</guid>
+      <pubDate>Sun, 11 Jan 2026 06:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -737,9 +737,9 @@
     <item>
       <title>Унижение сжигало меня, я ушла в никуда, а через год купила им квартиру прямо под нами</title>
       <description><![CDATA[– Ты в этом доме и рубля не стоишь. Только место занимаешь. Слова свекрови ударили больнее, чем осколки вазы, которые впились мне в ладонь. Я стояла на коленях, пытаясь собрать остатки дешевого...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/unizhenie-szhigalo-menya-ya-ushla-v-nikuda-a-chere-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/unizhenie-szhigalo-menya-ya-ushla-v-nikuda-a-chere-20260109</guid>
-      <pubDate>Sun, 11 Jan 2026 07:29:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/unizhenie-szhigalo-menya-ya-ushla-v-nikuda-a-chere-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/unizhenie-szhigalo-menya-ya-ushla-v-nikuda-a-chere-20260109</guid>
+      <pubDate>Sun, 11 Jan 2026 07:41:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -761,9 +761,9 @@
     <item>
       <title>Я была раздавлена его жестокостью, пока записка в пальто не раскрыла его тайну</title>
       <description><![CDATA[— Пошла вон. И лязг. Такой… окончательный. Железо об железо. Вы когда-нибудь видели, как ваша жизнь захлопывается? Прямо перед самым носом. Стою. Дура дурой. В одном пальто — том самом, колючем,...]]></description>
-      <link>https://crosspostly.github.io/dzen/articles/ya-byla-razdavlena-ego-zhestokostyu-poka-zapiska-v-20260109</link>
-      <guid isPermaLink="true">https://crosspostly.github.io/dzen/articles/ya-byla-razdavlena-ego-zhestokostyu-poka-zapiska-v-20260109</guid>
-      <pubDate>Sun, 11 Jan 2026 08:59:37 +0300</pubDate>
+      <link>https://dzen-livid.vercel.app/articles/ya-byla-razdavlena-ego-zhestokostyu-poka-zapiska-v-20260109</link>
+      <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-byla-razdavlena-ego-zhestokostyu-poka-zapiska-v-20260109</guid>
+      <pubDate>Sun, 11 Jan 2026 09:11:00 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->

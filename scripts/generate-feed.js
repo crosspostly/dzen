@@ -34,10 +34,10 @@ import crypto from 'crypto';
 
 const MODE = process.argv[2] || 'incremental';
 const BASE_URL = process.env.BASE_URL || 'https://raw.githubusercontent.com/crosspostly/dzen/main';
-const DZEN_CHANNEL = 'https://dzen.ru/potemki';  // ✅ ТВОЙ КАНАЛ!
-const SITE_URL = 'https://crosspostly.github.io/dzen';  // ✅ ТВОЙ САЙТ (GitHub Pages)
-const RSS_URL = 'https://crosspostly.github.io/dzen/feed.xml';  // ✅ ТВОЙ ФИД (GitHub Pages)
-const DEFAULT_IMAGE_SIZE = 50000;  // 50KB - дефолтный размер для enclosure length
+const DZEN_CHANNEL = 'https://dzen.ru/potemki'; 
+const SITE_URL = 'https://dzen-livid.vercel.app'; // ✅ Вернули Vercel
+const RSS_URL = 'https://dzen-livid.vercel.app/feed.xml'; // ✅ Вернули Vercel
+const DEFAULT_IMAGE_SIZE = 50000;
 
 // ✅ v2.10: Constants for scheduling
 const INITIAL_OFFSET_HOURS = 3;      // Start from now + 3 hours
@@ -616,6 +616,12 @@ async function main() {
     const articles = [];
     const imageSizes = [];
 
+    // ✅ Создаем папку для HTML-заглушек (для валидации Дзена)
+    const publicArticlesDir = path.join(process.cwd(), 'public', 'articles');
+    if (!fs.existsSync(publicArticlesDir)) {
+      fs.mkdirSync(publicArticlesDir, { recursive: true });
+    }
+
     for (const filePath of articleFiles) {
       try {
         let fileContent = fs.readFileSync(filePath, 'utf8');
@@ -675,6 +681,27 @@ async function main() {
         let cleanDescription = frontmatter.description ? cleanArticleMarkers(frontmatter.description) : getDescription(cleanBody);
         
         const htmlContent = markdownToHtml(cleanBody);
+
+        // ✅ ГЕНЕРАЦИЯ HTML-ЗАГЛУШКИ ДЛЯ ВАЛИДАТОРА
+        const safeDesc = cleanDescription.replace(/"/g, '&quot;');
+        const htmlPage = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>${cleanTitle}</title>
+    <meta name="description" content="${safeDesc}">
+    <meta property="og:image" content="${imageUrl}">
+</head>
+<body>
+    <h1>${cleanTitle}</h1>
+    <img src="${imageUrl}" alt="Cover" style="max-width: 100%">
+    <div>${htmlContent}</div>
+</body>
+</html>`;
+
+        const htmlPath = path.join(publicArticlesDir, `${itemId}.html`);
+        fs.writeFileSync(htmlPath, htmlPage, 'utf8');
+        console.log(`   📄 Created HTML mirror: public/articles/${itemId}.html`);
 
         if (htmlContent.length < 300) {
           console.warn(`⚠️  WARNING: ${fileName} - content too short (${htmlContent.length} < 300 chars). Skipping.`);
