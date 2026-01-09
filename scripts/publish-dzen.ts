@@ -36,8 +36,8 @@ async function getArticlesFromFeed() {
       const enclosureMatch = itemContent.match(/<enclosure[^>]*url="(.+?)"[^>]*>/);
       const imageUrl = mediaContentMatch ? mediaContentMatch[1] : (enclosureMatch ? enclosureMatch[1] : '');
       
-      const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[(.+?)\]\]>/) || itemContent.match(/<content:encoded>(.+?)<\/content:encoded>/);
-      const descriptionMatch = itemContent.match(/<description><!\[CDATA\[(.+?)\]\]>/) || itemContent.match(/<description>(.+?)<\/description>/);
+      const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[([\s\S]+?)\]\]>/) || itemContent.match(/<content:encoded>([\s\S]+?)<\/content:encoded>/);
+      const descriptionMatch = itemContent.match(/<description><!\[CDATA\[([\s\S]+?)\]\]>/) || itemContent.match(/<description>([\s\S]+?)<\/description>/);
       const content = contentMatch ? contentMatch[1] : (descriptionMatch ? descriptionMatch[1] : '');
       
       items.push({ title, link, imageUrl, content });
