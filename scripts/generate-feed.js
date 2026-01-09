@@ -35,7 +35,8 @@ import crypto from 'crypto';
 const MODE = process.argv[2] || 'incremental';
 const BASE_URL = process.env.BASE_URL || 'https://raw.githubusercontent.com/crosspostly/dzen/main';
 const DZEN_CHANNEL = 'https://dzen.ru/potemki';  // ✅ ТВОЙ КАНАЛ!
-const RSS_URL = 'https://dzen-livid.vercel.app/feed.xml';  // URL фида для atom:link
+const SITE_URL = 'https://crosspostly.github.io/dzen';  // ✅ ТВОЙ САЙТ (GitHub Pages)
+const RSS_URL = 'https://crosspostly.github.io/dzen/feed.xml';  // ✅ ТВОЙ ФИД (GitHub Pages)
 const DEFAULT_IMAGE_SIZE = 50000;  // 50KB - дефолтный размер для enclosure length
 
 // ✅ v2.10: Constants for scheduling
@@ -538,29 +539,32 @@ function generateRssFeed(articles, imageSizes = []) {
     
     const escapedTitle = escapeXml(title);
     
-    const articleLink = `${DZEN_CHANNEL}/${itemId}`;
+    // ✅ ИСПРАВЛЕНИЕ: Ссылка ведет на GitHub Pages (внешний сайт), а не на Дзен
+    // Дзен импортирует контент "оттуда"
+    const articleLink = `${SITE_URL}/articles/${itemId}`;
     
     // ✅ ЗАДАЧА 1: Получить размер изображения для атрибута length в enclosure
     const imageSize = imageSizes[i] || DEFAULT_IMAGE_SIZE;
     
-    // ✅ ЗАДАЧА 4: Сделать GUID уникальным
-    const uniqueGuid = generateUniqueGuid(title, i);
+    // ✅ ЗАДАЧА 4: GUID теперь совпадает с PermaLink (требование валидатора)
+    const uniqueGuid = articleLink;
     
     rssContent += `
     <item>
       <title>${escapedTitle}</title>
       <description><![CDATA[${sanitizeForCdata(description)}]]></description>
       <link>${articleLink}</link>
-      <guid isPermaLink="false">${uniqueGuid}</guid>
+      <guid isPermaLink="true">${uniqueGuid}</guid>
       <pubDate>${pubDate}</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
-      <!-- ✅ v2.10: БЕЗ native-draft! Только эти категории для публикации по расписанию -->
+      <!-- ✅ v2.10: Категории для валидации -->
+      <category>native-ad</category>
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
       
-      <!-- ✅ ЗАДАЧА 1: length добавлен автоматически -->
+      <!-- ✅ ИЗОБРАЖЕНИЯ: Оставляем RAW GITHUB (они там лежат физически) -->
       <enclosure url="${imageUrl}" type="image/jpeg" length="${imageSize}"/>
       <media:content type="image/jpeg" medium="image" width="900" height="300" url="${imageUrl}">
         <media:description type="plain">${sanitizeForCdata(description)}</media:description>
