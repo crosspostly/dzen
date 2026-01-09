@@ -1,0 +1,43 @@
+name: Fix Article Formatting
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'articles/**/*.md'
+
+jobs:
+  ensure-newline:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add newline to end of markdown files
+        run: |
+          find articles -type f -name "*.md" | while read -r file; do
+            # Check if file ends with newline
+            if [ -n "$(tail -c 1 "$file")" ]; then
+              echo "Fixing $file"
+              echo "" >> "$file"
+            fi
+          done
+
+      - name: Commit changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Check for changes
+          if [[ -n $(git status -s) ]]; then
+            git add articles/
+            git commit -m "chore: ensure trailing newline in markdown articles"
+            git push
+          else
+            echo "No changes needed."
+          fi

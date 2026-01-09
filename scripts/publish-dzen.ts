@@ -33,7 +33,8 @@ async function getArticlesFromFeed() {
       const link = linkMatch ? linkMatch[1] : '';
       
       const mediaContentMatch = itemContent.match(/<media:content[^>]*url="(.+?)"[^>]*>/);
-      const imageUrl = mediaContentMatch ? mediaContentMatch[1] : '';
+      const enclosureMatch = itemContent.match(/<enclosure[^>]*url="(.+?)"[^>]*>/);
+      const imageUrl = mediaContentMatch ? mediaContentMatch[1] : (enclosureMatch ? enclosureMatch[1] : '');
       
       const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[(.+?)\]\]>/) || itemContent.match(/<content:encoded>(.+?)<\/content:encoded>/);
       const descriptionMatch = itemContent.match(/<description><!\[CDATA\[(.+?)\]\]>/) || itemContent.match(/<description>(.+?)<\/description>/);
