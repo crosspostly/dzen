@@ -1,10 +1,10 @@
 ---
 # GitHub Pages configuration
-title: ZenMaster Articles
-email: your-email@example.com
+title: ZenMaster - Dzen Articles
+email: contact@crosspostly.com
 description: AI-generated articles for Yandex Dzen
-baseurl: ""
-url: "https://yourusername.github.io"
+baseurl: "/dzen"
+url: "https://crosspostly.github.io"
 
 # Build settings
 markdown: kramdown
