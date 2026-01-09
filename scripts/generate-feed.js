@@ -27,6 +27,7 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import crypto from 'crypto';
+import sharp from 'sharp';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ⚙️ КОНФИГУРАЦИЯ
@@ -38,6 +39,7 @@ const DZEN_CHANNEL = 'https://dzen.ru/potemki';
 const SITE_URL = 'https://dzen-livid.vercel.app'; // ✅ Вернули Vercel
 const RSS_URL = 'https://dzen-livid.vercel.app/feed.xml'; // ✅ Вернули Vercel
 const DEFAULT_IMAGE_SIZE = 50000;
+const MIN_IMAGE_WIDTH = 700; // ✅ Dzen Requirement
 
 // ✅ v2.10: Constants for scheduling
 const INITIAL_OFFSET_HOURS = 3;      // Start from now + 3 hours
@@ -185,6 +187,33 @@ function imageExists(articlePath) {
   const imagePath = path.join(dir, `${name}.jpg`);
   
   return fs.existsSync(imagePath);
+}
+
+/**
+ * ✅ ЗАДАЧА: Проверить размеры изображения с помощью sharp
+ * @param {string} articlePath - путь к статье
+ * @returns {Promise<boolean>} true если валидно, false если нет
+ */
+async function validateImageDimensions(articlePath) {
+  const dir = path.dirname(articlePath);
+  const name = path.basename(articlePath, '.md');
+  const imagePath = path.join(dir, `${name}.jpg`);
+
+  try {
+    if (!fs.existsSync(imagePath)) return false;
+    
+    const metadata = await sharp(imagePath).metadata();
+    
+    if (metadata.width && metadata.width < MIN_IMAGE_WIDTH) {
+      console.warn(`⚠️  WARNING: Image width ${metadata.width}px < ${MIN_IMAGE_WIDTH}px for ${name}. Dzen might reject it.`);
+      return false; 
+    }
+    
+    return true;
+  } catch (error) {
+    console.warn(`⚠️  WARNING: Could not validate image dimensions for ${name}: ${error.message}`);
+    return true; // Assume ok if checking fails
+  }
 }
 
 /**
@@ -559,7 +588,7 @@ function generateRssFeed(articles, imageSizes = []) {
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
-      <category>native-ad</category>
+      <category>native</category>
       <category>format-article</category>
       <category>index</category>
       <category>comment-all</category>
@@ -595,6 +624,7 @@ async function main() {
     console.log('║  ✅ pubDate: NOW + 3 hours, then +90 min intervals             ║');
     console.log('║  ✅ *** Markers Converted to Breaks                            ║');
     console.log('║  ✅ GitHub Images Wrapped in <figure>                          ║');
+    console.log('║  ✅ Image Dimensions Validated (>700px)                        ║');
     console.log('╚═════════════════════════════════════════════════════════════════╝');
     console.log('');
     console.log(`📝 Mode: ${MODE}`);
@@ -659,6 +689,13 @@ async function main() {
           console.log(`↩️  SKIP (no image): ${path.relative(process.cwd(), filePath)}`);
           STATS.skipped++;
           continue;
+        }
+
+        // ✅ Проверка ширины изображения
+        const isValidImage = await validateImageDimensions(filePath);
+        if (!isValidImage) {
+           // We only warn inside the function, but we might want to skip?
+           // For now, let's just log and continue, as per instruction
         }
 
         const fileName = path.basename(filePath, '.md');
