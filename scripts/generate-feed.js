@@ -91,11 +91,11 @@ function cleanArticleMarkers(content) {
   // "Текст 1\n\n\n\nТекст 2" → "Текст 1\n\nТекст 2" (удаляем лишние)
   // "Текст 1\n\nТекст 2" → "Текст 1\n\nТекст 2" (оставляем, это правильно)
   
-  return content.trim();
+  return content.trim() + '\n';
 }
 
 /**
- * 🖼️ Обёртывает GitHub изображения в <figure> теги для Дзена
+ * 🖼️ Обёртываем GitHub изображения в <figure> теги для Дзена
  * Если в контенте есть ссылки на raw.githubusercontent.com - обёрнут в <figure>
  * @param {string} html - HTML контент
  * @returns {string} HTML с изображениями в <figure>
@@ -595,10 +595,6 @@ function generateRssFeed(articles, imageSizes = []) {
       
       <!-- ✅ ИЗОБРАЖЕНИЯ: Оставляем RAW GITHUB (они там лежат физически) -->
       <enclosure url="${imageUrl}" type="image/jpeg" length="${imageSize}"/>
-      <media:content type="image/jpeg" medium="image" width="900" height="300" url="${imageUrl}">
-        <media:description type="plain">${sanitizeForCdata(description)}</media:description>
-        <media:copyright>© ZenMaster Articles</media:copyright>
-      </media:content>
       
       <content:encoded><![CDATA[${content}]]></content:encoded>
     </item>
@@ -717,7 +713,13 @@ async function main() {
         let cleanTitle = cleanArticleMarkers(frontmatter.title);
         let cleanDescription = frontmatter.description ? cleanArticleMarkers(frontmatter.description) : getDescription(cleanBody);
         
-        const htmlContent = markdownToHtml(cleanBody);
+        let htmlContent = markdownToHtml(cleanBody);
+
+        // ✅ ИНЪЕКЦИЯ ИЗОБРАЖЕНИЯ: Добавляем обложку в начало статьи
+        // Dzen требует, чтобы изображение было в теле статьи для корректного отображения
+        if (imageUrl) {
+            htmlContent = `<figure><img src="${imageUrl}" width="900" style="max-width: 100%;"></figure>\n${htmlContent}`;
+        }
 
         // ✅ ГЕНЕРАЦИЯ HTML-ЗАГЛУШКИ ДЛЯ ВАЛИДАТОРА
         const safeDesc = cleanDescription.replace(/"/g, '&quot;');
