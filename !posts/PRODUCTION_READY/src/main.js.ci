@@ -22,6 +22,63 @@ console.log(`   Cookies source: ${CONFIG.cookiesSource}`);
 console.log(`   Headless mode: ${CONFIG.headless}`);
 console.log(`   Environment: ${process.env.CI ? 'CI/CD (GitHub Actions)' : 'Local'}\n`);
 
+// 🤖 Функция для обработки капчи "Я не робот" (включая фреймы) с ожиданием
+async function handleCaptcha(page, maxAttempts = 5) {
+  const captchaSelector = '#not-robot-captcha-checkbox';
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      // Сначала ищем на основной странице
+      let captchaInput = await page.$(captchaSelector);
+      
+      // Если нашли инпут, ищем его родителя label
+      if (captchaInput) {
+        try {
+            const label = await captchaInput.evaluateHandle(el => el.closest('label'));
+            if (label) {
+                console.log('🤖 Обнаружена капча на основной странице! Кликаю по label...');
+                await label.click();
+            } else {
+                await captchaInput.click({ force: true });
+            }
+            console.log('✅ Чекбокс капчи нажат');
+            await page.waitForTimeout(3000);
+            return true;
+        } catch (e) { console.log('⚠️ Не удалось кликнуть по капче на главной:', e.message); }
+      }
+      
+      // Ищем во всех фреймах
+      const frames = page.frames();
+      for (const frame of frames) {
+        try {
+             captchaInput = await frame.$(captchaSelector);
+             if (captchaInput) {
+                console.log(`🤖 Капча обнаружена во фрейме: ${frame.url().substring(0, 50)}...`);
+                await page.waitForTimeout(1000 + Math.random() * 1000);
+                
+                // Ищем label внутри фрейма
+                const label = await frame.$(`label:has(${captchaSelector})`) || captchaInput;
+                
+                // Кликаем (используем force: true на всякий случай)
+                await label.click({ force: true });
+                
+                console.log('✅ Чекбокс капчи нажат внутри фрейма');
+                await page.waitForTimeout(3000);
+                return true;
+             }
+          } catch(e) { /* игнорируем ошибки доступа к элементам фрейма */ }
+      }
+      
+      // Если не нашли, ждем немного перед следующей попыткой
+      if (i < maxAttempts - 1) await page.waitForTimeout(1000);
+      
+    } catch (e) {
+      console.log('ℹ️ Ошибка при поиске капчи:', e.message);
+    }
+  }
+  return false;
+}
+
 // 📖 Get articles from feed.xml
 async function getArticlesFromFeed() {
   try {
@@ -150,9 +207,9 @@ function getFirstUnpublishedArticle(articles, publishedArticles) {
   return null;
 }
 
-async function savePublishedArticle(article) {
+async function savePublishedArticle(article, url = 'no_url') {
   const date = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  const entry = `${date} - ${article.title}\n`;
+  const entry = `${date} - ${article.title} - ${url}\n`;
   try {
     await fs.appendFile(CONFIG.historyPath, entry);
     console.log(`✅ Saved to history: "${article.title.substring(0, 50)}..."`);
@@ -196,7 +253,8 @@ async function savePublishedArticle(article) {
     
     const context = await browser.newContext({
       viewport: { width: 1920, height: 1080 },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      permissions: ['clipboard-read', 'clipboard-write'] // ✅ ENABLE CLIPBOARD
     });
     
     const page = await context.newPage();
@@ -255,21 +313,35 @@ async function savePublishedArticle(article) {
         
         // Fill title
         if (inputs.length > 0) {
-          console.log(`\n📝 1. Filling title...`);
+          console.log(`\n📝 1. Filling title (human-like typing)...`);
           await inputs[0].focus();
-          await inputs[0].fill(article.title);
+          await inputs[0].type(article.title, { delay: 100 }); // ✅ HUMAN TYPING
           console.log(`✅ Title filled`);
           await page.waitForTimeout(1000);
         }
         
-        // Fill content
+        // Fill content (Copy-Paste strategy)
         if (inputs.length > 1) {
-          console.log(`\n📝 2. Filling content...`);
+          console.log(`\n📝 2. Filling content (Copy-Paste strategy)...`);
           await inputs[1].focus();
-          await inputs[1].fill(processedContent);
-          console.log(`✅ Content filled (${processedContent.length} chars)`);
+          
+          // Copy to clipboard
+          await page.evaluate((text) => navigator.clipboard.writeText(text), processedContent);
+          console.log('📋 Text copied to clipboard');
+          await page.waitForTimeout(500 + Math.random() * 1000);
+          
+          // Paste
+          await page.keyboard.press('Control+V');
+          console.log(`✅ Content pasted (${processedContent.length} chars)`);
+          
           await page.keyboard.press('Enter');
           await page.waitForTimeout(1000);
+          
+          // Scroll simulation
+          console.log('👀 Simulating reading (scrolling)...');
+          await page.mouse.wheel(0, 500);
+          await page.waitForTimeout(1000);
+          await page.mouse.wheel(0, -500);
         }
         
         await page.waitForTimeout(2000);
@@ -298,6 +370,7 @@ async function savePublishedArticle(article) {
         // PUBLISH BUTTON 1 - First button in editor header
         console.log(`\n📤 4. Clicking first publish button (editor header)...`);
         const publishSelectors = [
+          'html._theme_white.Theme_color_light > body.page.desktop > div.content:nth-of-type(2) > div.article-editor-desktop--loading-boundary-stacked-layout__boundary-2W:nth-of-type(2) > div.article-editor-desktop--loading-boundary-stacked-layout__content-3p > div:nth-of-type(2) > div.article-editor-desktop--editor-header__editorHeader-2q.article-editor-desktop--editor-header__hasWideScroll-1S > div.article-editor-desktop--editor-header__container-3n > div.article-editor-desktop--editor-header__colRight-3Z:nth-of-type(3) > div.article-editor-desktop--editor-header__publishButton-gc > div.article-editor-desktop--editor-header__publishBtnContainer-3D > button.article-editor-desktop--editor-header__editBtn-44.article-editor-desktop--base-button__rootElement-75',
           'button:has-text("Опубликовать"):not([disabled])',
           'span:has-text("Опубликовать")',
         ];
@@ -310,6 +383,10 @@ async function savePublishedArticle(article) {
               console.log(`✅ Found with selector: ${selector}`);
               await page.click(selector);
               console.log(`✅ First publish button clicked`);
+              
+              // CHECK CAPTCHA IMMEDIATELY
+              await handleCaptcha(page);
+              
               publishClicked = true;
               break;
             }
@@ -346,12 +423,29 @@ async function savePublishedArticle(article) {
                   const el = elements[i];
                   if (await el.isVisible() && await el.isEnabled()) {
                     console.log(`✅ Found with selector: ${selector}`);
-                    await page.click(selector);
+                    await el.click();
                     console.log(`✅ Confirmation button clicked`);
-                    console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
-                    console.log(`   Title: "${article.title.substring(0, 50)}..."`);
-                    await savePublishedArticle(article);
-                    confirmClicked = true;
+                    
+                    // CHECK CAPTCHA (Long polling)
+                    console.log('🔍 Checking for captcha after final click...');
+                    await handleCaptcha(page, 15);
+                    
+                    // WAIT FOR REDIRECT
+                    console.log('⏳ Waiting for redirect to published article...');
+                    try {
+                        await page.waitForFunction(() => !window.location.href.includes('/editor/'), { timeout: 30000 });
+                        const finalUrl = page.url();
+                        console.log(`🔗 Redirected to: ${finalUrl}`);
+                        
+                        console.log(`\n🎉 ARTICLE PUBLISHED SUCCESSFULLY!`);
+                        console.log(`   Title: "${article.title.substring(0, 50)}..."`);
+                        await savePublishedArticle(article, finalUrl);
+                        confirmClicked = true;
+                    } catch (e) {
+                        console.log('❌ Timeout waiting for redirect. Article might not be published.');
+                        await page.screenshot({ path: path.join(__dirname, 'error_publish.png') });
+                    }
+                    
                     break;
                   }
                 }
@@ -369,7 +463,6 @@ async function savePublishedArticle(article) {
       }
     }
     
-    await page.waitForTimeout(5000);
     await browser.close();
     
     console.log('\n✅ Auto-publisher completed!');
