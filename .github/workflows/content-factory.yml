@@ -207,14 +207,22 @@ jobs:
                   console.log('⚙️  Слияние изменений (Rebase)...');
                   execSync('git rebase origin/${{ github.ref_name }}', { stdio: 'inherit' });
                   
+                  console.log('🔍 Проверка статуса feed.xml перед добавлением:');
+                  try { execSync('ls -l public/feed.xml', { stdio: 'inherit' }); } catch (e) {}
+                  
                   console.log('📂 Добавление файлов (статьи + фид)...');
                   execSync('git add articles/ public/feed.xml', { stdio: 'inherit' });
+                  
+                  console.log('📊 Статус git после add:');
+                  execSync('git status', { stdio: 'inherit' });
                   
                   try {
                     execSync('git diff --cached --quiet');
                     console.log('⚠️  Нет изменений для коммита');
                     return true;
-                  } catch (e) {}
+                  } catch (e) {
+                    // git diff возвращает 1, если есть изменения - это то, что нам нужно
+                  }
                   
                   console.log('💾 Создание коммита...');
                   const timestamp = new Date().toISOString().split('T')[0];
