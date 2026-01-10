@@ -94,8 +94,8 @@ async function getPublishedArticles() {
     const content = await fs.readFile(CONFIG.historyPath, 'utf8');
     const lines = content.split('\n').filter(line => line.trim());
     return lines.map(line => {
-      const match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (.+)/);
-      return match ? { date: match[1], title: match[2] } : null;
+      const match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (.*?)(?: - https?:\/\/.+)?$/);
+      return match ? { date: match[1], title: match[2].trim() } : null;
     }).filter(Boolean);
   } catch (error) {
     return [];
