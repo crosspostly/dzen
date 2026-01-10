@@ -254,8 +254,17 @@ ${content}
         }
       });
 
-      const restoredText = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      let restoredText = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       
+      if (restoredText) {
+         // Clean conversational filler
+         restoredText = restoredText.replace(/^(Here is|Sure,|Certainly|Okay,|Of course,|Вот|Конечно|Держите).*?(:|\n)/i, '');
+         if (restoredText.startsWith('```') && restoredText.endsWith('```')) {
+            restoredText = restoredText.replace(/^```(?:markdown|text)?\n?([\s\S]*?)\n?```$/i, '$1');
+         }
+         restoredText = restoredText.trim();
+      }
+
       if (restoredText && restoredText.length > content.length * 0.5) {
         improvements.push({
           type: 'voice_restored',

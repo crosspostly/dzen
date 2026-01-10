@@ -148,6 +148,39 @@ function mergeChunks(chunks) {
 }
 
 /**
+ * 🧹 Очистка текста от мусора ИИ (Stage 2, "Вот ваша статья" и т.д.)
+ */
+function cleanGarbage(text) {
+  if (!text) return "";
+  
+  let cleaned = text;
+
+  // Удаляем блоки кода markdown
+  if (cleaned.includes('```')) {
+    cleaned = cleaned.replace(/```(?:markdown|text|json)?\s*\n?([\s\S]*?)\n?```/gi, '$1');
+  }
+
+  const garbagePatterns = [
+    /Вот готовая статья, собранная по всем правилам Stage 2, с соблюдением метрик «Живого голоса» и закрытым финалом\.?/gi,
+    /Вот полная версия статьи, собранная по всем правилам Stage 2 и интегрированная с метриками Voice Restoration\.?/gi,
+    /собранная по всем правилам Stage 2/gi,
+    /интегрированная с метриками Voice Restoration/gi,
+    /с соблюдением метрик «Живого голоса»/gi,
+    /и закрытым финалом/gi,
+    /Этап \d+:?.*?\n/gi,
+    /Stage \d+:?.*?\n/gi,
+    /^(Вот|Конечно|Держите|Certainly|Here is).*?(:|\n)/i,
+    /^(Output|Response|Article):?\s*\n?/i,
+  ];
+
+  for (const pattern of garbagePatterns) {
+    cleaned = cleaned.replace(pattern, '');
+  }
+
+  return cleaned.trim();
+}
+
+/**
  * Парсинг frontmatter (YAML между ---)
  */
 function parseFrontmatter(content) {
@@ -162,9 +195,15 @@ function parseFrontmatter(content) {
     };
   }
 
+  let frontmatter = match[1];
+  // Чистим поле description в frontmatter
+  frontmatter = frontmatter.replace(/(description:\s*")([\s\S]*?)(")/i, (m, p1, p2, p3) => {
+    return p1 + cleanGarbage(p2) + p3;
+  });
+
   return {
     hasFrontmatter: true,
-    frontmatter: `---\n${match[1]}\n---`,
+    frontmatter: `---\n${frontmatter}\n---`,
     body: match[2]
   };
 }
@@ -173,7 +212,9 @@ function parseFrontmatter(content) {
  * 🤖 Отреставрировать один chunk
  */
 async function restoreChunk(chunkText, model, prompt, timeout = 30000) {
-  const fullPrompt = `${prompt}\n\n${chunkText}`;
+  // Предварительная чистка перед отправкой в ИИ
+  const cleanedInput = cleanGarbage(chunkText);
+  const fullPrompt = `${prompt}\n\n${cleanedInput}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -186,8 +227,10 @@ async function restoreChunk(chunkText, model, prompt, timeout = 30000) {
     });
     
     clearTimeout(timeoutId);
-    const restoredText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return { success: true, text: restoredText.trim() };
+    let restoredText = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Чистка результата
+    return { success: true, text: cleanGarbage(restoredText) };
   } catch (error) {
     clearTimeout(timeoutId);
     return { success: false, error: error.message };

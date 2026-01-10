@@ -1472,6 +1472,36 @@ Respond as JSON:
   }
 
   /**
+   * Helper: Clean Gemini response from conversational filler
+   */
+  private cleanGeminiResponse(text: string): string {
+    if (!text) return "";
+    
+    let cleaned = text;
+
+    // Remove markdown code blocks if they wrap the content
+    // e.g. ```markdown \n CONTENT \n ```
+    // We use a safe regex that ensures we match start and end
+    if (cleaned.startsWith('```') && cleaned.endsWith('```')) {
+       cleaned = cleaned.replace(/^```(?:markdown|text|json)?\s*\n?([\s\S]*?)\n?```$/i, '$1');
+    }
+
+    // Remove common AI preambles (case-insensitive)
+    const preambles = [
+      /^(Here is|Sure,|Certainly|Okay,|Of course,|Вот|Конечно|Держите).*?(:|\n)/i,
+      /^(Output|Response|Article|Stage \d+):?\s*\n?/i,
+      /^Here'?s the rewritten.*?:\s*/i,
+      /^Here is the article.*?:\s*/i
+    ];
+
+    for (const pattern of preambles) {
+      cleaned = cleaned.replace(pattern, '');
+    }
+
+    return cleaned.trim();
+  }
+
+  /**
    * Helper: Call Gemini API with fallback
    */
   private async callGemini(params: { prompt: string; model: string; temperature: number }): Promise<string> {
@@ -1486,7 +1516,8 @@ Respond as JSON:
       if (!text || typeof text !== 'string') {
         return "";
       }
-      return text;
+      
+      return this.cleanGeminiResponse(text);
     } catch (error) {
       const errorMessage = (error as Error).message;
       console.warn(`Gemini call failed: ${errorMessage}`);
@@ -1498,7 +1529,8 @@ Respond as JSON:
             contents: params.prompt,
             config: { temperature: params.temperature, topK: 40, topP: 0.95 },
           });
-          return fallbackResponse.text || "";
+          const fallbackText = fallbackResponse.text || "";
+          return this.cleanGeminiResponse(fallbackText);
         } catch (fallbackError) {
           throw fallbackError;
         }
@@ -1699,11 +1731,32 @@ Output ONLY the episode text. No titles, no metadata.`;
         contents: prompt,
         config: { temperature: 0.9, topK: 40, topP: 0.95 },
       });
-      return response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return this.cleanResponse(text);
     } catch (error) {
       console.error(`Episode generation failed:`, error);
       return `Эпизод ${this.id}\n\nЭто важная часть истории.`;
     }
+  }
+
+  private cleanResponse(text: string): string {
+    if (!text) return "";
+    
+    let cleaned = text;
+    if (cleaned.startsWith('```') && cleaned.endsWith('```')) {
+       cleaned = cleaned.replace(/^```(?:markdown|text|json)?\s*\n?([\s\S]*?)\n?```$/i, '$1');
+    }
+
+    const preambles = [
+      /^(Here is|Sure,|Certainly|Okay,|Of course,|Вот|Конечно|Держите).*?(:|\n)/i,
+      /^(Output|Response|Episode \d+):?\s*\n?/i
+    ];
+
+    for (const pattern of preambles) {
+      cleaned = cleaned.replace(pattern, '');
+    }
+
+    return cleaned.trim();
   }
 }
 

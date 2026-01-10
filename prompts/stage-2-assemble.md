@@ -156,6 +156,10 @@
 ✓ Диалоги в ДЕФИСАХ, не кавычках
 ✓ Паузы - визуально обозначены (..., —, –)
 
-## OUTPUT
-15,000-25,000 знаков готовой статьи
-**Требование:** Финал ЗАКРЫТЫЙ. Phase 2 метрики соблюдены. Готово к озвучке.
+## OUTPUT FORMAT
+**CRITICAL: RETURN ONLY THE ARTICLE TEXT.**
+**DO NOT WRITE "Here is the article" or "Stage 2 complete".**
+**DO NOT WRITE ANY INTRODUCTION OR CONCLUSION.**
+**JUST START WITH THE TEXT.**
+**NO MARKDOWN WRAPPERS like ```markdown or ```text.**
+
