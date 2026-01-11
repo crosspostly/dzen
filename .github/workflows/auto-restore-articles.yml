@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - 'articles/**/*.md'
+      - '!articles/**/REPORT.md'
     branches:
       - main
   workflow_dispatch:
@@ -47,14 +48,18 @@ jobs:
           # Если включен режим "fix all" - берём ВСЕ статьи
           if [ "${{ github.event.inputs.fix_all }}" = "true" ]; then
             echo "🔄 MODE: Fix ALL articles"
-            CHANGED=$(find articles -name "*.md" -type f | sort)
+            CHANGED=$(find articles -name "*.md" -not -name "REPORT.md" -type f | sort)
             echo "mode=all" >> $GITHUB_OUTPUT
           else
             echo "📝 MODE: Fix changed articles"
-            if git rev-parse --verify HEAD~1 &> /dev/null; then
-              CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'articles/**/*.md')
+            BEFORE="${{ github.event.before }}"
+            AFTER="${{ github.event.after }}"
+            
+            # Если это первый пуш в ветку, before будет нулями
+            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              CHANGED=$(git diff-tree --no-commit-id --name-only -r "$AFTER" -- 'articles/**/*.md' | grep -v "REPORT.md" || true)
             else
-              CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- 'articles/**/*.md')
+              CHANGED=$(git diff --name-only "$BEFORE" "$AFTER" -- 'articles/**/*.md' | grep -v "REPORT.md" || true)
             fi
             echo "mode=changed" >> $GITHUB_OUTPUT
           fi
