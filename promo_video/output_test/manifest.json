@@ -1,0 +1,48 @@
+{
+  "title": "The Double Life Betrayal",
+  "hook": "На пороге стояла копия моего мужа",
+  "music_mood": "dramatic, emotional, suspenseful",
+  "voice_gender": "female",
+  "scenes": [
+    {
+      "id": 1,
+      "text": "Когда я открыла дверь, я увидела девочку — точную копию моего мужа в детстве.",
+      "screen_text": "КОПИЯ МУЖА",
+      "image_prompt": "Photorealistic, cinematic lighting, vertical 9:16, a shocked woman opening a wooden front door, a 5-year-old girl with curly hair standing there who looks like a female version of a man, mysterious woman behind her.",
+      "effect": "zoom_in",
+      "transition": "fade"
+    },
+    {
+      "id": 2,
+      "text": "Двадцать лет брака рухнули за миг. У него была вторая семья в соседнем городе.",
+      "screen_text": "ВТОРАЯ СЕМЬЯ",
+      "image_prompt": "Photorealistic, cinematic lighting, vertical 9:16, a wedding photo on a wall cracking and breaking into pieces, blurry background of a suburban house.",
+      "effect": "pan_right",
+      "transition": "cut"
+    },
+    {
+      "id": 3,
+      "text": "Я экономила на себе ради его новой машины, а он возил их на море.",
+      "screen_text": "ЖЕСТОКАЯ ЛОЖЬ",
+      "image_prompt": "Photorealistic, cinematic lighting, vertical 9:16, split screen: on the left a woman counting small coins in a kitchen, on the right a happy man hugging another woman on a sunny tropical beach.",
+      "effect": "zoom_out",
+      "transition": "fade"
+    },
+    {
+      "id": 4,
+      "text": "Но самое страшное: свекровь всё знала. Она брала мои подарки и молча смотрела мне в глаза.",
+      "screen_text": "СВЕКРОВЬ ЗНАЛА",
+      "image_prompt": "Photorealistic, cinematic lighting, vertical 9:16, close up of an elderly woman's face with a cold, manipulative expression, holding a wrapped gift box, eyes looking directly into the camera.",
+      "effect": "zoom_in",
+      "transition": "dissolve"
+    },
+    {
+      "id": 5,
+      "text": "Как можно простить такое двойное предательство? Что бы вы сделали на моем месте?",
+      "screen_text": "КАК ПРОСТИТЬ?",
+      "image_prompt": "Photorealistic, cinematic lighting, vertical 9:16, a woman standing alone at a rainy window, reflection in the glass, deep emotional atmosphere, lonely silhouette.",
+      "effect": "zoom_out",
+      "transition": "fade"
+    }
+  ]
+}
