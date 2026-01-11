@@ -465,6 +465,64 @@ function printDetailedReport(results, files) {
 }
 
 /**
+ * 🚦 Простой семафор для ограничения конкурентности
+ */
+async function pMap(array, mapper, concurrency) {
+  const results = [];
+  const queue = [...array];
+  let running = 0;
+  
+  // Вспомогательная функция для запуска следующей задачи
+  const runNext = async () => {
+    if (queue.length === 0) return;
+    
+    const item = queue.shift();
+    const idx = array.length - queue.length - 1; // Восстанавливаем индекс
+    
+    running++;
+    try {
+      const result = await mapper(item, idx);
+      results[idx] = result; // Сохраняем результат в правильном порядке (хотя порядок выполнения не гарантирован)
+      // В этой простой реализации порядок в results может сбиться, если просто пушить.
+      // Но для отчета нам важен мэппинг к файлам.
+      // Упростим: просто вернем результаты, а порядок восстановим или будем считать что он не важен для Promise.all
+    } finally {
+      running--;
+      await runNext();
+    }
+  };
+
+  // Запускаем начальный пул
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, array.length); i++) {
+    workers.push(runNext());
+  }
+  
+  await Promise.all(workers);
+  
+  // Так как наша простая реализация выше имеет недостатки с возвратом значений,
+  // используем более надежный паттерн с итератором, если хотим порядок.
+  // Но для простоты заменим это на стандартный чанкинг.
+  return results;
+}
+
+/**
+ * 🚦 Надежный и простой Chunking (последовательные батчи)
+ * Это проще и надежнее, чем pLimit без библиотек
+ */
+async function processInBatches(items, batchSize, processFn) {
+  const results = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map((item, index) => processFn(item, i + index))
+    );
+    results.push(...batchResults);
+  }
+  return results;
+}
+
+/**
  * 🚀 Основная функция
  */
 async function main() {
@@ -481,6 +539,7 @@ async function main() {
 
   console.log(`📄 Files provided: ${files.length}`);
   console.log(`⚡ Strategy: 5 attempts per file with different models`);
+  console.log(`🚦 Concurrency: 3 files at a time (Safe Mode)`);
   console.log(`📡 Models used (2026):`);
   console.log(`   1. gemini-3-pro-preview (максимальное качество)`);
   console.log(`   2. gemini-3-flash-preview (рабочая лошадка)`);
@@ -489,18 +548,16 @@ async function main() {
   console.log(`   5. gemini-2.5-flash-lite (максимальная скорость)`);
   console.log(`🛡️  Protection: Skips REPORT.md, README.md, images\n`);
 
-  // ✅ ПАРАЛЛЕЛЬНАЯ обработка всех файлов одновременно
-  const results = await Promise.all(
-    files.map(async (file, idx) => {
-      console.log(`\n📄 [${idx + 1}/${files.length}] Processing: ${path.basename(file)}`);
-      try {
-        return await restoreFileWithRetry(file);
-      } catch (error) {
-        console.log(`  ❌ Fatal error: ${error.message}`);
-        return { status: 'FALLBACK', reason: 'fatal_error', note: error.message };
-      }
-    })
-  );
+  // ✅ БАТЧИНГ: Обрабатываем по 3 файла за раз
+  const results = await processInBatches(files, 3, async (file, idx) => {
+    console.log(`\n📄 [${idx + 1}/${files.length}] Processing: ${path.basename(file)}`);
+    try {
+      return await restoreFileWithRetry(file);
+    } catch (error) {
+      console.log(`  ❌ Fatal error: ${error.message}`);
+      return { status: 'FALLBACK', reason: 'fatal_error', note: error.message };
+    }
+  });
 
   // Анализ результатов
   printDetailedReport(results, files);
