@@ -19,7 +19,7 @@ const LOG = {
 
 export class ThemeGeneratorService {
   private geminiClient: GoogleGenAI;
-  private csvPath = path.join(process.cwd(), 'projects', 'women-35-60', 'top_articles.csv');
+  private examplesPath = path.join(process.cwd(), 'parsed_examples.json');
   private cachedThemes: string[] = [];
   private lastFetchTime: number = 0;
   private cacheDuration = 3600000; // 1 hour
@@ -30,60 +30,34 @@ export class ThemeGeneratorService {
   }
 
   /**
-   * Load CSV from local file and extract themes
+   * Load Themes from parsed_examples.json
    */
-  private async loadThemesFromCSV(): Promise<string[]> {
+  private async loadThemesFromJSON(): Promise<string[]> {
     try {
-      console.log(`${LOG.LOADING} Loading themes from: ${this.csvPath}`);
-      console.log(`${LOG.LOADING} File exists: ${fs.existsSync(this.csvPath)}`);
+      console.log(`${LOG.LOADING} Loading themes from: ${this.examplesPath}`);
       
-      if (!fs.existsSync(this.csvPath)) {
-        throw new Error(`CSV file not found at: ${this.csvPath}`);
+      if (!fs.existsSync(this.examplesPath)) {
+        console.warn(`${LOG.WARN} Examples file not found at ${this.examplesPath}`);
+        throw new Error(`Themes file not found at: ${this.examplesPath}`);
       }
       
-      const content = fs.readFileSync(this.csvPath, 'utf-8');
-      console.log(`${LOG.LOADING} File size: ${content.length} bytes`);
-      console.log(`${LOG.LOADING} File lines: ${content.split('\n').length}`);
+      const content = fs.readFileSync(this.examplesPath, 'utf-8');
+      const data = JSON.parse(content);
       
-      // Remove BOM if present
-      const cleanContent = content.replace(/^\uFEFF/, '');
-      const lines = cleanContent.split('\n').slice(1); // Skip header
+      if (!Array.isArray(data)) {
+        throw new Error("Themes file is not an array");
+      }
       
-      const themes = lines
-        .map(line => {
-          // Handle CSV with commas in quoted strings
-          // Format: Место,Просмотры,Тема,Статья,Идея
-          const parts: string[] = [];
-          let current = '';
-          let inQuotes = false;
-          
-          for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-              parts.push(current.trim());
-              current = '';
-            } else {
-              current += char;
-            }
-          }
-          parts.push(current.trim()); // Add last part
-          
-          if (parts.length >= 3) {
-            return parts[2].trim().replace(/^"|"$/g, ''); // Column 3 = Тема (Theme)
-          }
-          return '';
-        })
-        .filter(t => t.length > 3) // Theme should have some content
-        .filter(t => t !== ''); // Remove empty themes
+      // Extract titles from the parsed_examples structure
+      // Structure: { id, title, excerpt, ... }
+      const themes = data
+        .map((item: any) => item.title)
+        .filter((title: string) => title && title.length > 5);
       
-      console.log(`${LOG.SUCCESS} Loaded ${themes.length} themes from local CSV`);
-      console.log(`${LOG.LOADING} Sample themes: ${themes.slice(0, 3).join(', ')}`);
-      
+      console.log(`${LOG.SUCCESS} Loaded ${themes.length} themes from parsed_examples.json`);
       return themes;
     } catch (error) {
-      console.error(`${LOG.ERROR} Failed to load local CSV:`, error);
+      console.error(`${LOG.ERROR} Failed to load themes:`, error);
       throw error;
     }
   }
@@ -101,20 +75,19 @@ export class ThemeGeneratorService {
     }
 
     try {
-      console.log(`${LOG.LOADING} Loading themes from local CSV...`);
-      const themes = await this.loadThemesFromCSV();
+      console.log(`${LOG.LOADING} Loading themes from JSON...`);
+      const themes = await this.loadThemesFromJSON();
       this.cachedThemes = themes;
       this.lastFetchTime = now;
-      console.log(`${LOG.SUCCESS} Loaded ${themes.length} real themes from top_articles.csv`);
       return themes;
     } catch (error) {
-      console.warn(`${LOG.WARN} Failed to load local CSV, using fallback list`);
+      console.warn(`${LOG.WARN} Failed to load JSON, using fallback list`);
       return this.getFallbackThemes();
     }
   }
 
   /**
-   * Fallback themes if CSV fetch fails
+   * Fallback themes if JSON fetch fails
    */
   private getFallbackThemes(): string[] {
     return [
@@ -132,38 +105,50 @@ export class ThemeGeneratorService {
   }
 
   /**
+   * Get N random themes from the pool
+   */
+  private getRandomSubset(themes: string[], count: number): string[] {
+    const shuffled = [...themes].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
+
+  /**
    * MAIN: Generate NEW unique theme using Gemini
    */
   async generateNewTheme(): Promise<string> {
     try {
-      // Get existing themes for context
-      const contextThemes = await this.getAvailableThemes();
-      const themesExample = contextThemes.slice(0, 15).join('\n  - ');
+      // Get all available themes (900+)
+      const allThemes = await this.getAvailableThemes();
+      
+      // Select 20 random themes to use as inspiration/context
+      // This ensures we don't just use the first 15 every time
+      const exampleSubset = this.getRandomSubset(allThemes, 20);
+      const themesExample = exampleSubset.map(t => `- ${t}`).join('\n  ');
 
       // Build prompt for Gemini
       const prompt = `\
 You are a master of viral Russian storytelling for Yandex.Zen. Your audience is women 35-60 who love emotional, dramatic "life stories" (житейские истории).
 
-REAL SUCCESSFUL PATTERNS FROM YOUR DATABASE:
-  - ${themesExample}
+I have a database of 900+ successful articles. Here are 20 RANDOM EXAMPLES from that database:
+  ${themesExample}
 
 YOUR TASK:
-Generate ONE NEW UNIQUE theme/hook that will get 200,000+ views.
+Analyze the PATTERNS in these examples (conflict types, emotional hooks, clickbait style).
+Generate ONE BRAND NEW unique theme/hook that fits this style but describes a completely different situation.
 
-STRICT RULES FOR VIRALITY:
-1. FORM: Use either a short, punchy title ("Отказник", "Рогоносец") OR a long quote-based hook ("— Собирай вещи и уходи! — крикнул муж...").
-2. DRAMA: Focus on betrayal, secret inheritance, ungrateful children, or social humiliation.
-3. REALISM: Mention specific household details (старое пальто, кастрюля борща, сапоги из Ашана, ключи на столе).
-4. CONTRAST: Show a sharp turn from victim to victor ("они смеялись, а потом пришел нотариус").
-5. PERSPECTIVE: Always first person ("Я...", "Моя...").
-6. NO CLICKBAIT BANS: Do not use yellow journalism words like "SHOCK", "YOU WON'T BELIEVE". Use emotional weight instead.
+DO NOT copy any of the examples.
+DO NOT use the same specific plot points (if examples are about "mother-in-law", try "sister" or "neighbor").
+AVOID clichés like "keys on the table" or "old coat" unless used creatively.
 
-Example of target style:
-"«Ты здесь никто, уходи к своей матери», — сказал сын. Я молча оставила ключи от квартиры, которую сама ему купила, и выключила телефон на неделю..."
+STRICT RULES:
+1. FORM: Short, punchy title OR a dramatic dialogue hook.
+2. EMOTION: Betrayal, revenge, unexpected wealth, hidden secrets, ungrateful relatives.
+3. TWIST: The victim must become the winner, or the villain must be exposed.
+4. REALISM: Use grounded Russian realities (dacha, mortgage, pension, savings).
 
 RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
 
-      console.log(`${LOG.BRAIN} Generating new theme with Gemini...`);
+      console.log(`${LOG.BRAIN} Generating new theme with Gemini (using 20 random examples from pool)...`);
 
       let response;
       try {
