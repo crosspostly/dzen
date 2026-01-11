@@ -1,0 +1,87 @@
+name: 📹 Auto Video Generation
+
+on:
+  push:
+    paths:
+      - 'articles/**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-videos:
+    runs-on: ubuntu-latest
+    # Avoid infinite loops if the bot pushes changes
+    if: github.actor != 'github-actions[bot]'
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 🔧 Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+
+      - name: 📦 Install JS Dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: 🎬 Generate Missing Videos
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "🔍 Scanning for articles without videos..."
+          # Find all .md files (excluding REPORT.md)
+          FILES=$(find articles -name "*.md" ! -name "REPORT.md" -type f)
+          
+          for file in $FILES; do
+            dir=$(dirname "$file")
+            base=$(basename "$file" .md)
+            video_file="$dir/$base.mp4"
+            
+            if [ ! -f "$video_file" ]; then
+              echo "-----------------------------------------------------"
+              echo "📹 Creating video for: $file"
+              # The script now automatically places <base>.mp4 in the same dir
+              npx tsx promo_video/src/cli.ts "$file"
+              
+              # Size check (25MB limit)
+              if [ -f "$video_file" ]; then
+                size=$(stat -c%s "$video_file")
+                max_size=$((25 * 1024 * 1024))
+                if [ $size -gt $max_size ]; then
+                  echo "⚠️ Video too large ($(du -h $video_file | cut -f1)). Removing..."
+                  rm "$video_file"
+                else
+                  echo "✅ Video generated ($(du -h $video_file | cut -f1))"
+                fi
+              fi
+            else
+              echo "⏭️ Skipping $file (Already exists)"
+            fi
+          done
+
+      - name: 🔐 Git Config
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: 📤 Push New Videos
+        run: |
+          # Add all .mp4 files and manifest files
+          git add articles/**/*.mp4
+          git add articles/**/.assets_*/manifest.json
+          git status
+          git diff --cached --quiet || (git commit -m "🤖 Auto-generated promo videos [skip ci]" && git push)
