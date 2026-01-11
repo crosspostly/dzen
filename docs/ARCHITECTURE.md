@@ -8,6 +8,7 @@
 - **ArticleWorkerPool**: Parallel article generation (3 concurrent workers)
 - **ImageGeneratorAgent**: Production image generation v4.1+ (with PlotBible, validation, fallback)
 - **EpisodeGeneratorService**: Episode generation with quality metrics (v4.5)
+- **ThemeGeneratorService**: Viral hook generation using dynamic few-shot learning (v5.0)
 
 #### Legacy Services (Still Active)
 - **MultiAgentService (v2.0)**: DEPRECATED - Legacy orchestration, being migrated to ContentFactory
@@ -35,6 +36,7 @@
 | ContentSanitizer | Production | v4.9 | ContentFactory | - |
 | ImageGeneratorAgent | Production | v4.1 | ContentFactory | - |
 | EpisodeGeneratorService | Production | v4.5 | ContentFactory | - |
+| ThemeGeneratorService | Production | v5.0 | ContentFactory | - |
 | MultiAgentService | Deprecated | v2.0 | ArticleWorkerPool | ContentFactoryOrchestrator |
 | ImageGeneratorService | Legacy | v3.5 | Test scripts | ImageGeneratorAgent |
 | Phase2AntiDetectionService | Planned | v4.5 | Not integrated | - |

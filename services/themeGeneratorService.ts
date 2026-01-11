@@ -127,26 +127,29 @@ export class ThemeGeneratorService {
 
       // Build prompt for Gemini
       const prompt = `\
-You are a master of viral Russian storytelling for Yandex.Zen. Your audience is women 35-60 who love emotional, dramatic "life stories" (житейские истории).
+You are a creative engine for Viral Dzen Stories (Life Stories / Житейские истории).
 
-I have a database of 900+ successful articles. Here are 20 RANDOM EXAMPLES from that database:
-  ${themesExample}
+CONTEXT:
+I am providing you with 20 SUCCESSFUL EXAMPLES from my database.
+These examples cover a wide range of human conflicts: betrayal, greed, redemption, karma, hidden secrets, social inequality, family disputes, work conflicts, etc.
+
+EXAMPLES:
+${themesExample}
 
 YOUR TASK:
-Analyze the PATTERNS in these examples (conflict types, emotional hooks, clickbait style).
-Generate ONE BRAND NEW unique theme/hook that fits this style but describes a completely different situation.
+Generate ONE (1) BRAND NEW Title/Hook.
 
-DO NOT copy any of the examples.
-DO NOT use the same specific plot points (if examples are about "mother-in-law", try "sister" or "neighbor").
-AVOID clichés like "keys on the table" or "old coat" unless used creatively.
+CRITICAL INSTRUCTIONS:
+1.  **ANALYZE THE VARIETY:** Do not just focus on "mothers-in-law" or "inheritance" unless the examples strongly suggest it. Look for other patterns: conflicts with neighbors, bosses, siblings, old friends, random strangers, foster children, etc.
+2.  **NO REPETITION:** Do not use the exact same characters or objects found in the examples above. If the examples are about a "coat", you write about a "watch" or "car". If they are about a "kitchen", you write about a "summer house" or "hospital ward".
+3.  **ABSTRACT THE FORMULA:**
+    -   *Mechanism:* A person is underestimated/insulted -> A secret/truth is revealed -> The situation flips instantly.
+    -   *Tone:* Emotional, confessional, dramatic, grounded in reality.
+4.  **OUTPUT FORMAT:**
+    -   Either a punchy dialogue line: "— [Phrase]! — [Action]..."
+    -   Or a descriptive situation: "[Situation], but [Twist]..."
 
-STRICT RULES:
-1. FORM: Short, punchy title OR a dramatic dialogue hook.
-2. EMOTION: Betrayal, revenge, unexpected wealth, hidden secrets, ungrateful relatives.
-3. TWIST: The victim must become the winner, or the villain must be exposed.
-4. REALISM: Use grounded Russian realities (dacha, mortgage, pension, savings).
-
-RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
+GENERATE 1 NEW RUSSIAN HOOK (Just the text):`;
 
       console.log(`${LOG.BRAIN} Generating new theme with Gemini (using 20 random examples from pool)...`);
 
@@ -157,7 +160,7 @@ RESPOND WITH ONLY THE THEME TEXT (no quotes, no explanation):`;
           model: "gemini-2.5-flash",
           contents: prompt,
           config: {
-            temperature: 0.95,
+            temperature: 1.1, // Higher temperature for variety
             topK: 40,
             topP: 0.95,
           },
