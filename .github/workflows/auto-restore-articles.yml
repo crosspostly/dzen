@@ -91,47 +91,124 @@ jobs:
           fi
           
           node scripts/restore-articles-safe.js ${{ steps.files.outputs.files }}
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "❌ Script failed with exit code $EXIT_CODE"
+            exit $EXIT_CODE
+          fi
 
       - name: 📤 Commit if changed
         if: steps.files.outputs.files != '' && steps.restore.outputs.exit_code == '0'
         run: |
+          echo "🔍 ===== PRE-GIT CHECK BEFORE COMMIT ====="
+          
+          # 1. Проверяем статус
+          echo "📊 Current git status:"
+          git status --porcelain
+          echo ""
+          
+          # 2. Проверяем какие файлы изменились
+          echo "📝 Modified files:"
+          git ls-files -m
+          echo ""
+          
+          # 3. Проверяем diff
+          echo "📊 Diff stat:"
+          git diff --stat || echo "No diff"
+          echo ""
+          
+          # 4. Смотрим детали по каждому файлу
+          FILES='${{ steps.files.outputs.files }}'
+          echo "📁 Checking specific article files:"
+          for file in $FILES; do
+            if [ -f "$file" ]; then
+              SIZE=$(wc -c < "$file")
+              LINES=$(wc -l < "$file")
+              echo "   ✓ $file - $SIZE bytes, $LINES lines"
+            else
+              echo "   ❌ $file - NOT FOUND"
+            fi
+          done
+          echo ""
+          
+          # Конфигурируем git
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          echo "📊 Git Status:"
-          git status
-          echo "📊 Git Diff Stat:"
-          git diff --stat
-          
-          if ! git diff --quiet; then
+          # 5. Проверяем есть ли реальные изменения
+          if git diff --quiet -- articles/; then
+            echo "⚠️ WARNING: git diff --quiet says NO CHANGES"
+            echo "📊 But git status says:"
+            git status
+            echo ""
+            echo "Forcing git add and checking again..."
             git add articles/
             
-            # Разные сообщения для разных режимов
-            if [ "${{ steps.files.outputs.mode }}" = "all" ]; then
-              git commit -m "🔧 Auto-restore: Fixed ALL articles" || true
-            else
-              git commit -m "🔧 Auto-restore: Fixed formatting" || true
+            if git diff --cached --quiet; then
+              echo "⚠️ Still no changes in staging area. Exit."
+              exit 0
             fi
-            
-            git push origin HEAD:${{ github.ref }} || true
-            echo "✅ Pushed"
+          fi
+          
+          # 6. Добавляем файлы
+          echo "📌 Adding articles/ directory..."
+          git add articles/
+          echo "Added successfully"
+          
+          # 7. Проверяем staged changes
+          echo "📊 Staged diff stat:"
+          git diff --cached --stat
+          echo ""
+          
+          # 8. Создаём коммит
+          MODE="${{ steps.files.outputs.mode }}"
+          if [ "$MODE" = "all" ]; then
+            COMMIT_MSG="🔧 Auto-restore: Fixed ALL articles"
           else
-            echo "⚠️ No changes detected by git"
+            COMMIT_MSG="🔧 Auto-restore: Fixed formatting"
+          fi
+          
+          echo "💾 Creating commit: $COMMIT_MSG"
+          git commit -m "$COMMIT_MSG" -m "Triggered by auto-restore workflow" || {
+            echo "❌ Commit failed or nothing to commit"
+            git status
+            exit 0
+          }
+          
+          echo "✅ Commit created"
+          echo ""
+          
+          # 9. Пушим на гитхаб
+          echo "📤 Pushing to origin..."
+          git push origin HEAD:${{ github.ref }} --verbose
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Push successful!"
+          else
+            echo "❌ Push failed!"
+            git log --oneline -5
+            exit 1
           fi
 
       - name: 📊 Summary
         if: always()
         run: |
           echo ""
-          echo "=========================================="
+          echo "========================================="
           echo "✅ Auto-restore complete"
-          echo "=========================================="
+          echo "========================================="
           MODE="${{ steps.files.outputs.mode }}"
           if [ "$MODE" = "all" ]; then
             echo "📋 Mode: Fix ALL articles"
           else
             echo "📋 Mode: Fix changed articles"
           fi
-          echo "📁 Files: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
-          echo "=========================================="
+          echo "📁 Files processed: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
+          
+          # Final git log
+          echo ""
+          echo "Last commits:"
+          git log --oneline -3
+          echo "========================================="
