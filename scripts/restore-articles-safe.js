@@ -316,46 +316,47 @@ async function restoreFileWithRetry(filePath) {
   const { hasFrontmatter, frontmatter, body } = parseFrontmatter(originalContent);
 
   // ✅ АКТУАЛЬНЫЕ API ID (Gemini 2026) и УМНАЯ СТРАТЕГИЯ
+  // ЭКОНОМИЧНЫЙ ПОДХОД: Начинаем с быстрых моделей с малыми чанками
   const attempts = [
     { 
-      model: 'gemini-3-pro-preview', 
-      chunkSize: 100000,  // Полный текст в одну попытку
-      minRatio: 0.85, 
-      timeout: 35000,
-      prompt: RESTORATION_PROMPT_STRICT,
-      description: 'Gemini 3 Pro Preview (максимальное качество, полный текст)'
-    },
-    { 
-      model: 'gemini-3-flash-preview', 
-      chunkSize: 2500, 
-      minRatio: 0.85, 
-      timeout: 30000,
-      prompt: RESTORATION_PROMPT_MEDIUM,
-      description: 'Gemini 3 Flash Preview (рабочая лошадка, chunks 2500)'
-    },
-    { 
-      model: 'gemini-2.5-pro', 
-      chunkSize: 2000, 
-      minRatio: 0.80, 
-      timeout: 30000,
-      prompt: RESTORATION_PROMPT_MEDIUM,
-      description: 'Gemini 2.5 Pro (продакшн-флагман, chunks 2000)'
+      model: 'gemini-2.5-flash-lite', 
+      chunkSize: 3000, 
+      minRatio: 0.85, // Строгий контроль длины для лайт модели
+      timeout: 25000,
+      prompt: RESTORATION_PROMPT_SOFT,
+      description: 'Gemini 2.5 Flash-Lite (быстрая, чанки 3000)'
     },
     { 
       model: 'gemini-2.5-flash', 
-      chunkSize: 1500, 
-      minRatio: 0.75, 
-      timeout: 25000,
+      chunkSize: 3000, 
+      minRatio: 0.85, 
+      timeout: 30000,
       prompt: RESTORATION_PROMPT_MEDIUM,
-      description: 'Gemini 2.5 Flash (быстрая универсальная, chunks 1500)'
+      description: 'Gemini 2.5 Flash (стандарт, чанки 3000)'
     },
     { 
-      model: 'gemini-2.5-flash-lite', 
-      chunkSize: 1000, 
+      model: 'gemini-3-flash-preview', 
+      chunkSize: 3000, 
+      minRatio: 0.80, 
+      timeout: 35000,
+      prompt: RESTORATION_PROMPT_MEDIUM,
+      description: 'Gemini 3 Flash Preview (умная, чанки 3000)'
+    },
+    { 
+      model: 'gemini-2.5-pro', 
+      chunkSize: 3000, 
+      minRatio: 0.75, 
+      timeout: 40000,
+      prompt: RESTORATION_PROMPT_STRICT,
+      description: 'Gemini 2.5 Pro (мощная, чанки 3000)'
+    },
+    { 
+      model: 'gemini-3-pro-preview', 
+      chunkSize: 3000, // Даже про версию бьем на чанки для надежности
       minRatio: 0.70, 
-      timeout: 20000,
-      prompt: RESTORATION_PROMPT_SOFT,
-      description: 'Gemini 2.5 Flash-Lite (максимальная скорость, chunks 1000, мягкий)'
+      timeout: 45000,
+      prompt: RESTORATION_PROMPT_STRICT,
+      description: 'Gemini 3 Pro Preview (флагман, чанки 3000)'
     },
   ];
 
