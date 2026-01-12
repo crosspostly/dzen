@@ -156,6 +156,9 @@ jobs:
             echo "📝 Committing changes..."
             git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed"
             
+            echo "📥 Pulling latest changes..."
+            git pull --rebase origin main || (echo "⚠️ Rebase failed, trying merge" && git rebase --abort && git pull origin main)
+            
             echo "📤 Pushing to repository..."
             git push origin main
             echo "✅ Successfully pushed!"
