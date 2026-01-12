@@ -71,10 +71,11 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add public/feed.xml
+        git add public/articles/
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "chore(rss): update feed [${{ github.event.inputs.mode }} mode]"
+          git commit -m "chore(rss): update feed and html mirrors [${{ github.event.inputs.mode || 'incremental' }} mode]"
           git push
         fi
       continue-on-error: true
