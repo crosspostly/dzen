@@ -1,5 +1,9 @@
 name: 🔧 Auto Restore Articles
 
+concurrency:
+  group: push-to-main
+  cancel-in-progress: true
+
 on:
   schedule:
     - cron: '0 3 * * *' # Каждую ночь в 3 AM
@@ -182,6 +186,7 @@ jobs:
           
           # 9. Пушим на гитхаб
           echo "📤 Pushing to origin..."
+          git pull origin main --rebase || echo "⚠️ No remote changes"
           git push origin HEAD:${{ github.ref }} --verbose
           
           if [ $? -eq 0 ]; then
