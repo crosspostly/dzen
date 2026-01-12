@@ -276,10 +276,16 @@ function validateChunk(original, restored) {
   if (resLen < origLen * 0.5) return { valid: false, reason: "too_short" };
   if (resLen > origLen * 1.5) return { valid: false, reason: "too_long" };
 
-  // 2. Проверка на "извинения" ИИ
+  // 2. Проверка на "извинения" ИИ (ТОЛЬКО системные фразы)
+  // ❌ Убраны общие фразы типа "я не могу", которые могут быть в диалогах персонажей
   const refusalPatterns = [
-    "I cannot", "я не могу", "language model", "языковая модель",
-    "text contains", "текст содержит", "sorry", "извините"
+    "как языковая модель", "as a language model",
+    "я не могу выполнить этот запрос", "i cannot fulfill this request",
+    "я не могу переписать", "i cannot rewrite",
+    "пожалуйста, обратите внимание", "please note that",
+    "нарушает правила", "violates policy",
+    "политика безопасности", "safety guidelines",
+    "я не могу генерировать", "i cannot generate"
   ];
   const lowerRestored = restored.toLowerCase();
   for (const pat of refusalPatterns) {
