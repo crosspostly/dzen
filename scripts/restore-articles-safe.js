@@ -107,20 +107,66 @@ function getSmartChunkSize(textLength, baseSize) {
 }
 
 /**
- * Разделить текст на chunks по параграфам (SMART)
+ * Разделить текст на chunks по параграфам (SMART + FORCE SPLIT)
  */
 function splitIntoChunks(text, maxSize = 2500) {
-  const paragraphs = text.split('\n\n').filter(p => p.trim().length > 0);
+  // 1. Сначала бьем по двойным переносам (классические абзацы)
+  let paragraphs = text.split('\n\n').filter(p => p.trim().length > 0);
   
-  // Если очень мало абзацев и текст не очень большой, не режем
-  if (paragraphs.length <= 2 && text.length < maxSize) {
-    return [text];
+  // 2. Если абзацев мало (или 1), а текст огромный — возможно это "стена текста" или одиночные переносы
+  if (paragraphs.length <= 1 && text.length > maxSize) {
+    // Попробуем разбить по одиночным переносам
+    const bySingle = text.split('\n').filter(p => p.trim().length > 0);
+    if (bySingle.length > 1) {
+      paragraphs = bySingle;
+    }
   }
-  
+
   const chunks = [];
   let currentChunk = '';
 
   for (const para of paragraphs) {
+    // 🚨 FORCE SPLIT: Если даже один "абзац" больше максимума (стена текста)
+    if (para.length > maxSize) {
+      // Сначала сбрасываем то, что накопили
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk.trim());
+        currentChunk = '';
+      }
+
+      // Бьем "стену" на предложения
+      // Ищем предложения: любой текст + знак конца (.!?) + пробел или конец строки
+      const sentences = para.match(/[^.!?]+[.!?]+(\s|$)/g);
+      
+      if (!sentences) {
+        // Если не удалось разбить на предложения (нет знаков препинания?), просто режем жестко
+        let remaining = para;
+        while (remaining.length > 0) {
+          chunks.push(remaining.slice(0, maxSize).trim());
+          remaining = remaining.slice(maxSize);
+        }
+        continue;
+      }
+
+      // Собираем предложения в саб-чанки
+      let subChunk = '';
+      for (const sent of sentences) {
+        if (subChunk.length + sent.length > maxSize && subChunk.length > 0) {
+          chunks.push(subChunk.trim());
+          subChunk = sent;
+        } else {
+          subChunk += sent;
+        }
+      }
+      
+      // Остаток от разбиения "стены" становится началом следующего накопления
+      if (subChunk.length > 0) {
+        currentChunk = subChunk;
+      }
+      continue;
+    }
+
+    // Классическая логика накопления абзацев
     if (currentChunk.length + para.length + 2 > maxSize && currentChunk.length > 0) {
       chunks.push(currentChunk.trim());
       currentChunk = para;
