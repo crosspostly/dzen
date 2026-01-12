@@ -1,5 +1,9 @@
 name: 🤖 Auto-Publish to Dzen Every 3 Hours
 
+concurrency:
+  group: push-to-main
+  cancel-in-progress: true
+
 on:
   schedule:
     - cron: '0 */3 * * *'  # Every 3 hours
