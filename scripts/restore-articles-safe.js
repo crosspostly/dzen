@@ -107,79 +107,59 @@ function getSmartChunkSize(textLength, baseSize) {
 }
 
 /**
- * Разделить текст на chunks по параграфам (SMART + FORCE SPLIT)
+ * Разделить текст на chunks СТРОГО по предложениям (для стен текста)
  */
 function splitIntoChunks(text, maxSize = 2500) {
-  // 1. Сначала бьем по двойным переносам (классические абзацы)
-  let paragraphs = text.split('\n\n').filter(p => p.trim().length > 0);
-  
-  // 2. Если абзацев мало (или 1), а текст огромный — возможно это "стена текста" или одиночные переносы
-  if (paragraphs.length <= 1 && text.length > maxSize) {
-    // Попробуем разбить по одиночным переносам
-    const bySingle = text.split('\n').filter(p => p.trim().length > 0);
-    if (bySingle.length > 1) {
-      paragraphs = bySingle;
-    }
+  // 1. Если текст влазит целиком — не трогаем
+  if (text.length <= maxSize) {
+    return [text];
   }
 
   const chunks = [];
   let currentChunk = '';
 
-  for (const para of paragraphs) {
-    // 🚨 FORCE SPLIT: Если даже один "абзац" больше максимума (стена текста)
-    if (para.length > maxSize) {
-      // Сначала сбрасываем то, что накопили
+  // 2. Разбиваем на предложения:
+  // Любой текст + (.!?) + (пробелы/переносы или конец строки)
+  const sentences = text.match(/[^.!?]+(?:[.!?]+[\s\n]*|$)/g);
+
+  if (!sentences) {
+    // Если знаков препинания нет совсем — режем жестко по длине
+    for (let i = 0; i < text.length; i += maxSize) {
+      chunks.push(text.slice(i, i + maxSize));
+    }
+    return chunks;
+  }
+
+  for (const sentence of sentences) {
+    // 3. Если само предложение гигантское (больше лимита) — режем его кусками
+    if (sentence.length > maxSize) {
+      // Скидываем накопленное
       if (currentChunk.length > 0) {
         chunks.push(currentChunk.trim());
         currentChunk = '';
       }
-
-      // Бьем "стену" на предложения
-      // Ищем предложения: любой текст + знак конца (.!?) + пробел или конец строки
-      const sentences = para.match(/[^.!?]+[.!?]+(\s|$)/g);
       
-      if (!sentences) {
-        // Если не удалось разбить на предложения (нет знаков препинания?), просто режем жестко
-        let remaining = para;
-        while (remaining.length > 0) {
-          chunks.push(remaining.slice(0, maxSize).trim());
-          remaining = remaining.slice(maxSize);
-        }
-        continue;
-      }
-
-      // Собираем предложения в саб-чанки
-      let subChunk = '';
-      for (const sent of sentences) {
-        if (subChunk.length + sent.length > maxSize && subChunk.length > 0) {
-          chunks.push(subChunk.trim());
-          subChunk = sent;
-        } else {
-          subChunk += sent;
-        }
-      }
-      
-      // Остаток от разбиения "стены" становится началом следующего накопления
-      if (subChunk.length > 0) {
-        currentChunk = subChunk;
+      let remaining = sentence;
+      while (remaining.length > 0) {
+        // Берем кусок и сразу пушим
+        let slice = remaining.slice(0, maxSize);
+        chunks.push(slice.trim());
+        remaining = remaining.slice(maxSize);
       }
       continue;
     }
 
-    // Классическая логика накопления абзацев
-    if (currentChunk.length + para.length + 2 > maxSize && currentChunk.length > 0) {
+    // 4. Накапливаем предложения
+    if (currentChunk.length + sentence.length > maxSize) {
       chunks.push(currentChunk.trim());
-      currentChunk = para;
+      currentChunk = sentence;
     } else {
-      if (currentChunk.length > 0) {
-        currentChunk += '\n\n' + para;
-      } else {
-        currentChunk = para;
-      }
+      currentChunk += sentence;
     }
   }
 
-  if (currentChunk.length > 0) {
+  // 5. Добавляем остаток
+  if (currentChunk.trim().length > 0) {
     chunks.push(currentChunk.trim());
   }
 
@@ -203,7 +183,7 @@ function cleanGarbage(text) {
 
   // Удаляем блоки кода markdown
   if (cleaned.includes('```')) {
-    cleaned = cleaned.replace(/```(?:markdown|text|json)?\s*\n?([\s\S]*?)\n?```/gi, '$1');
+    cleaned = cleaned.replace(/```(?:markdown|text|json)?\s*\n?[\s\S]*?\n?```/gi, '$1');
   }
 
   const garbagePatterns = [
@@ -227,7 +207,7 @@ function cleanGarbage(text) {
 }
 
 /**
- * Парсинг frontmatter (YAML между ---)
+ * Парсинг frontmatter (YAML между ---
  */
 function parseFrontmatter(content) {
   const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
@@ -284,37 +264,86 @@ async function restoreChunk(chunkText, model, prompt, timeout = 30000) {
 }
 
 /**
+ * 🕵️ Валидация качества чанка
+ */
+function validateChunk(original, restored) {
+  if (!restored) return { valid: false, reason: "empty_response" };
+
+  const origLen = original.length;
+  const resLen = restored.length;
+  
+  // 1. Проверка длины (допускаем сжатие до 50% и раздувание до 50%)
+  if (resLen < origLen * 0.5) return { valid: false, reason: "too_short" };
+  if (resLen > origLen * 1.5) return { valid: false, reason: "too_long" };
+
+  // 2. Проверка на "извинения" ИИ
+  const refusalPatterns = [
+    "I cannot", "я не могу", "language model", "языковая модель",
+    "text contains", "текст содержит", "sorry", "извините"
+  ];
+  const lowerRestored = restored.toLowerCase();
+  for (const pat of refusalPatterns) {
+    if (lowerRestored.includes(pat)) return { valid: false, reason: `ai_refusal_pattern: ${pat}` };
+  }
+
+  return { valid: true };
+}
+
+/**
  * 🎯 Попытка восстановления с конкретными параметрами
  */
 async function restoreWithAttempt(bodyText, attempt) {
   try {
-    // SMART определение chunk size
     const smartChunkSize = getSmartChunkSize(bodyText.length, attempt.chunkSize);
     const chunks = splitIntoChunks(bodyText, smartChunkSize);
     const restoredChunks = [];
+    
+    console.log(`    ℹ️  Split into ${chunks.length} chunks (target: ${attempt.chunkSize})`);
 
     for (let i = 0; i < chunks.length; i++) {
-      const result = await restoreChunk(
-        chunks[i], 
-        attempt.model, 
-        attempt.prompt,
-        attempt.timeout
-      );
+      const chunk = chunks[i];
+      let chunkSuccess = false;
+      let finalChunkText = chunk; // Fallback
 
-      if (!result.success) {
-        throw new Error(`Chunk ${i + 1}/${chunks.length} failed: ${result.error}`);
+      for (let retry = 0; retry < 3; retry++) {
+        process.stdout.write(`    ⏳ Chunk ${i + 1}/${chunks.length} (try ${retry + 1}/3)... `);
+        
+        const result = await restoreChunk(
+          chunk, 
+          attempt.model, 
+          attempt.prompt, 
+          attempt.timeout
+        );
+
+        if (result.success) {
+          const validation = validateChunk(chunk, result.text);
+          if (validation.valid) {
+            console.log(`✅ OK`);
+            finalChunkText = result.text;
+            chunkSuccess = true;
+            break;
+          } else {
+            console.log(`⚠️ Invalid (${validation.reason})`);
+          }
+        } else {
+          console.log(`❌ Error: ${result.error}`);
+        }
+        
+        if (retry < 2) await new Promise(r => setTimeout(r, 1000));
       }
 
-      restoredChunks.push(result.text);
+      if (!chunkSuccess) {
+        console.log(`    ⚠️  Chunk ${i + 1} failed 3 times. Using original text.`);
+      }
 
-      // Задержка между chunks для избежания rate limiting
+      restoredChunks.push(finalChunkText);
+
       if (i < chunks.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
-    const finalText = mergeChunks(restoredChunks);
-    return finalText;
+    return mergeChunks(restoredChunks);
   } catch (error) {
     throw error;
   }
@@ -327,20 +356,9 @@ function shouldProcessFile(filePath) {
   const fileName = path.basename(filePath);
   const ext = path.extname(filePath).toLowerCase();
   
-  // Пропускаем специальные файлы
-  if (SKIP_FILES.some(f => fileName.toLowerCase() === f.toLowerCase())) {
-    return false;
-  }
-  
-  // Пропускаем изображения и другие не-md файлы
-  if (SKIP_EXTENSIONS.includes(ext)) {
-    return false;
-  }
-  
-  // Обрабатываем только .md из articles/
-  if (ext !== '.md' || !filePath.includes('articles/')) {
-    return false;
-  }
+  if (SKIP_FILES.some(f => fileName.toLowerCase() === f.toLowerCase())) return false;
+  if (SKIP_EXTENSIONS.includes(ext)) return false;
+  if (ext !== '.md' || !filePath.includes('articles/')) return false;
   
   return true;
 }
@@ -349,61 +367,19 @@ function shouldProcessFile(filePath) {
  * 🔄 Восстановление файла с 5 попыток разными моделями
  */
 async function restoreFileWithRetry(filePath) {
-  // ✅ Проверка: нужно ли обрабатывать этот файл?
   if (!shouldProcessFile(filePath)) {
-    return { 
-      status: 'SKIPPED', 
-      reason: 'not_article',
-      note: `Пропущен: ${path.basename(filePath)} (не статья или защищённый файл)`
-    };
+    return { status: 'SKIPPED', note: `Пропущен: ${path.basename(filePath)}` };
   }
 
   const originalContent = fs.readFileSync(filePath, 'utf8');
   const { hasFrontmatter, frontmatter, body } = parseFrontmatter(originalContent);
 
-  // ✅ АКТУАЛЬНЫЕ API ID (Gemini 2026) и УМНАЯ СТРАТЕГИЯ
-  // ЭКОНОМИЧНЫЙ ПОДХОД: Начинаем с быстрых моделей с малыми чанками
   const attempts = [
-    { 
-      model: 'gemini-2.5-flash-lite', 
-      chunkSize: 3000, 
-      minRatio: 0.85, // Строгий контроль длины для лайт модели
-      timeout: 25000,
-      prompt: RESTORATION_PROMPT_SOFT,
-      description: 'Gemini 2.5 Flash-Lite (быстрая, чанки 3000)'
-    },
-    { 
-      model: 'gemini-2.5-flash', 
-      chunkSize: 3000, 
-      minRatio: 0.85, 
-      timeout: 30000,
-      prompt: RESTORATION_PROMPT_MEDIUM,
-      description: 'Gemini 2.5 Flash (стандарт, чанки 3000)'
-    },
-    { 
-      model: 'gemini-3-flash-preview', 
-      chunkSize: 3000, 
-      minRatio: 0.80, 
-      timeout: 35000,
-      prompt: RESTORATION_PROMPT_MEDIUM,
-      description: 'Gemini 3 Flash Preview (умная, чанки 3000)'
-    },
-    { 
-      model: 'gemini-2.5-pro', 
-      chunkSize: 3000, 
-      minRatio: 0.75, 
-      timeout: 40000,
-      prompt: RESTORATION_PROMPT_STRICT,
-      description: 'Gemini 2.5 Pro (мощная, чанки 3000)'
-    },
-    { 
-      model: 'gemini-3-pro-preview', 
-      chunkSize: 3000, // Даже про версию бьем на чанки для надежности
-      minRatio: 0.70, 
-      timeout: 45000,
-      prompt: RESTORATION_PROMPT_STRICT,
-      description: 'Gemini 3 Pro Preview (флагман, чанки 3000)'
-    },
+    { model: 'gemini-2.5-flash-lite', chunkSize: 3000, minRatio: 0.85, timeout: 25000, prompt: RESTORATION_PROMPT_SOFT, description: 'Gemini 2.5 Flash-Lite' },
+    { model: 'gemini-2.5-flash', chunkSize: 3000, minRatio: 0.85, timeout: 30000, prompt: RESTORATION_PROMPT_MEDIUM, description: 'Gemini 2.5 Flash' },
+    { model: 'gemini-3-flash-preview', chunkSize: 3000, minRatio: 0.80, timeout: 35000, prompt: RESTORATION_PROMPT_MEDIUM, description: 'Gemini 3 Flash Preview' },
+    { model: 'gemini-2.5-pro', chunkSize: 3000, minRatio: 0.75, timeout: 40000, prompt: RESTORATION_PROMPT_STRICT, description: 'Gemini 2.5 Pro' },
+    { model: 'gemini-3-pro-preview', chunkSize: 3000, minRatio: 0.70, timeout: 45000, prompt: RESTORATION_PROMPT_STRICT, description: 'Gemini 3 Pro Preview' },
   ];
 
   const originalLength = body.trim().length;
@@ -420,20 +396,9 @@ async function restoreFileWithRetry(filePath) {
       console.log(`    📊 Quality: ${originalLength} → ${restoredLength} (${(ratio * 100).toFixed(1)}%)`);
 
       if (ratio >= attempt.minRatio) {
-        // ✅ Успех!
-        const final = hasFrontmatter 
-          ? `${frontmatter}\n\n${restored}`
-          : restored;
-        
+        const final = hasFrontmatter ? `${frontmatter}\n\n${restored}` : restored;
         fs.writeFileSync(filePath, final, 'utf8');
-        
-        return { 
-          status: 'RESTORED', 
-          attempt: i + 1, 
-          ratio: ratio.toFixed(2),
-          model: attempt.model,
-          description: attempt.description
-        };
+        return { status: 'RESTORED', attempt: i + 1, ratio: ratio.toFixed(2), model: attempt.model };
       } else {
         console.log(`    ⚠️  Ratio ${(ratio * 100).toFixed(1)}% < required ${(attempt.minRatio * 100).toFixed(0)}%`);
       }
@@ -443,18 +408,12 @@ async function restoreFileWithRetry(filePath) {
     }
   }
 
-  // ВСЕ 5 попыток не сработали → fallback на оригинал
-  // Но СОХРАНЯЕМ! (Лучше оригинальная чем потеря)
   console.log(`  ⚠️  All 5 attempts failed, preserving original`);
-  return { 
-    status: 'FALLBACK', 
-    reason: 'all_attempts_failed',
-    note: 'Original content preserved (all 5 restoration attempts failed)'
-  };
+  return { status: 'FALLBACK', reason: 'all_attempts_failed' };
 }
 
 /**
- * 🎨 Цветной вывод статистики
+ * 🎨 Вывод статистики
  */
 function printDetailedReport(results, files) {
   const stats = {
@@ -462,155 +421,45 @@ function printDetailedReport(results, files) {
     processed: results.filter(r => r.status !== 'SKIPPED').length,
     restored: results.filter(r => r.status === 'RESTORED').length,
     fallback: results.filter(r => r.status === 'FALLBACK').length,
-    skipped: results.filter(r => r.status === 'SKIPPED').length,
-    byAttempt: {}
+    skipped: results.filter(r => r.status === 'SKIPPED').length
   };
 
-  // Подсчет по попыткам
-  for (let i = 1; i <= 5; i++) {
-    stats.byAttempt[i] = results.filter(r => r.attempt === i).length;
-  }
+  console.log(`\n${'='.repeat(80)}\n✅ RESTORATION COMPLETE\n${'='.repeat(80)}\n`);
+  console.log(`📊 SUMMARY: Total: ${stats.total}, Processed: ${stats.processed}, Restored: ${stats.restored}, Fallback: ${stats.fallback}, Skipped: ${stats.skipped}\n`);
 
-  console.log(`\n${'='.repeat(80)}`);
-  console.log(`✅ RESTORATION COMPLETE`);
-  console.log(`${'='.repeat(80)}\n`);
-
-  console.log(`📊 SUMMARY:`);
-  console.log(`   📄 Total files provided: ${stats.total}`);
-  console.log(`   🔧 Files processed: ${stats.processed}`);
-  console.log(`   ✅ Successfully restored: ${stats.restored} (${stats.processed > 0 ? (stats.restored/stats.processed*100).toFixed(1) : 0}%)`);
-  console.log(`   ⚠️  Fallback (original): ${stats.fallback} (${stats.processed > 0 ? (stats.fallback/stats.processed*100).toFixed(1) : 0}%)`);
-  console.log(`   ⏭️  Skipped (protected): ${stats.skipped}`);
-  console.log(`   ❌ Lost: 0 (100% saved!)\n`);
-
-  if (stats.restored > 0) {
-    console.log(`📈 BREAKDOWN BY ATTEMPT:`);
-    for (let i = 1; i <= 5; i++) {
-      const count = stats.byAttempt[i] || 0;
-      if (count > 0) {
-        const model = results.find(r => r.attempt === i)?.model || 'unknown';
-        console.log(`   Attempt ${i}: ${count} file(s) restored (${model})`);
-      }
-    }
-  }
-
-  console.log(`\n📋 DETAILED RESULTS:`);
   results.forEach((r, idx) => {
     const fileName = path.basename(files[idx]);
-    if (r.status === 'RESTORED') {
-      console.log(`   ✅ ${fileName}: RESTORED on attempt ${r.attempt} (ratio ${r.ratio}, ${r.model})`);
-    } else if (r.status === 'FALLBACK') {
-      console.log(`   ⚠️  ${fileName}: FALLBACK (original preserved, all 5 attempts failed)`);
-    } else if (r.status === 'SKIPPED') {
-      console.log(`   ⏭️  ${fileName}: SKIPPED (${r.note})`);
-    }
+    if (r.status === 'RESTORED') console.log(`   ✅ ${fileName}: RESTORED on attempt ${r.attempt} (ratio ${r.ratio}, ${r.model})`);
+    else if (r.status === 'FALLBACK') console.log(`   ⚠️  ${fileName}: FALLBACK (original preserved)`);
+    else if (r.status === 'SKIPPED') console.log(`   ⏭️  ${fileName}: SKIPPED`);
   });
-
-  console.log(`\n${'='.repeat(80)}`);
-  console.log(`🎯 RESULT: All ${stats.total} file(s) safe (0 lost) ✅`);
-  console.log(`${'='.repeat(80)}\n`);
 }
 
-/**
- * 🚦 Простой семафор для ограничения конкурентности
- */
-async function pMap(array, mapper, concurrency) {
-  const results = [];
-  const queue = [...array];
-  let running = 0;
-  
-  // Вспомогательная функция для запуска следующей задачи
-  const runNext = async () => {
-    if (queue.length === 0) return;
-    
-    const item = queue.shift();
-    const idx = array.length - queue.length - 1; // Восстанавливаем индекс
-    
-    running++;
-    try {
-      const result = await mapper(item, idx);
-      results[idx] = result; // Сохраняем результат в правильном порядке (хотя порядок выполнения не гарантирован)
-      // В этой простой реализации порядок в results может сбиться, если просто пушить.
-      // Но для отчета нам важен мэппинг к файлам.
-      // Упростим: просто вернем результаты, а порядок восстановим или будем считать что он не важен для Promise.all
-    } finally {
-      running--;
-      await runNext();
-    }
-  };
-
-  // Запускаем начальный пул
-  const workers = [];
-  for (let i = 0; i < Math.min(concurrency, array.length); i++) {
-    workers.push(runNext());
-  }
-  
-  await Promise.all(workers);
-  
-  // Так как наша простая реализация выше имеет недостатки с возвратом значений,
-  // используем более надежный паттерн с итератором, если хотим порядок.
-  // Но для простоты заменим это на стандартный чанкинг.
-  return results;
-}
-
-/**
- * 🚦 Надежный и простой Chunking (последовательные батчи)
- * Это проще и надежнее, чем pLimit без библиотек
- */
 async function processInBatches(items, batchSize, processFn) {
   const results = [];
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
-    const batchResults = await Promise.all(
-      batch.map((item, index) => processFn(item, i + index))
-    );
+    const batchResults = await Promise.all(batch.map((item, index) => processFn(item, i + index)));
     results.push(...batchResults);
   }
   return results;
 }
 
-/**
- * 🚀 Основная функция
- */
 async function main() {
-  console.log(`\n${'='.repeat(80)}`);
-  console.log(`🚀 PARALLEL RESTORATION (5-attempt strategy with 2026 models)`);
-  console.log(`${'='.repeat(80)}\n`);
-
+  console.log(`\n${'='.repeat(80)}\n🚀 PARALLEL RESTORATION (5-attempt strategy with 2026 models)\n${'='.repeat(80)}\n`);
   const files = process.argv.slice(2);
+  if (files.length === 0) process.exit(0);
 
-  if (files.length === 0) {
-    console.log('⚠️  No files specified');
-    process.exit(0);
-  }
-
-  console.log(`📄 Files provided: ${files.length}`);
-  console.log(`⚡ Strategy: 5 attempts per file with different models`);
-  console.log(`🚦 Concurrency: 3 files at a time (Safe Mode)`);
-  console.log(`📡 Models used (2026):`);
-  console.log(`   1. gemini-3-pro-preview (максимальное качество)`);
-  console.log(`   2. gemini-3-flash-preview (рабочая лошадка)`);
-  console.log(`   3. gemini-2.5-pro (продакшн-флагман)`);
-  console.log(`   4. gemini-2.5-flash (быстрая универсальная)`);
-  console.log(`   5. gemini-2.5-flash-lite (максимальная скорость)`);
-  console.log(`🛡️  Protection: Skips REPORT.md, README.md, images\n`);
-
-  // ✅ БАТЧИНГ: Обрабатываем по 3 файла за раз
   const results = await processInBatches(files, 3, async (file, idx) => {
     console.log(`\n📄 [${idx + 1}/${files.length}] Processing: ${path.basename(file)}`);
     try {
       return await restoreFileWithRetry(file);
     } catch (error) {
-      console.log(`  ❌ Fatal error: ${error.message}`);
-      return { status: 'FALLBACK', reason: 'fatal_error', note: error.message };
+      return { status: 'FALLBACK', reason: 'fatal_error' };
     }
   });
 
-  // Анализ результатов
   printDetailedReport(results, files);
 }
 
-main().catch(error => {
-  console.error('❌ Fatal error:', error.message);
-  process.exit(1);
-});
+main().catch(error => { console.error('❌ Fatal error:', error.message); process.exit(1); });
