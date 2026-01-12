@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     # Avoid infinite loops if the bot pushes changes
     if: github.actor != 'github-actions[bot]'
+    timeout-minutes: 60
     
     steps:
       - name: 📥 Checkout
@@ -41,37 +42,90 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        timeout-minutes: 55
         run: |
+          set -e  # Exit on any error
+          echo "🔍 SYSTEM DIAGNOSTICS:"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✓ Node: $(node --version)"
+          echo "✓ NPM: $(npm --version)"
+          echo "✓ FFmpeg: $(ffmpeg -version 2>&1 | head -1 || echo 'MISSING')"
+          echo "✓ Playwright: $(npx playwright --version)"
+          echo "✓ API Key: $([ -n \"$GEMINI_API_KEY\" ] && echo 'SET' || echo 'MISSING')"
+          echo "✓ Script exists: $([ -f promo_video/src/cli.ts ] && echo 'YES' || echo 'NO')"
+          echo "✓ Node memory: $(node -e 'console.log(Math.round(require(\"os\").totalmem() / 1024 / 1024 / 1024)) + \"GB\"')"
+          echo ""
+          
           echo "🔍 Scanning for articles without videos..."
-          # Find all .md files (excluding REPORT.md)
-          FILES=$(find articles -name "*.md" ! -name "REPORT.md" -type f)
+          FILES=$(find articles -name "*.md" ! -name "REPORT.md" -type f | head -20)
+          FILE_COUNT=$(echo "$FILES" | wc -l)
+          echo "Found $FILE_COUNT articles to process"
+          echo ""
+          
+          SUCCESS=0
+          FAILED=0
+          SKIPPED=0
           
           for file in $FILES; do
+            [ -z "$file" ] && continue
+            
             dir=$(dirname "$file")
             base=$(basename "$file" .md)
             video_file="$dir/$base.mp4"
             
             if [ ! -f "$video_file" ]; then
-              echo "-----------------------------------------------------"
-              echo "📹 Creating video for: $file"
-              # The script now automatically places <base>.mp4 in the same dir
-              npx tsx promo_video/src/cli.ts "$file"
+              echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+              echo "📹 Processing: $file"
               
-              # Size check (25MB limit)
-              if [ -f "$video_file" ]; then
-                size=$(stat -c%s "$video_file")
-                max_size=$((25 * 1024 * 1024))
-                if [ $size -gt $max_size ]; then
-                  echo "⚠️ Video too large ($(du -h $video_file | cut -f1)). Removing..."
-                  rm "$video_file"
+              # Wrap CLI execution with error handling
+              if timeout 600 npx tsx promo_video/src/cli.ts "$file" 2>&1; then
+                echo "✅ CLI executed successfully"
+                
+                # Check if video was actually created
+                if [ -f "$video_file" ]; then
+                  size=$(stat -c%s "$video_file" 2>/dev/null || echo 0)
+                  size_mb=$((size / 1024 / 1024))
+                  echo "✓ Video created: ${size_mb}MB"
+                  
+                  # Size check (25MB limit)
+                  if [ $size -gt $((25 * 1024 * 1024)) ]; then
+                    echo "⚠️ Video too large, removing..."
+                    rm "$video_file"
+                    ((FAILED++))
+                  else
+                    echo "✅ Video OK (${size_mb}MB < 25MB)"
+                    ((SUCCESS++))
+                  fi
                 else
-                  echo "✅ Video generated ($(du -h $video_file | cut -f1))"
+                  echo "⚠️ Video file not created: $video_file"
+                  ((FAILED++))
                 fi
+              else
+                EXIT_CODE=$?
+                echo "❌ CLI failed (exit: $EXIT_CODE)"
+                echo "📋 Trying to read error file..."
+                [ -f error.log ] && cat error.log || echo "No error.log found"
+                ((FAILED++))
               fi
             else
-              echo "⏭️ Skipping $file (Already exists)"
+              echo "⏭️ Skipping (already exists): $base.mp4"
+              ((SKIPPED++))
             fi
           done
+          
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📊 SUMMARY:"
+          echo "✅ Success: $SUCCESS"
+          echo "❌ Failed: $FAILED"
+          echo "⏭️ Skipped: $SKIPPED"
+          echo ""
+          
+          # Only fail if we had actual errors AND no successes
+          if [ $FAILED -gt 0 ] && [ $SUCCESS -eq 0 ]; then
+            echo "⚠️ Video generation had failures but no successes"
+            # Don't exit with error yet, let's try to push what we have
+          fi
 
       - name: 🔐 Git Config
         run: |
@@ -80,8 +134,22 @@ jobs:
 
       - name: 📤 Push New Videos
         run: |
-          # Add all .mp4 files and manifest files
-          git add articles/**/*.mp4
-          git add articles/**/.assets_*/manifest.json
+          echo "📋 Git status:"
           git status
-          git diff --cached --quiet || (git commit -m "🤖 Auto-generated promo videos [skip ci]" && git push)
+          echo ""
+          
+          echo "📝 Staging video files..."
+          git add articles/**/*.mp4 2>/dev/null || echo "No .mp4 files to add"
+          git add articles/**/.assets_*/manifest.json 2>/dev/null || echo "No manifest files to add"
+          
+          echo "📋 Files to commit:"
+          git diff --cached --name-only
+          echo ""
+          
+          if ! git diff --cached --quiet; then
+            echo "✅ Committing changes..."
+            git commit -m "🤖 Auto-generated promo videos [skip ci]"
+            git push
+          else
+            echo "ℹ️ No changes to commit"
+          fi
