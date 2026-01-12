@@ -1,37 +1,14 @@
-# 📚 Documentation Index
+## 📚 Documentation Index
 
-> All maintained documentation lives under the `docs/` directory. The repository root stays minimal.
+### 🆕 New Systems (2026)
+- **[Theme Generation (Anti-Trope v5.0)](project/THEME_GENERATION.md)**: How we generate unique viral hooks without repetitive clichés.
+- **[Auto Restore System v5.0](guides/AUTO_RESTORE_V5.md)**: The CI/CD pipeline for article cleanup using Flash-Lite and smart chunking.
+- **[Promo Video Factory](guides/PROMO_VIDEO_FACTORY.md)**: Automated video generation pipeline (TTS -> Images -> Video).
 
-## 🚀 Getting Started
-- [**Quick Start**](./guides/QUICK_START.md) - Start here!
-- [**Simplified Generation**](./guides/SIMPLIFIED_MODE.md) - How the clean mode works.
-- [**Setup Guide**](./guides/SETUP_GUIDE.md) - Environment and keys.
-- [**Roadmap**](./project/ROADMAP.md) - Future plans and milestones.
-- [**Project Tasks**](./project/TASK_CHECKLIST.md) - Current status and todo.
-- [**AI Work Overview**](./project/AI_WORK_README.md) - Context on AI-related tasks.
-
-## 🛠 Core Systems
-- [**Auto-Restore System**](./guides/AUTO_RESTORE.md) - How we save broken articles.
-- [**Image Generation**](./architecture/IMAGE_ARCHITECTURE.md) - Visual DNA and cinematic prompts.
-- [**RSS Generation Guide**](./guides/rss/RSS_GENERATION.md) - How to generate the feed.
-- [**RSS Technical Spec**](./project/RSS_FEED_SPEC.md) - Technical details of implementation.
-
-## 🤖 Auto-Publisher (Dzen Bot)
-- [**Main Guide**](./auto-publisher/MAIN_README.md) - Overview of the bot.
-- [**Run Instructions**](./auto-publisher/RUN_INSTRUCTIONS.md) - How to start the publisher.
-- [**Updating Selectors**](./auto-publisher/UPDATE_INSTRUCTIONS.md) - When Dzen UI changes.
-- [**Security & Best Practices**](./auto-publisher/SECURITY_AND_RECOMMENDATIONS.md) - Cookies and safety.
-
-## ⚖️ Standards & Quality
-- [**Quality Matrix**](./standards/CONTENT_QUALITY_MATRIX.md) - Assessment criteria.
-- [**Dzen Quality Standards**](./standards/DZEN_QUALITY_STANDARDS.md) - Specific standards for Dzen.
-- [**Refactoring Guide**](./standards/REFACTOR_GUIDE.md) - Code standards.
-- [**Commit Messages**](./standards/COMMIT_MESSAGE.md) - Git conventions.
-
-## 🏗 Architecture
-- [**Architecture Overview**](./architecture/ARCHITECTURE.md) - System design.
-- [**Article Generation Algorithm**](./architecture/ARTICLE_GENERATION_ALGORITHM.md) - Detailed AI logic.
-- [**Pipeline Architecture**](./architecture/PIPELINE_ARCHITECTURE.md) - Data flow.
+### 🏗 Architecture
+- **[System Architecture](ARCHITECTURE.md)**: High-level overview of services and data flow.
+- **[Pipeline Flow](architecture/PIPELINE_FLOW.md)**: Detailed diagram of the generation pipeline.
+- **[Image Generation](architecture/IMAGE_ARCHITECTURE.md)**: How images are created and attached.
 
 ## 📖 Additional Guides
 - [**Voice Restoration Guide**](./guides/VOICE_RESTORATION_GUIDE.md) - Maintaining narrative voice.
