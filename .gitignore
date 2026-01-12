@@ -63,3 +63,12 @@ Postyvdzen.exe_extracted/_tcl_data/tzdata/Africa/Mogadishu
 /Postyvdzen.exe_extracted
 /PostyDzen
 /\!posts/PRODUCTION_MINIMAL
+
+# Multimedia Artifacts
+public/*.mp4
+public/*.mp3
+public/*.wav
+public/generated_videos/
+promo_video/output_test/
+promo_video/public/*.mp4
+
