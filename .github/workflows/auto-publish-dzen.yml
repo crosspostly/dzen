@@ -2,7 +2,7 @@ name: 🤖 Auto-Publish to Dzen Every 3 Hours
 
 concurrency:
   group: push-to-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   schedule:
@@ -12,7 +12,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest  # Use Ubuntu (faster, cheaper than Windows)
-    timeout-minutes: 15
+    timeout-minutes: 120  # 2 часа максимум
     permissions:
       contents: write  # For push to repository
       actions: read    # For reading workflow status
@@ -160,12 +160,44 @@ jobs:
             echo "📝 Committing changes..."
             git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed"
             
-            echo "📥 Pulling latest changes..."
-            git pull --rebase origin main || (echo "⚠️ Rebase failed, trying merge" && git rebase --abort && git pull origin main)
+            # Retry логика: пробуем до 5 раз с экспоненциальной задержкой
+            MAX_RETRIES=5
+            RETRY_COUNT=0
+            PUSH_SUCCESS=false
             
-            echo "📤 Pushing to repository..."
-            git push origin main
-            echo "✅ Successfully pushed!"
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if [ $RETRY_COUNT -gt 0 ]; then
+                # Экспоненциальная задержка: 2^retry секунд
+                DELAY=$((2 ** RETRY_COUNT))
+                echo "⏳ Retry $RETRY_COUNT/$MAX_RETRIES: waiting ${DELAY}s..."
+                sleep $DELAY
+              fi
+              
+              # Пробуем pull с rebase перед push
+              echo "📥 Pulling latest changes (attempt $((RETRY_COUNT + 1)))..."
+              git pull --rebase origin main || {
+                echo "⚠️ Rebase failed, trying merge..."
+                git rebase --abort
+                git pull origin main || echo "⚠️ Pull failed, continuing anyway..."
+              }
+              
+              # Пробуем push
+              echo "📤 Pushing to origin (attempt $((RETRY_COUNT + 1)))..."
+              if git push origin main --verbose; then
+                echo "✅ Push successful!"
+                PUSH_SUCCESS=true
+                break
+              else
+                echo "❌ Push failed (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+              fi
+            done
+            
+            if [ "$PUSH_SUCCESS" = false ]; then
+              echo "❌ Push failed after $MAX_RETRIES attempts!"
+              git log --oneline -5
+              exit 1
+            fi
           fi
       
       - name: 📋 Summary
