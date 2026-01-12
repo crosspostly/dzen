@@ -55,26 +55,33 @@ async function main() {
         const result = await orchestrator.processArticle(articleText, assetDir, finalVideoPath);
         
         // --- Auto-Publish to Public Folder for Viewing ---
-        const publicVideoDir = path.resolve(__dirname, '../../public/generated_videos');
-        if (!fs.existsSync(publicVideoDir)) {
-            fs.mkdirSync(publicVideoDir, { recursive: true });
+        if (fs.existsSync(finalVideoPath)) {
+            const publicVideoDir = path.resolve(__dirname, '../../public/generated_videos');
+            if (!fs.existsSync(publicVideoDir)) {
+                fs.mkdirSync(publicVideoDir, { recursive: true });
+            }
+
+            const publicVideoPath = path.join(publicVideoDir, `${filename}.mp4`);
+            
+            fs.copyFileSync(finalVideoPath, publicVideoPath);
+            const publicUrl = `http://crosspostly.hopto.org:5005/generated_videos/${filename}.mp4`;
+
+            console.log(`
+🎉 SUCCESS! Video generated successfully.`);
+            console.log(`📹 Local Path: ${finalVideoPath}`);
+            console.log(`🌍 Public URL: ${publicUrl}`);
+            console.log(`📂 Assets: ${result.outputDir}`);
+        } else {
+            console.error(`❌ ERROR: Video file was not created at ${finalVideoPath}`);
+            // Don't exit(1) immediately, maybe let it continue? 
+            // Actually, if video failed, we should probably fail.
+            throw new Error("Video generation failed (file missing)");
         }
 
-        const publicVideoPath = path.join(publicVideoDir, `${filename}.mp4`);
-        
-        fs.copyFileSync(finalVideoPath, publicVideoPath);
-        const publicUrl = `http://crosspostly.hopto.org:5005/generated_videos/${filename}.mp4`;
-        // -------------------------------------------------
-
-        console.log(`
-🎉 SUCCESS! Video generated successfully.`);
-        console.log(`📹 Local Path: ${finalVideoPath}`);
-        console.log(`🌍 Public URL: ${publicUrl}`);
-        console.log(`📂 Assets: ${result.outputDir}`);
-
         // --- Auto-Publish to Dzen ---
-        if (shouldPublish) {
+        if (shouldPublish && fs.existsSync(finalVideoPath)) {
             console.log('\n🚀 Starting Auto-Publishing to Dzen...');
+            // ... (rest of code)
             const publisher = new DzenVideoPublisher();
             try {
                 await publisher.initialize();
