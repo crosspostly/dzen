@@ -2,7 +2,7 @@ name: 🔧 Auto Restore Articles
 
 concurrency:
   group: push-to-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   schedule:
@@ -24,6 +24,7 @@ on:
 jobs:
   restore-articles:
     runs-on: ubuntu-latest
+    timeout-minutes: 120  # 2 часа максимум
     permissions:
       contents: write
       pull-requests: write
@@ -184,15 +185,44 @@ jobs:
           echo "✅ Commit created"
           echo ""
           
-          # 9. Пушим на гитхаб
+          # 9. Пушим на гитхаб с retry логикой
           echo "📤 Pushing to origin..."
-          git pull origin main --rebase || echo "⚠️ No remote changes"
-          git push origin HEAD:${{ github.ref }} --verbose
           
-          if [ $? -eq 0 ]; then
-            echo "✅ Push successful!"
-          else
-            echo "❌ Push failed!"
+          # Retry логика: пробуем до 5 раз с экспоненциальной задержкой
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          PUSH_SUCCESS=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if [ $RETRY_COUNT -gt 0 ]; then
+              # Экспоненциальная задержка: 2^retry секунд
+              DELAY=$((2 ** RETRY_COUNT))
+              echo "⏳ Retry $RETRY_COUNT/$MAX_RETRIES: waiting ${DELAY}s..."
+              sleep $DELAY
+            fi
+            
+            # Пробуем pull с rebase перед push
+            echo "📥 Pulling latest changes (attempt $((RETRY_COUNT + 1)))..."
+            git pull origin main --rebase || {
+              echo "⚠️ Rebase failed, trying merge..."
+              git rebase --abort
+              git pull origin main || echo "⚠️ Pull failed, continuing anyway..."
+            }
+            
+            # Пробуем push
+            echo "📤 Pushing to origin (attempt $((RETRY_COUNT + 1)))..."
+            if git push origin HEAD:${{ github.ref }} --verbose; then
+              echo "✅ Push successful!"
+              PUSH_SUCCESS=true
+              break
+            else
+              echo "❌ Push failed (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+          
+          if [ "$PUSH_SUCCESS" = false ]; then
+            echo "❌ Push failed after $MAX_RETRIES attempts!"
             git log --oneline -5
             exit 1
           fi
