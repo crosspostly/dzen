@@ -15,6 +15,8 @@ export class VideoRenderer {
         const tempDir = path.join(assetDir, 'temp_clips_silent');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
+        const clipPaths: string[] = []; // ✅ Fix: Initialize clipPaths array
+
         // 1. Get Total Audio Duration
         const totalDuration = await this.getAudioDuration(fullAudioPath);
         console.log(`   ⏱️ Total Audio Duration: ${totalDuration.toFixed(2)}s`);
