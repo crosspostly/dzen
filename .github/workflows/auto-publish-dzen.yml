@@ -8,6 +8,17 @@ on:
   schedule:
     - cron: '0 */3 * * *'  # Every 3 hours
   workflow_dispatch:        # Manual trigger
+    inputs:
+      dry_run:
+        description: 'Test run without publishing'
+        required: false
+        type: boolean
+        default: false
+      verbose:
+        description: 'Enable verbose logging'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   publish:
@@ -28,7 +39,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # Disable cache due to ! character in path - will enable after install
+          cache: 'npm'
           
       - name: 🔐 Validate GitHub Secret (DZEN_COOKIES_JSON)
         run: |
@@ -53,8 +64,7 @@ jobs:
           echo "✅ Secret 'DZEN_COOKIES_JSON' found! Size: $SECRET_SIZE characters"
           
           # Validate JSON format
-          echo "$DZEN_COOKIES_JSON" | python3 -m json.tool > /dev/null 2>&1
-          if [ $? -eq 0 ]; then
+          if echo "$DZEN_COOKIES_JSON" | python3 -m json.tool > /dev/null 2>&1; then
             echo "✅ Valid JSON format"
           else
             echo "⚠️  Warning: Cookies may not be valid JSON (might be single object)"
@@ -94,22 +104,32 @@ jobs:
         env:
           CI: true
           HEADLESS: true
+          DRY_RUN: ${{ github.event.inputs.dry_run || false }}
+          VERBOSE: ${{ github.event.inputs.verbose || false }}
           DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
           echo "========================================"
           echo "🤖 DZEN AUTO-PUBLISHER STARTING"
           echo "========================================"
+          echo "Dry Run: $DRY_RUN"
+          echo "Verbose: $VERBOSE"
+          echo ""
           
-          # Run the new TypeScript script
-          timeout 300 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
+          # Run the publisher script with timeout
+          if [ "$VERBOSE" = "true" ]; then
+            timeout 300 npx tsx scripts/publish-dzen.ts --verbose 2>&1 | tee publish.log
+          else
+            timeout 300 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
+          fi
           PUBLISHER_EXIT=$?
           
           echo ""
           echo "Exit code: $PUBLISHER_EXIT"
           echo "publisher_status=$PUBLISHER_EXIT" >> $GITHUB_OUTPUT
           
-          # Save log for debugging
-          mv publish.log publish-$(date +%s).log || true
+          # Save log with timestamp
+          mv publish.log "publish-$(date +%s).log" || true
+          exit $PUBLISHER_EXIT
         continue-on-error: true
       
       - name: 📊 Check results
@@ -133,15 +153,17 @@ jobs:
           fi
           
           echo ""
-          if [ ${{ steps.publisher.outputs.publisher_status }} -eq 0 ]; then
+          if [ "${{ steps.publisher.outputs.publisher_status }}" = "0" ]; then
             echo "✅ Publisher completed successfully!"
           else
             echo "⚠️  Publisher completed with warnings or errors"
           fi
       
       - name: 💾 Commit and push updates
-        if: always()
+        if: github.event.inputs.dry_run != 'true'
         run: |
+          set -e  # Exit on first error
+          
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "GitHub Actions Bot"
           
@@ -156,82 +178,81 @@ jobs:
           # Check if there's anything to commit
           if git diff --cached --quiet; then
             echo "ℹ️  No changes to commit"
-          else
-            echo "📝 Committing changes..."
-            git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed"
-            
-            # Retry логика: пробуем до 5 раз с экспоненциальной задержкой
-            MAX_RETRIES=5
-            RETRY_COUNT=0
-            PUSH_SUCCESS=false
-            
-            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              if [ $RETRY_COUNT -gt 0 ]; then
-                # Экспоненциальная задержка: 2^retry секунд
-                DELAY=$((2 ** RETRY_COUNT))
-                echo "⏳ Retry $RETRY_COUNT/$MAX_RETRIES: waiting ${DELAY}s..."
-                sleep $DELAY
-              fi
-              
-              # Пробуем pull с rebase перед push
-              echo "📥 Pulling latest changes (attempt $((RETRY_COUNT + 1)))..."
-              git pull --rebase origin main || {
-                echo "⚠️ Rebase failed, trying merge..."
-                git rebase --abort
-                git pull origin main || echo "⚠️ Pull failed, continuing anyway..."
-              }
-              
-              # Пробуем push
-              echo "📤 Pushing to origin (attempt $((RETRY_COUNT + 1)))..."
-              if git push origin main --verbose; then
-                echo "✅ Push successful!"
-                PUSH_SUCCESS=true
-                break
-              else
-                echo "❌ Push failed (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
-                RETRY_COUNT=$((RETRY_COUNT + 1))
-              fi
-            done
-            
-            if [ "$PUSH_SUCCESS" = false ]; then
-              echo "❌ Push failed after $MAX_RETRIES attempts!"
-              git log --oneline -5
-              exit 1
+            exit 0
+          fi
+          
+          echo "📝 Committing changes..."
+          git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || {
+            echo "⚠️  Commit failed, continuing..."
+            exit 0
+          }
+          
+          # Improved retry logic
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          PUSH_SUCCESS=false
+          
+          while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+            if [ "$RETRY_COUNT" -gt 0 ]; then
+              # Exponential backoff: 2^retry seconds
+              DELAY=$((2 ** RETRY_COUNT))
+              echo "⏳ Retry $RETRY_COUNT/$MAX_RETRIES: waiting ${DELAY}s..."
+              sleep "$DELAY"
             fi
+            
+            # Try pulling latest changes with rebase
+            echo "📥 Pulling latest changes (attempt $((RETRY_COUNT + 1)))..."
+            if git pull --rebase origin main 2>&1; then
+              echo "✅ Pull successful"
+            else
+              echo "⚠️  Rebase failed, trying merge..."
+              git rebase --abort 2>/dev/null || true
+              if ! git pull origin main 2>&1; then
+                echo "⚠️  Pull failed, continuing with push anyway..."
+              fi
+            fi
+            
+            # Try pushing
+            echo "📤 Pushing to origin (attempt $((RETRY_COUNT + 1)))..."
+            if git push origin main --verbose 2>&1; then
+              echo "✅ Push successful!"
+              PUSH_SUCCESS=true
+              break
+            else
+              echo "❌ Push failed (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+          
+          if [ "$PUSH_SUCCESS" = "false" ]; then
+            echo "❌ Push failed after $MAX_RETRIES attempts!"
+            echo ""
+            echo "📋 Last commits:"
+            git log --oneline -5
+            exit 1
           fi
       
-      - name: 📋 Summary
+      - name: 📋 Final Summary
         if: always()
         run: |
           echo ""
           echo "╔═══════════════════════════════════════╗"
-          echo "║  🤖 AUTO-PUBLISHER WORKFLOW SUMMARY   ║"
+          echo "║  🤖 WORKFLOW COMPLETED                ║"
           echo "╚═══════════════════════════════════════╝"
           echo ""
-          echo "✅ Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "✅ Finished at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "⏱️  Duration: ${{ job.duration }} seconds"
           echo ""
-          echo "📋 What happened:"
-          echo "   ✅ Validated DZEN_COOKIES_JSON secret"
-          echo "   ✅ Checked feed.xml in /public"
-          echo "   ✅ Initialized history file"
+          echo "📊 Status Summary:"
+          echo "   ✅ Validated secrets"
+          echo "   ✅ Checked feed.xml"
           echo "   ✅ Installed dependencies"
-          echo "   ✅ Installed Playwright browsers"
-          echo "   ✅ Ran auto-publisher (main.js.ci)"
-          echo "   ✅ Committed history to git"
-          echo "   ✅ Pushed updates using GITHUB_TOKEN"
+          echo "   ✅ Ran auto-publisher"
+          echo "   ✅ Committed and pushed updates"
           echo ""
-          echo "🔐 Security:"
-          echo "   ✅ Cookies from GitHub Secrets (AES-256 encrypted)"
-          echo "   ✅ Passed via environment variable"
-          echo "   ✅ Masked in logs (GitHub automatic)"
-          echo "   ✅ No credentials in repository"
+          echo "🔐 Security: All sensitive data encrypted in GitHub Secrets"
           echo ""
-          echo "📖 Next steps:"
-          echo "   • Check 'Actions' tab for detailed logs"
-          echo "   • View 'published_articles.txt' for history"
-          echo "   • If errors: Check logs and update selectors"
-          echo ""
-          echo "⏰ Next run: In 3 hours (or manual trigger)"
+          echo "⏰ Next run: In 3 hours (or manual trigger in Actions tab)"
           echo ""
 
   # Notification job (optional)
@@ -244,5 +265,5 @@ jobs:
       - name: 🔔 Notify on failure
         run: |
           echo "⚠️  Workflow failed!"
-          echo "Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         continue-on-error: true
