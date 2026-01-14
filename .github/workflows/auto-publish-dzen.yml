@@ -205,8 +205,29 @@ jobs:
     if: failure()
     
     steps:
-      - name: 🔔 Notify on failure
+      - name: 🔔 Notify on failure (Log)
         run: |
           echo "⚠️  Workflow failed!"
           echo "Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        continue-on-error: true
+      
+      - name: 📧 Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: ❌ Dzen Auto-Publisher Failed
+          body: |
+            The auto-publishing workflow failed.
+            
+            Repository: ${{ github.repository }}
+            Workflow: ${{ github.workflow }}
+            Run ID: ${{ github.run_id }}
+            
+            Check the logs here:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: sheepoff@gmail.com
+          from: Dzen Bot
+          secure: true
+        continue-on-error: true # Don't fail if secrets are missing
