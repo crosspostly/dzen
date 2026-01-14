@@ -83,9 +83,39 @@ export class PlaywrightService {
   private async loadCookies(cookiesJson: string) {
     if (!this.context) throw new Error('Browser context not initialized');
     try {
-      const cookies = JSON.parse(cookiesJson);
-      await this.context.addCookies(cookies);
-      this.log(`✅ Cookies loaded (${cookies.length} items)`);
+      const rawCookies = JSON.parse(cookiesJson);
+      
+      // Sanitize cookies for Playwright
+      const validCookies = rawCookies.map((c: any) => {
+        const cookie = { ...c };
+        
+        // Fix sameSite: Playwright requires "Strict" | "Lax" | "None"
+        if (cookie.sameSite) {
+          const lower = String(cookie.sameSite).toLowerCase();
+          if (lower === 'no_restriction' || lower === 'none') {
+            cookie.sameSite = 'None';
+            cookie.secure = true; // 'None' requires Secure
+          } else if (lower === 'lax') {
+            cookie.sameSite = 'Lax';
+          } else if (lower === 'strict') {
+            cookie.sameSite = 'Strict';
+          } else {
+            // Remove invalid/unknown values (e.g. 'unspecified') to let browser use default
+            delete cookie.sameSite;
+          }
+        }
+        
+        // Remove other potentially problematic fields that appear in some exports
+        delete cookie.hostOnly;
+        delete cookie.session;
+        delete cookie.storeId;
+        delete cookie.id;
+        
+        return cookie;
+      });
+
+      await this.context.addCookies(validCookies);
+      this.log(`✅ Cookies loaded (${validCookies.length} items)`);
     } catch (e) {
       throw new Error(`Failed to load cookies: ${(e as Error).message}`);
     }
