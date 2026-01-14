@@ -20,6 +20,11 @@ on:
         required: false
         default: false
         type: boolean
+      verbose:
+        description: 'Enable verbose logging'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   restore-articles:
@@ -74,7 +79,7 @@ jobs:
             echo "files=" >> $GITHUB_OUTPUT
           else
             echo "📝 Found files:"
-            echo "$CHANGED" | while read file; do
+            echo "$CHANGED" | while read -r file; do
               echo "   ✓ $file"
             done
             FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
@@ -86,6 +91,7 @@ jobs:
         id: restore
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VERBOSE: ${{ github.event.inputs.verbose || false }}
         run: |
           MODE="${{ steps.files.outputs.mode }}"
           
@@ -95,18 +101,23 @@ jobs:
             echo "🚀 Restoring changed articles with 5-attempt strategy..."
           fi
           
-          node scripts/restore-articles-safe.js ${{ steps.files.outputs.files }}
+          if [ "$VERBOSE" = "true" ]; then
+            node scripts/restore-articles-safe.js --verbose ${{ steps.files.outputs.files }}
+          else
+            node scripts/restore-articles-safe.js ${{ steps.files.outputs.files }}
+          fi
           EXIT_CODE=$?
           echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
           
-          if [ $EXIT_CODE -ne 0 ]; then
+          if [ "$EXIT_CODE" -ne 0 ]; then
             echo "❌ Script failed with exit code $EXIT_CODE"
-            exit $EXIT_CODE
           fi
+          exit $EXIT_CODE
 
       - name: 📤 Commit if changed
-        if: steps.files.outputs.files != '' && steps.restore.outputs.exit_code == '0'
+        if: steps.files.outputs.files != '' && success()
         run: |
+          set -e
           echo "🔍 ===== PRE-GIT CHECK BEFORE COMMIT ====="
           
           # 1. Проверяем статус
@@ -116,7 +127,7 @@ jobs:
           
           # 2. Проверяем какие файлы изменились
           echo "📝 Modified files:"
-          git ls-files -m
+          git ls-files -m || true
           echo ""
           
           # 3. Проверяем diff
@@ -127,15 +138,15 @@ jobs:
           # 4. Смотрим детали по каждому файлу
           FILES='${{ steps.files.outputs.files }}'
           echo "📁 Checking specific article files:"
-          for file in $FILES; do
+          while IFS= read -r file; do
             if [ -f "$file" ]; then
-              SIZE=$(wc -c < "$file")
-              LINES=$(wc -l < "$file")
+              SIZE=$(wc -c < "$file" 2>/dev/null || echo "0")
+              LINES=$(wc -l < "$file" 2>/dev/null || echo "0")
               echo "   ✓ $file - $SIZE bytes, $LINES lines"
             else
               echo "   ❌ $file - NOT FOUND"
             fi
-          done
+          done <<< "$FILES"
           echo ""
           
           # Конфигурируем git
@@ -144,7 +155,7 @@ jobs:
           
           # 5. Проверяем есть ли реальные изменения
           if git diff --quiet -- articles/; then
-            echo "⚠️ WARNING: git diff --quiet says NO CHANGES"
+            echo "⚠️  WARNING: git diff --quiet says NO CHANGES"
             echo "📊 But git status says:"
             git status
             echo ""
@@ -152,7 +163,7 @@ jobs:
             git add articles/
             
             if git diff --cached --quiet; then
-              echo "⚠️ Still no changes in staging area. Exit."
+              echo "⚠️  Still no changes in staging area. Exit."
               exit 0
             fi
           fi
@@ -193,25 +204,29 @@ jobs:
           RETRY_COUNT=0
           PUSH_SUCCESS=false
           
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if [ $RETRY_COUNT -gt 0 ]; then
+          while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+            if [ "$RETRY_COUNT" -gt 0 ]; then
               # Экспоненциальная задержка: 2^retry секунд
               DELAY=$((2 ** RETRY_COUNT))
               echo "⏳ Retry $RETRY_COUNT/$MAX_RETRIES: waiting ${DELAY}s..."
-              sleep $DELAY
+              sleep "$DELAY"
             fi
             
             # Пробуем pull с rebase перед push
             echo "📥 Pulling latest changes (attempt $((RETRY_COUNT + 1)))..."
-            git pull origin main --rebase || {
-              echo "⚠️ Rebase failed, trying merge..."
-              git rebase --abort
-              git pull origin main || echo "⚠️ Pull failed, continuing anyway..."
-            }
+            if git pull origin main --rebase 2>&1; then
+              echo "✅ Pull successful"
+            else
+              echo "⚠️  Rebase failed, trying merge..."
+              git rebase --abort 2>/dev/null || true
+              if ! git pull origin main 2>&1; then
+                echo "⚠️  Pull failed, continuing with push anyway..."
+              fi
+            fi
             
             # Пробуем push
             echo "📤 Pushing to origin (attempt $((RETRY_COUNT + 1)))..."
-            if git push origin HEAD:${{ github.ref }} --verbose; then
+            if git push origin HEAD:${{ github.ref }} --verbose 2>&1; then
               echo "✅ Push successful!"
               PUSH_SUCCESS=true
               break
@@ -221,7 +236,7 @@ jobs:
             fi
           done
           
-          if [ "$PUSH_SUCCESS" = false ]; then
+          if [ "$PUSH_SUCCESS" = "false" ]; then
             echo "❌ Push failed after $MAX_RETRIES attempts!"
             git log --oneline -5
             exit 1
@@ -240,7 +255,8 @@ jobs:
           else
             echo "📋 Mode: Fix changed articles"
           fi
-          echo "📁 Files processed: $(echo '${{ steps.files.outputs.files }}' | wc -w)"
+          FILE_COUNT=$(echo '${{ steps.files.outputs.files }}' | wc -w)
+          echo "📁 Files processed: $FILE_COUNT"
           
           # Final git log
           echo ""
