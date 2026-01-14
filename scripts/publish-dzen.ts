@@ -78,15 +78,25 @@ function processArticleContent(content: string) {
 }
 
 async function loadCookies() {
-  if (process.env.CI) {
-    const cookiesJson = process.env.DZEN_COOKIES_JSON;
-    if (!cookiesJson || cookiesJson.length < 10) {
-      throw new Error('DZEN_COOKIES_JSON environment variable is empty!');
-    }
-    return cookiesJson;
-  } else {
-    return await fs.readFile(CONFIG.cookiesPath, 'utf8');
+  // 1. Try Environment Variable (Priority in CI and manual overrides)
+  const envCookies = process.env.DZEN_COOKIES_JSON;
+  if (envCookies && envCookies.length > 10) {
+    console.log('🍪 Using cookies from Environment Variable (DZEN_COOKIES_JSON)');
+    return envCookies;
   }
+
+  // 2. Try Local File
+  try {
+    const fileContent = await fs.readFile(CONFIG.cookiesPath, 'utf8');
+    if (fileContent && fileContent.length > 10) {
+       console.log('🍪 Using cookies from Local File (config/cookies.json)');
+       return fileContent;
+    }
+  } catch (e) {
+    // File not found or unreadable, continue to throw
+  }
+
+  throw new Error('❌ Cookies not found in DZEN_COOKIES_JSON environment variable OR config/cookies.json file!');
 }
 
 async function getPublishedArticles() {

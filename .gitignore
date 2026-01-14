@@ -59,7 +59,7 @@ docs/.docusaurus/
 /\!a_posts
 article_generator_analysis.txt
 *.msg
-Postyvdzen.exe_extracted/_tcl_data/tzdata/Africa/Mogadishu
+Postyvdzen.exe_extracted/_tcl_data/Africa/Mogadishu
 /Postyvdzen.exe_extracted
 /PostyDzen
 /\!posts/PRODUCTION_MINIMAL
@@ -72,3 +72,5 @@ public/generated_videos/
 promo_video/output_test/
 promo_video/public/*.mp4
 
+# Cookies JSON
+config/cookies.json
