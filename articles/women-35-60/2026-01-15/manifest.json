@@ -1,0 +1,35 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768460283639,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 257195,
+  "totalImages": 9,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-15/s-obidoy-ya-prinyala-kupyuru-odnoklassnitsy-skryv-.jpg",
+      "articles/women-35-60/2026-01-15/ya-byla-pozorom-semi-iz-za-ogoroda-poka-ne-kupila-.jpg",
+      "articles/women-35-60/2026-01-15/obidno-ya-byla-nahlebnitsey-no-moy-zvonok-ministru.jpg",
+      "articles/women-35-60/2026-01-15/ya-terpela-izdevki-sosedey-iz-za-palto-poka-moy-no.jpg",
+      "articles/women-35-60/2026-01-15/mne-bylo-unizitelno-prosit-hlam-u-brata-no-eta-ves.jpg",
+      "articles/women-35-60/2026-01-15/mne-stalo-smeshno-kassirsha-prezirala-menya-poka-y.jpg",
+      "articles/women-35-60/2026-01-15/ya-terpela-eyo-nenavist-godami-poka-ne-nashla-foto.jpg",
+      "articles/women-35-60/2026-01-15/shok-skoval-menya-ya-uvidela-kak-moya-nemaya-priem.jpg",
+      "articles/women-35-60/2026-01-15/ya-plakala-ot-styda-iz-za-dyadi-poka-moi-starye-ch.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-15/REPORT.md"
+  }
+}
