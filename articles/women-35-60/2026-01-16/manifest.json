@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768546613630,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 255258,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-16/obida-dushila-menya-no-ya-otkryla-galereyu-v-osobn.jpg",
+      "articles/women-35-60/2026-01-16/ya-terpela-ih-nasmeshki-poka-nahodka-v-sarae-ne-sd.jpg",
+      "articles/women-35-60/2026-01-16/sosedka-smeyalas-nad-moim-halatom-no-vizit-notariu.jpg",
+      "articles/women-35-60/2026-01-16/on-smotrel-na-moy-dom-s-brezglivoy-zhalostyu-ne-zn.jpg",
+      "articles/women-35-60/2026-01-16/obida-smenilas-triumfom-ya-pokazala-antikvaru-chey.jpg",
+      "articles/women-35-60/2026-01-16/menya-unizili-v-dorogom-butike-za-bednost-no-chere.jpg",
+      "articles/women-35-60/2026-01-16/obidno-ya-terpela-unizheniya-bossa-poka-on-ne-uzna.jpg",
+      "articles/women-35-60/2026-01-16/mne-bylo-obidno-slyshat-ih-smeh-no-ya-uzhe-vladela.jpg",
+      "articles/women-35-60/2026-01-16/sosedka-vysmeivala-moyu-gryaznuyu-dachu-i-bespolez.jpg",
+      "articles/women-35-60/2026-01-16/sosedka-prezirala-moyu-obsharpannuyu-volgu-poka-ne.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-16/REPORT.md"
+  }
+}
