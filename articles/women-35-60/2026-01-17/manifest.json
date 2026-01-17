@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768632800289,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 260450,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-17/nachalnik-naglo-uvolil-menya-ne-znaya-chto-ya-vlad.jpg",
+      "articles/women-35-60/2026-01-17/semya-prezirala-menya-za-pomosch-tete-poka-ya-molc.jpg",
+      "articles/women-35-60/2026-01-17/mne-bylo-stydno-za-smeh-svekrovi-nad-ochkami-poka-.jpg",
+      "articles/women-35-60/2026-01-17/ya-proglotila-obidu-za-eksponat-no-moy-bloknot-spa.jpg",
+      "articles/women-35-60/2026-01-17/menya-vygnali-kak-nischuyu-prizhivalku-no-staraya-.jpg",
+      "articles/women-35-60/2026-01-17/ya-plakala-kogda-nachalnik-porval-moy-chernovik-no.jpg",
+      "articles/women-35-60/2026-01-17/unizhennaya-ya-vernulas-i-zanyala-kreslo-bossa-naz.jpg",
+      "articles/women-35-60/2026-01-17/obidno-bylo-terpet-nasmeshki-rodni-poka-ya-ne-nash.jpg",
+      "articles/women-35-60/2026-01-17/ya-byla-v-shoke-ot-naglosti-soseda-no-on-ne-znal-c.jpg",
+      "articles/women-35-60/2026-01-17/on-preziral-menya-v-robe-uborschitsy-no-ne-znal-ch.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-17/REPORT.md"
+  }
+}
