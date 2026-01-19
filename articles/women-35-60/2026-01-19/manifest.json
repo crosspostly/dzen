@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768805903624,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 233139,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-19/ya-terpela-unizhenie-iz-za-staroy-kurtki-poka-meds.jpg",
+      "articles/women-35-60/2026-01-19/obidno-bylo-slyshat-nasmeshki-no-spustya-god-ya-st.jpg",
+      "articles/women-35-60/2026-01-19/mne-bylo-gorko-byt-lishney-poka-zhizn-ih-syna-ne-o.jpg",
+      "articles/women-35-60/2026-01-19/ya-chuvstvovala-sebya-nenuzhnoy-mebelyu-poka-tsena.jpg",
+      "articles/women-35-60/2026-01-19/ya-terpela-unizheniya-za-staruyu-odezhdu-poka-on-n.jpg",
+      "articles/women-35-60/2026-01-19/obidno-ya-terpela-ee-hamstvo-ne-skazav-chto-prishl.jpg",
+      "articles/women-35-60/2026-01-19/ya-byla-v-shoke-ot-eyo-slov-poka-ne-nashla-v-staro.jpg",
+      "articles/women-35-60/2026-01-19/obidno-chto-ya-verila-v-nischego-pod-smeh-rodni-no.jpg",
+      "articles/women-35-60/2026-01-19/yarost-i-mest-ona-vysmeyala-moy-staryy-halat-ne-zn.jpg",
+      "articles/women-35-60/2026-01-19/oni-smeyalis-nad-moim-starym-telefonom-poka-ya-ne-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-19/REPORT.md"
+  }
+}
