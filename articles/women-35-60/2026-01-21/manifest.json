@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768978785355,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 255314,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-21/mne-bylo-obidno-ot-slov-sestry-poka-ya-ne-nashla-v.jpg",
+      "articles/women-35-60/2026-01-21/oni-prezirali-menya-za-staruyu-nivu-no-ya-otkryla-.jpg",
+      "articles/women-35-60/2026-01-21/ya-byla-lishney-v-etom-dome-poka-dokument-iz-staro.jpg",
+      "articles/women-35-60/2026-01-21/mne-bylo-obidno-terpet-ego-nasmeshki-no-on-ne-znal.jpg",
+      "articles/women-35-60/2026-01-21/unizhennaya-ya-myla-posudu-pod-ego-nasmeshki-poka-.jpg",
+      "articles/women-35-60/2026-01-21/ya-v-uzhase-videla-kak-my-sdali-pasynka-v-priyut-n.jpg",
+      "articles/women-35-60/2026-01-21/rodnye-schitali-menya-mebelyu-no-sekret-v-futlyare.jpg",
+      "articles/women-35-60/2026-01-21/ya-byla-v-yarosti-ona-klyanchila-moyu-pensiyu-na-o.jpg",
+      "articles/women-35-60/2026-01-21/podrugi-smeyalis-nad-moey-dyroy-v-polu-poka-pod-sh.jpg",
+      "articles/women-35-60/2026-01-21/mne-bylo-bolno-no-ya-molchala-eta-staraya-brosh-li.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-21/REPORT.md"
+  }
+}
