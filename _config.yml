@@ -1,0 +1,35 @@
+---
+# GitHub Pages configuration
+title: ZenMaster - Dzen Articles
+email: contact@crosspostly.com
+description: AI-generated articles for Yandex Dzen
+baseurl: "/dzen"
+url: "https://crosspostly.github.io"
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - scripts/
+  - package.json
+  - package-lock.json
+  - test*.ts
+  - cli*.ts
+  - services/
+  - types/
+  - docs/
+  - constants/
+  - config/
+---

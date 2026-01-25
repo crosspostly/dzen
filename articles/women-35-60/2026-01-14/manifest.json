@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768373986507,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 257479,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-14/mne-bylo-obidno-terpet-ego-smeh-a-cherez-mesyats-e.jpg",
+      "articles/women-35-60/2026-01-14/prostolyudinka-ubiraysya-kriknula-hozyayka-kogda-g.jpg",
+      "articles/women-35-60/2026-01-14/sestra-zlilas-na-moy-staryy-hlam-ne-znaya-etot-alb.jpg",
+      "articles/women-35-60/2026-01-14/ya-byla-v-shoke-ot-planov-muzha-na-dachu-no-on-ne-.jpg",
+      "articles/women-35-60/2026-01-14/sosedka-gnala-moy-dom-na-svalku-poka-ya-ne-kupila-.jpg",
+      "articles/women-35-60/2026-01-14/s-ulybkoy-ya-myla-pol-i-slushala-ob-uvolnenii-poka.jpg",
+      "articles/women-35-60/2026-01-14/mne-bylo-bolno-ot-ih-nasmeshek-no-ofitsiant-pobled.jpg",
+      "articles/women-35-60/2026-01-14/byvshiy-muzh-unizil-menya-nazvav-prostoy-ofitsiant.jpg",
+      "articles/women-35-60/2026-01-14/ya-sgoral-ot-styda-iz-za-staroy-papki-poka-glavvra.jpg",
+      "articles/women-35-60/2026-01-14/mne-bylo-bolno-ot-eyo-slov-poka-ya-ne-prodala-etu-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-14/REPORT.md"
+  }
+}

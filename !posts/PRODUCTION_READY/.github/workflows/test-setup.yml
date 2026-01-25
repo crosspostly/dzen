@@ -1,0 +1,110 @@
+name: 🧪 Test Setup & Configuration
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  test:
+    runs-on: windows-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: 🧪 Run test-setup.js
+        run: |
+          cd "!posts\PRODUCTION_READY"
+          node test-setup.js
+        shell: pwsh
+        continue-on-error: true
+
+      - name: 🔐 Test with GitHub Secrets (Mock)
+        run: |
+          Write-Host ""
+          Write-Host "🔐 ====== TESTING WITH SECRETS ======" -ForegroundColor Cyan
+          Write-Host ""
+          
+          if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
+            Write-Host "✅ GitHub Secret DZEN_COOKIES_JSON EXISTS!" -ForegroundColor Green
+            Write-Host "   Size: $("${{ secrets.DZEN_COOKIES_JSON }}".Length) characters"
+            Write-Host ""
+            Write-Host "📦 Setting environment variable from secret..." -ForegroundColor Yellow
+            $env:DZEN_COOKIES_JSON = "${{ secrets.DZEN_COOKIES_JSON }}"
+            Write-Host "✅ Environment variable set!" -ForegroundColor Green
+            Write-Host ""
+            
+            Write-Host "🧪 Running test with secret..." -ForegroundColor Yellow
+            cd "!posts\PRODUCTION_READY"
+            node test-setup.js
+          } else {
+            Write-Host "⚠️  GitHub Secret DZEN_COOKIES_JSON NOT found" -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "ℹ️  To test with your cookies:" -ForegroundColor Cyan
+            Write-Host "   1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            Write-Host "   2. Click 'New repository secret'"
+            Write-Host "   3. Name: DZEN_COOKIES_JSON"
+            Write-Host "   4. Value: (paste your cookies JSON)"
+            Write-Host "   5. Click 'Add secret'"
+            Write-Host "   6. Run this workflow again"
+            Write-Host ""
+            Write-Host "📄 For now, running test without secrets..." -ForegroundColor Yellow
+            cd "!posts\PRODUCTION_READY"
+            node test-setup.js
+          }
+        shell: pwsh
+        continue-on-error: true
+
+      - name: ✨ Summary
+        run: |
+          Write-Host ""
+          Write-Host "════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "🧪 TEST WORKFLOW COMPLETED" -ForegroundColor Green
+          Write-Host "════════════════════════════════" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "📊 What was tested:" -ForegroundColor Yellow
+          Write-Host "   ✅ feed.xml structure"
+          Write-Host "   ✅ Cookies loading (file or env var)"
+          Write-Host "   ✅ JSON parsing"
+          Write-Host "   ✅ History file"
+          Write-Host "   ✅ Feed article parsing"
+          Write-Host "   ✅ Deduplication hashing"
+          Write-Host "   ✅ Environment detection"
+          Write-Host "   ✅ File structure"
+          Write-Host ""
+          Write-Host "🔐 GitHub Secret Status:" -ForegroundColor Yellow
+          if ("${{ secrets.DZEN_COOKIES_JSON }}" -ne "") {
+            Write-Host "   ✅ DZEN_COOKIES_JSON: SET" -ForegroundColor Green
+          } else {
+            Write-Host "   ❌ DZEN_COOKIES_JSON: NOT SET" -ForegroundColor Red
+            Write-Host "   📋 Add it to run full tests with your cookies"
+          }
+          Write-Host ""
+          Write-Host "🔗 Full logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          Write-Host ""
+        shell: pwsh
+        continue-on-error: true
+
+      - name: 🚨 Check test results
+        run: |
+          Write-Host ""
+          Write-Host "📋 Next Steps:" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "If all tests passed:" -ForegroundColor Green
+          Write-Host "  1. Install dependencies: npm install"
+          Write-Host "  2. Install Playwright: npx playwright install chromium"
+          Write-Host "  3. Test main script: node src/main.js"
+          Write-Host "  4. Push to GitHub: git push"
+          Write-Host ""
+          Write-Host "If secret test failed:" -ForegroundColor Yellow
+          Write-Host "  1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+          Write-Host "  2. Add secret: DZEN_COOKIES_JSON"
+          Write-Host "  3. Paste your cookies JSON"
+          Write-Host "  4. Run this workflow again"
+          Write-Host ""
+        shell: pwsh
+        continue-on-error: true

@@ -1,0 +1,51 @@
+{
+  "name": "zenmaster-ai-article-generator-for-dzen",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "generate": "node --import tsx cli.ts generate",
+    "generate:v2": "node --import tsx cli.ts generate:v2",
+    "factory": "node --import tsx cli.ts factory",
+    "both": "node --import tsx cli.ts both",
+    "generate:all-dzen": "node --import tsx cli.ts generate:all-dzen",
+    "list-dzen-channels": "node --import tsx cli.ts list-dzen-channels",
+    "validate-dzen-config": "node --import tsx cli.ts validate-dzen-config",
+    "validate": "node --import tsx cli.ts validate",
+    "list-projects": "node --import tsx cli.ts list-projects",
+    "test": "node --import tsx cli.ts test",
+    "test:full": "npm run test && npm run validate && npm run list-projects",
+    "feed:full": "node scripts/generate-feed.js full",
+    "feed:incremental": "node scripts/generate-feed.js incremental",
+    "feed:generate": "node scripts/generate-feed.js incremental"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@google/genai": "^1.33.0",
+    "canvas": "^3.2.1",
+    "dotenv": "^17.2.3",
+    "edge-tts": "^1.0.1",
+    "feed": "^5.1.0",
+    "fluent-ffmpeg": "^2.1.3",
+    "gcp-metadata": "^5.3.0",
+    "google-tts-api": "^2.0.2",
+    "gray-matter": "^4.0.3",
+    "natural": "^6.11.0",
+    "piexifjs": "^1.0.6",
+    "playwright": "^1.57.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sharp": "^0.34.5",
+    "tsx": "^4.21.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

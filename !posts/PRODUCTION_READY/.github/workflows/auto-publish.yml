@@ -1,0 +1,111 @@
+name: 🤖 Auto-Publish Articles Every 3 Hours
+
+on:
+  schedule:
+    # Every 3 hours: 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 UTC
+    - cron: '0 */3 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm install
+        working-directory: '!posts/PRODUCTION_READY'
+
+      - name: 🎨 Install Playwright browsers
+        run: npx playwright install chromium
+        working-directory: '!posts/PRODUCTION_READY'
+
+      - name: 📋 Check published articles history
+        run: |
+          $historyFile = '!posts\PRODUCTION_READY\published_articles.txt'
+          if (Test-Path $historyFile) {
+            $count = @(Get-Content $historyFile).Count
+            Write-Host "📖 Found $count previously published articles"
+            Write-Host "📖 Recent articles:"
+            Get-Content $historyFile -Tail 5 | ForEach-Object { Write-Host "   $_" }
+          } else {
+            Write-Host "📄 No history file yet - starting fresh"
+          }
+        shell: pwsh
+
+      - name: 🤖 Run auto-publisher with cookies from secret
+        run: node src/main.js
+        working-directory: '!posts/PRODUCTION_READY'
+        env:
+          CI: true
+          HEADLESS: false
+          # ✅ Pass cookies directly via environment variable (NO FILE!)
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
+        continue-on-error: true
+
+      - name: 📝 Check for new published articles
+        run: |
+          $historyFile = '!posts\PRODUCTION_READY\published_articles.txt'
+          if (Test-Path $historyFile) {
+            Write-Host "📖 Updated history (last 5 articles):"
+            Get-Content $historyFile -Tail 5 | ForEach-Object { Write-Host "   $_" }
+          }
+        shell: pwsh
+        continue-on-error: true
+
+      - name: 📤 Commit and push published articles history
+        if: always()
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add !posts/PRODUCTION_READY/published_articles.txt
+          git commit -m "🤖 Auto-publish: Updated published articles history" --allow-empty
+          git push
+        continue-on-error: true
+
+      - name: ✨ Workflow summary
+        if: always()
+        run: |
+          Write-Host ""
+          Write-Host "══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "🤖 AUTO-PUBLISHER WORKFLOW COMPLETED" -ForegroundColor Green
+          Write-Host "══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host "📊 Execution Details:" -ForegroundColor Yellow
+          Write-Host "   Run Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+          Write-Host "   Workflow: Auto-Publish Every 3 Hours"
+          Write-Host "   Status: $(if(${{ job.status }} -eq 'success') { '✅ SUCCESS' } else { '⚠️  CHECK LOGS' })"
+          Write-Host ""
+          Write-Host "🔐 Authentication:" -ForegroundColor Yellow
+          Write-Host "   Cookies Source: GitHub Secrets (DZEN_COOKIES_JSON)"
+          Write-Host "   Storage: Environment Variable (NO FILES!)"
+          Write-Host "   Security: ✅ Maximum (encrypted, no traces)"
+          Write-Host ""
+          Write-Host "📖 Article Tracking:" -ForegroundColor Yellow
+          Write-Host "   History File: !posts/PRODUCTION_READY/published_articles.txt"
+          Write-Host "   Deduplication: Automatic (prevents republishing)"
+          Write-Host ""
+          Write-Host "🔗 View full logs:" -ForegroundColor Cyan
+          Write-Host "   https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          Write-Host ""
+          Write-Host "══════════════════════════════════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host ""
+        shell: pwsh
+        continue-on-error: true
+
+      - name: 🚨 Send notification on failure
+        if: failure()
+        run: |
+          Write-Host "❌ Workflow failed at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+          Write-Host "📖 Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        shell: pwsh

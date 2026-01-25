@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768114409742,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 259878,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-11/obizhennaya-ya-ushla-iz-doma-s-pyatyu-tysyachami-a.jpg",
+      "articles/women-35-60/2026-01-11/obidno-ya-sterpela-slova-zyatya-pro-plitu-no-utrom.jpg",
+      "articles/women-35-60/2026-01-11/mne-stalo-gorko-ya-molcha-ostavila-klyuchi-na-stol.jpg",
+      "articles/women-35-60/2026-01-11/svekrov-prezirala-menya-za-bednost-poka-ya-ne-vskr.jpg",
+      "articles/women-35-60/2026-01-11/bolno-ya-ushla-na-staruyu-dachu-s-albomom-no-ego-s.jpg",
+      "articles/women-35-60/2026-01-11/do-slez-obidno-i-ya-vygnala-doch-iz-kvartiry-kogda.jpg",
+      "articles/women-35-60/2026-01-11/obidno-byt-lishney-v-svoem-dome-no-ya-ushla-a-cher.jpg",
+      "articles/women-35-60/2026-01-11/mne-stalo-legko-ya-ushla-so-starymi-kastryulyami-v.jpg",
+      "articles/women-35-60/2026-01-11/mne-bylo-bolno-ot-slov-nevestki-no-ya-molchala-40-.jpg",
+      "articles/women-35-60/2026-01-11/bolno-byt-lishney-v-svoem-dome-no-teper-syn-kazhdy.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-11/REPORT.md"
+  }
+}

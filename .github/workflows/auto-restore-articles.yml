@@ -1,0 +1,265 @@
+name: 🔧 Auto Restore Articles
+
+concurrency:
+  group: push-to-main
+  cancel-in-progress: false
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Каждую ночь в 3 AM
+  push:
+    paths:
+      - 'articles/**/*.md'
+      - '!articles/**/REPORT.md'
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      fix_all:
+        description: 'Fix ALL articles in articles/ directory'
+        required: false
+        default: false
+        type: boolean
+      verbose:
+        description: 'Enable verbose logging'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  restore-articles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # 2 часа максимум
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 🔍 Get changed files
+        id: files
+        run: |
+          echo "📊 Detecting articles..."
+          
+          # Если включен режим "fix all" - берём ВСЕ статьи
+          if [ "${{ github.event.inputs.fix_all }}" = "true" ]; then
+            echo "🔄 MODE: Fix ALL articles"
+            CHANGED=$(find articles -name "*.md" -not -name "REPORT.md" -type f | sort)
+            echo "mode=all" >> $GITHUB_OUTPUT
+          else
+            echo "📝 MODE: Fix changed articles"
+            BEFORE="${{ github.event.before }}"
+            AFTER="${{ github.event.after }}"
+            
+            # Если это первый пуш в ветку, before будет нулями
+            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              CHANGED=$(git diff-tree --no-commit-id --name-only -r "$AFTER" -- 'articles/**/*.md' | grep -v "REPORT.md" || true)
+            else
+              CHANGED=$(git diff --name-only "$BEFORE" "$AFTER" -- 'articles/**/*.md' | grep -v "REPORT.md" || true)
+            fi
+            echo "mode=changed" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ -z "$CHANGED" ]; then
+            echo "✅ No articles found"
+            echo "files=" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Found files:"
+            echo "$CHANGED" | while read -r file; do
+              echo "   ✓ $file"
+            done
+            FILES_STR=$(echo "$CHANGED" | tr '\n' ' ')
+            echo "files=$FILES_STR" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🤖 Restore articles (5-retry strategy)
+        if: steps.files.outputs.files != ''
+        id: restore
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          VERBOSE: ${{ github.event.inputs.verbose || false }}
+        run: |
+          MODE="${{ steps.files.outputs.mode }}"
+          
+          if [ "$MODE" = "all" ]; then
+            echo "🚀 Restoring ALL articles with 5-attempt strategy..."
+          else
+            echo "🚀 Restoring changed articles with 5-attempt strategy..."
+          fi
+          
+          if [ "$VERBOSE" = "true" ]; then
+            node scripts/restore-articles-safe.js --verbose ${{ steps.files.outputs.files }}
+          else
+            node scripts/restore-articles-safe.js ${{ steps.files.outputs.files }}
+          fi
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "❌ Script failed with exit code $EXIT_CODE"
+          fi
+          exit $EXIT_CODE
+
+      - name: 📤 Commit if changed
+        if: steps.files.outputs.files != '' && success()
+        run: |
+          set -e
+          echo "🔍 ===== PRE-GIT CHECK BEFORE COMMIT ====="
+          
+          # 1. Проверяем статус
+          echo "📊 Current git status:"
+          git status --porcelain
+          echo ""
+          
+          # 2. Проверяем какие файлы изменились
+          echo "📝 Modified files:"
+          git ls-files -m || true
+          echo ""
+          
+          # 3. Проверяем diff
+          echo "📊 Diff stat:"
+          git diff --stat || echo "No diff"
+          echo ""
+          
+          # 4. Смотрим детали по каждому файлу
+          FILES='${{ steps.files.outputs.files }}'
+          echo "📁 Checking specific article files:"
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              SIZE=$(wc -c < "$file" 2>/dev/null || echo "0")
+              LINES=$(wc -l < "$file" 2>/dev/null || echo "0")
+              echo "   ✓ $file - $SIZE bytes, $LINES lines"
+            else
+              echo "   ❌ $file - NOT FOUND"
+            fi
+          done <<< "$FILES"
+          echo ""
+          
+          # Конфигурируем git
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 5. Проверяем есть ли реальные изменения
+          if git diff --quiet -- articles/; then
+            echo "⚠️  WARNING: git diff --quiet says NO CHANGES"
+            echo "📊 But git status says:"
+            git status
+            echo ""
+            echo "Forcing git add and checking again..."
+            git add articles/
+            
+            if git diff --cached --quiet; then
+              echo "⚠️  Still no changes in staging area. Exit."
+              exit 0
+            fi
+          fi
+          
+          # 6. Добавляем файлы
+          echo "📌 Adding articles/ directory..."
+          git add articles/
+          echo "Added successfully"
+          
+          # 7. Проверяем staged changes
+          echo "📊 Staged diff stat:"
+          git diff --cached --stat
+          echo ""
+          
+          # 8. Создаём коммит
+          MODE="${{ steps.files.outputs.mode }}"
+          if [ "$MODE" = "all" ]; then
+            COMMIT_MSG="🔧 Auto-restore: Fixed ALL articles"
+          else
+            COMMIT_MSG="🔧 Auto-restore: Fixed formatting"
+          fi
+          
+          echo "💾 Creating commit: $COMMIT_MSG"
+          git commit -m "$COMMIT_MSG" -m "Triggered by auto-restore workflow" || {
+            echo "❌ Commit failed or nothing to commit"
+            git status
+            exit 0
+          }
+          
+          echo "✅ Commit created"
+          echo ""
+          
+          # 9. Пушим на гитхаб с retry логикой
+          echo "📤 Pushing to origin..."
+          
+          # Retry логика: пробуем до 5 раз с экспоненциальной задержкой
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          PUSH_SUCCESS=false
+          
+          while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+            if [ "$RETRY_COUNT" -gt 0 ]; then
+              # Экспоненциальная задержка: 2^retry секунд
+              DELAY=$((2 ** RETRY_COUNT))
+              echo "⏳ Retry $RETRY_COUNT/$MAX_RETRIES: waiting ${DELAY}s..."
+              sleep "$DELAY"
+            fi
+            
+            # Пробуем pull с rebase перед push
+            echo "📥 Pulling latest changes (attempt $((RETRY_COUNT + 1)))..."
+            if git pull origin main --rebase 2>&1; then
+              echo "✅ Pull successful"
+            else
+              echo "⚠️  Rebase failed, trying merge..."
+              git rebase --abort 2>/dev/null || true
+              if ! git pull origin main 2>&1; then
+                echo "⚠️  Pull failed, continuing with push anyway..."
+              fi
+            fi
+            
+            # Пробуем push
+            echo "📤 Pushing to origin (attempt $((RETRY_COUNT + 1)))..."
+            if git push origin HEAD:${{ github.ref }} --verbose 2>&1; then
+              echo "✅ Push successful!"
+              PUSH_SUCCESS=true
+              break
+            else
+              echo "❌ Push failed (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+          
+          if [ "$PUSH_SUCCESS" = "false" ]; then
+            echo "❌ Push failed after $MAX_RETRIES attempts!"
+            git log --oneline -5
+            exit 1
+          fi
+
+      - name: 📊 Summary
+        if: always()
+        run: |
+          echo ""
+          echo "========================================="
+          echo "✅ Auto-restore complete"
+          echo "========================================="
+          MODE="${{ steps.files.outputs.mode }}"
+          if [ "$MODE" = "all" ]; then
+            echo "📋 Mode: Fix ALL articles"
+          else
+            echo "📋 Mode: Fix changed articles"
+          fi
+          FILE_COUNT=$(echo '${{ steps.files.outputs.files }}' | wc -w)
+          echo "📁 Files processed: $FILE_COUNT"
+          
+          # Final git log
+          echo ""
+          echo "Last commits:"
+          git log --oneline -3
+          echo "========================================="

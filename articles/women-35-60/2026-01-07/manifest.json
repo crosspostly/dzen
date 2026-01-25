@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1767813452527,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 257462,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-07/gorko-byt-mebelyu-ya-godami-zhila-dlya-drugih-poka.jpg",
+      "articles/women-35-60/2026-01-07/ya-byla-zhalkoy-mebelyu-dlya-muzha-poka-odin-podsl.jpg",
+      "articles/women-35-60/2026-01-07/mne-bolno-ved-ya-promenyala-lyubov-vsey-zhizni-na-.jpg",
+      "articles/women-35-60/2026-01-07/ya-po-gluposti-pozhalela-alinu-a-v-itoge-ona-ustro.jpg",
+      "articles/women-35-60/2026-01-07/s-uzhasom-ya-zhdala-ego-slov-test-dnk-vskryl-taynu.jpg",
+      "articles/women-35-60/2026-01-07/bolno-ya-vsegda-byla-silnoy-poka-odna-sms-muzha-ne.jpg",
+      "articles/women-35-60/2026-01-07/mne-zhal-sebya-ya-poluchila-titul-zhenschina-goda-.jpg",
+      "articles/women-35-60/2026-01-07/moya-bol-ya-smogla-prostit-izmenu-no-deti-nanesli-.jpg",
+      "articles/women-35-60/2026-01-07/ya-nenavidela-eti-pritvornye-litsa-poka-na-yubilee.jpg",
+      "articles/women-35-60/2026-01-07/bolno-ya-nashla-ego-dnevnik-vo-vremya-remonta-vsya.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-07/REPORT.md"
+  }
+}

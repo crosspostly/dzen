@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convert TXT to MD + Upload</title>
+    <style>
+        :root {
+            --color-white: rgba(255, 255, 255, 1);
+            --color-black: rgba(0, 0, 0, 1);
+            --color-cream-50: rgba(252, 252, 249, 1);
+            --color-cream-100: rgba(255, 255, 253, 1);
+            --color-gray-200: rgba(245, 245, 245, 1);
+            --color-gray-300: rgba(167, 169, 169, 1);
+            --color-gray-400: rgba(119, 124, 124, 1);
+            --color-slate-500: rgba(98, 108, 113, 1);
+            --color-brown-600: rgba(94, 82, 64, 1);
+            --color-charcoal-700: rgba(31, 33, 33, 1);
+            --color-charcoal-800: rgba(38, 40, 40, 1);
+            --color-slate-900: rgba(19, 52, 59, 1);
+            --color-teal-300: rgba(50, 184, 198, 1);
+            --color-teal-400: rgba(45, 166, 178, 1);
+            --color-teal-500: rgba(33, 128, 141, 1);
+            --color-teal-600: rgba(29, 116, 128, 1);
+            --color-teal-700: rgba(26, 104, 115, 1);
+            --color-red-400: rgba(255, 84, 89, 1);
+            --color-red-500: rgba(192, 21, 47, 1);
+
+            --color-background: var(--color-cream-50);
+            --color-surface: var(--color-cream-100);
+            --color-text: var(--color-slate-900);
+            --color-text-secondary: var(--color-slate-500);
+            --color-primary: var(--color-teal-500);
+            --color-primary-hover: var(--color-teal-600);
+            --color-primary-active: var(--color-teal-700);
+            --color-border: rgba(94, 82, 64, 0.2);
+            --color-btn-primary-text: var(--color-cream-50);
+            --color-success: var(--color-teal-500);
+            --color-error: var(--color-red-500);
+
+            --space-4: 4px;
+            --space-8: 8px;
+            --space-12: 12px;
+            --space-16: 16px;
+            --space-20: 20px;
+            --space-24: 24px;
+            --space-32: 32px;
+
+            --radius-sm: 6px;
+            --radius-base: 8px;
+            --radius-md: 10px;
+            --font-size-base: 14px;
+            --font-size-lg: 16px;
+            --font-size-xl: 18px;
+            --font-size-2xl: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text);
+        }
+
+        body {
+            padding: var(--space-20);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: var(--font-size-2xl);
+            margin: 0 0 var(--space-8) 0;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-24);
+            font-size: var(--font-size-base);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-24);
+            margin-bottom: var(--space-24);
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-20);
+        }
+
+        .card h2 {
+            margin: 0 0 var(--space-16) 0;
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: var(--space-16);
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: var(--space-8);
+            font-size: var(--font-size-base);
+        }
+
+        .label-helper {
+            font-size: 11px;
+            color: var(--color-error);
+            font-weight: 600;
+            margin-left: var(--space-8);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        input[type="file"],
+        textarea,
+        select {
+            width: 100%;
+            padding: var(--space-12);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            font-size: var(--font-size-base);
+            background-color: var(--color-background);
+            color: var(--color-text);
+            font-family: inherit;
+        }
+
+        input[type="file"] {
+            padding: var(--space-8);
+            cursor: pointer;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(33, 128, 141, 0.1);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-12) var(--space-20);
+            border-radius: var(--radius-base);
+            font-size: var(--font-size-base);
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+            gap: var(--space-8);
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .btn--primary {
+            background: var(--color-primary);
+            color: var(--color-btn-primary-text);
+        }
+
+        .btn--primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn--primary:active {
+            background: var(--color-primary-active);
+        }
+
+        .btn--secondary {
+            background: rgba(94, 82, 64, 0.12);
+            color: var(--color-text);
+        }
+
+        .btn--secondary:hover {
+            background: rgba(94, 82, 64, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn--full {
+            width: 100%;
+        }
+
+        .preview {
+            background-color: var(--color-background);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            padding: var(--space-16);
+            margin-top: var(--space-16);
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .status {
+            padding: var(--space-12) var(--space-16);
+            border-radius: var(--radius-base);
+            font-size: var(--font-size-base);
+            margin-top: var(--space-16);
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status--success {
+            background-color: rgba(33, 128, 141, 0.15);
+            color: var(--color-success);
+            border: 1px solid rgba(33, 128, 141, 0.25);
+        }
+
+        .status--error {
+            background-color: rgba(192, 21, 47, 0.15);
+            color: var(--color-error);
+            border: 1px solid rgba(192, 21, 47, 0.25);
+        }
+
+        .output-section {
+            margin-top: var(--space-24);
+        }
+
+        .output-section h3 {
+            margin: 0 0 var(--space-12) 0;
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+        }
+
+        .download-btn {
+            margin-top: var(--space-12);
+        }
+
+        .info-box {
+            background-color: rgba(33, 128, 141, 0.1);
+            border-left: 3px solid var(--color-primary);
+            padding: var(--space-12) var(--space-16);
+            border-radius: var(--radius-base);
+            margin-bottom: var(--space-16);
+            font-size: var(--font-size-base);
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: var(--space-4);
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: var(--space-4);
+            font-style: italic;
+        }
+
+        .error-text {
+            color: var(--color-error);
+            font-size: 12px;
+            margin-top: var(--space-4);
+            display: none;
+        }
+
+        .image-preview {
+            margin-top: var(--space-12);
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: var(--radius-base);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Конвертер TXT → MD + GitHub Upload</h1>
+        <p class="subtitle">Автоматическая публикация на GitHub и генерация RSS</p>
+
+        <div class="grid">
+            <!-- INPUT CARD -->
+            <div class="card">
+                <h2>1️⃣ Исходные данные</h2>
+
+                <div class="form-group">
+                    <label for="ghToken">🔑 GitHub Token
+                        <span class="label-helper">ОБЯЗАТЕЛЬНО!</span>
+                    </label>
+                    <input type="password" id="ghToken" placeholder="ghp_...">
+                    <div class="hint">📌 Нужен для загрузки файлов на GitHub (scope: repo)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="title">📌 Заголовок статьи</label>
+                    <input type="text" id="title" placeholder="Например: Мучительный стыд 20 лет давил на меня">
+                </div>
+
+                <div class="form-group">
+                    <label for="year">📅 Год публикации</label>
+                    <input type="number" id="year" value="2025" min="2020" max="2030">
+                </div>
+
+                <div class="form-group">
+                    <label for="month">📆 Месяц (01-12)</label>
+                    <input type="number" id="month" value="12" min="1" max="12">
+                </div>
+
+                <div class="form-group">
+                    <label for="day">🗓️ День</label>
+                    <input type="number" id="day" value="1" min="1" max="31">
+                </div>
+
+                <div class="form-group">
+                    <label for="category">📂 Категория</label>
+                    <select id="category">
+                        <option value="lifestory" selected>lifestory - Личная история</option>
+                        <option value="article">article - Статья</option>
+                        <option value="story">story - История</option>
+                        <option value="experience">experience - Опыт</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="imageName">🖼️ Имя изображения (опционально)
+                        <span class="label-helper">Если пусто - генерируется из заголовка</span>
+                    </label>
+                    <input type="text" id="imageName" placeholder="Оставьте пусто для автогенерации">
+                    <div class="hint">✨ Пример: будет сгенерировано "muchitelnyy-styd" из "Мучительный стыд"</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="imageFile">🖼️ Загрузить изображение
+                        <span class="label-helper">ОБЯЗАТЕЛЬНО!</span>
+                    </label>
+                    <input type="file" id="imageFile" accept="image/jpeg,image/png" required>
+                    <div class="hint">📏 Рекомендуемый размер: 1200×630px или больше</div>
+                    <div class="hint">📦 Максимум: 5MB, формат: JPG или PNG</div>
+                    <div id="imageError" class="error-text"></div>
+                    <div id="imagePreviewContainer" style="display: none; margin-top: var(--space-12);">
+                        <img id="imagePreview" class="image-preview" alt="Превью изображения">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">📄 Текст статьи</label>
+                    <textarea id="content" placeholder="Вставьте текст статьи здесь..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="apiKey">🔑 Gemini API Key (опционально)</label>
+                    <input type="password" id="apiKey" placeholder="sk-...">
+                    <div class="hint">📝 Для автоматической генерации описания статьи</div>
+                </div>
+
+                <button class="btn btn--primary btn--full" id="convertBtn">
+                    🚀 Конвертировать и загрузить на GitHub
+                </button>
+            </div>
+
+            <!-- OUTPUT CARD -->
+            <div class="card">
+                <h2>2️⃣ Результат</h2>
+
+                <div id="status" class="status"></div>
+
+                <div id="descriptionSection" style="display: none;">
+                    <div class="form-group">
+                        <label>📝 Сгенерированное описание</label>
+                        <textarea id="description" readonly style="background-color: var(--color-gray-200);"></textarea>
+                    </div>
+                </div>
+
+                <div id="previewSection" style="display: none;">
+                    <div class="output-section">
+                        <h3>📋 Front-Matter</h3>
+                        <div class="preview" id="previewMatter"></div>
+                        <button class="btn btn--secondary download-btn" id="copyBtn">
+                            📋 Копировать front-matter
+                        </button>
+                    </div>
+
+                    <div class="output-section">
+                        <h3>📰 Полный Markdown</h3>
+                        <div class="preview" id="previewFull"></div>
+                        <button class="btn btn--secondary download-btn" id="downloadBtn">
+                            💾 Скачать .md файл
+                        </button>
+                    </div>
+
+                    <div class="output-section">
+                        <h3>🖼️ Загруженное изображение</h3>
+                        <div style="background: rgba(33, 128, 141, 0.1); padding: var(--space-16); border-radius: var(--radius-base); margin-bottom: var(--space-16);">
+                            <div id="outputImagePreview" style="max-width: 100%; max-height: 200px; margin-bottom: var(--space-12);"></div>
+                            <button class="btn btn--secondary download-btn" id="downloadImageBtn">
+                                🖼️ Скачать изображение
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>✅ Успешно загружено на GitHub!</strong>
+                        <span id="githubLink" style="display: block; margin-top: var(--space-8);"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ghTokenInput = document.getElementById('ghToken');
+        const titleInput = document.getElementById('title');
+        const yearInput = document.getElementById('year');
+        const monthInput = document.getElementById('month');
+        const dayInput = document.getElementById('day');
+        const categoryInput = document.getElementById('category');
+        const imageNameInput = document.getElementById('imageName');
+        const imageFile = document.getElementById('imageFile');
+        const imageError = document.getElementById('imageError');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const contentInput = document.getElementById('content');
+        const apiKeyInput = document.getElementById('apiKey');
+        const convertBtn = document.getElementById('convertBtn');
+        const statusEl = document.getElementById('status');
+        const previewSection = document.getElementById('previewSection');
+        const descriptionSection = document.getElementById('descriptionSection');
+        const descriptionInput = document.getElementById('description');
+        const previewMatter = document.getElementById('previewMatter');
+        const previewFull = document.getElementById('previewFull');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const downloadImageBtn = document.getElementById('downloadImageBtn');
+        const outputImagePreview = document.getElementById('outputImagePreview');
+        const githubLink = document.getElementById('githubLink');
+
+        function generateImageName(title) {
+            const translitMap = {
+                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+                'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+                'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+                'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '',
+                'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
+            };
+
+            let slug = title.toLowerCase();
+            for (let [cyrillic, latin] of Object.entries(translitMap)) {
+                slug = slug.replace(new RegExp(cyrillic, 'g'), latin);
+            }
+
+            slug = slug
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .slice(0, 50);
+
+            return slug || 'article';
+        }
+
+        function validateImageFile(file) {
+            if (!file) {
+                imageError.style.display = 'none';
+                imagePreviewContainer.style.display = 'none';
+                return true;
+            }
+
+            const maxSize = 5 * 1024 * 1024;
+
+            if (file.size > maxSize) {
+                imageError.textContent = `❌ Файл слишком большой: ${(file.size / 1024 / 1024).toFixed(2)}MB (макс 5MB)`;
+                imageError.style.display = 'block';
+                imageFile.value = '';
+                imagePreviewContainer.style.display = 'none';
+                return false;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                imageError.textContent = '❌ Это не изображение! Выберите JPG или PNG';
+                imageError.style.display = 'block';
+                imageFile.value = '';
+                imagePreviewContainer.style.display = 'none';
+                return false;
+            }
+
+            imageError.style.display = 'none';
+            return true;
+        }
+
+        imageFile.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                if (validateImageFile(e.target.files[0])) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        imagePreview.src = event.target.result;
+                        imagePreviewContainer.style.display = 'block';
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            }
+        });
+
+        async function generateDescription(content) {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                return content.substring(0, 150).replace(/\n/g, ' ') + '...';
+            }
+
+            try {
+                const context = content.substring(0, 500);
+                const response = await fetch(
+                    'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=' + apiKey,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{
+                                    text: `Ты пишешь интригующие описания для Яндекс.Дзена. 
+СТАТЬЯ:
+${context}
+
+Напиши интригующее описание в стиле Дзена (150-200 символов). Начни с глагола или вопроса. БЕЗ кавычек!
+Пример: "Раскрыть секреты, которые хранит каждый успешный человек"
+ТОЛЬКО ОПИСАНИЕ, БЕЗ ДОП ТЕКСТА!`
+                                }]
+                            }]
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    console.error('API error:', await response.text());
+                    return content.substring(0, 150).replace(/\n/g, ' ') + '...';
+                }
+
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text.trim();
+            } catch (err) {
+                console.error('Error generating description:', err);
+                return content.substring(0, 150).replace(/\n/g, ' ') + '...';
+            }
+        }
+
+        function escapeYaml(str) {
+            if (!str) return '""';
+            if (str.includes('"') || str.includes('\n')) {
+                return '"' + str.replace(/"/g, '\\"') + '"';
+            }
+            return '"' + str + '"';
+        }
+
+        function pad(num) {
+            return String(num).padStart(2, '0');
+        }
+
+        function showStatus(message, type) {
+            statusEl.textContent = message;
+            statusEl.className = 'status show status--' + type;
+        }
+
+        async function uploadToGitHub(token, mdContent, imageBitArray, fileName, imageName, year, month, day) {
+            const owner = 'crosspostly';
+            const repo = 'dzen';
+            const dirPath = `articles/published/${year}/${month}/${day}`;
+
+            try {
+                // 1️⃣ Загружаем .md файл
+                const mdPath = `${dirPath}/${imageName}.md`;
+                const mdBase64 = btoa(unescape(encodeURIComponent(mdContent)));
+
+                const mdResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${mdPath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `📝 Article: ${fileName}`,
+                        content: mdBase64,
+                        branch: 'main'
+                    })
+                });
+
+                if (!mdResponse.ok) {
+                    throw new Error(`Ошибка загрузки MD: ${mdResponse.statusText}`);
+                }
+
+                showStatus('✅ .md файл загружен на GitHub', 'success');
+
+                // 2️⃣ Загружаем изображение
+                const imagePath = `${dirPath}/${imageName}.jpg`;
+                const imageBase64 = imageBitArray;
+
+                const imageResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${imagePath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `🖼️ Image: ${imageName}`,
+                        content: imageBase64,
+                        branch: 'main'
+                    })
+                });
+
+                if (!imageResponse.ok) {
+                    throw new Error(`Ошибка загрузки изображения: ${imageResponse.statusText}`);
+                }
+
+                showStatus('✅ Оба файла успешно загружены на GitHub!', 'success');
+                
+                const githubUrl = `https://github.com/${owner}/${repo}/tree/main/${dirPath}`;
+                githubLink.innerHTML = `<a href="${githubUrl}" target="_blank" style="color: var(--color-primary);">📂 Открыть папку на GitHub →</a>`;
+
+                return true;
+            } catch (error) {
+                showStatus(`❌ Ошибка GitHub: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        convertBtn.addEventListener('click', async () => {
+            const ghToken = ghTokenInput.value.trim();
+            const title = titleInput.value.trim();
+            const year = yearInput.value.trim();
+            const month = pad(monthInput.value);
+            const day = pad(dayInput.value);
+            let imageName = imageNameInput.value.trim();
+            const content = contentInput.value.trim();
+            const category = categoryInput.value.trim() || 'lifestory';
+            const imageFileObj = imageFile.files[0];
+
+            if (!ghToken) {
+                showStatus('❌ GitHub Token обязателен!', 'error');
+                return;
+            }
+
+            if (!title || !content) {
+                showStatus('❌ Заполните заголовок и текст статьи', 'error');
+                return;
+            }
+
+            if (!imageFileObj) {
+                showStatus('❌ ОБЯЗАТЕЛЬНО: Загрузите изображение!', 'error');
+                return;
+            }
+
+            if (!validateImageFile(imageFileObj)) {
+                return;
+            }
+
+            if (!imageName) {
+                imageName = generateImageName(title);
+                imageNameInput.value = imageName;
+            }
+
+            convertBtn.disabled = true;
+            showStatus('⏳ Обработка...', 'success');
+
+            try {
+                const description = await generateDescription(content);
+                descriptionInput.value = description;
+                descriptionSection.style.display = 'block';
+
+                const date = `${year}-${month}-${day}`;
+                const imagePath = `${imageName}.jpg`;
+                const dirPath = `${year}/${month}/${day}`;
+                const imageUrl = `https://raw.githubusercontent.com/crosspostly/dzen/main/articles/published/${dirPath}/${imagePath}`;
+
+                const frontMatter = `---
+title: ${escapeYaml(title)}
+date: ${date}
+description: ${escapeYaml(description)}
+image: "${imageUrl}"
+category: "${category}"
+---
+
+${content}`;
+
+                previewMatter.textContent = frontMatter;
+                previewFull.textContent = frontMatter;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    outputImagePreview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
+                };
+                reader.readAsDataURL(imageFileObj);
+
+                previewSection.style.display = 'block';
+
+                // Преобразуем изображение в base64 для GitHub API
+                const imageReader = new FileReader();
+                imageReader.onload = async (event) => {
+                    const imageBase64 = event.target.result.split(',')[1];
+
+                    // Загружаем на GitHub
+                    const uploadSuccess = await uploadToGitHub(
+                        ghToken,
+                        frontMatter,
+                        imageBase64,
+                        title,
+                        imageName,
+                        year,
+                        month,
+                        day
+                    );
+
+                    if (uploadSuccess) {
+                        showStatus('✅ Файлы успешно загружены! Запусти generate-feed.js для публикации.', 'success');
+                    }
+                };
+                imageReader.readAsDataURL(imageFileObj);
+
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(frontMatter).then(() => {
+                        showStatus('✅ Front-matter скопирован в буфер обмена', 'success');
+                    });
+                };
+
+                downloadBtn.onclick = () => {
+                    const blob = new Blob([frontMatter], { type: 'text/markdown' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${imageName}-${date}.md`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+
+                downloadImageBtn.onclick = () => {
+                    const url = URL.createObjectURL(imageFileObj);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${imageName}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                };
+
+            } catch (err) {
+                showStatus('❌ Ошибка: ' + err.message, 'error');
+            } finally {
+                convertBtn.disabled = false;
+            }
+        });
+
+        contentInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlValue) {
+                convertBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

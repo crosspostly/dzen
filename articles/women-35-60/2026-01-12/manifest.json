@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768201436513,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 261997,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-12/mne-bylo-obidno-no-ya-nashla-taynu-semi-soseda-pod.jpg",
+      "articles/women-35-60/2026-01-12/oni-smeyalis-nad-moey-kurtkoy-a-ya-kupila-ves-avto.jpg",
+      "articles/women-35-60/2026-01-12/obidno-ya-byla-pustym-mestom-dlya-semi-a-cherez-go.jpg",
+      "articles/women-35-60/2026-01-12/etim-nischim-zdes-ne-mesto-vygnala-menya-iz-kafe-o.jpg",
+      "articles/women-35-60/2026-01-12/unizhennaya-ya-pokinula-ego-kabinet-no-cherez-nede.jpg",
+      "articles/women-35-60/2026-01-12/obidno-ya-byla-seroy-myshyu-no-papka-v-moey-sumke-.jpg",
+      "articles/women-35-60/2026-01-12/obidno-ya-terpela-nasmeshki-bossa-a-spustya-god-on.jpg",
+      "articles/women-35-60/2026-01-12/ya-plakala-ot-slov-plemyannitsy-a-potom-moya-brosh.jpg",
+      "articles/women-35-60/2026-01-12/obidno-ya-byla-medlennoy-dlya-bossa-no-moy-trud-pr.jpg",
+      "articles/women-35-60/2026-01-12/ya-byla-posmeshischem-iz-za-chetyreh-gryadok-no-ko.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-12/REPORT.md"
+  }
+}

@@ -1,0 +1,112 @@
+name: Generate RSS Feed
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Generation mode (full or incremental)'
+        required: true
+        default: 'incremental'
+        type: choice
+        options:
+          - full
+          - incremental
+      dry_run:
+        description: 'Dry run (no commit/push)'
+        required: false
+        type: boolean
+        default: false
+      verbose:
+        description: 'Verbose logging'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 */4 * * *'  # Каждые 4 часа
+  workflow_run:
+    workflows: ["Фабрика контента - Генерация статей (Дзен)"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  generate-feed:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Cache node modules
+      id: cache-node-modules
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-modules-
+
+    - name: Install dependencies
+      if: steps.cache-node-modules.outputs.cache-hit != 'true'
+      run: npm install
+
+    - name: Set environment variables
+      run: |
+        echo "GITHUB_REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
+        echo "DRY_RUN=${{ github.event.inputs.dry_run || false }}" >> $GITHUB_ENV
+        echo "VERBOSE=${{ github.event.inputs.verbose || false }}" >> $GITHUB_ENV
+
+    - name: Generate RSS feed
+      run: |
+        MODE="${{ github.event.inputs.mode || 'incremental' }}"
+        VERBOSE="${{ github.event.inputs.verbose || 'false' }}"
+        
+        echo "🚀 Running RSS generator in $MODE mode..."
+        [ "$VERBOSE" = "true" ] && echo "Verbose mode enabled" || true
+        
+        if [ "$VERBOSE" = "true" ]; then
+          node scripts/generate-feed.js $MODE --verbose
+        else
+          node scripts/generate-feed.js $MODE
+        fi
+
+    - name: Validate RSS feed
+      run: node scripts/validate-rss.js public/feed.xml
+
+    - name: Commit and push if changed
+      if: ${{ github.event.inputs.dry_run != 'true' }}
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add public/feed.xml
+        if [ -d "public/articles" ] && [ "$(ls -A public/articles)" ]; then
+          git add public/articles/
+        fi
+        if git diff --staged --quiet; then
+          echo "✅ No changes to commit"
+        else
+          git commit -m "chore(rss): update feed and html mirrors [${{ github.event.inputs.mode || 'incremental' }} mode]"
+          git push
+        fi
+      continue-on-error: true
+
+    - name: Summary
+      if: always()
+      run: |
+        echo "### 📊 Workflow Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Mode**: ${{ github.event.inputs.mode || 'incremental' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Dry Run**: ${{ github.event.inputs.dry_run || 'false' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ✅ Completed" >> $GITHUB_STEP_SUMMARY

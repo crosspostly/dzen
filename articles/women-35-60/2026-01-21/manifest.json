@@ -1,0 +1,25 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768986307036,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": false,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 27382,
+  "totalImages": 0,
+  "outputPaths": {
+    "articles": [],
+    "images": [],
+    "report": "articles/women-35-60/2026-01-21/REPORT.md"
+  }
+}

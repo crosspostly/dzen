@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768027917653,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 269137,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-10/obidno-ya-stala-lishney-v-svoem-dome-no-syn-ne-zna.jpg",
+      "articles/women-35-60/2026-01-10/obida-zhgla-kogda-ya-uhodila-v-staryh-sapogah-no-m.jpg",
+      "articles/women-35-60/2026-01-10/obida-dushila-menya-kogda-muzh-vygnal-v-staryh-sap.jpg",
+      "articles/women-35-60/2026-01-10/mne-stalo-gorko-ya-otdala-im-klyuchi-i-vystavila-s.jpg",
+      "articles/women-35-60/2026-01-10/ya-byla-lish-kuharkoy-dlya-muzha-no-utrom-on-ponya.jpg",
+      "articles/women-35-60/2026-01-10/ya-ne-zabyla-slova-muzha-o-rvanom-halate-cherez-go.jpg",
+      "articles/women-35-60/2026-01-10/mne-bylo-bolno-kogda-syn-vygnal-menya-a-cherez-god.jpg",
+      "articles/women-35-60/2026-01-10/doch-vyshvyrnula-menya-kak-obuzu-ne-znaya-chto-ya-.jpg",
+      "articles/women-35-60/2026-01-10/obidno-do-slez-ya-zabrala-klyuchi-ot-dachi-i-poshl.jpg",
+      "articles/women-35-60/2026-01-10/oni-sheptalis-za-spinoy-pro-moe-staroe-palto-kogda.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-10/REPORT.md"
+  }
+}

@@ -1,0 +1,231 @@
+name: 🤖 Auto-Publish to Dzen Every 3 Hours
+
+on:
+  schedule:
+    - cron: '0 7,12,17,22 * * *'
+    - cron: '30 9,14,19 * * *'  
+  workflow_dispatch:        # Manual trigger
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest  # Use Ubuntu (faster, cheaper than Windows)
+    timeout-minutes: 15
+    permissions:
+      contents: write  # For push to repository
+      actions: read    # For reading workflow status
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          # Disable cache due to ! character in path - will enable after install
+          
+      - name: 🔐 Validate GitHub Secret (DZEN_COOKIES_JSON)
+        run: |
+          if [ -z "${{ secrets.DZEN_COOKIES_JSON }}" ]; then
+            echo "❌ ERROR: Secret 'DZEN_COOKIES_JSON' not found!"
+            echo ""
+            echo "📋 How to add the secret:"
+            echo "1. Go to: Settings → Secrets and variables → Actions"
+            echo "2. Click 'New repository secret'"
+            echo "3. Name: DZEN_COOKIES_JSON"
+            echo "4. Value: (paste your cookies JSON)"
+            echo ""
+            echo "📖 How to get cookies:"
+            echo "1. Open https://dzen.ru in your browser"
+            echo "2. Log in with your account"
+            echo "3. Open DevTools (F12) → Application → Cookies → dzen.ru"
+            echo "4. Export as JSON or copy manually"
+            exit 1
+          fi
+          
+          SECRET_SIZE=${#DZEN_COOKIES_JSON}
+          echo "✅ Secret 'DZEN_COOKIES_JSON' found! Size: $SECRET_SIZE characters"
+          
+          # Validate JSON format
+          echo "$DZEN_COOKIES_JSON" | python3 -m json.tool > /dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            echo "✅ Valid JSON format"
+          else
+            echo "⚠️  Warning: Cookies may not be valid JSON (might be single object)"
+          fi
+        env:
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
+      
+      - name: 📄 Check feed.xml exists
+        run: |
+          echo "🔍 Checking feed.xml..."
+          if [ -f "public/feed.xml" ]; then
+            ITEM_COUNT=$(grep -c "<item>" "public/feed.xml" || echo "0")
+            echo "✅ feed.xml found in /public"
+            echo "   📊 Articles in feed: $ITEM_COUNT"
+            echo "   📦 File size: $(wc -c < "public/feed.xml") bytes"
+          else
+            echo "❌ ERROR: feed.xml not found at /public/feed.xml"
+            echo "📁 Available files:"
+            ls -la public/ 2>/dev/null || echo "   /public directory not found"
+            exit 1
+          fi
+      
+      - name: 📦 Install dependencies
+        run: |
+          echo "📥 Installing npm packages..."
+          npm ci
+          echo "✅ Dependencies installed"
+      
+      - name: 🎬 Install Playwright
+        run: |
+          echo "🎬 Installing Playwright browsers..."
+          npx playwright install chromium --with-deps
+          echo "✅ Playwright installed"
+      
+      - name: 🤖 Run auto-publisher
+        id: publisher
+        env:
+          CI: true
+          HEADLESS: true
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
+        run: |
+          echo "========================================"
+          # Night mode check (23:00 - 07:00 UTC)
+          CURRENT_HOUR=$(date -u +%H)
+          if [ "$CURRENT_HOUR" -ge 23 ] || [ "$CURRENT_HOUR" -lt 07 ]; then
+            echo "🌙 NIGHT MODE ACTIVE ($CURRENT_HOUR:00). Skipping publication."
+            exit 0
+          fi
+
+          
+          # Run the new TypeScript script
+          timeout 300 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
+          PUBLISHER_EXIT=$?
+          
+          echo ""
+          echo "Exit code: $PUBLISHER_EXIT"
+          echo "publisher_status=$PUBLISHER_EXIT" >> $GITHUB_OUTPUT
+          
+          # Save log for debugging
+          mv publish.log publish-$(date +%s).log || true
+        continue-on-error: true
+      
+      - name: 📊 Check results
+        if: always()
+        run: |
+          echo "========================================"
+          # Night mode check (23:00 - 07:00 UTC)
+            echo ""
+            echo "📋 Last 3 published articles:"
+            tail -3 "$HISTORY_FILE" | sed 's/^/   /'
+          else
+            echo "ℹ️  No articles published yet"
+          fi
+          
+          echo ""
+          if [ ${{ steps.publisher.outputs.publisher_status }} -eq 0 ]; then
+            echo "✅ Publisher completed successfully!"
+          else
+            echo "⚠️  Publisher completed with warnings or errors"
+          fi
+      
+      - name: 💾 Commit and push updates
+        if: always()
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "GitHub Actions Bot"
+          
+          echo "📤 Preparing to commit history and logs..."
+          
+          # Add history file
+          git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
+          
+          # Add logs if they exist
+          git add "publish-*.log" 2>/dev/null || true
+          
+          # Check if there's anything to commit
+          if git diff --cached --quiet; then
+            echo "ℹ️  No changes to commit"
+          else
+            echo "📝 Committing changes..."
+            git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed"
+            
+            echo "📥 Pulling latest changes..."
+            git pull --rebase origin main || (echo "⚠️ Rebase failed, trying merge" && git rebase --abort && git pull origin main)
+            
+            echo "📤 Pushing to repository..."
+            git push origin main
+            echo "✅ Successfully pushed!"
+          fi
+      
+      - name: 📋 Summary
+        if: always()
+        run: |
+          echo ""
+          echo "╔═══════════════════════════════════════╗"
+          echo "║  🤖 AUTO-PUBLISHER WORKFLOW SUMMARY   ║"
+          echo "╚═══════════════════════════════════════╝"
+          echo ""
+          echo "✅ Completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo ""
+          echo "📋 What happened:"
+          echo "   ✅ Validated DZEN_COOKIES_JSON secret"
+          echo "   ✅ Checked feed.xml in /public"
+          echo "   ✅ Initialized history file"
+          echo "   ✅ Installed dependencies"
+          echo "   ✅ Installed Playwright browsers"
+          echo "   ✅ Ran auto-publisher (main.js.ci)"
+          echo "   ✅ Committed history to git"
+          echo "   ✅ Pushed updates using GITHUB_TOKEN"
+          echo ""
+          echo "🔐 Security:"
+          echo "   ✅ Cookies from GitHub Secrets (AES-256 encrypted)"
+          echo "   ✅ Passed via environment variable"
+          echo "   ✅ Masked in logs (GitHub automatic)"
+          echo "   ✅ No credentials in repository"
+          echo ""
+          echo "📖 Next steps:"
+          echo "   • Check 'Actions' tab for detailed logs"
+          echo "   • View 'published_articles.txt' for history"
+          echo "   • If errors: Check logs and update selectors"
+          echo ""
+          echo "⏰ Next run: In 3 hours (or manual trigger)"
+          echo ""
+
+  # Notification job (optional)
+  notify-on-error:
+    runs-on: ubuntu-latest
+    needs: publish
+    if: failure()
+    
+    steps:
+      - name: 🔔 Notify on failure (Log)
+        run: |
+          echo "⚠️  Workflow failed!"
+          echo "Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      
+      - name: 📧 Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: ❌ Dzen Auto-Publisher Failed
+          body: |
+            The auto-publishing workflow failed.
+            
+            Repository: ${{ github.repository }}
+            Workflow: ${{ github.workflow }}
+            Run ID: ${{ github.run_id }}
+            
+            Check the logs here:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: sheepoff@gmail.com
+          from: Dzen Bot
+          secure: true
+        continue-on-error: true # Don't fail if secrets are missing

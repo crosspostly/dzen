@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1768287373889,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 19000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 264046,
+  "totalImages": 10,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-13/bolno-ya-byla-lishney-obuzoy-a-teper-macheha-molit.jpg",
+      "articles/women-35-60/2026-01-13/ya-chuvstvovala-unizhenie-kogda-vrach-smeyalsya-no.jpg",
+      "articles/women-35-60/2026-01-13/obidno-ya-byla-neprigodna-no-bloknot-ego-ottsa-lis.jpg",
+      "articles/women-35-60/2026-01-13/ya-terpela-ego-izdevki-ne-znaya-chto-v-moih-staryh.jpg",
+      "articles/women-35-60/2026-01-13/ya-plakala-ot-obidy-zabiraya-staryy-bloknot-deda-n.jpg",
+      "articles/women-35-60/2026-01-13/mne-bylo-bolno-slyshat-ty-ne-rodnaya-no-imenno-ya-.jpg",
+      "articles/women-35-60/2026-01-13/ya-zadyhalas-ot-unizheniya-poka-ne-nashla-v-seyfe-.jpg",
+      "articles/women-35-60/2026-01-13/menya-s-pozorom-vystavili-iz-magazina-no-oni-ne-zn.jpg",
+      "articles/women-35-60/2026-01-13/ya-terpela-unizheniya-sosedki-poka-ona-ne-uvidela-.jpg",
+      "articles/women-35-60/2026-01-13/ya-chuvstvovala-unizhenie-pri-uvolnenii-no-skoro-y.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-13/REPORT.md"
+  }
+}
