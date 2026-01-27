@@ -33,7 +33,7 @@ export interface CoverImage {
  * When both are false: SIMPLE MODE = clean, ready-to-publish articles in one pass
  */
 export interface ContentFactoryConfig {
-  articleCount: 1 | 5 | 10 | 25 | 50 | 100;
+  articleCount: 1 | 5 | 7 | 10 | 25 | 50 | 100;
   parallelEpisodes: number; // Default 3
   imageGenerationRate: number; // Images per minute, default 1
   includeImages: boolean;

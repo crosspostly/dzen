@@ -125,7 +125,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       const skipCleanupGates = getFlag('no-cleanup') ? true : false;
 
       // Validate count
-      const validCounts = [1, 5, 10, 25, 50, 100];
+      const validCounts = [1, 5, 7, 10, 25, 50, 100];
       if (!validCounts.includes(count)) {
         console.error(`${LOG.ERROR} Invalid count: ${count}`);
         console.error(`${LOG.INFO} Valid values: ${validCounts.join(', ')}`);
@@ -223,7 +223,7 @@ ${'='.repeat(60)}`);
       const verbose = getFlag('verbose');
 
       // Validate count
-      const validCounts = [1, 5, 10];
+      const validCounts = [1, 5, 7, 10];
       if (!validCounts.includes(count)) {
         console.error(`${LOG.ERROR} Invalid count for BOTH mode: ${count}`);
         console.error(`${LOG.INFO} Valid values: ${validCounts.join(', ')}`);
@@ -231,7 +231,7 @@ ${'='.repeat(60)}`);
       }
 
       const config = {
-        articleCount: count as 1 | 5 | 10,
+        articleCount: count as 1 | 5 | 7 | 10,
         parallelEpisodes: 3,
         imageGenerationRate: 1,
         includeImages: includeImages || false,

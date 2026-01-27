@@ -125,7 +125,7 @@ export function validateConfig(config: ContentFactoryConfig): string[] {
   const errors: string[] = [];
 
   // Validate article count
-  const validCounts = [1, 5, 10, 25, 50, 100];
+  const validCounts = [1, 5, 7, 10, 25, 50, 100];
   if (!validCounts.includes(config.articleCount)) {
     errors.push(`Invalid articleCount: ${config.articleCount}. Must be one of: ${validCounts.join(', ')}`);
   }
