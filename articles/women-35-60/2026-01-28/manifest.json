@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1769582122219,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 121368,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-28/ya-chuvstvovala-triumf-kogda-moi-ruki-prinesli-mne.jpg",
+      "articles/women-35-60/2026-01-28/mne-bylo-obidno-ot-nasmeshek-sosedki-poka-moyu-sad.jpg",
+      "articles/women-35-60/2026-01-28/menya-uvolili-za-to-chto-ya-ne-tyanu-temp-cherez-n.jpg",
+      "articles/women-35-60/2026-01-28/s-gorkoy-obidoy-ya-slushala-kak-deti-delyat-dom-no.jpg",
+      "articles/women-35-60/2026-01-28/obida-smenilas-triumfom-ya-kak-sledovatel-sobrala-.jpg",
+      "articles/women-35-60/2026-01-28/menya-vyshvyrnuli-kak-bezdarnost-a-spustya-dva-god.jpg",
+      "articles/women-35-60/2026-01-28/obidno-slyshat-eyo-smeh-no-ya-pokazala-klyuchi-ot-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-28/REPORT.md"
+  }
+}
