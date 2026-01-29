@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Thu, 29 Jan 2026 01:28:30 +0300</lastBuildDate>
+    <lastBuildDate>Thu, 29 Jan 2026 05:03:15 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[— Леночка, вы — тупица. Вы понимаете это? — Игорь Борисович швырнул мой отчет так, что тяжелая папка больно ударила меня по руке. Скрепка лопнула, листы разлетелись по ковролину. Пахло его едким...]]></description>
       <link>https://dzen-livid.vercel.app/articles/menya-uvolili-za-to-chto-ya-ne-tyanu-temp-cherez-n-20260128</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/menya-uvolili-za-to-chto-ya-ne-tyanu-temp-cherez-n-20260128</guid>
-      <pubDate>Thu, 29 Jan 2026 04:28:30 +0300</pubDate>
+      <pubDate>Thu, 29 Jan 2026 08:03:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[— Марина, вы — пустое место. Даже не мебель, мебель хоть какую-то пользу приносит. Вы — просто пыль на этом диване. Бездарность. Тишина. В офисе стало так тихо, что я слышала, как гудят эти...]]></description>
       <link>https://dzen-livid.vercel.app/articles/menya-vyshvyrnuli-kak-bezdarnost-a-spustya-dva-god-20260128</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/menya-vyshvyrnuli-kak-bezdarnost-a-spustya-dva-god-20260128</guid>
-      <pubDate>Thu, 29 Jan 2026 05:58:30 +0300</pubDate>
+      <pubDate>Thu, 29 Jan 2026 09:33:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[— Ну что, Ирка, всё ещё эту дрянь не выкинула? Зинаида сплюнула. Прямо в мою сторону. Шлёп. Гадкий, мокрый звук о сухую землю. Она стояла у забора, подперев бока кулачищами, и ржала. Визгливо так,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-obidno-ot-nasmeshek-sosedki-poka-moyu-sad-20260128</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-obidno-ot-nasmeshek-sosedki-poka-moyu-sad-20260128</guid>
-      <pubDate>Thu, 29 Jan 2026 04:28:30 +0300</pubDate>
+      <pubDate>Thu, 29 Jan 2026 08:03:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[— Да сдохнет скоро эта сумасшедшая, квартира освободится, — шепот за дверью был тонким, как лезвие, и таким же острым. Я стояла в прихожей, сжимая в руке пустой пакет для мусора. За дверью Светка,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obida-smenilas-triumfom-ya-kak-sledovatel-sobrala--20260128</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obida-smenilas-triumfom-ya-kak-sledovatel-sobrala--20260128</guid>
-      <pubDate>Thu, 29 Jan 2026 05:58:30 +0300</pubDate>
+      <pubDate>Thu, 29 Jan 2026 09:33:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -103,7 +103,7 @@
       <description><![CDATA[Его мозг просто... выключился. Щелк — и всё. Пять секунд назад я видела его мысли на экране, эти безумные голубые всполохи нейронных связей, а теперь — мертвая серая тишина. Руки в перчатках вдруг...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-slyshat-eyo-smeh-no-ya-pokazala-klyuchi-ot--20260128</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-slyshat-eyo-smeh-no-ya-pokazala-klyuchi-ot--20260128</guid>
-      <pubDate>Thu, 29 Jan 2026 07:28:30 +0300</pubDate>
+      <pubDate>Thu, 29 Jan 2026 11:03:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -124,7 +124,7 @@
       <description><![CDATA[Пятно на потолке. Косой крест, который я помню с детства. Серый потолок, серый свет, серое утро — апатия. Мышцы слабые, глаза видят... будто я не существую. Просто пятно. Шепот за дверью. Шуршание....]]></description>
       <link>https://dzen-livid.vercel.app/articles/s-gorkoy-obidoy-ya-slushala-kak-deti-delyat-dom-no-20260128</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/s-gorkoy-obidoy-ya-slushala-kak-deti-delyat-dom-no-20260128</guid>
-      <pubDate>Thu, 29 Jan 2026 08:58:30 +0300</pubDate>
+      <pubDate>Thu, 29 Jan 2026 12:33:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -145,7 +145,7 @@
       <description><![CDATA[— Видела мои ногти? Специально под проект выбирала! — Марина выставила пальцы веером. Розовый пластик. Кричащий, дешевый какой-то. А я? Я просто прятала руки под стол. Глубже. Чтобы не дай Бог......]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-chuvstvovala-triumf-kogda-moi-ruki-prinesli-mne-20260128</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-chuvstvovala-triumf-kogda-moi-ruki-prinesli-mne-20260128</guid>
-      <pubDate>Thu, 29 Jan 2026 10:28:30 +0300</pubDate>
+      <pubDate>Thu, 29 Jan 2026 14:03:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
