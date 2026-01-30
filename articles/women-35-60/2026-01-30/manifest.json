@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1769756082980,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 142118,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-30/i-zachem-tebe-eta-staraya-ruhlyad-usmehnulas-podru.jpg",
+      "articles/women-35-60/2026-01-30/vy-vse-esche-pechataete-otchety-svetlana-petrovna-.jpg",
+      "articles/women-35-60/2026-01-30/mne-bylo-obidno-za-staruyu-maznyu-poka-ya-ne-uznal.jpg",
+      "articles/women-35-60/2026-01-30/kakoy-pozor-tebe-dostalsya-lish-staryy-fotoalbom-d.jpg",
+      "articles/women-35-60/2026-01-30/boss-s-pozorom-vygnal-menya-no-on-ne-znal-chto-ves.jpg",
+      "articles/women-35-60/2026-01-30/nas-vygonyali-iz-doma-smeyas-nad-nashey-naivnostyu.jpg",
+      "articles/women-35-60/2026-01-30/obida-zhgla-serdtse-ya-byla-lish-uborschitsey-poka.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-30/REPORT.md"
+  }
+}
