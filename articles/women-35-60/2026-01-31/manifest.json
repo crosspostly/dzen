@@ -1,0 +1,31 @@
+{
+  "version": "4.0",
+  "generatedAt": 1769842431153,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 123242,
+  "totalImages": 5,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-01-31/sosedka-prezirala-moy-staryy-moskvich-no-pod-rzhav.jpg",
+      "articles/women-35-60/2026-01-31/byvshiy-odnokursnik-usmehnulsya-ne-znaya-chto-tepe.jpg",
+      "articles/women-35-60/2026-01-31/brat-smeyalsya-nad-moim-starym-pianino-no-ya-nashl.jpg",
+      "articles/women-35-60/2026-01-31/sosedka-smeyalas-nad-moey-staroy-koshkoy-no-ya-zna.jpg",
+      "articles/women-35-60/2026-01-31/izbavsya-ot-etogo-hlama-kriknula-sosedka-ukazyvaya.jpg"
+    ],
+    "report": "articles/women-35-60/2026-01-31/REPORT.md"
+  }
+}
