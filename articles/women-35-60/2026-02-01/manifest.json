@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1769929659203,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 131166,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-01/zolotye-klyuchi-stali-plevkom-v-litso-na-moey-zeml.jpg",
+      "articles/women-35-60/2026-02-01/sosedka-prezirala-menya-za-staryy-hlam-a-teper-ona.jpg",
+      "articles/women-35-60/2026-02-01/obidno-ya-byla-pozorom-vsey-ulitsy-poka-moy-staryy.jpg",
+      "articles/women-35-60/2026-02-01/on-preziral-menya-za-staroe-koryto-ne-znaya-pro-kl.jpg",
+      "articles/women-35-60/2026-02-01/mne-bolno-ya-myla-pol-synu-millioneru-a-on-ne-uzna.jpg",
+      "articles/women-35-60/2026-02-01/ya-sterpela-obidu-i-otdala-bratu-chasy-ne-skazav-o.jpg",
+      "articles/women-35-60/2026-02-01/otshelnik-skripka-i-tayny-kotorye-ne-smogli-spryat.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-01/REPORT.md"
+  }
+}
