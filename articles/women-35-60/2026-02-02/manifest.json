@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1770016282794,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 132737,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-02/obidno-ya-ushla-posle-krikov-bossa-no-on-poblednel.jpg",
+      "articles/women-35-60/2026-02-02/tetya-prezirala-menya-godami-ne-znaya-ya-edinstven.jpg",
+      "articles/women-35-60/2026-02-02/obidno-chto-menya-sudili-po-staroy-sumke-a-teper-e.jpg",
+      "articles/women-35-60/2026-02-02/smeshno-chto-ya-terpel-ego-izdevki-upravlyaya-mill.jpg",
+      "articles/women-35-60/2026-02-02/unizhennaya-ya-kupila-kartinu-za-million-poka-sest.jpg",
+      "articles/women-35-60/2026-02-02/mne-bylo-obidno-ya-terpela-smeh-sosedki-poka-ona-n.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-02/REPORT.md"
+  }
+}
