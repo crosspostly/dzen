@@ -1,0 +1,31 @@
+{
+  "version": "4.0",
+  "generatedAt": 1770101370125,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 122672,
+  "totalImages": 5,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-03/ona-smeyalas-nad-moim-starym-avto-a-potom-v-lesnoy.jpg",
+      "articles/women-35-60/2026-02-03/mne-bylo-gorko-terpet-ih-smeh-poka-ya-ne-nashla-na.jpg",
+      "articles/women-35-60/2026-02-03/oskorblennaya-vetoshyu-ya-stala-taynym-metsenatom-.jpg",
+      "articles/women-35-60/2026-02-03/bylo-gorko-slyshat-zhalost-brata-v-moey-dvushke-no.jpg",
+      "articles/women-35-60/2026-02-03/ya-smeyalsya-kogda-on-nazval-moy-holst-mazney-ved-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-03/REPORT.md"
+  }
+}
