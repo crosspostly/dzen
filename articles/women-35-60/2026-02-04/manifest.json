@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1770188017066,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 129493,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-04/obidno-ya-byla-lish-uborschitsey-dlya-nego-poka-ne.jpg",
+      "articles/women-35-60/2026-02-04/mne-bylo-bolno-ya-terpela-ee-smeh-skryvaya-bilet-n.jpg",
+      "articles/women-35-60/2026-02-04/ya-byla-v-yarosti-ot-ee-naglosti-poka-ne-nashla-v-.jpg",
+      "articles/women-35-60/2026-02-04/obidno-chto-ya-terpela-nasmeshki-za-hlam-no-eksper.jpg",
+      "articles/women-35-60/2026-02-04/ya-byla-dlya-bossa-mebelyu-poka-on-ne-uznal-chto-y.jpg",
+      "articles/women-35-60/2026-02-04/ya-chuvstvovala-lish-pustotu-ot-smeha-sosedey-poka.jpg",
+      "articles/women-35-60/2026-02-04/obidno-byt-uborschitsey-no-ya-skryvala-pravdu-moy-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-04/REPORT.md"
+  }
+}
