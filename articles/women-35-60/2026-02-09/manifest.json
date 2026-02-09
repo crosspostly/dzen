@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1770621322049,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 143892,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-09/spokoyno-ya-terpela-ego-hamstvo-znaya-zaveschanie-.jpg",
+      "articles/women-35-60/2026-02-09/mne-bylo-gorko-byt-lish-uborschitsey-poka-boss-ne-.jpg",
+      "articles/women-35-60/2026-02-09/unizhennaya-ya-molcha-terpela-izdevki-shefa-a-spus.jpg",
+      "articles/women-35-60/2026-02-09/ona-nazvala-menya-bezdelnitsey-no-poblednela-uznav.jpg",
+      "articles/women-35-60/2026-02-09/obidno-ya-terpela-ego-kriki-pyat-let-no-v-itoge-sa.jpg",
+      "articles/women-35-60/2026-02-09/obidno-kogda-muzh-nazyvaet-moy-restoran-saraem-no-.jpg",
+      "articles/women-35-60/2026-02-09/unizhennaya-ya-pokinula-restoran-ne-skazav-chto-ch.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-09/REPORT.md"
+  }
+}
