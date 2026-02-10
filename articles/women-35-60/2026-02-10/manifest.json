@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1770707807091,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 138402,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-10/ya-terpela-nasmeshki-muzha-iz-za-koltsa-no-kogda-e.jpg",
+      "articles/women-35-60/2026-02-10/obidno-chto-ya-byla-dlya-nego-lish-kassirom-a-tepe.jpg",
+      "articles/women-35-60/2026-02-10/bolno-ya-ushla-nikem-no-opekunsha-ne-znala-pro-shk.jpg",
+      "articles/women-35-60/2026-02-10/obidno-ya-byla-dlya-neyo-nikem-no-pismo-gubernator.jpg",
+      "articles/women-35-60/2026-02-10/ya-byla-hudshey-plemyannitsey-poka-pisma-ne-raskry.jpg",
+      "articles/women-35-60/2026-02-10/syn-smeyalsya-nad-moey-ruhlyadyu-no-imenno-my-nash.jpg",
+      "articles/women-35-60/2026-02-10/sosed-smeyalsya-nad-moey-halupoy-no-poblednel-uvid.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-10/REPORT.md"
+  }
+}
