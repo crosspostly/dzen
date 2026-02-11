@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1770793875102,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 148029,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-11/obida-dushila-menya-kogda-doch-vybrosila-sharf-no-.jpg",
+      "articles/women-35-60/2026-02-11/mne-bylo-gorko-slyshat-macheha-poka-syn-ne-uznal-k.jpg",
+      "articles/women-35-60/2026-02-11/obidno-ya-zabrala-svoi-karakuli-iz-musora-a-oni-pr.jpg",
+      "articles/women-35-60/2026-02-11/gorko-chto-ya-terpela-upreki-teti-poka-kurer-ne-ra.jpg",
+      "articles/women-35-60/2026-02-11/ya-terpela-nasmeshki-bossa-za-staruyu-kameru-poka-.jpg",
+      "articles/women-35-60/2026-02-11/ya-prezirala-etogo-sirotu-no-pismo-yurista-raskryl.jpg",
+      "articles/women-35-60/2026-02-11/obidno-ya-terpela-nasmeshki-sosedki-poka-moy-stary.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-11/REPORT.md"
+  }
+}
