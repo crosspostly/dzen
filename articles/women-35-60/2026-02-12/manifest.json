@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1770880201829,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 137159,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-12/obidno-ya-terpel-shutki-kollegi-o-moey-nischete-po.jpg",
+      "articles/women-35-60/2026-02-12/sosed-smeyalsya-nad-moey-staroy-mashinoy-no-moi-ch.jpg",
+      "articles/women-35-60/2026-02-12/mne-bylo-stydno-ya-prinesla-starye-sergi-no-za-nih.jpg",
+      "articles/women-35-60/2026-02-12/obidno-brat-vygnal-menya-kak-ne-rovnyu-ved-etot-do.jpg",
+      "articles/women-35-60/2026-02-12/mne-bylo-stydno-za-etu-razvalyuhu-poka-ya-ne-uznal.jpg",
+      "articles/women-35-60/2026-02-12/mne-bylo-stydno-za-etot-staryy-hlam-poka-ya-ne-nas.jpg",
+      "articles/women-35-60/2026-02-12/unizhennaya-ya-byla-lish-sekretarshey-no-moy-zvono.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-12/REPORT.md"
+  }
+}
