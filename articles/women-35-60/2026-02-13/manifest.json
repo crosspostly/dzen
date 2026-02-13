@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1770966870919,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 149212,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-13/mne-bylo-bolno-ot-ih-nasmeshek-no-ya-sygrala-na-ru.jpg",
+      "articles/women-35-60/2026-02-13/skvoz-obidu-ya-molchal-ved-ya-nastoyaschiy-vladele.jpg",
+      "articles/women-35-60/2026-02-13/mne-bylo-bolno-ot-slov-sosedki-poka-ona-ne-uvidela.jpg",
+      "articles/women-35-60/2026-02-13/obidno-ya-terpela-ego-nasmeshki-a-moy-proekt-iz-mu.jpg",
+      "articles/women-35-60/2026-02-13/gorko-chto-menya-vystavili-iz-kluba-no-shveytsar-n.jpg",
+      "articles/women-35-60/2026-02-13/mne-bylo-gorko-byt-pylyu-poka-ya-ne-prevratila-sta.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-13/REPORT.md"
+  }
+}
