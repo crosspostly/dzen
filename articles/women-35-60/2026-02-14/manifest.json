@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771051962185,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 146754,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-14/gorko-byt-ofisnoy-myshyu-no-moy-taynyy-nabrosok-za.jpg",
+      "articles/women-35-60/2026-02-14/s-bolyu-ya-terpela-nasmeshki-syna-poka-auktsionist.jpg",
+      "articles/women-35-60/2026-02-14/ya-byla-lish-zhalkoy-kuharkoy-poka-zaveschanie-v-k.jpg",
+      "articles/women-35-60/2026-02-14/mne-bylo-obidno-slyshat-eyo-smeh-poka-ya-ne-kupil-.jpg",
+      "articles/women-35-60/2026-02-14/ona-brezglivo-fyrknula-na-moy-plasch-ne-znaya-chto.jpg",
+      "articles/women-35-60/2026-02-14/obidno-mne-bylo-slyshat-eyo-nasmeshki-no-ona-ne-zn.jpg",
+      "articles/women-35-60/2026-02-14/ya-terpela-nasmeshki-kuziny-no-tsena-moey-staroy-b.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-14/REPORT.md"
+  }
+}
