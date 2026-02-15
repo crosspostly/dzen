@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771139133735,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 150483,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-15/ona-smeyalas-nad-moim-dekretom-ne-znaya-chto-ya-pr.jpg",
+      "articles/women-35-60/2026-02-15/gordo-ya-terpela-nasmeshki-odnoklassnika-skryvaya-.jpg",
+      "articles/women-35-60/2026-02-15/mne-bylo-protivno-slushat-muzha-poka-staraya-otkry.jpg",
+      "articles/women-35-60/2026-02-15/ya-byla-v-shoke-ot-zhadnosti-teti-poka-dedushkin-d.jpg",
+      "articles/women-35-60/2026-02-15/unizhennaya-ya-stala-hozyaykoy-i-moy-byvshiy-profe.jpg",
+      "articles/women-35-60/2026-02-15/oni-schitali-menya-mebelyu-poka-pismo-v-sunduke-ne.jpg",
+      "articles/women-35-60/2026-02-15/poputchitsa-unizila-menya-za-moy-vid-a-cherez-chas.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-15/REPORT.md"
+  }
+}
