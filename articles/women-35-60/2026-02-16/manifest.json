@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771225765454,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 151718,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-16/obidno-ya-byla-lish-kantselyarskoy-krysoy-no-spust.jpg",
+      "articles/women-35-60/2026-02-16/gordaya-ya-terpela-izdevki-sestry-moy-muzh-nashel-.jpg",
+      "articles/women-35-60/2026-02-16/s-ledyanym-serdtsem-ya-voshla-v-etot-zal-oni-hamil.jpg",
+      "articles/women-35-60/2026-02-16/ya-prishla-v-yarost-kogda-brat-vybrosil-moy-staryy.jpg",
+      "articles/women-35-60/2026-02-16/mne-bylo-gorko-ot-nasmeshek-soseda-no-on-ne-znal-y.jpg",
+      "articles/women-35-60/2026-02-16/ya-byla-v-yarosti-ot-slov-docheri-o-shkafe-poka-on.jpg",
+      "articles/women-35-60/2026-02-16/on-smeyalsya-nad-moey-odezhdoy-ne-znaya-chto-ya-gl.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-16/REPORT.md"
+  }
+}
