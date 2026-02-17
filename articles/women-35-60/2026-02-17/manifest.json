@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771311683868,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 143497,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-17/obidno-mne-bylo-byt-obuzoy-no-nahodka-v-sunduke-mi.jpg",
+      "articles/women-35-60/2026-02-17/oskorblennaya-ya-kupila-aktsii-ego-kompanii-v-tot-.jpg",
+      "articles/women-35-60/2026-02-17/ya-zamerla-ot-uzhasa-kogda-byvshiy-muzh-zaper-sara.jpg",
+      "articles/women-35-60/2026-02-17/ya-terpela-unizheniya-otmyvaya-pol-v-svoem-dome-po.jpg",
+      "articles/women-35-60/2026-02-17/obidno-byt-prislugoy-no-ya-vdova-osnovatelya-i-pri.jpg",
+      "articles/women-35-60/2026-02-17/ona-smeyalas-nad-moim-zapahom-solidola-ne-znaya-ch.jpg",
+      "articles/women-35-60/2026-02-17/bolno-chto-ya-byla-dlya-padcheritsy-mebelyu-no-moy.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-17/REPORT.md"
+  }
+}
