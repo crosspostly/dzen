@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771398391769,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 145316,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-18/ya-terpela-ih-nasmeshki-iz-za-potryopannoy-sumki-p.jpg",
+      "articles/women-35-60/2026-02-18/oskorblennaya-ya-terpela-eyo-nasmeshki-poka-ne-dos.jpg",
+      "articles/women-35-60/2026-02-18/mne-bylo-obidno-ya-prishla-v-obnoskah-no-moya-star.jpg",
+      "articles/women-35-60/2026-02-18/gorko-byt-obuzoy-no-shef-ne-znal-chto-ya-davno-vyk.jpg",
+      "articles/women-35-60/2026-02-18/mne-bylo-gorko-ot-smeha-teti-no-tayna-dedovyh-chas.jpg",
+      "articles/women-35-60/2026-02-18/shok-smenil-obidu-ya-nashla-v-shkatulke-taynu-pros.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-18/REPORT.md"
+  }
+}
