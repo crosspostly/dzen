@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771484611770,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 149087,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-19/shok-ya-otdala-pasynku-klyuchi-ot-garazha-ne-znaya.jpg",
+      "articles/women-35-60/2026-02-19/ya-pyatnadtsat-let-terpela-unizheniya-no-etot-blok.jpg",
+      "articles/women-35-60/2026-02-19/yarost-kipela-vo-mne-kogda-boss-vykinul-chertezh-a.jpg",
+      "articles/women-35-60/2026-02-19/ya-plakala-ot-styda-za-staroe-palto-poka-dyra-v-ne.jpg",
+      "articles/women-35-60/2026-02-19/smeshno-no-ya-molcha-sterpel-nasmeshki-o-garazhe-h.jpg",
+      "articles/women-35-60/2026-02-19/obidno-terpet-nasmeshki-teti-no-ya-nashla-v-palto-.jpg",
+      "articles/women-35-60/2026-02-19/gordost-ya-popala-na-oblozhku-zhurnala-a-byvshiy-m.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-19/REPORT.md"
+  }
+}
