@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771570673553,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 139297,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-20/s-bolyu-ya-terpela-upreki-docheri-poka-staraya-mon.jpg",
+      "articles/women-35-60/2026-02-20/ya-terpela-nasmeshki-bogatoy-sosedki-poka-sekret-v.jpg",
+      "articles/women-35-60/2026-02-20/zrya-oni-smeyalis-nad-moey-nischetoy-ya-kupila-avt.jpg",
+      "articles/women-35-60/2026-02-20/s-bolyu-ya-prodala-mamin-medalon-za-groshi-a-potom.jpg",
+      "articles/women-35-60/2026-02-20/sestra-smeyalas-chto-ya-belaya-vorona-poka-neznako.jpg",
+      "articles/women-35-60/2026-02-20/ona-smeyalas-nad-moim-ogorodom-no-vizit-komissii-i.jpg",
+      "articles/women-35-60/2026-02-20/ya-plakala-ot-ih-naglosti-poka-sosedi-ne-pripolzli.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-20/REPORT.md"
+  }
+}
