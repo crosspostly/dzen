@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771656750776,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 144919,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-21/ya-byla-unizhena-slovami-sosedki-poka-ne-nashla-po.jpg",
+      "articles/women-35-60/2026-02-21/obidno-bylo-terpet-unizhenie-no-cherez-chas-ya-pod.jpg",
+      "articles/women-35-60/2026-02-21/bylo-unizitelno-terpet-ih-prezrenie-poka-ya-ne-sta.jpg",
+      "articles/women-35-60/2026-02-21/obidno-ya-byla-lish-prislugoy-a-teper-hozyayka-v-s.jpg",
+      "articles/women-35-60/2026-02-21/obidno-do-slez-ya-kupila-polovinu-ego-avtoparka-a-.jpg",
+      "articles/women-35-60/2026-02-21/obidno-bylo-slyshat-ego-slova-no-ya-znala-on-uvoli.jpg",
+      "articles/women-35-60/2026-02-21/mne-bylo-gorko-ot-ego-nasmeshek-poka-ya-ne-prodala.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-21/REPORT.md"
+  }
+}
