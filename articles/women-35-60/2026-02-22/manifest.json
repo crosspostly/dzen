@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771743786379,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 147070,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-22/mne-bylo-gorko-slyshat-ih-smeh-no-ya-znala-taynu-k.jpg",
+      "articles/women-35-60/2026-02-22/mne-bylo-gorko-ot-slov-podrugi-no-ya-znala-etot-su.jpg",
+      "articles/women-35-60/2026-02-22/ya-terpela-nasmeshki-sestry-iz-za-palto-poka-ona-n.jpg",
+      "articles/women-35-60/2026-02-22/oskorblennaya-ya-byla-lish-kuharkoy-a-teper-sosedk.jpg",
+      "articles/women-35-60/2026-02-22/sosedi-smeyalis-nad-moey-staroy-nivoy-a-ya-vzyala-.jpg",
+      "articles/women-35-60/2026-02-22/s-ulybkoy-ya-vykupil-vsyo-zdanie-i-teper-moy-byvsh.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-22/REPORT.md"
+  }
+}
