@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1771916875843,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 141058,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-24/obidno-chto-ya-terpela-nasmeshki-podrugi-skryvaya-.jpg",
+      "articles/women-35-60/2026-02-24/obidno-chto-shef-smeyalsya-nad-moey-grechkoy-ne-zn.jpg",
+      "articles/women-35-60/2026-02-24/mne-bylo-obidno-terpet-vysokomerie-sestry-poka-sta.jpg",
+      "articles/women-35-60/2026-02-24/shef-smeyalsya-nad-moim-bloknotom-no-v-chas-proval.jpg",
+      "articles/women-35-60/2026-02-24/sosedki-smeyalis-nad-moey-skukoy-a-ya-molcha-pisal.jpg",
+      "articles/women-35-60/2026-02-24/obida-dushila-menya-kogda-dyadya-vygnal-sirotu-no-.jpg",
+      "articles/women-35-60/2026-02-24/ya-byla-nischey-sirotoy-dlya-tyoti-poka-babushkina.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-24/REPORT.md"
+  }
+}
