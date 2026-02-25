@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772003214517,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 144875,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-25/mne-bylo-bolno-slyshat-nasmeshki-poka-moy-syn-glav.jpg",
+      "articles/women-35-60/2026-02-25/mne-bylo-gorko-ya-otdala-sestre-shkatulku-ne-skaza.jpg",
+      "articles/women-35-60/2026-02-25/obidno-chto-ya-terpel-smeh-brata-nad-moim-velikom-.jpg",
+      "articles/women-35-60/2026-02-25/mne-bylo-bolno-ot-nasmeshek-sosedey-no-ya-sberegla.jpg",
+      "articles/women-35-60/2026-02-25/obida-zhgla-no-ya-molchala-medsestra-ne-znala-chto.jpg",
+      "articles/women-35-60/2026-02-25/skvoz-slezy-ya-shla-v-arhiv-poka-ona-ne-uvidela-na.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-25/REPORT.md"
+  }
+}
