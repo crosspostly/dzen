@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772089139852,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 146471,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-26/s-ulybkoy-ya-slushala-eyo-nasmeshki-poka-ne-protya.jpg",
+      "articles/women-35-60/2026-02-26/ya-plakala-ot-ego-nasmeshek-no-foto-iz-seyfa-zasta.jpg",
+      "articles/women-35-60/2026-02-26/ya-terpela-eyo-vechnye-izdevatelstva-poka-moy-unik.jpg",
+      "articles/women-35-60/2026-02-26/mne-bylo-bolno-ot-ih-smeha-no-cherez-chas-ya-stala.jpg",
+      "articles/women-35-60/2026-02-26/obidno-ya-byla-dlya-nih-lish-dvornikom-no-spustya-.jpg",
+      "articles/women-35-60/2026-02-26/mne-bylo-obidno-slyshat-upryoki-no-moyo-koltso-skr.jpg",
+      "articles/women-35-60/2026-02-26/obidno-ya-byla-dlya-nego-prosto-karaoke-a-teper-on.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-26/REPORT.md"
+  }
+}
