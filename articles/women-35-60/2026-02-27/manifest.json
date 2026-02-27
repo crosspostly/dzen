@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772175347028,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 148108,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-27/gordo-ya-ushla-kogda-mat-vygnala-menya-ved-ya-nash.jpg",
+      "articles/women-35-60/2026-02-27/rodnya-smeyalas-kogda-ya-vybrala-kota-no-ya-znala-.jpg",
+      "articles/women-35-60/2026-02-27/ya-edva-sderzhala-ulybku-kogda-tetya-velela-mne-vy.jpg",
+      "articles/women-35-60/2026-02-27/obidno-ya-terpela-nasmeshki-kuziny-poka-moi-starye.jpg",
+      "articles/women-35-60/2026-02-27/mne-bylo-zhal-sestru-ya-otdala-dachu-sirotam-poka-.jpg",
+      "articles/women-35-60/2026-02-27/obidno-byt-seroy-myshkoy-no-ya-znala-cherez-nedely.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-27/REPORT.md"
+  }
+}
