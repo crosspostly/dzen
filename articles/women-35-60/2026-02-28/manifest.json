@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772260780683,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 145593,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-02-28/obidno-bylo-terpet-ego-hamstvo-poka-on-ne-uznal-ya.jpg",
+      "articles/women-35-60/2026-02-28/obidno-ya-byla-dlya-neyo-bezotkaznoy-no-moy-utrenn.jpg",
+      "articles/women-35-60/2026-02-28/sosedka-vylila-na-menya-pomoi-iz-za-koshek-no-pobl.jpg",
+      "articles/women-35-60/2026-02-28/boss-unizil-menya-za-starye-chasy-no-poblednel-uvi.jpg",
+      "articles/women-35-60/2026-02-28/obidno-slyshat-nasmeshki-no-ya-dostala-klyuchi-i-s.jpg",
+      "articles/women-35-60/2026-02-28/ya-byla-nischey-sestroy-dlya-brata-poka-moy-ogorod.jpg"
+    ],
+    "report": "articles/women-35-60/2026-02-28/REPORT.md"
+  }
+}
