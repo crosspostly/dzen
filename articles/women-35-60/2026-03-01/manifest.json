@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772347884261,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 145888,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-03-01/mne-bylo-bolno-ot-smeha-sestry-poka-ya-ne-otkryla-.jpg",
+      "articles/women-35-60/2026-03-01/ya-byl-bezdarem-dlya-nachalnika-poka-moi-shemy-ne-.jpg",
+      "articles/women-35-60/2026-03-01/yarost-kipela-poka-ya-myla-poly-no-segodnya-ya-pri.jpg",
+      "articles/women-35-60/2026-03-01/ya-ulybalas-kogda-macheha-vygonyala-menya-pismo-v-.jpg",
+      "articles/women-35-60/2026-03-01/obidno-ya-byla-dlya-docheri-nikem-poka-ona-ne-nash.jpg",
+      "articles/women-35-60/2026-03-01/mne-bylo-bolno-byt-pustym-mestom-poka-ya-ne-nashla.jpg",
+      "articles/women-35-60/2026-03-01/gordo-ya-beregla-etu-grudu-metalla-poka-na-zapravk.jpg"
+    ],
+    "report": "articles/women-35-60/2026-03-01/REPORT.md"
+  }
+}
