@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772520091388,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 101577,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-03-03/ya-byla-v-polnom-otchayanii-poka-staryy-hlam-ne-sp.jpg",
+      "articles/women-35-60/2026-03-03/smeyalas-nad-broshkoy-a-potom-uvidela-eyo-na-aukts.jpg",
+      "articles/women-35-60/2026-03-03/mne-bylo-gorko-ot-ih-nasmeshek-no-ya-prishla-v-res.jpg",
+      "articles/women-35-60/2026-03-03/ya-byla-bezdelnitsey-v-glazah-shefa-a-zavtra-etot-.jpg",
+      "articles/women-35-60/2026-03-03/obidno-ya-s-diplomom-myla-poly-u-svekrovi-poka-ona.jpg",
+      "articles/women-35-60/2026-03-03/ya-byla-nikem-dlya-priemnoy-materi-poka-ona-ne-uzn.jpg",
+      "articles/women-35-60/2026-03-03/tak-i-ezdish-na-svoyom-starom-velosipede-priyateln.jpg"
+    ],
+    "report": "articles/women-35-60/2026-03-03/REPORT.md"
+  }
+}
