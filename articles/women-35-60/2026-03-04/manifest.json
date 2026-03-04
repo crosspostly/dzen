@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772606839064,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 142824,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-03-04/obidno-za-dyadyu-no-ya-reshila-pomoch-i-nashla-v-s.jpg",
+      "articles/women-35-60/2026-03-04/obidno-ya-nashla-oshibku-na-milliony-poka-molodoy-.jpg",
+      "articles/women-35-60/2026-03-04/ya-chuvstvoval-unizhenie-ot-ih-shutok-poka-moi-bum.jpg",
+      "articles/women-35-60/2026-03-04/mne-bylo-gorko-no-ya-oplatila-ih-ogromnyy-schet-po.jpg",
+      "articles/women-35-60/2026-03-04/oni-smeyalis-kogda-ya-shila-na-ruhlyadi-no-moy-pok.jpg",
+      "articles/women-35-60/2026-03-04/sosedka-prezirala-moyu-bednost-ne-znaya-chto-ya-ku.jpg",
+      "articles/women-35-60/2026-03-04/shef-smeyalsya-nad-moey-nikchemnostyu-a-spustya-go.jpg"
+    ],
+    "report": "articles/women-35-60/2026-03-04/REPORT.md"
+  }
+}
