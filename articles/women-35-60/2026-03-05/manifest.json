@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772693710007,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 106613,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-03-05/ona-smeyalas-nad-moim-serym-kardiganom-no-ya-prost.jpg",
+      "articles/women-35-60/2026-03-05/ya-terpela-nasmeshki-podrugi-poka-moy-staryy-telef.jpg",
+      "articles/women-35-60/2026-03-05/mne-bylo-obidno-kogda-ya-terpela-smeh-shefa-poka-o.jpg",
+      "articles/women-35-60/2026-03-05/mne-bylo-stydno-za-gryaznuyu-odezhdu-no-ya-nashla-.jpg",
+      "articles/women-35-60/2026-03-05/roditeli-smeyalis-nad-moey-bednostyu-ne-znaya-chto.jpg",
+      "articles/women-35-60/2026-03-05/staroe-palto-babushkiny-sekrety-i-slezy-kotorye-ya.jpg",
+      "articles/women-35-60/2026-03-05/byvshaya-odnoklassnitsa-pro-gryaznuyu-rabotu-ne-zn.jpg"
+    ],
+    "report": "articles/women-35-60/2026-03-05/REPORT.md"
+  }
+}
