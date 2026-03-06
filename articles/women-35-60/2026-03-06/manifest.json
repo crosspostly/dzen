@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772780332187,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 122460,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-03-06/bylo-unizitelno-no-cherez-nedelyu-ya-sama-podpisal.jpg",
+      "articles/women-35-60/2026-03-06/obidno-ya-prishla-v-starom-palto-no-oni-ne-znali-y.jpg",
+      "articles/women-35-60/2026-03-06/ya-terpela-unizheniya-za-moy-deshevyy-vid-poka-ne-.jpg",
+      "articles/women-35-60/2026-03-06/obida-smenilas-vlastyu-ya-uvolila-kollegu-za-moyu-.jpg",
+      "articles/women-35-60/2026-03-06/ya-terpela-unizheniya-iz-za-staroy-sumki-skryvaya-.jpg",
+      "articles/women-35-60/2026-03-06/mne-stalo-toshno-kogda-ya-uznala-kuda-ushli-te-500.jpg"
+    ],
+    "report": "articles/women-35-60/2026-03-06/REPORT.md"
+  }
+}
