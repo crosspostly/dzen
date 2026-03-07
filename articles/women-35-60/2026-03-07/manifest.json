@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772865775805,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 141102,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-03-07/ya-byla-zhalkoy-i-seroy-poka-staryy-bloknot-ne-vyd.jpg",
+      "articles/women-35-60/2026-03-07/mne-bylo-gorko-ot-nasmeshek-sosedey-no-moy-staryy-.jpg",
+      "articles/women-35-60/2026-03-07/bolno-osoznavat-ya-ochnulas-a-luchshiy-drug-uzhe-p.jpg",
+      "articles/women-35-60/2026-03-07/mne-bylo-bolno-ot-prezreniya-sosedki-poka-ona-ne-u.jpg",
+      "articles/women-35-60/2026-03-07/s-bolyu-ya-uznala-taynu-priyutskogo-medalona-teper.jpg",
+      "articles/women-35-60/2026-03-07/ya-drozhala-ot-straha-pered-sosedkoy-poka-ona-ne-u.jpg",
+      "articles/women-35-60/2026-03-07/mne-bylo-obidno-byt-pustotoy-poka-v-moey-staroy-su.jpg"
+    ],
+    "report": "articles/women-35-60/2026-03-07/REPORT.md"
+  }
+}
