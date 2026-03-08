@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1772952455407,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 141040,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-03-08/direktor-preziral-menya-i-zval-seroy-myshkoy-no-ya.jpg",
+      "articles/women-35-60/2026-03-08/nam-bylo-stydno-za-dyadyu-neudachnika-poka-ego-sta.jpg",
+      "articles/women-35-60/2026-03-08/gorkiy-triumf-ya-uznala-v-nischenke-tu-chto-zvala-.jpg",
+      "articles/women-35-60/2026-03-08/mne-bylo-gorko-ot-ih-izdevok-no-ya-pryatala-v-volg.jpg",
+      "articles/women-35-60/2026-03-08/ya-uzhasnulas-kogda-nashla-taynik-zinaidy-markovny.jpg",
+      "articles/women-35-60/2026-03-08/nachalnik-vysmeyal-moi-drozhaschie-ruki-no-ya-molc.jpg",
+      "articles/women-35-60/2026-03-08/obidno-menya-nazvali-rynochnoy-devkoy-ne-znaya-cht.jpg"
+    ],
+    "report": "articles/women-35-60/2026-03-08/REPORT.md"
+  }
+}
