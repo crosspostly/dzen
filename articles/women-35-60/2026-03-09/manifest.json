@@ -1,0 +1,31 @@
+{
+  "version": "4.0",
+  "generatedAt": 1773039215843,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 6,
+  "totalCharacters": 124124,
+  "totalImages": 5,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-03-09/na-sobesedovanie-ya-prishla-v-ponoshennoy-odezhde-.jpg",
+      "articles/women-35-60/2026-03-09/obidno-ya-terpela-izdevki-bossa-no-moy-staryy-kadr.jpg",
+      "articles/women-35-60/2026-03-09/obidno-ya-byla-nikem-no-cherez-god-ya-kupila-ego-f.jpg",
+      "articles/women-35-60/2026-03-09/mne-stalo-zhutko-ya-vybrosila-staruyu-shkatulku-a-.jpg",
+      "articles/women-35-60/2026-03-09/smeshno-ya-slushala-nasmeshki-kuzena-nad-gitaroy-p.jpg"
+    ],
+    "report": "articles/women-35-60/2026-03-09/REPORT.md"
+  }
+}
