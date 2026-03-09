@@ -244,7 +244,7 @@ ${content}
 
     try {
       const response = await this.geminiClient.models.generateContent({
-        model: "gemini-2.0-flash",
+        model: "gemini-3.1-flash",
         contents: restorationPrompt,
         config: {
           temperature: 0.7,

@@ -183,6 +183,17 @@ export class MultiAgentService {
   }
 
   /**
+   * 🛡️ THE BATON GUARD: Strictly replaces any mentions of 'Снежок' with 'Батон'
+   */
+  private sanitizeBaton(text: string): string {
+    return text.replace(/Снежок/g, 'Батон')
+               .replace(/Снежка/g, 'Батона')
+               .replace(/Снежку/g, 'Батону')
+               .replace(/Снежком/g, 'Батоном')
+               .replace(/Снежке/g, 'Батоне');
+  }
+
+  /**
    * Main entry point: Generate full longform article with archetype support
    */
   async generateLongFormArticle(params: {
@@ -193,7 +204,6 @@ export class MultiAgentService {
     maxChars?: number;
     includeImages?: boolean;
     applyPhase2AntiDetection?: boolean;
-    // 🆕 v8.0: Archetype parameters
     heroArchetype?: HeroArchetype;
     conflictType?: ConflictType;
     timeline?: TimelineType;
@@ -203,52 +213,46 @@ export class MultiAgentService {
     const maxChars = params.maxChars || this.maxChars;
     const episodeCount = this.calculateOptimalEpisodeCount(maxChars);
 
-    // 🆕 Store archetype configuration
-    this.heroArchetype = params.heroArchetype;
-    this.conflictType = params.conflictType;
-    this.timeline = params.timeline || "sudden";
-    this.antagonistReaction = params.antagonistReaction || "shame";
-    this.victoryType = params.victoryType || "multi";
+    // 🆕 v9.3: Ensure emotion is NEVER undefined
+    const safeEmotion = params.emotion || "inspiration";
+    
+    // 🆕 v9.3: Sanitize input theme just in case
+    const safeTheme = this.sanitizeBaton(params.theme);
 
-    console.log("\n🎬 [ZenMaster v8.0] Starting archetype-aware generation...");
-    console.log(`📏 Theme: "${params.theme}"`);
-    console.log(`🎯 Angle: ${params.angle} | Emotion: ${params.emotion}`);
-    console.log(`🎬 Episodes: ${episodeCount}`);
-    if (this.heroArchetype) {
-      console.log(`🏆 Archetype: ${this.heroArchetype} | Timeline: ${this.timeline} | Victory: ${this.victoryType}`);
-    }
+    console.log("\n🎬 [ZenMaster v9.3] Starting robust generation...");
+    console.log(`📏 Theme: "${safeTheme}"`);
+    console.log(`🎯 Angle: ${params.angle} | Emotion: ${safeEmotion}`);
     
     // Stage 0: Outline Engineering
     console.log(`📋 Stage 0: Building outline (${episodeCount} episodes)...`);
     let outline: OutlineStructure;
 
     try {
-      outline = await this.generateOutline(params, episodeCount);
+      outline = await this.generateOutline({ ...params, theme: safeTheme, emotion: safeEmotion }, episodeCount);
       
-      // 🆕 v9.0: Validation after generation
-      const outlineText = JSON.stringify(outline);
-      const validation = await qualityGate(outlineText, 65, 500, outline.theme);
-      if (!validation.isValid) {
-        console.warn('⚠️ Outline quality low, but proceeding with caution');
+      // 🆕 v9.3: CRITICAL SAFETY CHECK - If Stage 0 is trash, STOP.
+      if (!outline.episodes || outline.episodes.length < 2) {
+        throw new Error("Stage 0 produced invalid/empty outline. Aborting to prevent cascade failure.");
       }
     } catch (error) {
-      console.error(`❌ Outline generation failed:`, error);
-      outline = this.createFallbackOutline(params, episodeCount);
+      console.error(`❌ Stage 0 CRITICAL FAILURE:`, (error as Error).message);
+      // Wait and re-throw or handle properly
+      throw new Error("Cannot proceed without valid Stage 0 Outline.");
     }
 
     // Extract and validate plotBible from outline
-    const plotBible = this.extractPlotBible(outline, params);
+    const plotBible = this.extractPlotBible(outline, { ...params, emotion: safeEmotion });
     console.log("✅ PlotBible ready");
 
     // Stage 1: Sequential Episode Generation
-    console.log(`🔄 Stage 1: Generating ${episodeCount} episodes...`);
+    console.log(`🔄 Stage 1: Generating ${outline.episodes.length} episodes...`);
     let episodes: Episode[];
 
     try {
       episodes = await this.generateEpisodesSequentially(outline);
     } catch (error) {
       console.error(`❌ Episodes generation failed:`, error);
-      episodes = this.createFallbackEpisodes(outline.episodes);
+      throw error; // No more "fallback" empty content
     }
 
     if (episodes.length === 0) {
@@ -358,14 +362,14 @@ export class MultiAgentService {
     // Create article object
     const article: LongFormArticle = {
       id: `article_${Date.now()}`,
-      title,
+      title: this.sanitizeBaton(title),
       outline,
       episodes,
-      lede,
-      development,
-      climax,
-      resolution,
-      finale,
+      lede: this.sanitizeBaton(lede),
+      development: this.sanitizeBaton(development),
+      climax: this.sanitizeBaton(climax),
+      resolution: this.sanitizeBaton(resolution),
+      finale: this.sanitizeBaton(finale),
       voicePassport,
       coverImage: undefined,
       metadata: {
@@ -375,7 +379,7 @@ export class MultiAgentService {
         sceneCount: this.countScenes(lede, episodes, finale),
         dialogueCount: this.countDialogues(lede, episodes, finale),
       },
-      processedContent: fullContent,
+      processedContent: this.sanitizeBaton(fullContent),
       adversarialScore: undefined,
       phase2Applied: false
     };
@@ -666,7 +670,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash",
       temperature: 0.92
     });
   }
@@ -797,7 +801,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash",
       temperature: 0.88
     });
   }
@@ -890,7 +894,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash",
       temperature: 0.85
     });
   }
@@ -1209,7 +1213,7 @@ RESPOND WITH ONLY VALID JSON:
 
     const response = await this.callGemini({
       prompt,
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash",
       temperature: 0.85,
     });
 
@@ -1297,7 +1301,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash",
       temperature: 0.95,
     });
   }
@@ -1399,7 +1403,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash",
       temperature: 0.9,
     });
   }
@@ -1426,7 +1430,7 @@ OUTPUT: Only the title (no quotes, no JSON)`;
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash",
         temperature: 0.85,
       });
 
@@ -1472,7 +1476,7 @@ Respond as JSON:
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash",
         temperature: 0.8,
       });
       return this.parseJsonSafely(response, 'VoicePassport') as VoicePassport;
@@ -1535,7 +1539,7 @@ Respond as JSON:
       if (errorMessage.includes('503') || errorMessage.includes('overloaded')) {
         try {
           const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite",
+            model: "gemini-3.1-flash-lite",
             contents: params.prompt,
             config: { temperature: params.temperature, topK: 40, topP: 0.95 },
           });
@@ -1737,7 +1741,7 @@ Output ONLY the episode text. No titles, no metadata.`;
   private async callGemini(prompt: string): Promise<string> {
     try {
       const response = await this.geminiClient.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash",
         contents: prompt,
         config: { temperature: 0.9, topK: 40, topP: 0.95 },
       });

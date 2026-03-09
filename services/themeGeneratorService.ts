@@ -159,7 +159,7 @@ GENERATE 1 NEW RUSSIAN SERIAL TITLE:`;
       try {
         // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
         response = await this.geminiClient.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.1-flash",
           contents: prompt,
           config: {
             temperature: 1.1, // Higher temperature for variety
@@ -173,10 +173,10 @@ GENERATE 1 NEW RUSSIAN SERIAL TITLE:`;
         
         // 🔄 ФОЛБЕК: если модель перегружена
         if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-          console.log(`${LOG.LOADING} Trying fallback to gemini-2.5-flash-lite...`);
+          console.log(`${LOG.LOADING} Trying fallback to gemini-3.1-flash-lite...`);
           
           response = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-3.1-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: prompt,
             config: {
               temperature: 0.95,

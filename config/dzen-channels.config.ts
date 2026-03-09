@@ -39,8 +39,8 @@ export const DZEN_ETHNO_FOOD_RITUALS_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'inspiration',
   defaultAudience: 'Active 50+, foodies, culture seekers',
   
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
+  modelOutline: 'gemini-3.1-flash',
+  modelEpisodes: 'gemini-3.1-flash',
   
   outputDir: './generated/dzen/ethno-food-ritual/',
   scheduleCron: '0 7,12,17,22 * * *',
@@ -71,8 +71,8 @@ export const DZEN_BUDGET_TRAVEL_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'liberation',
   defaultAudience: 'Budget travelers, families, digital nomads',
   
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
+  modelOutline: 'gemini-3.1-flash',
+  modelEpisodes: 'gemini-3.1-flash',
   
   outputDir: './generated/dzen/budget-travel/',
   scheduleCron: '0 2,8,14,20 * * *',
@@ -103,8 +103,8 @@ export const DZEN_NOMAD_TECH_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'curiosity',
   defaultAudience: 'Techies, travelers, nomads 25-45',
   
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
+  modelOutline: 'gemini-3.1-flash',
+  modelEpisodes: 'gemini-3.1-flash',
   
   outputDir: './generated/dzen/nomad-tech/',
   scheduleCron: '0 1,7,13,19 * * *',

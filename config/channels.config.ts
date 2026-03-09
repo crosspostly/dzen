@@ -19,8 +19,8 @@ export interface ChannelConfig {
   defaultAudience: string;
   
   // Model Configuration (can be different per channel)
-  modelOutline: string;        // gemini-2.5-flash (or custom)
-  modelEpisodes: string;       // gemini-2.5-flash (or custom)
+  modelOutline: string;        // gemini-3.1-flash (or custom)
+  modelEpisodes: string;       // gemini-3.1-flash (or custom)
   
   // Generation Parameters
   episodeCount: number;        // 9-12 эпизодов
@@ -54,8 +54,8 @@ export const DZEN_CONFIG: ChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Women 35-60',
   
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
+  modelOutline: 'gemini-3.1-flash',
+  modelEpisodes: 'gemini-3.1-flash',
   
   episodeCount: 12,
   minCharacters: 26000,
@@ -87,8 +87,8 @@ export const MEDIUM_CONFIG: ChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Tech Founders 25-45',
   
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
+  modelOutline: 'gemini-3.1-flash',
+  modelEpisodes: 'gemini-3.1-flash',
   
   episodeCount: 10,
   minCharacters: 25000,
@@ -120,8 +120,8 @@ export const SUBSTACK_CONFIG: ChannelConfig = {
   defaultEmotion: 'liberation',
   defaultAudience: 'Premium Subscribers 30-50',
   
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
+  modelOutline: 'gemini-3.1-flash',
+  modelEpisodes: 'gemini-3.1-flash',
   
   episodeCount: 11,
   minCharacters: 28000,
@@ -153,8 +153,8 @@ export const HABR_CONFIG: ChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Tech Professionals RU 25-45',
   
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
+  modelOutline: 'gemini-3.1-flash',
+  modelEpisodes: 'gemini-3.1-flash',
   
   episodeCount: 10,
   minCharacters: 30000,

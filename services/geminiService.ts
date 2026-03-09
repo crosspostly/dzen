@@ -35,7 +35,7 @@ export class GeminiService {
   async generateFreshThemes() {
     const prompt = `Сгенерируй 5 ОСТРЫХ, провокационных заголовков для Яндекс.Дзен (CTR++). JSON массив строк.`;
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-flash',
       contents: prompt,
       config: { responseMimeType: "application/json" },
     });
@@ -63,8 +63,19 @@ export class GeminiService {
   }
 
   /**
+   * 🛡️ THE BATON GUARD: Strictly replaces any mentions of 'Снежок' with 'Батон'
+   */
+  private sanitizeBaton(text: string): string {
+    if (!text) return text;
+    return text.replace(/Снежок/g, 'Батон')
+               .replace(/Снежка/g, 'Батона')
+               .replace(/Снежку/g, 'Батону')
+               .replace(/Снежком/g, 'Батоном')
+               .replace(/Снежке/g, 'Батоне');
+  }
+
+  /**
    * Главный метод: генерирует статью 10-12K символов с примерами
-   * Использует многоступенчатый подход (plan → hook → development → climax → resolution)
    */
   async generateArticleDataChunked(params: {
     theme: string;
@@ -73,6 +84,9 @@ export class GeminiService {
   }): Promise<ArticleGenerationResult> {
     const startTime = Date.now();
     const { theme, config, examples } = params;
+    
+    // Sanitize theme
+    const safeTheme = this.sanitizeBaton(theme);
     const targetChars = config.content_rules.min_chars + 
       Math.floor((config.content_rules.max_chars - config.content_rules.min_chars) / 2);
 
@@ -109,17 +123,17 @@ export class GeminiService {
         { section: 'resolution', content: resolution, char_count: resolution.length },
       ];
 
-      const fullContent = this.concatenateChunks(chunks);
+      const fullContent = this.sanitizeBaton(this.concatenateChunks(chunks));
       const finalChars = fullContent.length;
 
       console.log(`✅ Статья готова: ${finalChars} символов`);
 
       // 🆕 Генерируем SMART образы на основе контента
       console.log('🎨 Генерирую описания сцен для изображений...');
-      const imageScenes = await this.generateImageScenes(theme, fullContent, chunks);
+      const imageScenes = await this.generateImageScenes(safeTheme, fullContent, chunks);
 
       // Генерируем заголовок на основе первого абзаца
-      const title = await this.generateTitle(theme, hook);
+      const title = this.sanitizeBaton(await this.generateTitle(safeTheme, hook));
 
       return {
         title,
@@ -129,7 +143,7 @@ export class GeminiService {
         metadata: {
           total_chars: finalChars,
           generation_time_ms: Date.now() - startTime,
-          model_used: config.gemini_model || 'gemini-3-flash-preview',
+          model_used: config.gemini_model || 'gemini-3.1-flash',
         },
       };
     } catch (error) {
@@ -192,7 +206,7 @@ ${examplesContext}
 
     const response = await this.callGemini({
       prompt,
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-flash',
       temperature: 0.9,
     });
 
@@ -229,7 +243,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-flash',
       temperature: 0.95,
     });
   }
@@ -265,7 +279,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-flash',
       temperature: 0.95,
     });
   }
@@ -302,7 +316,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-flash',
       temperature: 0.95,
     });
   }
@@ -332,7 +346,7 @@ ${climax}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-flash',
       temperature: 0.9,
     });
   }
@@ -369,7 +383,7 @@ ${climax}
 
       const response = await this.callGemini({
         prompt,
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.1-flash',
         temperature: 0.85,
       });
 
@@ -404,7 +418,7 @@ ${climax}
     try {
       const response = await this.callGemini({
         prompt,
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.1-flash',
         temperature: 0.8,
       });
       const parsed = JSON.parse(response);
@@ -441,7 +455,7 @@ ${slices}
 60-100 = человеческий текст (вариативный, живой, эмоциональный)`;
 
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-flash',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -557,13 +571,13 @@ ${slices}
       const errorMessage = (error as Error).message;
       console.error(`Ошибка вызова ${model}:`, errorMessage);
       
-      // 🔄 ФОЛБЕК: если модель перегружена, используем gemini-2.5-flash-lite
+      // 🔄 ФОЛБЕК: если модель перегружена, используем gemini-3.1-flash-lite
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`🔄 Model overloaded, trying fallback to gemini-2.5-flash-lite...`);
+        console.log(`🔄 Model overloaded, trying fallback to gemini-3.1-flash-lite...`);
 
         try {
           const fallbackResponse = await this.ai.models.generateContent({
-            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-3.1-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: prompt,
             config: {
               temperature,
