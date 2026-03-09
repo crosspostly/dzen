@@ -5,6 +5,7 @@
  * Локальный CLI для генерации статей
  */
 
+import 'dotenv/config';
 import { configService } from './services/configService';
 import { examplesService } from './services/examplesService';
 import { geminiService } from './services/geminiService';
@@ -133,26 +134,33 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       }
 
       // Get config (use preset or custom)
-      let config;
+      let factoryConfig;
+      
+      // 🆕 Fetch channel-specific defaults
+      let channelConfig;
+      try {
+        channelConfig = getDzenChannelConfig(channelName);
+      } catch (e) {
+        console.log(`${LOG.WARN} Channel config for "${channelName}" not found, using defaults.`);
+      }
+
       if (preset && FactoryPresets[preset]) {
-        config = { 
+        factoryConfig = { 
           ...FactoryPresets[preset],
           articleCount: count as any,
           includeImages: includeImages !== undefined ? includeImages : FactoryPresets[preset].includeImages,
           qualityLevel,
+          // 🆕 Inject channel defaults
+          defaultAngle: channelConfig?.defaultAngle,
+          defaultEmotion: channelConfig?.defaultEmotion,
+          defaultAudience: channelConfig?.defaultAudience,
           // 🆕 v7.0: Simplified generation options
           useAntiDetection,
           skipCleanupGates
         };
         console.log(`${LOG.INFO} Using preset: "${preset}"`);
-        if (useAntiDetection === false) {
-          console.log(`${LOG.INFO} 🚫 Anti-detection DISABLED (simplified mode)`);
-        }
-        if (skipCleanupGates) {
-          console.log(`${LOG.INFO} 🚫 Cleanup gates DISABLED (direct output)`);
-        }
       } else {
-        config = {
+        factoryConfig = {
           articleCount: count as any,
           parallelEpisodes: 3,
           imageGenerationRate: 1,
@@ -162,25 +170,23 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
           timeoutPerArticle: 300000,
           enableAntiDetection: true,
           enablePlotBible: true,
+          // 🆕 Inject channel defaults
+          defaultAngle: channelConfig?.defaultAngle,
+          defaultEmotion: channelConfig?.defaultEmotion,
+          defaultAudience: channelConfig?.defaultAudience,
           // 🆕 v7.0: Simplified generation options
           useAntiDetection,
           skipCleanupGates
         };
-        if (useAntiDetection === false) {
-          console.log(`${LOG.INFO} 🚫 Anti-detection DISABLED (simplified mode)`);
-        }
-        if (skipCleanupGates) {
-          console.log(`${LOG.INFO} 🚫 Cleanup gates DISABLED (direct output)`);
-        }
       }
 
       if (verbose) {
-        console.log(`${LOG.INFO} Configuration:`, JSON.stringify(config, null, 2));
+        console.log(`${LOG.INFO} Configuration:`, JSON.stringify(factoryConfig, null, 2));
       }
 
       // Initialize factory
       const factory = new ContentFactoryOrchestrator();
-      await factory.initialize(config, channelName); // 🔥 PASS CHANNEL NAME!
+      await factory.initialize(factoryConfig as any, channelName);
 
       // Start generation
       const startTime = Date.now();

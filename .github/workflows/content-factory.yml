@@ -20,15 +20,14 @@ on:
           - '50'
           - '100'
       channel:
-        description: 'Тематика канала'
+        description: 'Тематика канала (Ethno, Budget, Nomad)'
         required: true
-        default: 'women-35-60'
+        default: 'ethno-food-ritual'
         type: choice
         options:
-          - 'women-35-60'
-          - 'young-moms'
-          - 'men-25-40'
-          - 'teens'
+          - 'ethno-food-ritual'
+          - 'budget-travel'
+          - 'nomad-tech'
       images:
         description: 'Генерировать обложки?'
         required: false
@@ -70,10 +69,10 @@ jobs:
         run: |
           # Определение параметров в зависимости от триггера
           if [ "${{ github.event_name }}" == "schedule" ]; then
-            COUNT="7"
-            CHANNEL="women-35-60"
+            COUNT="8"
+            CHANNEL="ethno-food-ritual"
             IMAGES="true"
-            echo "⏰ Запуск по расписанию: Используем настройки по умолчанию (10 статей, women-35-60, картинки)"
+            echo "⏰ Запуск по расписанию: Используем настройки по умолчанию (8 статей, ethno-food-ritual, картинки)"
           else
             COUNT="${{ inputs.count }}"
             CHANNEL="${{ inputs.channel }}"
@@ -116,7 +115,7 @@ jobs:
         run: |
           # Определяем параметры (дублируем логику, чтобы быть уверенными)
           if [ "${{ github.event_name }}" == "schedule" ]; then
-            CHANNEL="women-35-60"
+            CHANNEL="ethno-food-ritual"
           else
             CHANNEL="${{ inputs.channel }}"
           fi

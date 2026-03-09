@@ -139,13 +139,11 @@ function getArticleFiles(mode) {
     files = getAllMdFiles(articlesDir);
   }
   
-  // INCREMENTAL mode: только женщины-35-60 (новые)
+  // INCREMENTAL mode: сканируем все новые статьи во всех подпапках
   else if (mode === 'incremental') {
-    console.log('📧 INCREMENTAL mode: collecting new articles...');
-    const womenDir = path.join(articlesDir, 'women-35-60');
-    if (fs.existsSync(womenDir)) {
-      files = getAllMdFiles(womenDir);
-    }
+    console.log('📧 INCREMENTAL mode: collecting new articles from all channels...');
+    // Теперь сканируем всё в articles/ но фильтр по дате (внутри main) сделает своё дело
+    files = getAllMdFiles(articlesDir);
   }
   
   else {
@@ -533,14 +531,14 @@ function generateRssFeed(articles, imageSizes = []) {
      xmlns:dc="http://purl.org/dc/elements/1.1/"
      xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Потёмки - Истории из жизни</title>
+    <title>Этно-Странник: Еда, Обряды, Бюджет</title>
     <link>${DZEN_CHANNEL}</link>
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="${RSS_URL}" rel="self" type="application/rss+xml"/>
-    <description>Личные истории и переживания из жизни</description>
+    <description>Путевой дневник о путешествиях со смыслом, честных ценах и верном псе Батоне.</description>
     <lastBuildDate>${now}</lastBuildDate>
     <language>ru</language>
-    <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
+    <generator>ZenMaster RSS Generator v2.10 (Ethno-Travel Edition)</generator>
 `;
 
   // Добавляем каждую статью

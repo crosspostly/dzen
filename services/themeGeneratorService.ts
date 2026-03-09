@@ -87,20 +87,20 @@ export class ThemeGeneratorService {
   }
 
   /**
-   * Fallback themes if JSON fetch fails
+   * Fallback themes if JSON fetch fails (Travel & Food 2026)
    */
   private getFallbackThemes(): string[] {
     return [
-      'Я терпела это 20 лет и вот что произошло',
-      'Одна фраза изменила всё в нашей семье',
-      'Я не знала что делать когда узнала правду',
-      'После этого дня ничего не было как раньше',
-      'Я должна была послушать свою интуицию',
-      'Никто не верил мне и я была одна',
-      'Это случилось в один день и разрушило всё',
-      'Я потеряла всё но получила главное',
-      'Когда я сказала нет мир перевернулся',
-      'Деньги разрушили нашу семью за месяц',
+      'Почему в горах Кавказа никогда не едят в одиночестве: мой опыт',
+      'Обряд чаепития в Марокко: Батон (пес) испугался высоты струи, а я нашел истину',
+      'Как приготовить настоящий курт на рынке в Ташкенте за 50 рублей',
+      'Тайный смысл утренней молитвы в пекарнях Лиссабона',
+      'Что едят долгожители Окинавы: я попробовал их секретный суп',
+      'Старая бабушка в Грузии показала мне обряд выпечки хлеба в тоне',
+      'Почему японцы извиняются перед едой: наше с псом открытие в Киото',
+      'Ритуал подношения риса духам на Бали: сколько это стоит на самом деле',
+      'Вкус детства в другой стране: как я нашел идеальный чебурек в Стамбуле',
+      'Почему в 55 лет я решил бросить всё и поехать изучать обряды еды в Перу',
     ];
   }
 
@@ -113,43 +113,42 @@ export class ThemeGeneratorService {
   }
 
   /**
-   * MAIN: Generate NEW unique theme using Gemini
+   * MAIN: Generate NEW unique theme using Gemini (Ethno-Travel Edition)
    */
   async generateNewTheme(): Promise<string> {
     try {
-      // Get all available themes (900+)
+      // Get all available themes (if they are old family drama, we use them as "anti-examples" or just for tone)
       const allThemes = await this.getAvailableThemes();
       
-      // Select 20 random themes to use as inspiration/context
-      // This ensures we don't just use the first 15 every time
-      const exampleSubset = this.getRandomSubset(allThemes, 20);
+      const exampleSubset = this.getRandomSubset(allThemes, 10);
       const themesExample = exampleSubset.map(t => `- ${t}`).join('\n  ');
 
-      // Build prompt for Gemini
+      // Build prompt for Gemini (Route & Serial Edition)
       const prompt = `\
-You are a creative engine for Viral Dzen Stories (Life Stories / Житейские истории).
-
-CONTEXT:
-I am providing you with 20 SUCCESSFUL EXAMPLES from my database.
-These examples cover a wide range of human conflicts: betrayal, greed, redemption, karma, hidden secrets, social inequality, family disputes, work conflicts, etc.
-
-EXAMPLES:
-${themesExample}
+You are a "Route Planner & Storyteller" for a serial Travel Blog on Yandex.Dzen.
+CHARACTER: A solo traveler and their dog "Snowball" (Батон).
+STYLE: Real-time travel diary (сериальный блог).
 
 YOUR TASK:
-Generate ONE (1) BRAND NEW Title/Hook.
+Generate ONE (1) BRAND NEW Title for the NEXT episode of our journey.
 
-CRITICAL INSTRUCTIONS:
-1.  **ANALYZE THE VARIETY:** Do not just focus on "mothers-in-law" or "inheritance" unless the examples strongly suggest it. Look for other patterns: conflicts with neighbors, bosses, siblings, old friends, random strangers, foster children, etc.
-2.  **NO REPETITION:** Do not use the exact same characters or objects found in the examples above. If the examples are about a "coat", you write about a "watch" or "car". If they are about a "kitchen", you write about a "summer house" or "hospital ward".
-3.  **ABSTRACT THE FORMULA:**
-    -   *Mechanism:* A person is underestimated/insulted -> A secret/truth is revealed -> The situation flips instantly.
-    -   *Tone:* Emotional, confessional, dramatic, grounded in reality.
-4.  **OUTPUT FORMAT:**
-    -   Either a punchy dialogue line: "— [Phrase]! — [Action]..."
-    -   Or a descriptive situation: "[Situation], but [Twist]..."
+GEOGRAPHIC LOGIC:
+1.  **CONTINUITY:** If we are in a country, the next 5-7 articles should be about neighboring cities, specific streets, or local rituals in THAT country.
+2.  **TRANSITION:** If we have covered a country, generate a "Transition Episode" (airport, long bus ride, border crossing, packing bags).
+3.  **SERIALITY:** The title must sound like a continuation of a journey. Use phrases like "Moving further...", "Found a hidden spot in...", "The next stop was...".
 
-GENERATE 1 NEW RUSSIAN HOOK (Just the text):`;
+EXAMPLES OF PREVIOUS THEMES (for style context):
+${themesExample}
+
+CURRENT GOAL:
+Stay within the current region (Caucasus, Central Asia, or SE Asia) or plan a logical move.
+
+OUTPUT FORMAT:
+A punchy, realistic title. 
+Example (Continuity): "Ушли вглубь старого Батуми: сколько стоит ужин там, где нет туристов"
+Example (Transition): "Прощай, Грузия: как мы со Снежком проходили границу и сколько нервов это стоило"
+
+GENERATE 1 NEW RUSSIAN SERIAL TITLE:`;
 
       console.log(`${LOG.BRAIN} Generating new theme with Gemini (using 20 random examples from pool)...`);
 

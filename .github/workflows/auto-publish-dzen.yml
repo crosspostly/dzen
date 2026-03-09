@@ -24,7 +24,7 @@ jobs:
       - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           # Disable cache due to ! character in path - will enable after install
           
       - name: 🔐 Validate GitHub Secret (DZEN_COOKIES_JSON)

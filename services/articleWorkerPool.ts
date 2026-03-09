@@ -66,26 +66,30 @@ export class ArticleWorkerPool {
           skipCleanupGates: false
         });
 
+        const angle = (config as any).defaultAngle || 'observer';
+        const emotion = (config as any).defaultEmotion || this.getRandomEmotion();
+        const audience = (config as any).defaultAudience || 'Active 50+';
+
         const outline = await multiAgentService.generateOutline({
           theme,
-          angle: 'confession',
-          emotion: this.getRandomEmotion(),
-          audience: 'Women 35-60',
+          angle: angle,
+          emotion: emotion,
+          audience: audience,
         });
         
         const plotBible = multiAgentService.extractPlotBible(outline, {
           theme,
           emotion: outline.emotion,
-          audience: 'Women 35-60',
+          audience: audience,
         });
 
         // 🔥 CRITICAL FIX: Enrich with Visual DNA (Stage 0)
         // multiAgentService doesn't generate coverVisual, so we build it here
         const visualBible = PlotBibleBuilder.buildFromTheme({
           theme, 
-          angle: 'confession',
+          angle: angle,
           emotion: outline.emotion,
-          audience: 'Women 35-60'
+          audience: audience
         });
         if (visualBible.coverVisual) {
           plotBible.coverVisual = visualBible.coverVisual;
@@ -123,9 +127,9 @@ export class ArticleWorkerPool {
         console.log(`\n📝 STEP 4a: Generating RAW article...`);
         const rawArticle = await multiAgentService.generateLongFormArticle({
           theme,
-          angle: 'confession',
+          angle: angle as any,
           emotion: outline.emotion,
-          audience: 'Women 35-60',
+          audience: audience,
           includeImages: false,
         });
 
@@ -133,9 +137,9 @@ export class ArticleWorkerPool {
         console.log(`\n🔧 STEP 4b: Generating RESTORED article...`);
         const restoredLongform = await multiAgentService.generateLongFormArticle({
           theme,
-          angle: 'confession',
+          angle: angle as any,
           emotion: outline.emotion,
-          audience: 'Women 35-60',
+          audience: audience,
           includeImages: false,
         });
 
@@ -223,24 +227,28 @@ export class ArticleWorkerPool {
         // We do this in multiAgentService but need access to outline for image gen
         // So we'll generate outline separately here
         console.log(`     📋 Generating outline + plotBible...`);
+        const angle = (config as any).defaultAngle || 'observer';
+        const emotion = (config as any).defaultEmotion || this.getRandomEmotion();
+        const audience = (config as any).defaultAudience || 'Active 50+';
+
         const outline = await multiAgentService.generateOutline({
           theme,
-          angle: 'confession',
-          emotion: this.getRandomEmotion(),
-          audience: 'Women 35-60',
+          angle: angle,
+          emotion: emotion,
+          audience: audience,
         });
         const plotBible = multiAgentService.extractPlotBible(outline, {
           theme,
           emotion: outline.emotion,
-          audience: 'Women 35-60',
+          audience: audience,
         });
 
         // 🔥 CRITICAL FIX: Enrich with Visual DNA (Stage 0)
         const visualBible = PlotBibleBuilder.buildFromTheme({
           theme, 
-          angle: 'confession',
+          angle: angle,
           emotion: outline.emotion,
-          audience: 'Women 35-60'
+          audience: audience
         });
         if (visualBible.coverVisual) {
           plotBible.coverVisual = visualBible.coverVisual;
@@ -288,9 +296,9 @@ export class ArticleWorkerPool {
         console.log(`     🎯 Generating 12 episodes + lede/finale...`);
         const longformArticle = await multiAgentService.generateLongFormArticle({
           theme,
-          angle: 'confession',
+          angle: angle as any,
           emotion: outline.emotion,
-          audience: 'Women 35-60',
+          audience: audience,
           includeImages: false, // Already generated above
         });
 
@@ -485,7 +493,7 @@ export class ArticleWorkerPool {
    * Get random emotion for variety
    */
   private getRandomEmotion(): string {
-    const emotions = ['triumph', 'guilt', 'shame', 'anger', 'relief'];
+    const emotions = ['inspiration', 'curiosity', 'liberation', 'triumph', 'relief'];
     return emotions[Math.floor(Math.random() * emotions.length)];
   }
 

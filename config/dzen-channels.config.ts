@@ -1,7 +1,6 @@
 /**
  * Dzen Channels Configuration
- * All Dzen channels with their own parameters (angle, emotion, audience, models)
- * This replaces GitHub Variables for channel-specific generation parameters
+ * Updated 2026: Focus on Food, Travel, Rituals, and Budget with Mascot integration.
  */
 
 export interface DzenChannelConfig {
@@ -9,238 +8,142 @@ export interface DzenChannelConfig {
   name: string;
   description: string;
   
-  // Generation Parameters (from GitHub Variables)
-  defaultAngle: 'confession' | 'scandal' | 'observer';
-  defaultEmotion: 'triumph' | 'guilt' | 'shame' | 'liberation' | 'anger';
+  // Generation Parameters
+  defaultAngle: 'observer' | 'expert' | 'confession';
+  defaultEmotion: 'triumph' | 'liberation' | 'inspiration' | 'curiosity';
   defaultAudience: string;
   
-  // Model Configuration (from GitHub Variables)
-  modelOutline: string;     // e.g., gemini-2.5-flash
-  modelEpisodes: string;    // e.g., gemini-2.5-flash
+  // Model Configuration
+  modelOutline: string;
+  modelEpisodes: string;
   
   // Output Configuration
-  outputDir: string;        // ./generated/dzen/{channelId}/
+  outputDir: string;
   
   // Workflow Schedule
-  scheduleCron: string;     // cron expression for GitHub Actions
+  scheduleCron: string;
   
   // Themes specific to this channel
-  channelThemes: string[];  // themes specific to this audience
+  channelThemes: string[];
 }
 
 /**
- * DZEN WOMEN 35-60 CHANNEL
- * Primary target: Women 35-60, confession stories, triumph emotion
+ * DZEN ETHNO-FOOD & RITUALS (Silver Economy 50+)
  */
-export const DZEN_WOMEN_35_60_CONFIG: DzenChannelConfig = {
-  id: 'women-35-60',
-  name: 'Women 35-60',
-  description: 'Женщины 35-60 лет, истории исповеди',
-  
-  // Previously from GitHub Variables
-  defaultAngle: 'confession',
-  defaultEmotion: 'triumph',
-  defaultAudience: 'Women 35-60',
-  
-  // Previously from GitHub Variables  
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
-  
-  outputDir: './generated/dzen/women-35-60/',
-  scheduleCron: '0 7,12,17,22 * * *', // complex schedule: 07:00, 09:30, 12:00...
-  
-  channelThemes: [
-    'Я терпела это 20 лет',
-    'Я много лет не знала правду об отце',
-    'Они не верили в мою мечту',
-    'Один разговор всё изменил',
-    'Я ушла молча и не пожалела',
-    '20 лет я терпела это молча',
-    'Соседка принесла пирог и рассказала тайну',
-    'Я открыла письмо и поняла, что живу не своей жизнью',
-    'Дочь спросила меня прямо и я не смогла соврать',
-    'Мы не разговаривали месяцы, а потом она пришла вечером',
-    'Я приехала на пять минут и уехала другим человеком'
-  ]
-};
-
-/**
- * DZEN YOUNG MOMS CHANNEL
- * Target: Young mothers 25-35, scandal stories, liberation emotion
- */
-export const DZEN_YOUNG_MOMS_CONFIG: DzenChannelConfig = {
-  id: 'young-moms',
-  name: 'Young Moms',
-  description: 'Молодые мамы 25-35 лет, скандальные истории',
-  
-  defaultAngle: 'scandal',
-  defaultEmotion: 'liberation',
-  defaultAudience: 'Young Moms 25-35',
-  
-  modelOutline: 'gemini-2.5-flash',
-  modelEpisodes: 'gemini-2.5-flash',
-  
-  outputDir: './generated/dzen/young-moms/',
-  scheduleCron: '0 2,8,14,20 * * *', // every 6 hours
-  
-  channelThemes: [
-    'Как я справилась с послеродовой депрессией',
-    'Муж не помогал с ребёнком, и я ушла',
-    'Свекровь учила меня воспитывать моего ребёнка',
-    'Я кормила грудью в туалете офиса',
-    'Деньги кончились, и я пошла работать',
-    'Ребёнок кричал всю ночь, а муж спал',
-    'Врач сказал, что я плохая мать',
-    'Я не хотела детей, но забеременела',
-    'Свадьба отменилась, когда узнали о беременности',
-    'Я стала мамой в 22, и это изменило всё'
-  ]
-};
-
-/**
- * DZEN MEN 25-40 CHANNEL
- * Target: Men 25-40, observer perspective, triumph emotion
- */
-export const DZEN_MEN_25_40_CONFIG: DzenChannelConfig = {
-  id: 'men-25-40',
-  name: 'Men 25-40',
-  description: 'Мужчины 25-40 лет, наблюдательский взгляд',
+export const DZEN_ETHNO_FOOD_RITUALS_CONFIG: DzenChannelConfig = {
+  id: 'ethno-food-ritual',
+  name: 'Ethno Food & Rituals',
+  description: 'Глубокое погружение в культуру еды и древние обряды разных стран.',
   
   defaultAngle: 'observer',
-  defaultEmotion: 'triumph',
-  defaultAudience: 'Men 25-40',
+  defaultEmotion: 'inspiration',
+  defaultAudience: 'Active 50+, foodies, culture seekers',
   
   modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
-  outputDir: './generated/dzen/men-25-40/',
-  scheduleCron: '0 1,7,13,19 * * *', // every 6 hours
+  outputDir: './generated/dzen/ethno-food-ritual/',
+  scheduleCron: '0 7,12,17,22 * * *',
   
   channelThemes: [
-    'Я понял, что женщина меня обманывает',
-    'Работа отнимала всю мою жизнь',
-    'Я не видел детей месяцами',
-    'Друзья изменились, когда я женился',
-    'Я работал 80 часов в неделю ради семьи',
-    'Первый раз взял отпуск за 5 лет',
-    'Меня повысили, но я не обрадовался',
-    'Я научился говорить "нет" на работе',
-    'Жена попросила меня измениться или уйти',
-    'Я понял, что живу не своей жизнью'
+    'Почему в горах Кавказа никогда не едят в одиночестве: мой опыт',
+    'Обряд чаепития в Марокко: Батон (пес) испугался высоты струи, а я нашел истину',
+    'Как приготовить настоящий курт на рынке в Ташкенте за 50 рублей',
+    'Тайный смысл утренней молитвы в пекарнях Лиссабона',
+    'Что едят долгожители Окинавы: я попробовал их секретный суп',
+    'Старая бабушка в Грузии показала мне обряд выпечки хлеба в тоне',
+    'Почему японцы извиняются перед едой: наше с псом открытие в Киото',
+    'Ритуал подношения риса духам на Бали: сколько это стоит на самом деле',
+    'Вкус детства в другой стране: как я нашел идеальный чебурек в Стамбуле',
+    'Почему в 55 лет я решил бросить всё и поехать изучать обряды еды в Перу'
   ]
 };
 
 /**
- * DZEN TEENS CHANNEL
- * Target: Teens 14-18, confession stories, shame emotion
+ * DZEN BUDGET TRAVEL SECRETS
  */
-export const DZEN_TEENS_CONFIG: DzenChannelConfig = {
-  id: 'teens',
-  name: 'Teens',
-  description: 'Подростки 14-18 лет, исповеди с стыдом',
+export const DZEN_BUDGET_TRAVEL_CONFIG: DzenChannelConfig = {
+  id: 'budget-travel',
+  name: 'Budget Travel & Real Life',
+  description: 'Как увидеть мир, не разорившись. Честные цены и жизнь в дороге.',
   
-  defaultAngle: 'confession',
-  defaultEmotion: 'shame',
-  defaultAudience: 'Teens 14-18',
+  defaultAngle: 'expert',
+  defaultEmotion: 'liberation',
+  defaultAudience: 'Budget travelers, families, digital nomads',
   
   modelOutline: 'gemini-2.5-flash',
   modelEpisodes: 'gemini-2.5-flash',
   
-  outputDir: './generated/dzen/teens/',
-  scheduleCron: '0 4,10,16,22 * * *', // every 6 hours
+  outputDir: './generated/dzen/budget-travel/',
+  scheduleCron: '0 2,8,14,20 * * *',
   
   channelThemes: [
-    'Я притворялся болел, чтобы не идти в школу',
-    'Родители не понимали меня',
-    'Я сбежал из дома в 16',
-    'Меня дразнили из-за внешности',
-    'Я не знал, кто я такой',
-    'Все друзья изменились в старшей школе',
-    'Я боялся рассказать родителям правду',
-    'Одноклассники унижали меня в интернете',
-    'Я был влюблён в учительницу',
-    'Меня поймали на воровстве в магазине'
+    'Как прожить в Тбилиси неделю на 10 000 рублей: наш с псом отчет',
+    'Перелет с собакой за копейки: 3 лайфхака, о которых не знают авиакомпании',
+    'Бесплатная еда в монастырях Таиланда: как попасть на обряд и не быть лишним',
+    'Рынки Стамбула: где покупать продукты, чтобы сэкономить 50% бюджета',
+    'Ночевка в палатке в Исландии: как мы с псом грелись и сколько сэкономили',
+    'Аренда жилья у местных в Дагестане: честный отзыв и цены 2026',
+    'Как найти dog-friendly кафе в Европе и не переплатить за сервис',
+    'Мой бюджет на месяц в Индии: от 500 рублей в день до роскоши',
+    '5 вещей в рюкзаке, которые экономят мне тысячи в каждом путешествии',
+    'Почему путешествовать в 60 лет дешевле, чем в 20: секреты скидок'
+  ]
+};
+
+/**
+ * DZEN NOMAD TECH & TRADITIONS
+ */
+export const DZEN_NOMAD_TECH_CONFIG: DzenChannelConfig = {
+  id: 'nomad-tech',
+  name: 'Nomad: Tech & Traditions',
+  description: 'Стык технологий и древних традиций. Гаджеты в диких местах.',
+  
+  defaultAngle: 'observer',
+  defaultEmotion: 'curiosity',
+  defaultAudience: 'Techies, travelers, nomads 25-45',
+  
+  modelOutline: 'gemini-2.5-flash',
+  modelEpisodes: 'gemini-2.5-flash',
+  
+  outputDir: './generated/dzen/nomad-tech/',
+  scheduleCron: '0 1,7,13,19 * * *',
+  
+  channelThemes: [
+    'Солнечная панель в горах Памира: заряжаю ноут, пока местные пекут лепешки',
+    'Обряды очищения в ИТ-офисах Сеула: как древность помогает кодить',
+    'Стрим из юрты в Монголии: как работает Starlink в пустыне Гоби',
+    'Дроны над древними храмами Ангкора: как не нарушить покой духов',
+    'Биохакинг в джунглях Амазонки: чему меня научил местный шаман и гаджеты',
+    'Как я настроил умный дом в фургоне для путешествия с собакой',
+    'Топ гаджетов для тревел-блогера 2026: что реально нужно на рынке в Дели',
+    'Криптовалюта на рынках Африки: как я платил биткоинами за ужин',
+    'Почему я больше не беру камеру в путешествия: только телефон и AI',
+    'Обряд посвящения в кочевники: мой опыт в цифровом мире'
   ]
 };
 
 /**
  * DZEN CHANNELS REGISTRY
- * All available Dzen channels
  */
 export const DZEN_CHANNELS_REGISTRY: Record<string, DzenChannelConfig> = {
-  'women-35-60': DZEN_WOMEN_35_60_CONFIG,
-  'young-moms': DZEN_YOUNG_MOMS_CONFIG,
-  'men-25-40': DZEN_MEN_25_40_CONFIG,
-  'teens': DZEN_TEENS_CONFIG,
+  'ethno-food-ritual': DZEN_ETHNO_FOOD_RITUALS_CONFIG,
+  'budget-travel': DZEN_BUDGET_TRAVEL_CONFIG,
+  'nomad-tech': DZEN_NOMAD_TECH_CONFIG,
 };
 
-/**
- * Get Dzen channel configuration by ID
- */
 export function getDzenChannelConfig(channelId: string): DzenChannelConfig {
   const config = DZEN_CHANNELS_REGISTRY[channelId];
-  if (!config) {
-    throw new Error(
-      `❌ Dzen channel not found: ${channelId}\n` +
-      `Available channels: ${Object.keys(DZEN_CHANNELS_REGISTRY).join(', ')}`
-    );
-  }
+  if (!config) throw new Error(`❌ Dzen channel not found: ${channelId}`);
   return config;
 }
 
-/**
- * Get all Dzen channels
- */
 export function getAllDzenChannels(): DzenChannelConfig[] {
   return Object.values(DZEN_CHANNELS_REGISTRY);
 }
 
-/**
- * Get Dzen channels by angle
- */
-export function getDzenChannelsByAngle(angle: DzenChannelConfig['defaultAngle']): DzenChannelConfig[] {
-  return getAllDzenChannels().filter(ch => ch.defaultAngle === angle);
-}
-
-/**
- * Get Dzen channels by emotion
- */
-export function getDzenChannelsByEmotion(emotion: DzenChannelConfig['defaultEmotion']): DzenChannelConfig[] {
-  return getAllDzenChannels().filter(ch => ch.defaultEmotion === emotion);
-}
-
-/**
- * Get random theme for specific channel
- */
 export function getRandomThemeForChannel(channelId: string): string {
   const config = getDzenChannelConfig(channelId);
   const randomIndex = Math.floor(Math.random() * config.channelThemes.length);
   return config.channelThemes[randomIndex];
-}
-
-/**
- * Validate all Dzen channels have required configuration
- */
-export function validateDzenChannelsConfig(): {
-  valid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-  
-  getAllDzenChannels().forEach(channel => {
-    if (!channel.id || !channel.name) {
-      errors.push(`${channel.id}: Missing id or name`);
-    }
-    if (!channel.channelThemes || channel.channelThemes.length === 0) {
-      errors.push(`${channel.id}: No themes configured`);
-    }
-    if (!channel.outputDir) {
-      errors.push(`${channel.id}: No output directory configured`);
-    }
-  });
-  
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
 }

@@ -1,12 +1,11 @@
 import { GoogleGenAI, Modality } from "@google/genai";
+import { MASCOT_CONFIG } from "../config/mascot.config";
 
 /**
- * 🎨 ZenMaster v3.5 Image Generator
+ * 🎨 ZenMaster v7.0 Image Generator (Mascot & Travel Edition)
  * 
- * Generates authentic mobile phone photos that look like real home photos
- * from Russian women (35-60 years old) taken on smartphones
- * 
- * Architecture: https://github.com/crosspostly/dzen/blob/main/docs/IMAGE_ARCHITECTURE.md
+ * Generates authentic smartphone photos from travels.
+ * Focus: Food, Rituals, Landscapes, and our mascot "Snowball".
  */
 export class ImageGeneratorService {
   private ai: GoogleGenAI;
@@ -17,53 +16,35 @@ export class ImageGeneratorService {
   }
 
   /**
-   * 🖼️ Generates an authentic mobile phone photo
-   * 
-   * MUST HAVE:
-   * - 16:9 aspect ratio (horizontal)
-   * - Domestic realism (recognizable details: old curtains, cups, packs, USSR furniture)
-   * - Natural lighting (window light, desk lamp, shadows)
-   * - "Live photo" effect (slight digital noise, natural depth of field)
-   * - Real-looking people (wrinkles, imperfect hairstyles, simple clothes)
-   * 
-   * MUST NOT:
-   * - Stock/glossy photos
-   * - Text/watermarks
-   * - Surrealism
-   * - Western style (no American kitchens)
-   * - Dark/shocking content
+   * 🖼️ Generates an authentic travel smartphone photo
    */
-  async generateVisual(sceneDescription: string): Promise<string | null> {
-    // 🎯 ZenMaster v3.5 Prompt Formula
-    // Based on proven architecture for authentic Russian domestic photos
+  async generateVisual(sceneDescription: string, includeMascot: boolean = true): Promise<string | null> {
+    const mascotPrompt = includeMascot ? `\nMASCOT INJECTION: ${MASCOT_CONFIG.image_prompt_injection}` : '';
+
     const finalPrompt = `
-AUTHENTIC mobile phone photo, taken on mid-range smartphone (iPhone 2018-2020 or Samsung A-series).
-Russian interior/domestic context.
+AUTHENTIC travel smartphone photo, taken on a modern smartphone (iPhone 14/15 or Samsung S23/S24).
+CONTEXT: Global Travel, Food, Rituals, and Real Life.
 Subject: ${sceneDescription}
+${mascotPrompt}
 
 REQUIREMENTS:
-- 16:9 aspect ratio, horizontal orientation
-- Natural lighting ONLY (window light, desk lamp, shadows - NO studio light)
-- Domestic realism (old curtains, Soviet furniture, tea cups, packs, realistic clutter)
-- Amateur framing (not professional composition)
-- Depth of field (slight background blur)
-- High realism with non-professional aesthetic
-- Slight digital noise (like real smartphone camera)
-- Authentic Russian woman typology (35-60 years, wrinkles, imperfect hair, simple clothes - halat, sweater, jacket)
-- Natural colors (NOT oversaturated)
+- 16:9 aspect ratio, horizontal orientation.
+- NATURAL LIGHTING ONLY: bright sunlight, sunset glow, or dim indoor ritual lighting. No studio lights.
+- TRAVEL REALISM: messy markets, authentic street food, real historical textures, slightly dusty roads.
+- AMATEUR COMPOSITION: slightly off-center, looks like a person just "pointed and shot" with a phone.
+- HIGH DETAIL: visible textures on food, fabric, and fur.
+- COLOR: Natural, vibrant but not "fake" or oversaturated.
+- AESTHETIC: "Like a photo from a traveler's Telegram or WhatsApp channel."
 
 MUST AVOID:
-- Stock photography or glossy/professional look
-- Text, watermarks, or logos
-- Surrealism or strange proportions
-- Western style (no American kitchens with islands)
-- Blood, violence, or shocking content
-- Perfect models or professional posing
-- Studio lighting
-- Fancy interior design
+- Stock/Glossy professional photography.
+- Text, watermarks, or logos.
+- Surrealism or AI-distorted anatomy.
+- Western "luxury" hotel aesthetics (unless specified).
+- Perfect models or professional posing.
 
-STYLE: "Like a photo from a neighbor's WhatsApp" - authentic, slightly imperfect, real life.
-RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
+STYLE: Realistic, authentic, documentary-style travel photography.
+RESULT: 4K detail with smartphone camera characteristics (slight lens flare, natural depth of field).
 `;
 
     try {
@@ -74,21 +55,19 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
         },
         config: {
           responseModalities: [Modality.IMAGE],
-          temperature: 0.85,  // Slightly lower for consistency
+          temperature: 0.85,
           topK: 40,
           topP: 0.95,
           maxOutputTokens: 1024,
         }
       });
 
-      // Extract image from response
       if (response.candidates && response.candidates.length > 0) {
         const candidate = response.candidates[0];
         if (candidate.content && candidate.content.parts) {
           for (const part of candidate.content.parts) {
             if (part.inlineData) {
-              const base64Data = part.inlineData.data;
-              return `data:image/png;base64,${base64Data}`;
+              return `data:image/png;base64,${part.inlineData.data}`;
             }
           }
         }
@@ -102,47 +81,15 @@ RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
   }
 
   /**
-   * 🔍 Validate scene description for better image generation
-   * 
-   * Good descriptions:
-   * - "Woman 35-40 in kitchen, making tea, natural morning light from window"
-   * - "Two friends talking at table, one crying, holding hands, Soviet interior"
-   * - "Young mother with child on couch, sunlight, morning atmosphere"
-   * 
-   * Bad descriptions:
-   * - "woman" (too generic)
-   * - "happy people" (unclear context)
-   * - "surreal landscape" (wrong domain)
+   * 🔍 Validate travel scene description
    */
   validateDescription(description: string): { valid: boolean; warnings: string[] } {
     const warnings: string[] = [];
+    if (description.length < 15) warnings.push('Description too short');
+    
+    const forbidden = /blood|violence|gun|knife|death|surreal/i;
+    if (forbidden.test(description)) warnings.push('Forbidden content');
 
-    // Check length
-    if (description.length < 20) {
-      warnings.push('Description too short (min 20 chars)');
-    }
-    if (description.length > 500) {
-      warnings.push('Description too long (max 500 chars)');
-    }
-
-    // Check for necessary elements
-    const hasWho = /woman|man|person|мужчин|женщин|люди/i.test(description);
-    const hasWhere = /kitchen|room|couch|table|window|home|кухн|комнат|диван|окн|дом/i.test(description);
-    const hasWhat = /sit|stand|talk|cry|make|hold|read|think|сид|стоит|говор|плач|дел|держ|читает/i.test(description);
-
-    if (!hasWho) warnings.push('No person/people mentioned');
-    if (!hasWhere) warnings.push('No location/setting mentioned');
-    if (!hasWhat) warnings.push('No action/activity mentioned');
-
-    // Check for forbidden content
-    const forbidden = /blood|violence|gun|knife|death|surreal|alien|magic|ghost|крови|насил|смерт|сюр|инопл|привид/i;
-    if (forbidden.test(description)) {
-      warnings.push('Description contains forbidden content');
-    }
-
-    return {
-      valid: warnings.length === 0,
-      warnings
-    };
+    return { valid: warnings.length === 0, warnings };
   }
 }
