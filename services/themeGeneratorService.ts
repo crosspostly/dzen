@@ -30,36 +30,39 @@ export class ThemeGeneratorService {
   }
 
   /**
-   * Load Themes from parsed_examples.json
+   * Load Themes from both JSON files
    */
   private async loadThemesFromJSON(): Promise<string[]> {
-    try {
-      console.log(`${LOG.LOADING} Loading themes from: ${this.examplesPath}`);
-      
-      if (!fs.existsSync(this.examplesPath)) {
-        console.warn(`${LOG.WARN} Examples file not found at ${this.examplesPath}`);
-        throw new Error(`Themes file not found at: ${this.examplesPath}`);
+    const files = ['travel_examples.json', 'parsed_examples.json'];
+    let allThemes: string[] = [];
+
+    for (const fileName of files) {
+      const filePath = path.join(process.cwd(), fileName);
+      if (fs.existsSync(filePath)) {
+        try {
+          console.log(`${LOG.LOADING} Loading themes from: ${filePath}`);
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const data = JSON.parse(content);
+          if (Array.isArray(data)) {
+            const themes = data
+              .map((item: any) => item.title)
+              .filter((title: string) => title && title.length > 5);
+            
+            // If it's travel_examples, give it priority/more weight if needed
+            allThemes = [...allThemes, ...themes];
+          }
+        } catch (e) {
+          console.warn(`${LOG.WARN} Failed to parse ${fileName}`);
+        }
       }
-      
-      const content = fs.readFileSync(this.examplesPath, 'utf-8');
-      const data = JSON.parse(content);
-      
-      if (!Array.isArray(data)) {
-        throw new Error("Themes file is not an array");
-      }
-      
-      // Extract titles from the parsed_examples structure
-      // Structure: { id, title, excerpt, ... }
-      const themes = data
-        .map((item: any) => item.title)
-        .filter((title: string) => title && title.length > 5);
-      
-      console.log(`${LOG.SUCCESS} Loaded ${themes.length} themes from parsed_examples.json`);
-      return themes;
-    } catch (error) {
-      console.error(`${LOG.ERROR} Failed to load themes:`, error);
-      throw error;
     }
+
+    if (allThemes.length === 0) {
+      throw new Error("No themes found in any JSON files");
+    }
+
+    console.log(`${LOG.SUCCESS} Loaded ${allThemes.length} total themes for inspiration`);
+    return allThemes;
   }
 
   /**

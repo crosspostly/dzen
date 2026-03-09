@@ -121,11 +121,15 @@ export class MultiAgentService {
   }
 
   /**
-   * 🧠 RAG Lite: Get relevant example for inspiration
+   * 🧠 RAG Lite: Get relevant example for inspiration (Travel vs Drama)
    */
   private getRelevantExample(theme: string): ExampleArticle | null {
-    // 1. Load examples if not loaded
-    const jsonPath = path.join(process.cwd(), 'parsed_examples.json');
+    // 1. Determine which examples file to use
+    const isTravelTheme = /путешеств|дорога|рынок|еда|обряд|пес|батон|страна|город|поезд/i.test(theme);
+    const examplesFile = isTravelTheme ? 'travel_examples.json' : 'parsed_examples.json';
+    const jsonPath = path.join(process.cwd(), examplesFile);
+    
+    console.log(`🧠 RAG: Loading examples from ${examplesFile} for theme "${theme}"`);
     const examples = examplesService.loadParsedExamples(jsonPath);
     
     if (examples.length === 0) return null;
@@ -138,13 +142,13 @@ export class MultiAgentService {
     });
 
     if (match) {
-       console.log(`🧠 Found relevant example: "${match.title}" for theme "${theme}"`);
+       console.log(`🧠 Found relevant example: "${match.title}"`);
        return match;
     }
 
-    // 3. Fallback: Return top 1 by views (Best of the Best)
+    // 3. Fallback: Return top 1 by views
     const top = examplesService.selectBestExamples(examples, 1)[0];
-    console.log(`🧠 Using top example: "${top.title}" (${top.metadata?.views} views)`);
+    console.log(`🧠 Using top example: "${top.title}"`);
     return top;
   }
 

@@ -146,8 +146,16 @@ export class GeminiService {
     config: ProjectConfig,
     examples: ExampleArticle[]
   ): Promise<string> {
-    const examplesContext = examples
-      .slice(0, 2)
+    // 🆕 v9.1: ANTI-DRAMA RAG
+    const isTravelTheme = /путешеств|дорога|рынок|еда|обряд|пес|батон|страна|город|поезд/i.test(theme);
+    const examplesFile = isTravelTheme ? 'travel_examples.json' : 'parsed_examples.json';
+    const jsonPath = path.join(process.cwd(), examplesFile);
+    
+    console.log(`🧠 GeminiService RAG: Loading examples from ${examplesFile}`);
+    const actualExamples = examplesService.loadParsedExamples(jsonPath);
+    const topExamples = examplesService.selectBestExamples(actualExamples, 2);
+
+    const examplesContext = topExamples
       .map((ex, i) => `Пример ${i + 1}: "${ex.title}"\n${ex.content.substring(0, 800)}`)
       .join('\n\n');
 

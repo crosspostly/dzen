@@ -93,9 +93,10 @@ export class EpisodeGeneratorService {
     const budget = this.calculateBudget(episodeOutlines.length);
     console.log(`\n📊 BUDGET ALLOCATION [Dynamic Episodes]:`);
     console.log(`   Total budget: ${budget.total} chars`);
-    console.log(`   Max episodes planned: ${episodeOutlines.length} × ${budget.perEpisode} chars each (estimated)`);
+    console.log(`   Articles to generate: ${episodeOutlines.length}`);
+    console.log(`   Avg budget per episode: ${budget.perEpisode} chars`);
     console.log(`   Lede: ${budget.lede} | Finale: ${budget.finale}`);
-    console.log(`   (Remaining for episodes: ${budget.remaining} chars)`);
+    console.log(`   (Total pool for episodes: ${budget.remaining} chars)`);
     console.log(`   MIN_EPISODE_SIZE: ${MIN_EPISODE_SIZE} chars\n`);
     
     let charCountSoFar = 0;
@@ -105,9 +106,14 @@ export class EpisodeGeneratorService {
     while (remainingPool > MIN_EPISODE_SIZE && episodeIndex < episodeOutlines.length) {
       const outline = episodeOutlines[episodeIndex];
       const episodesLeft = episodeOutlines.length - episodeIndex;
+      
+      // 🔥 FIX: Correct budget math. Distribute REMAINING pool among REMAINING episodes.
       const charsForThisEpisode = Math.floor(remainingPool / episodesLeft);
       
-      console.log(`\n   🎬 Episode #${outline.id} - Starting generation...`);
+      // 🔥 FIX: Ensure ID is never undefined
+      const currentEpisodeId = outline.id || (episodeIndex + 1);
+      
+      console.log(`\n   🎬 Episode #${currentEpisodeId} - Starting generation...`);
       console.log(`      Budget: ${charsForThisEpisode} chars (${remainingPool} remaining)`);
       
       if (charsForThisEpisode < MIN_EPISODE_SIZE) {
