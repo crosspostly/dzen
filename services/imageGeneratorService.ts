@@ -5,7 +5,7 @@ import { MASCOT_CONFIG } from "../config/mascot.config";
  * 🎨 ZenMaster v7.0 Image Generator (Mascot & Travel Edition)
  * 
  * Generates authentic smartphone photos from travels.
- * Focus: Food, Rituals, Landscapes, and our mascot "Snowball".
+ * Focus: Food, Rituals, Landscapes, and our mascot "Baton".
  */
 export class ImageGeneratorService {
   private ai: GoogleGenAI;

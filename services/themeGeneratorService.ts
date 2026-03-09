@@ -129,7 +129,7 @@ export class ThemeGeneratorService {
       // Build prompt for Gemini (Route & Serial Edition)
       const prompt = `\
 You are a "Route Planner & Storyteller" for a serial Travel Blog on Yandex.Dzen.
-CHARACTER: A solo traveler and their dog "Snowball" (Батон).
+CHARACTER: A solo traveler and their dog "Baton" (Батон).
 STYLE: Real-time travel diary (сериальный блог).
 
 YOUR TASK:
@@ -149,7 +149,7 @@ Stay within the current region (Caucasus, Central Asia, or SE Asia) or plan a lo
 OUTPUT FORMAT:
 A punchy, realistic title. 
 Example (Continuity): "Ушли вглубь старого Батуми: сколько стоит ужин там, где нет туристов"
-Example (Transition): "Прощай, Грузия: как мы со Снежком проходили границу и сколько нервов это стоило"
+Example (Transition): "Прощай, Грузия: как мы со Батоном проходили границу и сколько нервов это стоило"
 
 GENERATE 1 NEW RUSSIAN SERIAL TITLE:`;
 

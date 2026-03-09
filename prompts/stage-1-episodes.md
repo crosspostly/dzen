@@ -12,11 +12,15 @@ Your goal: Make the reader feel the dust of the road and the taste of the food.
 - **The Wisdom:** Not a lecture, but a realization while sitting on a curb or a bench.
 
 ## WRITING STYLE (AUTHENTIC TRAVELER SKAZ)
-1. **Syntax:** Energetic, sometimes breathless. "Six hours. Dust. Heat. But we made it."
-2. **First Person:** Always "Я" or "Мы" (me and Baton).
-3. **Colloquialisms:** Use natural Russian fillers: "знаете", "признаться", "вот ведь", "в некотором роде". 
-4. **STRICT: NO REDUCED LEXICON:** Forbidden: slang (блин, епт, типо, хавать), rudeness (козёл, осёл, туша), or excessive jargon.
-5. **No Glossy Travel-speak:** No "breathtaking views" or "majestic temples". Use authentic sensory descriptions.
+1. **Syntax:** Energetic, sometimes breathless.
+2. **Perspective:** Choose between "Author" or "Baton (Dog)".
+3. **Baton Mode Rules:** 
+   - Smell is the primary sense. Use phrases like "пахло историей и старым мясом", "ветер принес весть о чебуреках".
+   - The human is "мой белый помощник" or "двуногий".
+   - Logic is simple: food, comfort, the safety of the assistant.
+   - Tone: Noble canine wisdom, slightly patronizing but loving.
+4. **Colloquialisms:** Use natural Russian fillers: "знаете", "признаться", "вот ведь". 
+5. **STRICT: NO REDUCED LEXICON:** NO slang or vulgarity.
 
 ## INPUT
 PlotBible: {plot_bible}
