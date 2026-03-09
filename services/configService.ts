@@ -39,7 +39,7 @@ export interface ProjectConfig {
   publishing: PublishingConfig;
   
   examples_count: number;         // сколько примеров вшивать в промпт
-  gemini_model?: 'gemini-3.1-flash-lite-preview';
+  gemini_model?: 'gemini-3-flash';
   temperature?: number;
 }
 
@@ -180,7 +180,7 @@ export class ConfigService {
       },
       
       examples_count: 3,
-      gemini_model: 'gemini-3.1-flash-lite-preview',
+      gemini_model: 'gemini-3-flash',
       temperature: 0.95,
     };
   }
