@@ -35,7 +35,7 @@ export class GeminiService {
   async generateFreshThemes() {
     const prompt = `Сгенерируй 5 ОСТРЫХ, провокационных заголовков для Яндекс.Дзен (CTR++). JSON массив строк.`;
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3.1-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: prompt,
       config: { responseMimeType: "application/json" },
     });
@@ -143,7 +143,7 @@ export class GeminiService {
         metadata: {
           total_chars: finalChars,
           generation_time_ms: Date.now() - startTime,
-          model_used: config.gemini_model || 'gemini-3.1-flash',
+          model_used: config.gemini_model || 'gemini-3.1-flash-lite',
         },
       };
     } catch (error) {
@@ -160,14 +160,14 @@ export class GeminiService {
     config: ProjectConfig,
     examples: ExampleArticle[]
   ): Promise<string> {
-    // 🆕 v9.2: Hard switch based on audience
-    const audience = config.audience?.age_range || 'Active 50+';
-    const isTravelChannel = /travel|nomad|foodies/i.test(JSON.stringify(config.audience));
+    // 🆕 v9.4: Robust hard switch
+    const isTravelChannel = /travel|nomad|food|ethno|culture/i.test(JSON.stringify(config.audience)) || 
+                            /путешеств|еда|обряд|батон/i.test(theme);
     
     const examplesFile = isTravelChannel ? 'travel_examples.json' : 'parsed_examples.json';
     const jsonPath = path.join(process.cwd(), examplesFile);
     
-    console.log(`🧠 GeminiService RAG: Loading examples from ${examplesFile} (Travel Mode: ${isTravelChannel})`);
+    console.log(`🧠 GeminiService RAG: Loading examples from ${examplesFile}`);
     const actualExamples = examplesService.loadParsedExamples(jsonPath);
     const topExamples = examplesService.selectBestExamples(actualExamples, 2);
 
@@ -206,7 +206,7 @@ ${examplesContext}
 
     const response = await this.callGemini({
       prompt,
-      model: 'gemini-3.1-flash',
+      model: 'gemini-3.1-flash-lite',
       temperature: 0.9,
     });
 
@@ -243,7 +243,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3.1-flash',
+      model: 'gemini-3.1-flash-lite',
       temperature: 0.95,
     });
   }
@@ -279,7 +279,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3.1-flash',
+      model: 'gemini-3.1-flash-lite',
       temperature: 0.95,
     });
   }
@@ -316,7 +316,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3.1-flash',
+      model: 'gemini-3.1-flash-lite',
       temperature: 0.95,
     });
   }
@@ -346,7 +346,7 @@ ${climax}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3.1-flash',
+      model: 'gemini-3.1-flash-lite',
       temperature: 0.9,
     });
   }
@@ -383,7 +383,7 @@ ${climax}
 
       const response = await this.callGemini({
         prompt,
-        model: 'gemini-3.1-flash',
+        model: 'gemini-3.1-flash-lite',
         temperature: 0.85,
       });
 
@@ -418,7 +418,7 @@ ${climax}
     try {
       const response = await this.callGemini({
         prompt,
-        model: 'gemini-3.1-flash',
+        model: 'gemini-3.1-flash-lite',
         temperature: 0.8,
       });
       const parsed = JSON.parse(response);
@@ -455,7 +455,7 @@ ${slices}
 60-100 = человеческий текст (вариативный, живой, эмоциональный)`;
 
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3.1-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",

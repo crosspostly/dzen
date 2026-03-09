@@ -124,17 +124,15 @@ export class MultiAgentService {
    * 🧠 RAG Lite: Get relevant example for inspiration (Channel-based logic)
    */
   private getRelevantExample(theme: string, audience: string): ExampleArticle | null {
-    // 🆕 v9.2: Hard-switch based on audience/context, not regex
-    const isTravelChannel = audience.toLowerCase().includes('travel') || 
-                            audience.toLowerCase().includes('nomad') || 
-                            audience.toLowerCase().includes('foodies');
+    // 🆕 v9.4: Robust hard-switch. If it's travel/ethno/nomad, drama is BANNED.
+    const isTravelChannel = /travel|nomad|food|ethno|culture/i.test(audience) || 
+                            /путешеств|еда|обряд|батон/i.test(theme);
     
     const examplesFile = isTravelChannel ? 'travel_examples.json' : 'parsed_examples.json';
     const jsonPath = path.join(process.cwd(), examplesFile);
     
-    // 🔥 CRITICAL: If it's travel, NEVER load the drama file
     if (isTravelChannel) {
-      console.log(`🌍 TRAVEL MODE: Drama database BANNED. Loading from ${examplesFile}`);
+      console.log(`🌍 TRAVEL MODE: Loading from ${examplesFile}`);
     }
 
     const examples = examplesService.loadParsedExamples(jsonPath);
@@ -670,7 +668,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3.1-flash",
+      model: "gemini-3.1-flash-lite",
       temperature: 0.92
     });
   }
@@ -801,7 +799,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3.1-flash",
+      model: "gemini-3.1-flash-lite",
       temperature: 0.88
     });
   }
@@ -894,7 +892,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3.1-flash",
+      model: "gemini-3.1-flash-lite",
       temperature: 0.85
     });
   }
@@ -1213,7 +1211,7 @@ RESPOND WITH ONLY VALID JSON:
 
     const response = await this.callGemini({
       prompt,
-      model: "gemini-3.1-flash",
+      model: "gemini-3.1-flash-lite",
       temperature: 0.85,
     });
 
@@ -1301,7 +1299,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3.1-flash",
+      model: "gemini-3.1-flash-lite",
       temperature: 0.95,
     });
   }
@@ -1403,7 +1401,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3.1-flash",
+      model: "gemini-3.1-flash-lite",
       temperature: 0.9,
     });
   }
@@ -1430,7 +1428,7 @@ OUTPUT: Only the title (no quotes, no JSON)`;
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-3.1-flash",
+        model: "gemini-3.1-flash-lite",
         temperature: 0.85,
       });
 
@@ -1476,7 +1474,7 @@ Respond as JSON:
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-3.1-flash",
+        model: "gemini-3.1-flash-lite",
         temperature: 0.8,
       });
       return this.parseJsonSafely(response, 'VoicePassport') as VoicePassport;
@@ -1741,7 +1739,7 @@ Output ONLY the episode text. No titles, no metadata.`;
   private async callGemini(prompt: string): Promise<string> {
     try {
       const response = await this.geminiClient.models.generateContent({
-        model: "gemini-3.1-flash",
+        model: "gemini-3.1-flash-lite",
         contents: prompt,
         config: { temperature: 0.9, topK: 40, topP: 0.95 },
       });

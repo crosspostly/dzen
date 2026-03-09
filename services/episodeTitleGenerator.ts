@@ -63,10 +63,10 @@ export class EpisodeTitleGenerator {
       try {
         // Чередуем модели при повторах для разнообразия
         const model = attempt === 1 
-          ? "gemini-3.1-flash"      // PRIMARY
+          ? "gemini-3.1-flash-lite"      // PRIMARY
           : attempt === 2 
           ? "gemini-3.1-flash-lite"       // FALLBACK 1
-          : "gemini-3.1-flash";            // FALLBACK 2
+          : "gemini-3.1-flash-lite";            // FALLBACK 2
 
         console.log(`   📝 Generating title (attempt ${attempt}/${this.MAX_RETRIES}, model: ${model})...`);
 

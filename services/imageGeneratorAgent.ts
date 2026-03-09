@@ -31,7 +31,7 @@ export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
   private config: ImageGenerationConfig;
   private fallbackModel = "gemini-3.1-flash-lite";
-  private primaryModel = "gemini-3.1-flash-image";
+  private primaryModel = "gemini-3.1-flash-lite";
   private usedPrompts: Set<string> = new Set();
   private authenticityProcessor: MobilePhotoAuthenticityProcessor;
 

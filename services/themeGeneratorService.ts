@@ -33,7 +33,7 @@ export class ThemeGeneratorService {
    * Load Themes from both JSON files
    */
   private async loadThemesFromJSON(): Promise<string[]> {
-    const files = ['travel_examples.json', 'parsed_examples.json'];
+    const files = ['travel_examples.json'];
     let allThemes: string[] = [];
 
     for (const fileName of files) {
@@ -90,17 +90,17 @@ export class ThemeGeneratorService {
   }
 
   /**
-   * Fallback themes if JSON fetch fails (Travel & Food 2026)
+   * Fallback themes if JSON fetch fails (Pure Travel & Food)
    */
   private getFallbackThemes(): string[] {
     return [
       'Почему в горах Кавказа никогда не едят в одиночестве: мой опыт',
-      'Обряд чаепития в Марокко: Батон (пес) испугался высоты струи, а я нашел истину',
-      'Как приготовить настоящий курт на рынке в Ташкенте за 50 рублей',
+      'Обряд чаепития в Марокко: Батон испугался высоты струи, а я нашел истину',
+      'Как прожить в Тбилиси неделю на 10 000 рублей: наш с Батоном отчет',
       'Тайный смысл утренней молитвы в пекарнях Лиссабона',
       'Что едят долгожители Окинавы: я попробовал их секретный суп',
       'Старая бабушка в Грузии показала мне обряд выпечки хлеба в тоне',
-      'Почему японцы извиняются перед едой: наше с псом открытие в Киото',
+      'Почему японцы извиняются перед едой: наше с Батоном открытие в Киото',
       'Ритуал подношения риса духам на Бали: сколько это стоит на самом деле',
       'Вкус детства в другой стране: как я нашел идеальный чебурек в Стамбуле',
       'Почему в 55 лет я решил бросить всё и поехать изучать обряды еды в Перу',
@@ -159,7 +159,7 @@ GENERATE 1 NEW RUSSIAN SERIAL TITLE:`;
       try {
         // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
         response = await this.geminiClient.models.generateContent({
-          model: "gemini-3.1-flash",
+          model: "gemini-3.1-flash-lite",
           contents: prompt,
           config: {
             temperature: 1.1, // Higher temperature for variety
