@@ -400,7 +400,7 @@ ${content}`;
     const client = new GoogleGenAI({ apiKey: process.env.API_KEY || process.env.GEMINI_API_KEY });
 
     const response = await client.models.generateContent({
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
     });
 

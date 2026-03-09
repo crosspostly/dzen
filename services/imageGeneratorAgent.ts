@@ -30,8 +30,8 @@ import { MobilePhotoAuthenticityProcessor } from "./mobilePhotoAuthenticityProce
 export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
   private config: ImageGenerationConfig;
-  private fallbackModel = "gemini-3-flash";
-  private primaryModel = "gemini-3-flash";
+  private fallbackModel = "gemini-3-flash-preview";
+  private primaryModel = "gemini-3-flash-preview";
   private usedPrompts: Set<string> = new Set();
   private authenticityProcessor: MobilePhotoAuthenticityProcessor;
 

@@ -49,7 +49,7 @@ RESULT: 4K detail with smartphone camera characteristics (slight lens flare, nat
 
     try {
       const response = await this.ai.models.generateContent({
-        model: 'gemini-3-flash',
+        model: 'gemini-3-flash-preview',
         contents: { 
           parts: [{ text: finalPrompt }] 
         },

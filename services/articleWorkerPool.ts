@@ -342,9 +342,9 @@ export class ArticleWorkerPool {
             audience: longformArticle.outline.audience,
             generatedAt: Date.now(),
             models: {
-              outline: 'gemini-3-flash',
-              episodes: 'gemini-3-flash',
-              image: 'gemini-3-flash',
+              outline: 'gemini-3-flash-preview',
+              episodes: 'gemini-3-flash-preview',
+              image: 'gemini-3-flash-preview',
             },
             // 📊 v4.4: Add quality metrics to metadata
             qualityMetrics: {
@@ -430,8 +430,8 @@ export class ArticleWorkerPool {
         audience: longformArticle.outline?.audience,
         generatedAt: Date.now(),
         models: {
-          outline: 'gemini-3-flash',
-          episodes: 'gemini-3-flash',
+          outline: 'gemini-3-flash-preview',
+          episodes: 'gemini-3-flash-preview',
         },
         qualityMetrics: {
           readabilityScore: metrics.readabilityScore,

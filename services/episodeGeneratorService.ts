@@ -257,7 +257,7 @@ export class EpisodeGeneratorService {
       attempt,
       plotBible
     );
-    const model = useFallbackModel ? "gemini-3-flash" : "gemini-3-flash";
+    const model = useFallbackModel ? "gemini-3-flash-preview" : "gemini-3-flash-preview";
 
     try {
       const response = await this.callGemini({

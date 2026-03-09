@@ -35,7 +35,7 @@ export class GeminiService {
   async generateFreshThemes() {
     const prompt = `Сгенерируй 5 ОСТРЫХ, провокационных заголовков для Яндекс.Дзен (CTR++). JSON массив строк.`;
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: { responseMimeType: "application/json" },
     });
@@ -143,7 +143,7 @@ export class GeminiService {
         metadata: {
           total_chars: finalChars,
           generation_time_ms: Date.now() - startTime,
-          model_used: config.gemini_model || 'gemini-3-flash',
+          model_used: config.gemini_model || 'gemini-3-flash-preview',
         },
       };
     } catch (error) {
@@ -206,7 +206,7 @@ ${examplesContext}
 
     const response = await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.9,
     });
 
@@ -243,7 +243,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.95,
     });
   }
@@ -279,7 +279,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.95,
     });
   }
@@ -316,7 +316,7 @@ ${plan}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.95,
     });
   }
@@ -346,7 +346,7 @@ ${climax}
 
     return await this.callGemini({
       prompt,
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       temperature: 0.9,
     });
   }
@@ -383,7 +383,7 @@ ${climax}
 
       const response = await this.callGemini({
         prompt,
-        model: 'gemini-3-flash',
+        model: 'gemini-3-flash-preview',
         temperature: 0.85,
       });
 
@@ -418,7 +418,7 @@ ${climax}
     try {
       const response = await this.callGemini({
         prompt,
-        model: 'gemini-3-flash',
+        model: 'gemini-3-flash-preview',
         temperature: 0.8,
       });
       const parsed = JSON.parse(response);
@@ -455,7 +455,7 @@ ${slices}
 60-100 = человеческий текст (вариативный, живой, эмоциональный)`;
 
     const response = await this.ai.models.generateContent({
-      model: 'gemini-3-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -571,13 +571,13 @@ ${slices}
       const errorMessage = (error as Error).message;
       console.error(`Ошибка вызова ${model}:`, errorMessage);
       
-      // 🔄 ФОЛБЕК: если модель перегружена, используем gemini-3-flash
+      // 🔄 ФОЛБЕК: если модель перегружена, используем gemini-3-flash-preview
       if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-        console.log(`🔄 Model overloaded, trying fallback to gemini-3-flash...`);
+        console.log(`🔄 Model overloaded, trying fallback to gemini-3-flash-preview...`);
 
         try {
           const fallbackResponse = await this.ai.models.generateContent({
-            model: "gemini-3-flash", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-3-flash-preview", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: prompt,
             config: {
               temperature,

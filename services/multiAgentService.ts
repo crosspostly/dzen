@@ -668,7 +668,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.92
     });
   }
@@ -799,7 +799,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.88
     });
   }
@@ -892,7 +892,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.85
     });
   }
@@ -1211,7 +1211,7 @@ RESPOND WITH ONLY VALID JSON:
 
     const response = await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.85,
     });
 
@@ -1299,7 +1299,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.95,
     });
   }
@@ -1401,7 +1401,7 @@ OUTPUT: Only text`;
 
     return await this.callGemini({
       prompt,
-      model: "gemini-3-flash",
+      model: "gemini-3-flash-preview",
       temperature: 0.9,
     });
   }
@@ -1428,7 +1428,7 @@ OUTPUT: Only the title (no quotes, no JSON)`;
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-3-flash",
+        model: "gemini-3-flash-preview",
         temperature: 0.85,
       });
 
@@ -1474,7 +1474,7 @@ Respond as JSON:
     try {
       const response = await this.callGemini({
         prompt,
-        model: "gemini-3-flash",
+        model: "gemini-3-flash-preview",
         temperature: 0.8,
       });
       return this.parseJsonSafely(response, 'VoicePassport') as VoicePassport;
@@ -1537,7 +1537,7 @@ Respond as JSON:
       if (errorMessage.includes('503') || errorMessage.includes('overloaded')) {
         try {
           const fallbackResponse = await this.geminiClient.models.generateContent({
-            model: "gemini-3-flash",
+            model: "gemini-3-flash-preview",
             contents: params.prompt,
             config: { temperature: params.temperature, topK: 40, topP: 0.95 },
           });
@@ -1739,7 +1739,7 @@ Output ONLY the episode text. No titles, no metadata.`;
   private async callGemini(prompt: string): Promise<string> {
     try {
       const response = await this.geminiClient.models.generateContent({
-        model: "gemini-3-flash",
+        model: "gemini-3-flash-preview",
         contents: prompt,
         config: { temperature: 0.9, topK: 40, topP: 0.95 },
       });
