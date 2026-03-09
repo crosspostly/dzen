@@ -146,21 +146,27 @@ export class GeminiService {
     config: ProjectConfig,
     examples: ExampleArticle[]
   ): Promise<string> {
-    // 🆕 v9.1: ANTI-DRAMA RAG
-    const isTravelTheme = /путешеств|дорога|рынок|еда|обряд|пес|батон|страна|город|поезд/i.test(theme);
-    const examplesFile = isTravelTheme ? 'travel_examples.json' : 'parsed_examples.json';
+    // 🆕 v9.2: Hard switch based on audience
+    const audience = config.audience?.age_range || 'Active 50+';
+    const isTravelChannel = /travel|nomad|foodies/i.test(JSON.stringify(config.audience));
+    
+    const examplesFile = isTravelChannel ? 'travel_examples.json' : 'parsed_examples.json';
     const jsonPath = path.join(process.cwd(), examplesFile);
     
-    console.log(`🧠 GeminiService RAG: Loading examples from ${examplesFile}`);
+    console.log(`🧠 GeminiService RAG: Loading examples from ${examplesFile} (Travel Mode: ${isTravelChannel})`);
     const actualExamples = examplesService.loadParsedExamples(jsonPath);
     const topExamples = examplesService.selectBestExamples(actualExamples, 2);
 
     const examplesContext = topExamples
-      .map((ex, i) => `Пример ${i + 1}: "${ex.title}"\n${ex.content.substring(0, 800)}`)
+      .map((ex, i) => `Пример ${i + 1} (ДЛЯ СТРУКТУРЫ): "${ex.title}"\n${ex.content.substring(0, 800)}`)
       .join('\n\n');
 
     const prompt = `
 Постройте ДЕТАЛЬНЫЙ план для очередного эпизода нашего путевого дневника: "${theme}"
+
+ВАЖНО: Примеры ниже даны ТОЛЬКО для понимания формата (наличие связки, Батона, честного бюджета). 
+КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО копировать локации и события из примеров. 
+Ваша задача: написать УНИКАЛЬНУЮ историю про ${theme}, опираясь на свои знания географии и культуры.
 
 ЦЕЛЕВАЯ АУДИТОРИЯ: Активные люди 50+, путешественники, любители жизни "как она есть".
 ГЛАВНЫЙ ГЕРОЙ: Вы (автор) и ваш верный спутник — пес ${MASCOT_CONFIG.name} (${MASCOT_CONFIG.visual_description}).

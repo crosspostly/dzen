@@ -121,20 +121,26 @@ export class MultiAgentService {
   }
 
   /**
-   * 🧠 RAG Lite: Get relevant example for inspiration (Travel vs Drama)
+   * 🧠 RAG Lite: Get relevant example for inspiration (Channel-based logic)
    */
-  private getRelevantExample(theme: string): ExampleArticle | null {
-    // 1. Determine which examples file to use
-    const isTravelTheme = /путешеств|дорога|рынок|еда|обряд|пес|батон|страна|город|поезд/i.test(theme);
-    const examplesFile = isTravelTheme ? 'travel_examples.json' : 'parsed_examples.json';
+  private getRelevantExample(theme: string, audience: string): ExampleArticle | null {
+    // 🆕 v9.2: Hard-switch based on audience/context, not regex
+    const isTravelChannel = audience.toLowerCase().includes('travel') || 
+                            audience.toLowerCase().includes('nomad') || 
+                            audience.toLowerCase().includes('foodies');
+    
+    const examplesFile = isTravelChannel ? 'travel_examples.json' : 'parsed_examples.json';
     const jsonPath = path.join(process.cwd(), examplesFile);
     
-    console.log(`🧠 RAG: Loading examples from ${examplesFile} for theme "${theme}"`);
+    // 🔥 CRITICAL: If it's travel, NEVER load the drama file
+    if (isTravelChannel) {
+      console.log(`🌍 TRAVEL MODE: Drama database BANNED. Loading from ${examplesFile}`);
+    }
+
     const examples = examplesService.loadParsedExamples(jsonPath);
-    
     if (examples.length === 0) return null;
 
-    // 2. Try to find semantic match by keywords
+    // 2. Try to find semantic match
     const keywords = theme.toLowerCase().split(' ').filter(w => w.length > 4);
     const match = examples.find(ex => {
        const titleLower = ex.title.toLowerCase();
@@ -142,13 +148,13 @@ export class MultiAgentService {
     });
 
     if (match) {
-       console.log(`🧠 Found relevant example: "${match.title}"`);
+       console.log(`🧠 RAG: Found match in ${examplesFile}: "${match.title}"`);
        return match;
     }
 
-    // 3. Fallback: Return top 1 by views
+    // 3. Fallback: Return top 1
     const top = examplesService.selectBestExamples(examples, 1)[0];
-    console.log(`🧠 Using top example: "${top.title}"`);
+    console.log(`🧠 RAG: Using format anchor from ${examplesFile}: "${top.title}"`);
     return top;
   }
 
@@ -1121,7 +1127,7 @@ Key: Reflection, growth, and sharing wisdom`;
 
     // 🧠 RAG: Inject One-Shot Example
     let exampleContext = '';
-    const bestExample = this.getRelevantExample(params.theme);
+    const bestExample = this.getRelevantExample(params.theme, params.audience);
     if (bestExample) {
       exampleContext = `
 📚 ONE-SHOT EXAMPLE (INSPIRATION - DO NOT COPY):
