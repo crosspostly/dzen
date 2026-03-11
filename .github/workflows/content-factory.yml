@@ -176,73 +176,39 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
       
-      - name: 📤 Отправка изменений (Push)
-        if: success()
-        uses: actions/github-script@v7
+      - name: 💾 Фиксация ошибок (если упало)
+        if: failure()
+        run: |
+          echo "### ❌ ОШИБКА ГЕНЕРАЦИИ СТАТЕЙ" > ERROR_REPORT.md
+          echo "Дата: $(date)" >> ERROR_REPORT.md
+          echo "Workflow: ${{ github.workflow }}" >> ERROR_REPORT.md
+          echo "Лог последних строк:" >> ERROR_REPORT.md
+          tail -n 50 publish.log 2>/dev/null || echo "Лог не найден" >> ERROR_REPORT.md
+          
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add ERROR_REPORT.md
+          git commit -m "🚨 ALERT: Content Factory Failed"
+          git push origin ${{ github.ref_name }}
+
+  notify-on-error:
+    runs-on: ubuntu-latest
+    needs: factory
+    if: failure()
+    steps:
+      - name: 📧 Send Email Notification
+        uses: dawidd6/action-send-mail@v3
         with:
-          script: |
-            const { execSync } = require('child_process');
-            
-            const maxRetries = 3;
-            const retryDelay = 2000;
-            
-            async function pushWithRetry() {
-              for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                try {
-                  console.log(`\n🔄 Попытка отправки ${attempt}/${maxRetries}...`);
-                  
-                  console.log('📥 Получение свежих данных из репозитория...');
-                  execSync('git fetch origin ${{ github.ref_name }}', { stdio: 'inherit' });
-                  
-                  console.log('⚙️  Слияние изменений (Rebase)...');
-                  execSync('git rebase origin/${{ github.ref_name }}', { stdio: 'inherit' });
-                  
-                  console.log('📂 Добавление файлов (только статьи)...');
-                  execSync('git add articles/', { stdio: 'inherit' });
-                  
-                  console.log('📊 Статус git после add:');
-                  execSync('git status', { stdio: 'inherit' });
-                  
-                  try {
-                    execSync('git diff --cached --quiet');
-                    console.log('⚠️  Нет изменений для коммита');
-                    return true;
-                  } catch (e) {
-                    // git diff возвращает 1, если есть изменения - это то, что нам нужно
-                  }
-                  
-                  console.log('💾 Создание коммита...');
-                  const timestamp = new Date().toISOString().split('T')[0];
-                  let message = '';
-                  const eventName = '${{ github.event_name }}';
-                  
-                  if (eventName === 'schedule') {
-                     message = `🤖 Ежедневный контент: 10 статей (${timestamp})`;
-                  } else {
-                     const channel = '${{ inputs.channel }}';
-                     const count = '${{ inputs.count }}';
-                     message = `📝 Генерация статей: ${timestamp} - ${count} шт. (${channel})`;
-                  }
-                  
-                  execSync(`git commit -m "${message}"`, { stdio: 'inherit' });
-                  
-                  console.log('🚀 Отправка на GitHub...');
-                  execSync('git push origin ${{ github.ref_name }}', { stdio: 'inherit' });
-                  
-                  console.log('✅ Успешно отправлено!');
-                  return true;
-                  
-                } catch (error) {
-                  if (attempt === maxRetries) {
-                    console.error(`\n❌ Ошибка после ${maxRetries} попыток`);
-                    throw error;
-                  } else {
-                    console.log(`⚠️  Попытка ${attempt} не удалась. Повтор через ${retryDelay}мс...`);
-                    try { execSync('git reset --hard HEAD', { stdio: 'pipe' }); } catch (e) {}
-                    await new Promise(resolve => setTimeout(resolve, retryDelay));
-                  }
-                }
-              }
-            }
-            
-            await pushWithRetry();
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: ❌ Dzen Content Factory Failed
+          body: |
+            Ошибка при генерации пачки статей.
+            Репозиторий: ${{ github.repository }}
+            Лог: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: sheepoff@gmail.com
+          from: Dzen Bot
+          secure: true
+        continue-on-error: true

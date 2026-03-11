@@ -12,6 +12,18 @@ ZenMaster is a modular TypeScript/Node.js system designed to produce viral conte
 - **Human-Centric Restoration**: `TextRestorationService` bypasses AI detectors not through broken syntax, but through high-quality "human-like" flow: varying sentence lengths (rhythm of breathing), sensory details, and an engaging conversational tone ("Show, don't tell").
 - **Visual Intelligence**: `ImageGeneratorAgent` extracts story context to generate unique cinematic covers, followed by `MobilePhotoAuthenticityProcessor` which applies mobile-camera filters based on the story's emotional tone.
 - **Automation**: A robust pipeline (GitHub Actions) handles the full lifecycle: Generate -> Restore -> Feed -> Publish.
+- **Monitoring & Alerts**: Every stage has built-in error reporting. If a workflow fails, it sends an email to `sheepoff@gmail.com` and creates an error log in the repository root for AI diagnosis.
+
+## 🛠 Monitoring & Troubleshooting
+
+### Error Logs
+If a process fails, look for these files in the root directory:
+- `ERROR_REPORT.md`: Fatal errors during article generation.
+- `RESTORE_ERROR.md`: Failures during the text restoration stage.
+- `FEED_ERROR.md`: Issues with RSS feed generation (blocks publishing).
+- `publish-*.log`: Detailed Playwright logs for Dzen publishing attempts.
+
+**Action for AI**: If any of these files exist, read them immediately to diagnose the failure and propose a fix.
 
 ## 🚀 Key Commands
 

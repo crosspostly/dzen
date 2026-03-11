@@ -6,7 +6,7 @@ concurrency:
 
 on:
   schedule:
-    - cron: '0 3 * * *' # Каждую ночь в 3 AM
+    - cron: '0 7 * * *' # Каждое утро в 7 AM UTC (после генерации в 5 AM)
   push:
     paths:
       - 'articles/**/*.md'
@@ -66,7 +66,7 @@ jobs:
             AFTER="${{ github.event.after }}"
             
             # Если это первый пуш в ветку, before будет нулями
-            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || [ -z "$BEFORE" ]; then
               CHANGED=$(git diff-tree --no-commit-id --name-only -r "$AFTER" -- 'articles/**/*.md' | grep -v "REPORT.md" || true)
             else
               CHANGED=$(git diff --name-only "$BEFORE" "$AFTER" -- 'articles/**/*.md' | grep -v "REPORT.md" || true)
@@ -113,6 +113,17 @@ jobs:
             echo "❌ Script failed with exit code $EXIT_CODE"
           fi
           exit $EXIT_CODE
+
+      - name: 💾 Фиксация ошибок (если упало)
+        if: failure()
+        run: |
+          echo "### ❌ ОШИБКА АВТОРЕСТАВРАЦИИ" > RESTORE_ERROR.md
+          echo "Дата: $(date)" >> RESTORE_ERROR.md
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add RESTORE_ERROR.md
+          git commit -m "🚨 ALERT: Auto-Restore Failed"
+          git push origin main
 
       - name: 📤 Commit if changed
         if: steps.files.outputs.files != '' && success()
