@@ -15,6 +15,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { LongFormArticle } from "../types/ContentArchitecture";
+import { MODELS } from "../constants/MODELS_CONFIG";
 
 export interface TextRestorationResult {
   restoredContent: string;
@@ -52,7 +53,7 @@ export class TextRestorationService {
     console.log(`\n🔧 [RESTORATION] Starting text restoration...`);
     
     const improvements: Improvement[] = [];
-    const diagnostics = await this.analyzeText(article);
+    const diagnostics = await this.analyzeText(article.processedContent || this.assembleContent(article));
     
     console.log(`   📊 Diagnostics: ${diagnostics.parasiteCount} parasites, ${diagnostics.brokenSentences} broken sentences`);
     
@@ -219,32 +220,29 @@ export class TextRestorationService {
    * 🎭 Восстановление структуры и авторского голоса
    */
   private async restoreStructureAndVoice(content: string, article: LongFormArticle, improvements: Improvement[]): Promise<string> {
-    const restorationPrompt = `Ты — эксперт по восстановлению авторского голоса в текстах для Яндекс.Дзен.
+    const restorationPrompt = `Ты — блестящий писатель и популярный автор Яндекс.Дзена. Твоя задача — "оживить" текст, чтобы он читался как захватывающий личный дневник или увлекательный рассказ, и при этом имел 100% человеческий слог (чтобы обходить AI-детекторы за счет естественности, а не сломанного синтаксиса).
 
-ЗАДАЧА: Восстановить авторский голос и драматургию текста, сохранив:
-- Эмоциональный вес
-- Ритм (чередование коротких и длинных предложений)
-- Повторяющиеся образы
-- Иронию, горечь, двойственность
+СЕКРЕТ УСПЕХА:
+- ЕСТЕСТВЕННОСТЬ: Пиши простым, современным языком. Никаких искусственных инверсий ("пошел я, значит"). Прямой порядок слов.
+- РИТМ ДЫХАНИЯ: Чередуй короткие емкие фразы и плавные средние предложения. Текст должен "дышать" и легко читаться вслух.
+- ЖИВЫЕ ДЕТАЛИ: Добавь сенсорных деталей (звуки, запахи, ощущения), они делают текст живым и "человечным".
+- ИНТОНАЦИЯ: Представь, что рассказываешь эту историю близкому другу за чашкой кофе. Увлеченно, с юмором или легкой грустью, без книжной зауми и пафоса.
+- ЭФФЕКТ ПРИСУТСТВИЯ: Показывай, а не рассказывай (Show, don't tell). Используй сильные, активные глаголы.
 
 ЗАПРЕЩЕНО:
-- Морализировать
-- Добавлять "счастливые" концовки
-- Менять фактуру (имена, места, детали)
+- Использовать "рваный" ритм, странные перестановки слов и искусственные слова-паразиты (ну, вот, значит, таки).
+- Использовать ИИ-штампы ("В заключение хочется сказать", "Эта история напоминает нам", "Нельзя не отметить").
+- Морализировать и делать назидательные "выводы" в конце.
+- Сокращать текст (объем должен быть ~${content.length} знаков).
 
 ТЕКСТ ДЛЯ ВОССТАНОВЛЕНИЯ:
 ${content}
 
-КОНТЕКСТ СТАТЬИ:
-Тема: ${article.outline?.theme || 'История о важном'}
-Эмоция: ${article.outline?.emotion || 'смешанные чувства'}
-Голос рассказчика должен содержать: холод, маска, пустота (примеры образов)
-
-ВЫВЕДИ ТОЛЬКО восстановленный текст. Без комментариев.`;
+ВЫВЕДИ ТОЛЬКО восстановленный текст.`;
 
     try {
       const response = await this.geminiClient.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: MODELS.TEXT.PRIMARY,
         contents: restorationPrompt,
         config: {
           temperature: 0.7,
@@ -282,15 +280,12 @@ ${content}
   }
 
   /**
-   * 📦 Собрать контент статьи из частей
+   * 📦 Собрать контент статьи из частей (БЕЗ ДУБЛЕЙ)
    */
   private assembleContent(article: LongFormArticle): string {
     const parts: string[] = [
       article.lede,
-      ...article.episodes.map(ep => ep.content),
-      article.development || '',
-      article.climax || '',
-      article.resolution || '',
+      article.development, // В версии v10.2 здесь уже лежат все эпизоды
       article.finale
     ].filter(Boolean);
     
