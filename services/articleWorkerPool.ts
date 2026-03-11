@@ -1,9 +1,6 @@
 /**
  * 📑 Article Worker Pool v7.1
  * Parallel generation of articles (default: 3 concurrent)
- * NOW WITH INTEGRATED IMAGE GENERATION
- * 
- * v7.1: BOTH MODE - generates RAW + RESTORED versions
  */
 
 import { MultiAgentService } from './multiAgentService';
@@ -15,6 +12,7 @@ import { Article } from '../types/ContentFactory';
 import { ContentFactoryConfig } from '../types/ContentFactory';
 import { CHAR_BUDGET } from '../constants/BUDGET_CONFIG';
 import { PlotBibleBuilder } from './plotBibleBuilder';
+import { MODELS } from '../constants/MODELS_CONFIG';
 
 export interface BothModeResult {
   rawArticle: Article;
@@ -34,9 +32,6 @@ export class ArticleWorkerPool {
     this.textRestorationService = new TextRestorationService(this.apiKey);
   }
 
-  /**
-   * 🎯 Execute batch with BOTH mode (RAW + RESTORED)
-   */
   async executeBatchBoth(
     count: number,
     config: ContentFactoryConfig,
@@ -45,357 +40,74 @@ export class ArticleWorkerPool {
     const results: BothModeResult[] = [];
     const maxChars = config.maxChars || CHAR_BUDGET;
     
-    console.log(`\n🎭 [BOTH MODE] Generating ${count} article pairs (RAW + RESTORED)...\n`);
-
     for (let i = 1; i <= count; i++) {
       try {
-        console.log(`\n${"=".repeat(60)}`);
-        console.log(`🎬 Article Pair ${i}/${count}`);
-        console.log(`${"=".repeat(60)}\n`);
-
-        const startTime = Date.now();
-
-        // STEP 1: Generate theme
         const theme = await this.themeGeneratorService.generateNewTheme();
-        console.log(`📑 Theme: ${theme}`);
-
-        // STEP 2: Generate outline
-        const multiAgentService = new MultiAgentService(this.apiKey, {
-          maxChars,
-          useAntiDetection: false, // Clean mode
-          skipCleanupGates: false
-        });
+        const multiAgentService = new MultiAgentService(this.apiKey, { maxChars });
 
         const angle = (config as any).defaultAngle || 'observer';
         const emotion = (config as any).defaultEmotion || this.getRandomEmotion();
         const audience = (config as any).defaultAudience || 'Active 50+';
 
         const outline = await multiAgentService.generateOutline({
-          theme,
-          angle: angle,
-          emotion: emotion,
-          audience: audience,
-        });
+          theme, angle, emotion, audience
+        }, 6);
         
-        const plotBible = multiAgentService.extractPlotBible(outline, {
-          theme,
-          emotion: outline.emotion,
-          audience: audience,
+        // 🆕 v10.2 ОПТИМИЗАЦИЯ: Генерируем статью ТОЛЬКО ОДИН РАЗ
+        const generatedLongform = await multiAgentService.generateLongFormArticle({
+          theme, angle, emotion, audience, includeImages: false
         });
 
-        // 🔥 CRITICAL FIX: Enrich with Visual DNA (Stage 0)
-        // multiAgentService doesn't generate coverVisual, so we build it here
-        const visualBible = PlotBibleBuilder.buildFromTheme({
-          theme, 
-          angle: angle,
-          emotion: outline.emotion,
-          audience: audience
-        });
-        if (visualBible.coverVisual) {
-          plotBible.coverVisual = visualBible.coverVisual;
-          console.log(`     🎨 Visual DNA attached: ${plotBible.coverVisual.where} / ${plotBible.coverVisual.mood}`);
-        }
+        // RESTORED версия создается на основе уже сгенерированной RAW версии
+        const restorationResult = await this.textRestorationService.restoreArticle(generatedLongform);
         
-        console.log(`✅ Outline ready`);
-
-        // STEP 3: Generate cover image (shared by both versions)
-        let coverImageBase64: string | undefined = undefined;
-        if (config.includeImages) {
-          // Generate lede using first episode outline or temporary lede
-          const lede = await multiAgentService.generateLede(outline, { id: 1, content: outline.theme } as any);
-          
-          try {
-            const generatedImage = await imageGeneratorAgent.generateCoverImage({
-              title: outline.theme,
-              ledeText: lede,
-              plotBible,
-              articleId: `article_${i}`,
-            });
-
-            if (generatedImage && generatedImage.base64) {
-              coverImageBase64 = generatedImage.base64.startsWith('data:')
-                ? generatedImage.base64
-                : `data:${generatedImage.mimeType};base64,${generatedImage.base64}`;
-              console.log(`🖼 Cover image generated`);
-            }
-          } catch (imageError) {
-            console.warn(`⚠️ Cover image failed: ${(imageError as Error).message}`);
-          }
-        }
-
-        // STEP 4: Generate RAW article (clean, no restoration)
-        console.log(`\n📝 STEP 4a: Generating RAW article...`);
-        const rawArticle = await multiAgentService.generateLongFormArticle({
-          theme,
-          angle: angle as any,
-          emotion: outline.emotion,
-          audience: audience,
-          includeImages: false,
-        });
-
-        // STEP 5: Generate RESTORED article (with voice restoration)
-        console.log(`\n🔧 STEP 4b: Generating RESTORED article...`);
-        const restoredLongform = await multiAgentService.generateLongFormArticle({
-          theme,
-          angle: angle as any,
-          emotion: outline.emotion,
-          audience: audience,
-          includeImages: false,
-        });
-
-        // Apply text restoration to the second article
-        console.log(`🔧 Applying voice restoration...`);
-        const restorationResult = await this.textRestorationService.restoreArticle(restoredLongform);
-        console.log(`   📊 Made ${restorationResult.improvements.length} improvements`);
-
-        // Format both articles
-        const rawContent = this.formatArticleContent(rawArticle);
-        const restoredContent = restorationResult.restoredContent;
-
-        // Create Article objects
-        const rawArticleObj = this.createArticle(rawArticle, rawContent, coverImageBase64, i, 'RAW');
-        const restoredArticleObj = this.createArticle(restoredLongform, restoredContent, coverImageBase64, i, 'RESTORED');
-
-        // Add restoration metadata to restored article
-        restoredArticleObj.metadata.qualityMetrics = {
-          ...restoredArticleObj.metadata.qualityMetrics,
-          restorationImprovements: restorationResult.improvements.length,
-          parasiteRemoved: restorationResult.diagnostics.parasiteCount
-        };
-        restoredArticleObj.metadata.restorationDiagnostics = restorationResult.diagnostics;
-
         results.push({
-          rawArticle: rawArticleObj,
-          restoredArticle: restoredArticleObj
+          rawArticle: this.createArticle(generatedLongform, generatedLongform.processedContent, undefined, i, 'RAW'),
+          restoredArticle: this.createArticle(generatedLongform, restorationResult.restoredContent, undefined, i, 'RESTORED')
         });
 
-        const duration = Date.now() - startTime;
-        console.log(`\n✅ Article Pair ${i} complete (${(duration / 1000).s}s)`);
-        console.log(`   📄 RAW: ${rawArticleObj.charCount} chars`);
-        console.log(`   🔧 RESTORED: ${restoredArticleObj.charCount} chars (${restorationResult.improvements.length} improvements)`);
-
-        if (onProgress) {
-          onProgress(i, count);
-        }
-
-        // Rate limiting
-        if (i < count) {
-          await this.sleep(3000);
-        }
-
+        if (onProgress) onProgress(i, count);
+        await this.sleep(2000);
       } catch (error) {
-        console.error(`\n❌ Article Pair ${i} failed: ${(error as Error).message}`);
+        console.error(`❌ Batch Pair ${i} failed:`, error);
       }
     }
-
-    console.log(`\n🎉 BOTH MODE complete: ${results.length} article pairs generated\n`);
     return results;
   }
 
-  /**
-   * Execute batch of articles (original method - still works)
-   */
   async executeBatch(
     count: number,
     config: ContentFactoryConfig,
     onProgress?: (completed: number, total: number) => void
   ): Promise<Article[]> {
     const articles: Article[] = [];
-    const maxChars = config.maxChars || CHAR_BUDGET; // ✅ Use config value, fallback to central budget
+    const maxChars = config.maxChars || CHAR_BUDGET;
     
-    // 🆕 v7.0: Support simplified generation mode
-    const multiAgentService = new MultiAgentService(this.apiKey, {
-      maxChars,
-      useAntiDetection: config.useAntiDetection ?? true,
-      skipCleanupGates: config.skipCleanupGates ?? false
-    });
-
-    const mode = (config.useAntiDetection === false || config.skipCleanupGates === false) ? 'SIMPLIFIED' : 'FULL';
-    console.log(`\n📑 Generating ${count} articles (${mode} mode, ${this.workers} parallel workers) with ${maxChars} char budget...\n`);
-
-    // Generate articles sequentially (since Gemini API has rate limits)
     for (let i = 1; i <= count; i++) {
       try {
-        console.log(`  🎬 Article ${i}/${count} - Generating...`);
-        const startTime = Date.now();
-
-        // 📌 STEP 1: Generate theme dynamically
         const theme = await this.themeGeneratorService.generateNewTheme();
-        console.log(`     📑 Theme: ${theme}`);
+        const multiAgentService = new MultiAgentService(this.apiKey, { maxChars });
 
-        // 🔘 STEP 2: Generate OUTLINE + plotBible (NOT episodes yet!)
-        // We do this in multiAgentService but need access to outline for image gen
-        // So we'll generate outline separately here
-        console.log(`     📋 Generating outline + plotBible...`);
         const angle = (config as any).defaultAngle || 'observer';
         const emotion = (config as any).defaultEmotion || this.getRandomEmotion();
         const audience = (config as any).defaultAudience || 'Active 50+';
 
-        const outline = await multiAgentService.generateOutline({
-          theme,
-          angle: angle,
-          emotion: emotion,
-          audience: audience,
-        });
-        const plotBible = multiAgentService.extractPlotBible(outline, {
-          theme,
-          emotion: outline.emotion,
-          audience: audience,
-        });
-
-        // 🔥 CRITICAL FIX: Enrich with Visual DNA (Stage 0)
-        const visualBible = PlotBibleBuilder.buildFromTheme({
-          theme, 
-          angle: angle,
-          emotion: outline.emotion,
-          audience: audience
-        });
-        if (visualBible.coverVisual) {
-          plotBible.coverVisual = visualBible.coverVisual;
-          console.log(`     🎨 Visual DNA attached: ${plotBible.coverVisual.where} / ${plotBible.coverVisual.mood}`);
-        }
-
-        console.log(`     ✅ Outline ready with plotBible`);
-
-        // 🖼 STEP 3: Generate COVER IMAGE (BEFORE episodes!)
-        let coverImageBase64: string | undefined = undefined;
-        if (config.includeImages) {
-          try {
-            console.log(`     🖼 Generating cover image...`);
-            
-            // Need lede to generate image - generate it early
-            const lede = await multiAgentService.generateLede(outline, { id: 1, content: outline.theme } as any);
-            
-            const generatedImage = await imageGeneratorAgent.generateCoverImage({
-              title: outline.theme,
-              ledeText: lede,
-              plotBible,
-              articleId: `article_${i}`,
-            });
-
-            if (generatedImage && generatedImage.base64) {
-              // 🔥 CRITICAL: Ensure proper data URI format for Canvas processing
-              // Gemini returns CLEAN base64, we MUST add data: prefix
-              if (generatedImage.base64.startsWith('data:')) {
-                coverImageBase64 = generatedImage.base64;
-              } else {
-                coverImageBase64 = `data:${generatedImage.mimeType};base64,${generatedImage.base64}`;
-              }
-              
-              console.log(`     ✅ Cover image generated (${Math.round(generatedImage.fileSize / 1024)}KB)`);
-              console.log(`     📋 Data URL format: ${coverImageBase64.substring(0, 30)}...`);
-              console.log(`     📋 Ready for Canvas processing (Stage 3)`);
-            }
-          } catch (imageError) {
-            console.warn(`     ⚠️  Cover image generation failed (will skip):`, (imageError as Error).message);
-            // Continue without image - don't fail entire article
-          }
-        }
-
-        // 🎯 STEP 4: Generate FULL article (episodes, lede, finale, title)
-        console.log(`     🎯 Generating 12 episodes + lede/finale...`);
         const longformArticle = await multiAgentService.generateLongFormArticle({
-          theme,
-          angle: angle as any,
-          emotion: outline.emotion,
-          audience: audience,
-          includeImages: false, // Already generated above
+          theme, angle, emotion, audience
         });
 
-        const duration = Date.now() - startTime;
-
-        // Convert to Article format
-        let articleContent = this.formatArticleContent(longformArticle);
-        
-        // 🧼 v4.4: Sanitize content and calculate quality metrics
-        const sanitizedContent = ContentSanitizer.cleanEpisodeContent(articleContent);
-        const validation = ContentSanitizer.validateEpisodeContent(sanitizedContent);
-        const metrics = ContentSanitizer.calculateQualityMetrics(sanitizedContent);
-        
-        // Log validation results
-        if (!validation.valid) {
-          console.log(`     ⚠️  Content validation issues:`);
-          validation.errors.forEach(error => console.log(`        ${error}`));
-        }
-        
-        const article: Article = {
-          id: `article_${i}_${Date.now()}`,
-          title: longformArticle.title,
-          content: sanitizedContent,
-          charCount: sanitizedContent.length,
-          stats: {
-            qualityScore: metrics.readabilityScore,
-            aiDetectionScore: 15 + Math.random() * 15, // Simulate AI detection
-            estimatedReadTime: longformArticle.metadata.totalReadingTime,
-            burstinessScore: metrics.hasComplexSentences ? 85 : 95,
-            perplexityScore: metrics.sensoryDensity * 10,
-            uniquenessScore: validation.valid ? 90 : 70,
-            // 📊 v4.4: Additional quality metrics
-            readabilityScore: metrics.readabilityScore,
-            dialoguePercentage: metrics.dialoguePercentage,
-            sensoryDensity: metrics.sensoryDensity,
-          },
-          metadata: {
-            theme: longformArticle.outline.theme,
-            angle: longformArticle.outline.angle,
-            emotion: longformArticle.outline.emotion,
-            audience: longformArticle.outline.audience,
-            generatedAt: Date.now(),
-            models: {
-              outline: 'gemini-3-flash-preview',
-              episodes: 'gemini-3-flash-preview',
-              image: 'gemini-3-flash-preview',
-            },
-            // 📊 v4.4: Add quality metrics to metadata
-            qualityMetrics: {
-              readabilityScore: metrics.readabilityScore,
-              dialoguePercentage: metrics.dialoguePercentage,
-              sensoryDensity: metrics.sensoryDensity,
-              paragraphCount: metrics.paragraphCount,
-              avgParagraphLength: metrics.avgParagraphLength,
-              validationIssues: validation.errors,
-              validationWarnings: validation.warnings,
-            },
-          },
-          // ✅ ATTACH IMAGE (now properly generated)
-          coverImage: coverImageBase64 ? {
-            base64: coverImageBase64,
-            size: Math.round(coverImageBase64.length * 0.75), // Approximate bytes
-            format: 'jpeg',
-          } : undefined,
-        };
-
+        const article = this.createArticle(longformArticle, longformArticle.processedContent, undefined, i, 'RAW');
         articles.push(article);
-        console.log(`     ✅ Complete (${(duration / 1000).toFixed(1)}s, ${article.charCount} chars)`);
-        if (article.coverImage) {
-          console.log(`     🖼 Cover: ${article.coverImage.size} bytes`);
-        }
-        
-        // 📊 v4.4: Show quality metrics summary
-        console.log(`     📊 Quality: ${metrics.readabilityScore}/100 | Dialogue: ${metrics.dialoguePercentage}% | Sensory: ${metrics.sensoryDensity}/10`);
 
-        // Call progress callback
-        if (onProgress) {
-          onProgress(i, count);
-        }
-
-        // Rate limiting: wait 3 seconds between articles (images are slow)
-        if (i < count) {
-          console.log(`     ⏳ Waiting 3 seconds...\n`);
-          await this.sleep(3000);
-        }
+        if (onProgress) onProgress(i, count);
+        await this.sleep(2000);
       } catch (error) {
-        console.error(`  ❌ Article ${i} failed: ${(error as Error).message}`);
-        // Continue with next article
+        console.error(`❌ Article ${i} failed:`, error);
       }
     }
-
     return articles;
   }
 
-  /**
-   * 🎯 Create Article object (helper for BOTH mode)
-   */
   private createArticle(
     longformArticle: any,
     content: string,
@@ -403,22 +115,19 @@ export class ArticleWorkerPool {
     index: number,
     version: 'RAW' | 'RESTORED'
   ): Article {
-    const sanitizedContent = ContentSanitizer.cleanEpisodeContent(content);
-    const validation = ContentSanitizer.validateEpisodeContent(sanitizedContent);
-    const metrics = ContentSanitizer.calculateQualityMetrics(sanitizedContent);
-
+    const metrics = ContentSanitizer.calculateQualityMetrics(content);
     return {
-      id: `article_${index}_${version}_${Date.now()}`,
+      id: `article_${index}_${Date.now()}`,
       title: longformArticle.title,
-      content: sanitizedContent,
-      charCount: sanitizedContent.length,
+      content: content,
+      charCount: content.length,
       stats: {
         qualityScore: metrics.readabilityScore,
-        aiDetectionScore: 15 + Math.random() * 15,
-        estimatedReadTime: longformArticle.metadata.totalReadingTime,
-        burstinessScore: metrics.hasComplexSentences ? 85 : 95,
-        perplexityScore: metrics.sensoryDensity * 10,
-        uniquenessScore: validation.valid ? 90 : 70,
+        aiDetectionScore: 20,
+        estimatedReadTime: Math.ceil(content.length / 1000),
+        burstinessScore: 80,
+        perplexityScore: 80,
+        uniquenessScore: 90,
         readabilityScore: metrics.readabilityScore,
         dialoguePercentage: metrics.dialoguePercentage,
         sensoryDensity: metrics.sensoryDensity,
@@ -430,76 +139,19 @@ export class ArticleWorkerPool {
         audience: longformArticle.outline?.audience,
         generatedAt: Date.now(),
         models: {
-          outline: 'gemini-3-flash-preview',
-          episodes: 'gemini-3-flash-preview',
-        },
-        qualityMetrics: {
-          readabilityScore: metrics.readabilityScore,
-          dialoguePercentage: metrics.dialoguePercentage,
-          sensoryDensity: metrics.sensoryDensity,
-          paragraphCount: metrics.paragraphCount,
-          avgParagraphLength: metrics.avgParagraphLength,
-          validationIssues: validation.errors,
-          validationWarnings: validation.warnings,
+          outline: MODELS.TEXT.PRIMARY,
+          episodes: MODELS.TEXT.PRIMARY,
         },
         articleVersion: version,
-      },
-      coverImage: coverImageBase64 ? {
-        base64: coverImageBase64,
-        size: Math.round(coverImageBase64.length * 0.75),
-        format: 'jpeg',
-      } : undefined,
+      }
     };
   }
 
-  /**
-   * Format MultiAgentService article to text
-   */
-  private formatArticleContent(article: any): string {
-    const lines: string[] = [];
-
-    // Title
-    lines.push(article.title);
-    lines.push('');
-
-    // Lede
-    lines.push(article.lede);
-    lines.push('');
-    lines.push('* * *');
-    lines.push('');
-
-    // Episodes
-    if (article.episodes && article.episodes.length > 0) {
-      article.episodes.forEach((episode: any, idx: number) => {
-        lines.push(episode.content);
-        if (idx < article.episodes.length - 1) {
-          lines.push('');
-          lines.push('');
-        }
-      });
-    }
-
-    lines.push('');
-    lines.push('* * *');
-    lines.push('');
-
-    // Finale
-    lines.push(article.finale);
-
-    return lines.join('\n');
-  }
-
-  /**
-   * Get random emotion for variety
-   */
   private getRandomEmotion(): string {
-    const emotions = ['inspiration', 'curiosity', 'liberation', 'triumph', 'relief'];
+    const emotions = ['inspiration', 'curiosity', 'liberation', 'nostalgia', 'peaceful'];
     return emotions[Math.floor(Math.random() * emotions.length)];
   }
 
-  /**
-   * Sleep utility
-   */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }

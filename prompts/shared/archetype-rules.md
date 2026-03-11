@@ -1,40 +1,19 @@
-# Archetype Rules
+# ТРЕВЕЛ-АРХЕТИПЫ (v1.0)
+## ГЛУБОКОЕ ПОГРУЖЕНИЕ
 
-## 1. Comeback Queen
-- **Timeline**: 1-3 months (SUDDEN)
-- **Core**: Dramatic status reversal.
-- **Victory**: Financial + Social.
-- **Antagonist Reaction**: SHAME.
-- **Key Phrase**: "Now THEY work for ME."
+Вместо любовных драм мы используем только ТРИ реалистичных подхода:
 
-## 2. Gold Digger Trap
-- **Core**: Subverting expectations about money.
-- **Victory**: Financial Independence.
-- **Antagonist Reaction**: SHOCK/DISBELIEF.
-- **Key Phrase**: "I wasn't the trap. I was the prize."
+### 1. БРОДЯГА (NOMAD)
+- Темы: Дорога, границы, дискомфорт, выживание с собакой, случайные попутчики.
+- Эмоция: Свобода через трудности.
+- Ключевая фраза: «Ну что, Батон, едем дальше?»
 
-## 3. Phoenix
-- **Core**: Personal transformation after a crash.
-- **Victory**: Emotional + Professional.
-- **Antagonist Reaction**: REGRET.
-- **Key Phrase**: "I rose from the ashes."
+### 2. ГАСТРО-ЭКСПЕРТ (FOODIE)
+- Темы: Рынки, обряды еды, секретные рецепты, запах хлеба, споры с Батоном за кусок сыра.
+- Эмоция: Вкус жизни, связь культур через стол.
+- Ключевая фраза: «Настоящий вкус не в ресторанах, а здесь, в пыли рынка.»
 
-## 4. Wisdom Earned
-- **Core**: Learning a hard life lesson through experience.
-- **Victory**: Moral + Emotional.
-- **Antagonist Reaction**: RESPECT or SILENCE.
-
-## 5. Mother Wins
-- **Core**: Protecting children or family interests against odds.
-- **Victory**: Social + Emotional.
-- **Antagonist Reaction**: DEFEAT.
-
-## 6. Entrepreneur
-- **Core**: Building something from nothing.
-- **Victory**: Professional + Financial.
-- **Antagonist Reaction**: ENVY.
-
-## 7. Betrayal & Revenge
-- **Core**: Turning the tables on someone who betrayed the narrator.
-- **Victory**: Moral + Social.
-- **Antagonist Reaction**: LOSS.
+### 3. МОЛЧАЛИВЫЙ ИССЛЕДОВАТЕЛЬ (OBSERVER)
+- Темы: Древние руины, тишина гор, заброшенные места, вечность и мы.
+- Эмоция: Глубокое спокойствие, философские мысли о времени.
+- Ключевая фраза: «Камни помнят всё, а мы просто проходим мимо.»

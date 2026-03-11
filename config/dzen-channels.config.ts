@@ -1,3 +1,5 @@
+import { MODELS } from "../constants/MODELS_CONFIG";
+
 /**
  * Dzen Channels Configuration
  * Updated 2026: Focus on Food, Travel, Rituals, and Budget with Mascot integration.
@@ -13,7 +15,7 @@ export interface DzenChannelConfig {
   defaultEmotion: 'triumph' | 'liberation' | 'inspiration' | 'curiosity';
   defaultAudience: string;
   
-  // Model Configuration
+  // Model Configuration (Centralized)
   modelOutline: string;
   modelEpisodes: string;
   
@@ -39,20 +41,20 @@ export const DZEN_ETHNO_FOOD_RITUALS_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'inspiration',
   defaultAudience: 'Active 50+, foodies, culture seekers',
   
-  modelOutline: 'gemini-3-flash-preview',
-  modelEpisodes: 'gemini-3-flash-preview',
+  modelOutline: MODELS.TEXT.PRIMARY,
+  modelEpisodes: MODELS.TEXT.PRIMARY,
   
   outputDir: './generated/dzen/ethno-food-ritual/',
   scheduleCron: '0 7,12,17,22 * * *',
   
   channelThemes: [
     'Почему в горах Кавказа никогда не едят в одиночестве: мой опыт',
-    'Обряд чаепития в Марокко: Батон (пес) испугался высоты струи, а я нашел истину',
+    'Обряд чаепития в Марокко: Батон испугался высоты струи, а я нашел истину',
     'Как приготовить настоящий курт на рынке в Ташкенте за 50 рублей',
     'Тайный смысл утренней молитвы в пекарнях Лиссабона',
     'Что едят долгожители Окинавы: я попробовал их секретный суп',
     'Старая бабушка в Грузии показала мне обряд выпечки хлеба в тоне',
-    'Почему японцы извиняются перед едой: наше с псом открытие в Киото',
+    'Почему японцы извиняются перед едой: наше с Батоном открытие в Киото',
     'Ритуал подношения риса духам на Бали: сколько это стоит на самом деле',
     'Вкус детства в другой стране: как я нашел идеальный чебурек в Стамбуле',
     'Почему в 55 лет я решил бросить всё и поехать изучать обряды еды в Перу'
@@ -71,18 +73,18 @@ export const DZEN_BUDGET_TRAVEL_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'liberation',
   defaultAudience: 'Budget travelers, families, digital nomads',
   
-  modelOutline: 'gemini-3-flash-preview',
-  modelEpisodes: 'gemini-3-flash-preview',
+  modelOutline: MODELS.TEXT.PRIMARY,
+  modelEpisodes: MODELS.TEXT.PRIMARY,
   
   outputDir: './generated/dzen/budget-travel/',
   scheduleCron: '0 2,8,14,20 * * *',
   
   channelThemes: [
-    'Как прожить в Тбилиси неделю на 10 000 рублей: наш с псом отчет',
+    'Как прожить в Тбилиси неделю на 10 000 рублей: наш с Батоном отчет',
     'Перелет с собакой за копейки: 3 лайфхака, о которых не знают авиакомпании',
     'Бесплатная еда в монастырях Таиланда: как попасть на обряд и не быть лишним',
     'Рынки Стамбула: где покупать продукты, чтобы сэкономить 50% бюджета',
-    'Ночевка в палатке в Исландии: как мы с псом грелись и сколько сэкономили',
+    'Ночевка в палатке в Исландии: как мы с Батоном грелись и сколько сэкономили',
     'Аренда жилья у местных в Дагестане: честный отзыв и цены 2026',
     'Как найти dog-friendly кафе в Европе и не переплатить за сервис',
     'Мой бюджет на месяц в Индии: от 500 рублей в день до роскоши',
@@ -103,15 +105,15 @@ export const DZEN_NOMAD_TECH_CONFIG: DzenChannelConfig = {
   defaultEmotion: 'curiosity',
   defaultAudience: 'Techies, travelers, nomads 25-45',
   
-  modelOutline: 'gemini-3-flash-preview',
-  modelEpisodes: 'gemini-3-flash-preview',
+  modelOutline: MODELS.TEXT.PRIMARY,
+  modelEpisodes: MODELS.TEXT.PRIMARY,
   
   outputDir: './generated/dzen/nomad-tech/',
   scheduleCron: '0 1,7,13,19 * * *',
   
   channelThemes: [
     'Солнечная панель в горах Памира: заряжаю ноут, пока местные пекут лепешки',
-    'Обряды очищения в ИТ-офисах Сеула: как древность помогает кодить',
+    'Обряд очищения в ИТ-офисах Сеула: как древность помогает кодить',
     'Стрим из юрты в Монголии: как работает Starlink в пустыне Гоби',
     'Дроны над древними храмами Ангкора: как не нарушить покой духов',
     'Биохакинг в джунглях Амазонки: чему меня научил местный шаман и гаджеты',

@@ -26,12 +26,13 @@ import {
 } from "../types/ImageGeneration";
 import { PlotBible } from "../types/PlotBible";
 import { MobilePhotoAuthenticityProcessor } from "./mobilePhotoAuthenticityProcessor";
+import { MODELS } from "../constants/MODELS_CONFIG";
 
 export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
   private config: ImageGenerationConfig;
-  private fallbackModel = "gemini-3-flash-preview";
-  private primaryModel = "gemini-3-flash-preview";
+  private fallbackModel = MODELS.IMAGE.PRIMARY;
+  private primaryModel = MODELS.IMAGE.PRIMARY;
   private usedPrompts: Set<string> = new Set();
   private authenticityProcessor: MobilePhotoAuthenticityProcessor;
 

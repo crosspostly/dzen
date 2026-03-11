@@ -1,0 +1,23 @@
+{
+  "version": "4.0",
+  "generatedAt": 1773148984466,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": false,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": false,
+    "enablePlotBible": true
+  },
+  "articleCount": 2,
+  "totalCharacters": 32141,
+  "totalImages": 0,
+  "outputPaths": {
+    "articles": [],
+    "images": [],
+    "report": "articles/ethno-food-ritual/2026-03-10/REPORT.md"
+  }
+}

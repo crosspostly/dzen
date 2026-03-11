@@ -89,7 +89,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
   }
   
   // Priority 3: Hardcoded default (lowest priority)
-  const defaultTheme = 'Я терпела это 20 лет';
+  const defaultTheme = 'Дорога и новые открытия: наш с Батоном путь';
   console.log(`${LOG.WARN} Using hardcoded default theme: "${defaultTheme}"`);
   return defaultTheme;
 }

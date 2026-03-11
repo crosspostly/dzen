@@ -1,5 +1,6 @@
 import { GoogleGenAI, Modality } from "@google/genai";
 import { MASCOT_CONFIG } from "../config/mascot.config";
+import { MODELS } from "../constants/MODELS_CONFIG";
 
 /**
  * 🎨 ZenMaster v7.0 Image Generator (Mascot & Travel Edition)
@@ -49,7 +50,7 @@ RESULT: 4K detail with smartphone camera characteristics (slight lens flare, nat
 
     try {
       const response = await this.ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: MODELS.IMAGE.PRIMARY,
         contents: { 
           parts: [{ text: finalPrompt }] 
         },

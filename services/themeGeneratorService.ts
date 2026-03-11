@@ -4,9 +4,16 @@
  * Uses Gemini API to create variations that ensure every run generates different themes
  */
 
+/**
+ * 🗺️ ThemeGeneratorService v10.0
+ * СТАТУС: Март 2026 года.
+ * ПРАВИЛО: Только актуальные модели 3.1+ или 2.5+. 
+ */
+
 import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 import path from "path";
+import { MODELS } from "../constants/MODELS_CONFIG";
 
 const LOG = {
   INFO: '🔷',
@@ -120,102 +127,100 @@ export class ThemeGeneratorService {
    */
   async generateNewTheme(): Promise<string> {
     try {
-      // Get all available themes (if they are old family drama, we use them as "anti-examples" or just for tone)
-      const allThemes = await this.getAvailableThemes();
+      // 1. Load context
+      const journeyStatePath = path.join(process.cwd(), 'journey_state.json');
+      const worldLocationsPath = path.join(process.cwd(), 'world_locations.json');
       
-      const exampleSubset = this.getRandomSubset(allThemes, 10);
-      const themesExample = exampleSubset.map(t => `- ${t}`).join('\n  ');
+      let journeyState = { currentCountry: 'Russia', currentCity: 'Makhachkala', lastEvent: '' };
+      if (fs.existsSync(journeyStatePath)) {
+        journeyState = JSON.parse(fs.readFileSync(journeyStatePath, 'utf-8'));
+      }
+      
+      let worldLocations = [];
+      if (fs.existsSync(worldLocationsPath)) {
+        worldLocations = JSON.parse(fs.readFileSync(worldLocationsPath, 'utf-8'));
+      }
 
-      // Build prompt for Gemini (Route & Serial Edition)
       const prompt = `\
-You are a "Route Planner & Storyteller" for a serial Travel Blog on Yandex.Dzen.
-CHARACTER: A solo traveler and their dog "Baton" (Батон).
-STYLE: Real-time travel diary (сериальный блог).
+You are a "Journey Architect" for a serial Travel Blog on Yandex.Dzen.
+CHARACTER: A seasoned solo traveler (50+) and their white dog "Baton" (Батон).
+STYLE: Real-time travel diary (сериальный блог), "Сказ" (conversational, honest, sensory).
+
+CURRENT JOURNEY STATE:
+- Country: ${journeyState.currentCountry}
+- City/Region: ${journeyState.currentCity}
+- Last Event: ${journeyState.lastEvent}
 
 YOUR TASK:
 Generate ONE (1) BRAND NEW Title for the NEXT episode of our journey.
 
-GEOGRAPHIC LOGIC:
-1.  **CONTINUITY:** If we are in a country, the next 5-7 articles should be about neighboring cities, specific streets, or local rituals in THAT country.
-2.  **TRANSITION:** If we have covered a country, generate a "Transition Episode" (airport, long bus ride, border crossing, packing bags).
-3.  **SERIALITY:** The title must sound like a continuation of a journey. Use phrases like "Moving further...", "Found a hidden spot in...", "The next stop was...".
+LOGIC:
+1. CONTINUITY (80%): Stay in the current region/country. Move to a neighboring village, a local market, or describe a ritual.
+2. TRANSITION (20%): If we've been here long (3+ articles), plan a move to a new country from the allowed list (Russia, Asia, Africa, South America). 
+3. SERIALITY: Mention the dog (Baton), prices in local currency, and a specific sensory hook.
+4. NO MELODRAMA: No "evil mother-in-laws" or "revenge". Just travel reality.
 
-EXAMPLES OF PREVIOUS THEMES (for style context):
-${themesExample}
+ALLOWED REGIONS: Russia (Altai, Baikal, etc.), Asia (Vietnam, China, Uzbekistan), Africa (Morocco), South America (Peru). 
+EXCLUDE: Europe, USA, Canada.
 
-CURRENT GOAL:
-Stay within the current region (Caucasus, Central Asia, or SE Asia) or plan a logical move.
+GENERATE 1 NEW RUSSIAN SERIAL TITLE (Punchy, realistic, Dzen-optimized):`;
 
-OUTPUT FORMAT:
-A punchy, realistic title. 
-Example (Continuity): "Ушли вглубь старого Батуми: сколько стоит ужин там, где нет туристов"
-Example (Transition): "Прощай, Грузия: как мы со Батоном проходили границу и сколько нервов это стоило"
-
-GENERATE 1 NEW RUSSIAN SERIAL TITLE:`;
-
-      console.log(`${LOG.BRAIN} Generating new theme with Gemini (using 20 random examples from pool)...`);
+      console.log(`${LOG.BRAIN} Generating serial theme with journey persistence...`);
 
       let response;
       try {
-        // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
         response = await this.geminiClient.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: MODELS.TEXT.PRIMARY,
           contents: prompt,
           config: {
-            temperature: 1.1, // Higher temperature for variety
+            temperature: 1.0,
             topK: 40,
             topP: 0.95,
           },
         });
       } catch (error) {
         const errorMessage = (error as Error).message;
-        console.warn(`${LOG.WARN} Primary model failed (${errorMessage}), trying fallback...`);
+        console.warn(`${LOG.WARN} Primary model failed, trying fallback...`);
         
-        // 🔄 ФОЛБЕК: если модель перегружена
-        if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-          console.log(`${LOG.LOADING} Trying fallback to gemini-3-flash-preview...`);
-          
-          response = await this.geminiClient.models.generateContent({
-            model: "gemini-3-flash-preview", // 🔥 ФОЛБЕК МОДЕЛЬ
-            contents: prompt,
-            config: {
-              temperature: 0.95,
-              topK: 40,
-              topP: 0.95,
-            },
-          });
-          
-          console.log(`${LOG.SUCCESS} Fallback successful`);
-        } else {
-          throw error;
-        }
+        response = await this.geminiClient.models.generateContent({
+          model: MODELS.TEXT.STABLE,
+          contents: prompt,
+          config: {
+            temperature: 0.95,
+            topK: 40,
+            topP: 0.95,
+          },
+        });
       }
 
       const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text || typeof text !== 'string') {
-        console.warn(
-          `${LOG.WARN} generateNewTheme: Gemini returned empty/invalid text:`,
-          JSON.stringify(response).substring(0, 500)
-        );
         throw new Error("Gemini returned empty/invalid response");
       }
 
-      const theme = text.trim();
+      // 🔥 FIX: Clean up the theme (remove markdown, "Заголовок:" prefix, etc)
+      const theme = text.trim()
+        .replace(/^["']|["']$/g, '')
+        .replace(/^\*\*Заголовок:\*\*\s*/i, '')
+        .replace(/^Заголовок:\s*/i, '')
+        .replace(/\n/g, ' ')
+        .replace(/\*\*/g, '')
+        .trim();
 
       if (!theme || theme.length < 10) {
         throw new Error("Generated theme too short");
       }
 
-      console.log(`${LOG.SUCCESS} New theme generated: "${theme}"`);
+      // Update journey state for next run (simplified logic)
+      journeyState.lastEvent = `Generated article: ${theme}`;
+      fs.writeFileSync(journeyStatePath, JSON.stringify(journeyState, null, 2));
+
+      console.log(`${LOG.SUCCESS} New serial theme: "${theme}"`);
       return theme;
 
     } catch (error) {
       console.error(`${LOG.ERROR} Theme generation failed:`, error);
-      // Fallback to random from CSV if Gemini fails
-      const themes = await this.getAvailableThemes();
-      const random = themes[Math.floor(Math.random() * themes.length)];
-      console.log(`${LOG.WARN} Using fallback theme from CSV: "${random}"`);
-      return random;
+      return "Как мы с Батоном искали ночлег в новом месте: цены и реалии";
     }
   }
 

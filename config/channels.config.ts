@@ -1,3 +1,5 @@
+import { MODELS } from "../constants/MODELS_CONFIG";
+
 /**
  * Channel Configuration System
  * Each channel has its own settings, API keys, and generation parameters
@@ -18,9 +20,9 @@ export interface ChannelConfig {
   defaultEmotion: 'triumph' | 'guilt' | 'shame' | 'liberation';
   defaultAudience: string;
   
-  // Model Configuration (can be different per channel)
-  modelOutline: string;        // gemini-3-flash-preview (or custom)
-  modelEpisodes: string;       // gemini-3-flash-preview (or custom)
+  // Model Configuration (Centralized)
+  modelOutline: string;
+  modelEpisodes: string;
   
   // Generation Parameters
   episodeCount: number;        // 9-12 эпизодов
@@ -38,15 +40,12 @@ export interface ChannelConfig {
 
 /**
  * YANDEX DZEN CHANNEL
- * Women 35-60, Russian-speaking, longform
- * USES: GEMINI_API_KEY_DZEN (separate from others!)
  */
 export const DZEN_CONFIG: ChannelConfig = {
   id: 'dzen',
   name: 'Яндекс.Дзен (Women 35-60)',
   platform: 'yandex-dzen',
   
-  // ⚠️ DIFFERENT KEY for Dzen only!
   geminiApiKey: process.env.GEMINI_API_KEY_DZEN || '',
   
   defaultTheme: 'Я терпела это 20 лет',
@@ -54,8 +53,8 @@ export const DZEN_CONFIG: ChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Women 35-60',
   
-  modelOutline: 'gemini-3-flash-preview',
-  modelEpisodes: 'gemini-3-flash-preview',
+  modelOutline: MODELS.TEXT.PRIMARY,
+  modelEpisodes: MODELS.TEXT.PRIMARY,
   
   episodeCount: 12,
   minCharacters: 26000,
@@ -70,15 +69,12 @@ export const DZEN_CONFIG: ChannelConfig = {
 
 /**
  * MEDIUM CHANNEL
- * Tech entrepreneurs, English
- * USES: GEMINI_API_KEY_MEDIUM (different from Dzen!)
  */
 export const MEDIUM_CONFIG: ChannelConfig = {
   id: 'medium',
   name: 'Medium (Tech Founders)',
   platform: 'medium',
   
-  // ⚠️ DIFFERENT KEY for Medium only!
   geminiApiKey: process.env.GEMINI_API_KEY_MEDIUM || '',
   platformApiKey: process.env.MEDIUM_API_KEY || '',
   
@@ -87,8 +83,8 @@ export const MEDIUM_CONFIG: ChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Tech Founders 25-45',
   
-  modelOutline: 'gemini-3-flash-preview',
-  modelEpisodes: 'gemini-3-flash-preview',
+  modelOutline: MODELS.TEXT.PRIMARY,
+  modelEpisodes: MODELS.TEXT.PRIMARY,
   
   episodeCount: 10,
   minCharacters: 25000,
@@ -103,15 +99,12 @@ export const MEDIUM_CONFIG: ChannelConfig = {
 
 /**
  * SUBSTACK CHANNEL
- * Newsletter, US/EU audience
- * USES: GEMINI_API_KEY_SUBSTACK (different from Dzen & Medium!)
  */
 export const SUBSTACK_CONFIG: ChannelConfig = {
   id: 'substack',
   name: 'Substack Newsletter',
   platform: 'substack',
   
-  // ⚠️ DIFFERENT KEY for Substack only!
   geminiApiKey: process.env.GEMINI_API_KEY_SUBSTACK || '',
   platformApiKey: process.env.SUBSTACK_API_KEY || '',
   
@@ -120,8 +113,8 @@ export const SUBSTACK_CONFIG: ChannelConfig = {
   defaultEmotion: 'liberation',
   defaultAudience: 'Premium Subscribers 30-50',
   
-  modelOutline: 'gemini-3-flash-preview',
-  modelEpisodes: 'gemini-3-flash-preview',
+  modelOutline: MODELS.TEXT.PRIMARY,
+  modelEpisodes: MODELS.TEXT.PRIMARY,
   
   episodeCount: 11,
   minCharacters: 28000,
@@ -136,15 +129,12 @@ export const SUBSTACK_CONFIG: ChannelConfig = {
 
 /**
  * HABR CHANNEL
- * Russian tech community
- * USES: GEMINI_API_KEY_HABR (different from all others!)
  */
 export const HABR_CONFIG: ChannelConfig = {
   id: 'habr',
   name: 'Habr (Tech Stories)',
   platform: 'habr',
   
-  // ⚠️ DIFFERENT KEY for Habr only!
   geminiApiKey: process.env.GEMINI_API_KEY_HABR || '',
   platformApiKey: process.env.HABR_API_KEY || '',
   
@@ -153,8 +143,8 @@ export const HABR_CONFIG: ChannelConfig = {
   defaultEmotion: 'triumph',
   defaultAudience: 'Tech Professionals RU 25-45',
   
-  modelOutline: 'gemini-3-flash-preview',
-  modelEpisodes: 'gemini-3-flash-preview',
+  modelOutline: MODELS.TEXT.PRIMARY,
+  modelEpisodes: MODELS.TEXT.PRIMARY,
   
   episodeCount: 10,
   minCharacters: 30000,
@@ -177,66 +167,16 @@ export const CHANNELS_REGISTRY: Record<string, ChannelConfig> = {
   habr: HABR_CONFIG,
 };
 
-/**
- * Get channel config by ID
- * Validates that the channel has a valid API key
- */
 export function getChannelConfig(channelId: string): ChannelConfig {
   const config = CHANNELS_REGISTRY[channelId];
-  if (!config) {
-    throw new Error(`❌ Channel not found: ${channelId}`);
-  }
-  
-  // CRITICAL: Validate that THIS channel has ITS OWN API key
-  if (!config.geminiApiKey) {
-    throw new Error(
-      `❌ Missing API key for channel: ${channelId}\n` +
-      `\n📌 Add to GitHub Secrets:\n` +
-      `   GEMINI_API_KEY_${channelId.toUpperCase()} = sk-...\n` +
-      `\n📌 Or set environment variable:\n` +
-      `   export GEMINI_API_KEY_${channelId.toUpperCase()}=sk-...`
-    );
-  }
-  
+  if (!config) throw new Error(`❌ Channel not found: ${channelId}`);
   return config;
 }
 
-/**
- * Get all active channels
- */
 export function getAllChannels(): ChannelConfig[] {
   return Object.values(CHANNELS_REGISTRY);
 }
 
-/**
- * Get channels by platform
- */
-export function getChannelsByPlatform(
-  platform: ChannelConfig['platform']
-): ChannelConfig[] {
+export function getChannelsByPlatform(platform: ChannelConfig['platform']): ChannelConfig[] {
   return getAllChannels().filter(ch => ch.platform === platform);
-}
-
-/**
- * Validate all channels have valid API keys
- * Run this before batch generation
- */
-export function validateAllChannelKeys(): {
-  valid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-  
-  getAllChannels().forEach(channel => {
-    if (!channel.geminiApiKey) {
-      errors.push(
-        `${channel.name} (${channel.id}): Missing GEMINI_API_KEY_${channel.id.toUpperCase()}`
-      );
-    }
-  });
-  
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
 }

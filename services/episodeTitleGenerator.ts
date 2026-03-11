@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { MODELS } from "../constants/MODELS_CONFIG";
 
 /**
  * Генерирует лаконичные русские названия для эпизодов.
@@ -56,17 +57,15 @@ export class EpisodeTitleGenerator {
 - "Елена говорит с матерью" (слишком описательно)
 - "Очень длинное название из семи или восьми слов" (слишком много)
 
-ОТВЕТЬ ТОЛЬКО НАЗВАНИЕМ (без JSON, без кавычек, без объяснений):`;;
+ОТВЕТЬ ТОЛЬКО НАЗВАНИЕМ (без JSON, без кавычек, без объяснений):`;
 
     // Попытаемся с retries
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
-        // Чередуем модели при повторах для разнообразия
-        const model = attempt === 1 
-          ? "gemini-3-flash-preview"      // PRIMARY
-          : attempt === 2 
-          ? "gemini-3-flash-preview"       // FALLBACK 1
-          : "gemini-3-flash-preview";            // FALLBACK 2
+        // Чередуем модели при повторах (Централизованно)
+        const model = (attempt === 1) 
+          ? (MODELS.TEXT.PRIMARY || "gemini-2.0-flash")
+          : (MODELS.TEXT.FALLBACK || "gemini-1.5-flash");
 
         console.log(`   📝 Generating title (attempt ${attempt}/${this.MAX_RETRIES}, model: ${model})...`);
 

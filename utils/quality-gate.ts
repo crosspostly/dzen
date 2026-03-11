@@ -23,7 +23,7 @@ export async function qualityGate(
   }
   
   // Проверка 2: Phase 2 Score
-  const assessment = gatekeeper.assessArticle(title, content);
+  const assessment = gatekeeper.assessArticle(title, content, undefined, { minLength });
   const phase2Score = assessment.overallScore;
   
   if (phase2Score < minPhase2Score) {

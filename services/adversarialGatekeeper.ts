@@ -54,7 +54,8 @@ export class AdversarialGatekeeper {
   public assessArticle(
     title: string,
     content: string,
-    images?: string[]
+    images?: string[],
+    options?: { minLength?: number }
   ): AdversarialScore {
     const issues: string[] = [];
 
@@ -71,7 +72,7 @@ export class AdversarialGatekeeper {
     const skazRussianness = skazMetrics.score;
 
     // 4. Проверяем длину контента
-    const { contentLengthScore, contentIssues } = this.checkContentLength(content);
+    const { contentLengthScore, contentIssues } = this.checkContentLength(content, options?.minLength);
 
     // 5. Проверяем на clickbait
     const { noClichésScore, clickbaitIssues } = this.checkClickbait(title, content);
@@ -141,7 +142,7 @@ export class AdversarialGatekeeper {
   /**
    * Проверяем длину контента
    */
-  private checkContentLength(content: string): { contentLengthScore: number; contentIssues: string[] } {
+  private checkContentLength(content: string, customMinLength?: number): { contentLengthScore: number; contentIssues: string[] } {
     const issues: string[] = [];
     let score = 100;
 
@@ -149,8 +150,11 @@ export class AdversarialGatekeeper {
     const wordCount = content.match(/\b\w+\b/g)?.length || 0;
     const readingTime = Math.ceil(wordCount / 200); // примерно 200 слов в минуту
 
-    if (charCount < this.minContentLength) {
-      issues.push(`❌ Слишком короткий контент (${charCount} символов, минимум ${this.minContentLength})`);
+    const actualMinLength = customMinLength || this.minContentLength;
+    const actualMinReadingTime = customMinLength ? Math.max(1, Math.floor(actualMinLength / 1200)) : this.minReadingTime;
+
+    if (charCount < actualMinLength) {
+      issues.push(`❌ Слишком короткий контент (${charCount} символов, минимум ${actualMinLength})`);
       score = Math.max(0, score - 30);
     }
 
@@ -159,8 +163,8 @@ export class AdversarialGatekeeper {
       score = Math.max(0, score - 20);
     }
 
-    if (readingTime < this.minReadingTime) {
-      issues.push(`⚠️ Время чтения слишком мало (${readingTime} мин, минимум ${this.minReadingTime})`);
+    if (readingTime < actualMinReadingTime) {
+      issues.push(`⚠️ Время чтения слишком мало (${readingTime} мин, минимум ${actualMinReadingTime})`);
       score = Math.max(0, score - 15);
     }
 

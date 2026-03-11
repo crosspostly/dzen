@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1773064107713,
+  "generatedAt": 1773068852145,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -12,6 +12,9 @@
     "enableAntiDetection": true,
     "enablePlotBible": true,
     "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
     "skipCleanupGates": false
   },
   "articleCount": 0,

@@ -1,0 +1,58 @@
+[
+  {
+    "region": "Russia",
+    "countries": [
+      {
+        "name": "Russia",
+        "subregions": ["Altai", "Baikal", "Kamchatka", "Dagestan", "Karelia", "Ural"],
+        "culture": "Orthodox, diverse indigenous, tea with herbs, pies, cold winters, vast nature",
+        "food": ["Borsch", "Pelmeni", "Blini", "Wild berries", "Smoked fish"]
+      }
+    ]
+  },
+  {
+    "region": "Asia",
+    "countries": [
+      {
+        "name": "Vietnam",
+        "subregions": ["Hanoi", "Ho Chi Minh", "Sapa", "Ha Long Bay", "Da Nang"],
+        "culture": "Motorbikes, street food, Buddhist temples, incense, humidity, busy markets",
+        "food": ["Pho", "Banh Mi", "Egg Coffee", "Spring Rolls", "Durian"]
+      },
+      {
+        "name": "China",
+        "subregions": ["Beijing", "Shanghai", "Chengdu", "Guilin", "Yunnan"],
+        "culture": "Tea ceremony, skyscrapers vs old huts, spicy food, pandas, high-speed trains",
+        "food": ["Dumplings", "Mapo Tofu", "Peking Duck", "Hotpot"]
+      },
+      {
+        "name": "Uzbekistan",
+        "subregions": ["Tashkent", "Samarkand", "Bukhara", "Khiva"],
+        "culture": "Silky fabrics, mosaics, desert heat, hospitality, noisy bazaars",
+        "food": ["Plov", "Samsa", "Shashlik", "Green tea"]
+      }
+    ]
+  },
+  {
+    "region": "Africa",
+    "countries": [
+      {
+        "name": "Morocco",
+        "subregions": ["Marrakesh", "Casablanca", "Fes", "Chefchaouen", "Sahara"],
+        "culture": "Spices, carpets, tajines, mint tea, blue walls, camel caravans, mosques",
+        "food": ["Couscous", "Tajine", "Harira", "Pastilla"]
+      }
+    ]
+  },
+  {
+    "region": "South America",
+    "countries": [
+      {
+        "name": "Peru",
+        "subregions": ["Lima", "Cusco", "Machu Picchu", "Arequipa", "Amazon"],
+        "culture": "Incas, llamas, Andes mountains, colorful ponchos, ceviche, shaman rituals",
+        "food": ["Ceviche", "Lomo Saltado", "Cuy", "Pisco Sour"]
+      }
+    ]
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "version": "4.0",
+  "generatedAt": 1773137302123,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": false,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": false,
+    "enablePlotBible": true
+  },
+  "articleCount": 2,
+  "totalCharacters": 20694,
+  "totalImages": 0,
+  "outputPaths": {
+    "articles": [],
+    "images": [],
+    "report": "articles/channel-1/2026-03-10/REPORT.md"
+  }
+}

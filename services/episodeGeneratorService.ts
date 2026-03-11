@@ -7,6 +7,7 @@ import { Episode, EpisodeOutline } from "../types/ContentArchitecture";
 import { EpisodeTitleGenerator } from "./episodeTitleGenerator";
 import { CHAR_BUDGET, BUDGET_ALLOCATIONS } from "../constants/BUDGET_CONFIG";
 import { Phase2AntiDetectionService } from "./phase2AntiDetectionService";
+import { MODELS } from "../constants/MODELS_CONFIG";
 
 /**
  * 🎬 Episode Generator Service v7.1 (CLEAN GENERATION)
@@ -257,7 +258,7 @@ export class EpisodeGeneratorService {
       attempt,
       plotBible
     );
-    const model = useFallbackModel ? "gemini-3-flash-preview" : "gemini-3-flash-preview";
+    const model = useFallbackModel ? "gemini-3.1-flash-lite-preview" : "gemini-3.1-flash-lite-preview";
 
     try {
       const response = await this.callGemini({
@@ -548,42 +549,71 @@ ${retryNote}
   }
 
   /**
-   * 📞 Call Gemini API
+   * 📞 Call Gemini API with Waterfall strategy (Strict March 2026 Edition)
    */
   private async callGemini(params: {
     prompt: string;
     model: string;
     temperature: number;
   }): Promise<string> {
-    try {
-      const response = await this.geminiClient.models.generateContent({
-        model: params.model,
-        contents: params.prompt,
-        config: {
-          temperature: params.temperature,
-          topK: this.topK,
-          topP: 0.95,
-          maxOutputTokens: 8192
+    const { prompt, temperature } = params;
+
+    for (let i = 0; i < MODELS.WATERFALL.length; i++) {
+      const currentModel = MODELS.WATERFALL[i];
+
+      // 🛡️ ЗАЩИТА МАРТ 2026: Отсекаем устаревшие модели 1.x
+      if (currentModel.includes("1.0") || (currentModel.includes("1.5") && !currentModel.includes("2.5"))) {
+         continue; 
+      }
+
+      for (let retry = 0; retry < 2; retry++) {
+        try {
+          const response = await this.geminiClient.models.generateContent({
+            model: currentModel,
+            contents: prompt,
+            config: {
+              temperature,
+              topK: this.topK,
+              topP: 0.95,
+              maxOutputTokens: 8192
+            }
+          });
+
+          const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!text || typeof text !== 'string' || text.length < 10) {
+            console.log(`⚠️ Empty/Short response from ${currentModel} (attempt ${retry + 1}/2)...`);
+            if (retry === 0) {
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              continue;
+            }
+            break; // Try next model in waterfall
+          }
+
+          return text;
+
+        } catch (error) {
+          const errorMessage = (error as Error).message;
+          const isRetryable = errorMessage.includes('503') || 
+                             errorMessage.includes('overloaded') || 
+                             errorMessage.includes('429') ||
+                             errorMessage.includes('UNAVAILABLE');
+
+          if (isRetryable) {
+            console.log(`🔄 Model ${currentModel} busy/unavailable, trying next...`);
+            break; // Go to next model in waterfall
+          }
+
+          console.error(`❌ Gemini API error (${currentModel}): ${errorMessage}`);
+          throw error;
         }
-      });
-
-      const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text || typeof text !== 'string') {
-        throw new Error('Empty response from Gemini');
-      }
-
-      return text;
-    } catch (error) {
-      const errorMessage = (error as Error).message;
-      console.error(`❌ Gemini API error: ${errorMessage}`);
-      
-      // Handle specific API errors
-      if (errorMessage.includes('503') || errorMessage.includes('overloaded')) {
-        throw new Error(`API overloaded: ${errorMessage}`);
       }
       
-      throw error;
+      if (i < MODELS.WATERFALL.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
     }
+    
+    throw new Error('All Gemini 3 models in waterfall failed.');
   }
 }
 
