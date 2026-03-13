@@ -11,31 +11,19 @@ on:
         required: true
         default: '1'
         type: choice
-        options:
-          - '1'
-          - '5'
-          - '7'
-          - '10'
-          - '25'
-          - '50'
-          - '100'
+        options: ['1', '5', '7', '10', '25', '50', '100']
       channel:
-        description: 'Тематика канала (Ethno, Budget, Nomad)'
+        description: 'Тематика канала'
         required: true
         default: 'ethno-food-ritual'
         type: choice
-        options:
-          - 'ethno-food-ritual'
-          - 'budget-travel'
-          - 'nomad-tech'
+        options: ['ethno-food-ritual', 'budget-travel', 'nomad-tech']
       images:
         description: 'Генерировать обложки?'
         required: false
         default: 'true'
         type: choice
-        options:
-          - 'true'
-          - 'false'
+        options: ['true', 'false']
 
 permissions:
   contents: write
@@ -55,7 +43,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
       
       - name: 🔧 Установка системных зависимостей (Canvas)
         run: |
@@ -67,129 +54,70 @@ jobs:
       
       - name: ✍️ Генерация статей
         run: |
-          # Определение параметров в зависимости от триггера
           if [ "${{ github.event_name }}" == "schedule" ]; then
-            COUNT="8"
-            CHANNEL="ethno-food-ritual"
-            IMAGES="true"
-            echo "⏰ Запуск по расписанию: Используем настройки по умолчанию (8 статей, ethno-food-ritual, картинки)"
+            COUNT="8"; CHANNEL="ethno-food-ritual"; IMAGES="true"
           else
-            COUNT="${{ inputs.count }}"
-            CHANNEL="${{ inputs.channel }}"
-            IMAGES="${{ inputs.images }}"
-            echo "👋 Ручной запуск: Используем введенные параметры"
+            COUNT="${{ inputs.count }}"; CHANNEL="${{ inputs.channel }}"; IMAGES="${{ inputs.images }}"
           fi
           
-          echo "====================================================="
-          echo "🚀 Фабрика контента - Генерация пачки статей"
-          echo "====================================================="
-          echo "Количество:    $COUNT"
-          echo "Канал:         $CHANNEL"
-          echo "Картинки:      $IMAGES"
-          echo "Выход в:       articles/$CHANNEL/$(date +%Y-%m-%d)/"
-          echo "====================================================="
-          echo ""
+          CMD="node --import tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
+          if [ "$IMAGES" = "true" ]; then CMD="$CMD --images"; fi
           
-          CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
-          
-          if [ "$IMAGES" = "true" ]; then
-            CMD="$CMD --images"
-          fi
-          
-          echo "Запуск команды: $CMD"
-          echo ""
-          
-          eval "$CMD"
+          echo "🚀 Running: $CMD"
+          eval "$CMD" 2>&1 | tee publish.log
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          FINAL_CLEANUP_ENABLED: true
-          CLEANUP_THRESHOLD: medium
-          CLEANUP_MODEL: gemini-2.0-flash
-          CLEANUP_TEMPERATURE: 0.3
-          CLEANUP_MAX_RETRIES: 2
 
       - name: 🔧 Восстановление статей (Auto-restore)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          # Определяем параметры (дублируем логику, чтобы быть уверенными)
-          if [ "${{ github.event_name }}" == "schedule" ]; then
-            CHANNEL="ethno-food-ritual"
-          else
-            CHANNEL="${{ inputs.channel }}"
-          fi
-          
-          TODAY=$(date +%Y-%m-%d)
-          TARGET_DIR="articles/$CHANNEL/$TODAY"
-          
-          echo "====================================================="
-          echo "🔧 Запуск восстановления для: $TARGET_DIR"
-          echo "====================================================="
-          
+          CHANNEL="${{ inputs.channel || 'ethno-food-ritual' }}"
+          TARGET_DIR="articles/$CHANNEL/$(date +%Y-%m-%d)"
           if [ -d "$TARGET_DIR" ]; then
-            # Находим все .md файлы в сегодняшней папке
             FILES=$(find "$TARGET_DIR" -name "*.md" -type f)
-            
-            if [ -z "$FILES" ]; then
-               echo "⚠️ Файлы .md не найдены в $TARGET_DIR"
-            else
-               # Преобразуем переносы строк в пробелы для передачи аргументами
-               FILES_ARGS=$(echo "$FILES" | tr '\n' ' ')
-               
-               echo "Обработка файлов:"
-               echo "$FILES"
-               echo ""
-               
-               node scripts/restore-articles-safe.js $FILES_ARGS
+            if [ ! -z "$FILES" ]; then
+               node scripts/restore-articles-safe.js $(echo "$FILES" | tr '\n' ' ')
             fi
-          else
-            echo "⚠️ Папка $TARGET_DIR не найдена (возможно, генерация не создала файлы?)"
           fi
 
       - name: 📊 Подсчет результатов
         if: always()
         run: |
-          ARTICLE_COUNT=$(find ./articles -name "*.txt" 2>/dev/null | wc -l)
-          IMAGE_COUNT=$(find ./articles -name "*.jpg" 2>/dev/null | xargs wc -l | tail -1 | awk '{print $1}' || find ./articles -name "*.png" 2>/dev/null | wc -l)
-          
-          echo ""
           echo "Итоги генерации:"
-          echo "====================================================="
-          echo "Статей создано:   $ARTICLE_COUNT"
-          echo "Картинок создано: $IMAGE_COUNT"
-          echo "====================================================="
-          echo ""
+          find ./articles -name "*.md" 2>/dev/null | wc -l | xargs echo "Статей:"
+          find ./articles -name "*.jpg" 2>/dev/null | wc -l | xargs echo "Картинок:"
       
-      - name: 📦 Загрузка артефактов
-        uses: actions/upload-artifact@v4
+      - name: 🔐 Сохранение изменений в GitHub
         if: always()
-        with:
-          name: articles-${{ inputs.channel || 'scheduled' }}-${{ github.run_id }}
-          path: articles/
-          retention-days: 90
-          if-no-files-found: warn
-      
-      - name: 🔐 Настройка Git
-        if: success()
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          
+          # Явно добавляем файлы, игнорируя возможные ограничения .gitignore (на всякий случай)
+          git add -f articles/
+          
+          # Проверяем, есть ли что коммитить
+          if git diff --cached --quiet; then
+            echo "✅ Изменений нет, коммит не требуется."
+          else
+            echo "🚀 Коммит новых статей..."
+            git commit -m "🚀 AUTO: Generated articles $(date +%Y-%m-%d)"
+            git pull --rebase origin main
+            git push origin main
+          fi
       
-      - name: 💾 Фиксация ошибок (если упало)
+      - name: 💾 Фиксация ошибок
         if: failure()
         run: |
-          echo "### ❌ ОШИБКА ГЕНЕРАЦИИ СТАТЕЙ" > ERROR_REPORT.md
-          echo "Дата: $(date)" >> ERROR_REPORT.md
-          echo "Workflow: ${{ github.workflow }}" >> ERROR_REPORT.md
-          echo "Лог последних строк:" >> ERROR_REPORT.md
-          tail -n 50 publish.log 2>/dev/null || echo "Лог не найден" >> ERROR_REPORT.md
-          
+          echo "### ❌ ОШИБКА ГЕНЕРАЦИИ СТАТЕЙ $(date)" > ERROR_REPORT.md
+          tail -n 100 publish.log >> ERROR_REPORT.md 2>/dev/null || echo "Лог не найден" >> ERROR_REPORT.md
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add ERROR_REPORT.md
           git commit -m "🚨 ALERT: Content Factory Failed"
-          git push origin ${{ github.ref_name }}
+          git push origin main
 
   notify-on-error:
     runs-on: ubuntu-latest
@@ -204,10 +132,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: ❌ Dzen Content Factory Failed
-          body: |
-            Ошибка при генерации пачки статей.
-            Репозиторий: ${{ github.repository }}
-            Лог: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          body: "Ошибка при генерации статей. См. https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           to: sheepoff@gmail.com
           from: Dzen Bot
           secure: true

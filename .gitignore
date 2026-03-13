@@ -17,16 +17,15 @@ dist-ssr
 .env.local
 .env.*.local
 
-# ZenMaster v4.0 Factory Output
-output/
-test-output/
-
-# Allow generated articles to be committed
-# Preserve published structure
-articles/published/
-# Also allow channel-based structure (from exportForZen)
-articles/*/*/*/
-!articles/*/.*
+# ZenMaster Factory Output
+# Allow all articles and images
+!articles/
+articles/**/*
+!articles/**/*.md
+!articles/**/*.jpg
+!articles/**/*.json
+!articles/**/REPORT.md
+!articles/**/manifest.json
 
 # But ignore temporary files
 *.tmp

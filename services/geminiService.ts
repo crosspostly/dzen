@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality, Type } from "@google/genai";
+import { GoogleGenerativeAI, Modality, Type } from "@google/genai";
 import { ProjectConfig } from "./configService";
 import { ExampleArticle } from "./examplesService";
 import { MASCOT_CONFIG } from "../config/mascot.config";
@@ -25,10 +25,10 @@ export interface ArticleGenerationResult {
 }
 
 export class GeminiService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenerativeAI;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    this.ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.API_KEY || '');
   }
 
   /**
@@ -281,23 +281,25 @@ export class GeminiService {
     model: string;
     temperature: number;
   }): Promise<string> {
-    const { prompt, temperature } = params;
+    const { prompt, temperature, model } = params;
     
     for (let i = 0; i < MODELS.WATERFALL.length; i++) {
       const currentModel = MODELS.WATERFALL[i];
       
       try {
-        const response = await this.ai.models.generateContent({
+        const genModel = this.ai.getGenerativeModel({ 
           model: currentModel,
-          contents: prompt,
-          config: { temperature, topK: 40, topP: 0.95 },
+          generationConfig: { temperature, topK: 40, topP: 0.95 }
         });
 
-        if (!response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        const result = await genModel.generateContent(prompt);
+        const response = result.response;
+
+        if (!response?.text()) {
           throw new Error('Empty response');
         }
 
-        return this.cleanGeminiResponse(response.candidates[0].content.parts[0].text);
+        return this.cleanGeminiResponse(response.text());
 
       } catch (error) {
         const errorMessage = (error as Error).message;

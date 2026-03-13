@@ -544,175 +544,61 @@ ${"=".repeat(60)}`);
   }
 
   /**
-   * 🔥 DYNAMIC device selection based on article emotion
-   * NOT hardcoded Samsung Galaxy A10!
+   * 🔥 FIXED: Always use flagship Samsung S24 for consistent high quality
    */
   private selectDeviceForArticle(article: Article): { model: string; year: number } {
-    // Extract emotion from metadata or content
-    const emotion = (article.metadata?.emotion || '').toLowerCase();
-    const content = (article.content || '').toLowerCase();
-    
-    // Analyze emotional markers in content
-    let detectedEmotion = emotion;
-    
-    if (!detectedEmotion) {
-      if (content.includes('плак') || content.includes('слез') || content.includes('горе')) {
-        detectedEmotion = 'grief';
-      } else if (content.includes('смех') || content.includes('радо')) {
-        detectedEmotion = 'joy';
-      } else if (content.includes('гнев') || content.includes('зло')) {
-        detectedEmotion = 'anger';
-      } else if (content.includes('страх') || content.includes('трев')) {
-        detectedEmotion = 'anxiety';
-      } else if (content.includes('облегч') || content.includes('спокой')) {
-        detectedEmotion = 'relief';
-      } else if (content.includes('побед') || content.includes('триумф')) {
-        detectedEmotion = 'triumph';
-      } else if (content.includes('стыд') || content.includes('вина')) {
-        detectedEmotion = 'shame';
-      }
-    }
-
-    // Determine device based on emotion
-    // Positive emotions → newer device
-    // Negative emotions → older device
-    let yearOffset = 0;
-    if (detectedEmotion.includes('triumph') || detectedEmotion.includes('joy')) {
-      yearOffset = 0;      // Current year phone
-    } else if (detectedEmotion.includes('relief') || detectedEmotion.includes('peaceful')) {
-      yearOffset = 2;      // 2-3 year old
-    } else if (detectedEmotion.includes('anxiety') || detectedEmotion.includes('shame')) {
-      yearOffset = 4;      // 4-5 years old
-    } else if (detectedEmotion.includes('grief') || detectedEmotion.includes('mourning') || detectedEmotion.includes('sad')) {
-      yearOffset = 7;      // 7-8 years old
-    } else if (detectedEmotion.includes('anger') || detectedEmotion.includes('rage')) {
-      yearOffset = 3;      // 3-4 years old
-    } else {
-      yearOffset = 2;      // Default: recent but not brand new
-    }
-
-    const year = 2025 - yearOffset;
-
-    // Select device model based on year and narrator age
-    const narratorAge = (article.metadata as any)?.narrator?.age || 40;
-    let model = 'iPhone 11';  // Default
-
-    if (year >= 2023) {
-      model = narratorAge < 40 ? 'iPhone 15' : 'Galaxy S24';
-    } else if (year >= 2021) {
-      model = narratorAge < 40 ? 'iPhone 13' : 'Galaxy A51';
-    } else if (year >= 2019) {
-      model = narratorAge < 40 ? 'iPhone 11' : 'Galaxy A31';
-    } else if (year >= 2017) {
-      model = narratorAge < 45 ? 'iPhone XS' : 'Galaxy S9';
-    } else if (year >= 2015) {
-      model = narratorAge < 50 ? 'iPhone 6s' : 'Galaxy J7';
-    } else {
-      model = 'Galaxy J5';
-    }
-
-    console.log(`   📱 Device selected: ${model} (${year}) based on emotion: "${detectedEmotion}"`);
-
-    return { model, year };
+    return { model: 'Galaxy S24', year: 2024 };
   }
 
   /**
    * 🆕 STAGE 4: Apply Mobile Photo Authenticity Processing
-   * Makes AI-generated images look like authentic mobile phone photos
-   * DYNAMIC device selection based on article emotion!
    */
   private async applyMobileAuthenticityProcessing(): Promise<void> {
     if (!this.config.includeImages || this.articles.length === 0) {
-      return; // Skip if images not enabled or no articles
+      return;
     }
 
     const authenticityProcessor = new MobilePhotoAuthenticityProcessor();
     let successCount = 0;
-    let failureCount = 0;
 
-    console.log(`
-${"=".repeat(60)}`);
-    console.log(`📱 STAGE 4: Mobile Photo Authenticity Processing`);
-    console.log(`${"".repeat(60)}\n`);
+    console.log(`\n📱 STAGE 4: Mobile Photo Authenticity (Samsung S24 Ultra Profile)`);
 
     for (let i = 0; i < this.articles.length; i++) {
       const article = this.articles[i];
 
       if (article.coverImage?.base64) {
         try {
-          // 🔥 SELECT DEVICE DYNAMICALLY based on article emotion!
-          const device = this.selectDeviceForArticle(article);
-          const deviceKey = this.mapDeviceToKey(device.model);
+          const deviceKey = 'samsung_s24';
 
-          console.log(`\n   🔧 Processing image ${i + 1}/${this.articles.length}...`);
-
-          // Get the current buffer (processedBuffer from Canvas or fallback to original)
           let currentBuffer: Buffer;
           if (article.coverImage.processedBuffer) {
             currentBuffer = article.coverImage.processedBuffer;
           } else {
-            // Fallback: Use original JPEG from API
             const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
             currentBuffer = Buffer.from(base64Data, 'base64');
           }
 
-          // Apply mobile authenticity processing with selected device
           const authenticityResult = await authenticityProcessor.processWithDevice(
             currentBuffer.toString('base64'),
             deviceKey,
-            device.year
+            2024
           );
 
-          // Handle result
           if (authenticityResult.success && authenticityResult.processedBuffer) {
-            // Authenticity processing succeeded - replace buffer
             article.coverImage.processedBuffer = authenticityResult.processedBuffer;
             article.coverImage.format = 'jpeg';
-            
-            const sizeKb = Math.round(authenticityResult.processedBuffer.length / 1024);
-            
-            console.log(`\n   📱 Mobile filters applied:`);
-            authenticityResult.appliedEffects.forEach(effect => {
-              console.log(`      ✅ ${effect}`);
-            });
-            
-            console.log(`\n   📊 Authenticity metrics:`);
-            console.log(`      Looks like phone camera: ${authenticityResult.authenticityLevel}`);
-            console.log(`      Device: ${device.model} (${device.year})`);
-            console.log(`      Metadata consistency: Removed`);
-            console.log(`      Artifact patterns: Mobile-like ✓`);
-            
             successCount++;
-          } else {
-            // Authenticity processing failed - keep current buffer
-            console.warn(`\n   ⚠️  Authenticity processing failed: ${authenticityResult.errorMessage}`);
-            console.log(`      Fallback: Using processed buffer from Stage 3`);
-            failureCount++;
           }
 
-          // Always attach metadata about authenticity processing status
-          if (!article.metadata) {
-            article.metadata = { generatedAt: Date.now() };
-          }
-          article.metadata.mobileAuthenticityApplied = authenticityResult.success;
-          article.metadata.authenticityLevel = authenticityResult.authenticityLevel;
-          article.metadata.appliedAuthenticityEffects = authenticityResult.appliedEffects;
-          article.metadata.authenticityError = authenticityResult.errorMessage;
-          article.metadata.mobileCameraEmulated = `${device.model} (${device.year})`;  // 🔥 DYNAMIC!
+          if (!article.metadata) article.metadata = { generatedAt: Date.now() };
+          article.metadata.mobileCameraEmulated = `Samsung Galaxy S24 Ultra`;
 
         } catch (error) {
-          console.error(
-            `     ❌ Unexpected authenticity error: ${(error as Error).message}`
-          );
-          failureCount++;
-          // Continue with next image
+          console.error(`     ❌ Authenticity error: ${(error as Error).message}`);
         }
       }
     }
-
-    console.log(`
-✅ Stage 4 complete: All images processed with DYNAMIC device selection
-`);
+    console.log(`\n✅ Stage 4 complete: ${successCount} images authenticated`);
   }
 
   /**
@@ -772,107 +658,57 @@ ${"=".repeat(60)}`);
   }
 
   /**
-   * 📄 Export articles for Zen
-   * ✅ UPDATED v4.0: Save to articles/{channel_name}/{YYYY-MM-DD}/ with flat structure
-   * - ONE .md file (article content with front-matter for RSS)
-   * - ONE .jpg file (processed cover image via Canvas, or original JPEG if Canvas fails)
-   * - Same filename for both (only extension differs)
+   * 📄 Export articles for Zen (CLEAN VERSION: 1 Story = 1 File)
    */
   async exportForZen(outputDir: string = './articles'): Promise<string> {
-    console.log(`
-📄 Exporting ${this.articles.length} articles
-`);
-
-    // Create content/articles/{channel_name}/{YYYY-MM-DD}/ directory
-    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const dateStr = new Date().toISOString().split('T')[0];
     const finalDir = path.join(outputDir, this.channelName, dateStr);
     fs.mkdirSync(finalDir, { recursive: true });
 
-    console.log(`📁 Output folder: ${finalDir}
-`);
+    // 🔥 Group articles by title to detect RAW/RESTORED pairs
+    const articleGroups = new Map<string, Article[]>();
+    this.articles.forEach(a => {
+      const list = articleGroups.get(a.title) || [];
+      list.push(a);
+      articleGroups.set(a.title, list);
+    });
 
-    const exportedFiles: string[] = [];
+    console.log(`📁 Exporting to: ${finalDir} (${articleGroups.size} unique stories)`);
 
-    // Export each article with FLAT structure (no article-1/, article-2/ folders)
-    for (let i = 0; i < this.articles.length; i++) {
-      const article = this.articles[i];
-      const slug = this.createSlug(article.title); // Convert title to URL-safe slug
-      
-      // Add suffix for BOTH mode articles (RAW/RESTORED)
-      const version = (article.metadata as any)?.articleVersion;
-      const filename = version ? `${slug}-${version.toLowerCase()}` : slug;
+    for (const [title, versions] of articleGroups.entries()) {
+      // 🔥 Selection logic: Prefer RESTORED over RAW
+      const bestVersion = versions.find(v => (v.metadata as any)?.articleVersion === 'RESTORED') || versions[0];
+      const slug = this.createSlug(title);
+      const imageFileName = `${slug}.jpg`;
 
       try {
-        // Generate front-matter for the markdown file (compatible with RSS generation)
-        const description = this.generateIntriguingDescription(article.content);
-        const imageFileName = `${slug}.jpg`; // Image file without timestamp (shared)
-        const frontMatter = `---
-title: "${article.title}"
-date: "${dateStr}"
-description: "${description}"
-image: "${imageFileName}"
-category: "lifestory"
-${version ? `version: "${version}"` : ''}
----
-`;
-
-        // Prepare the article content (without the first line which is the title)
-        const contentLines = article.content.split('\n');
-        const articleBody = contentLines.slice(1).join('\n').trim(); // Skip first line (title)
-
-        // Combine front-matter and article content
+        const description = this.generateIntriguingDescription(bestVersion.content);
+        const frontMatter = `---\ntitle: "${title}"\ndate: "${dateStr}"\ndescription: "${description}"\nimage: "${imageFileName}"\ncategory: "lifestory"\n---\n`;
+        
+        const contentLines = bestVersion.content.split('\n');
+        const articleBody = contentLines.slice(1).join('\n').trim();
         const markdownContent = frontMatter + '\n' + articleBody;
 
-        // Save article as MARKDOWN (with front-matter)
-        const mdPath = path.join(finalDir, `${filename}.md`);
+        const mdPath = path.join(finalDir, `${slug}.md`);
         fs.writeFileSync(mdPath, markdownContent);
-        exportedFiles.push(mdPath);
-        console.log(`✅ Article ${i + 1}: ${filename}.md`);
+        console.log(`✅ Article: ${slug}.md`);
 
-        // 🔥 FIX: ALWAYS save COVER image as JPEG (without timestamp)
-        if (article.coverImage) {
-          let jpegBuffer: Buffer | null = null;
-          let source: string;
-
-          // Check for processed buffer (Canvas post-processing)
-          if (article.coverImage.processedBuffer) {
-            jpegBuffer = article.coverImage.processedBuffer;
-            source = 'Canvas processed';
-          } else {
-            // Fallback: Use original JPEG from API
-            // The API ALWAYS returns JPEG (format: "jpeg" in imageGeneratorAgent config)
-            const base64Data = article.coverImage.base64.replace(/^data:image\/\w+;base64,/, '');
-            jpegBuffer = Buffer.from(base64Data, 'base64');
-            source = 'Original API JPEG';
-          }
-
-          // 🔥 ALWAYS save as .jpg with same slug (no timestamp)
-          const jpgPath = path.join(finalDir, imageFileName);
-          fs.writeFileSync(jpgPath, jpegBuffer);
-          exportedFiles.push(jpgPath);
-          console.log(`   🗼️  Cover: ${imageFileName} (${source}, device: ${article.metadata?.mobileCameraEmulated || 'unknown'})`);
+        if (bestVersion.coverImage) {
+          const jpegBuffer = bestVersion.coverImage.processedBuffer || 
+                             Buffer.from(bestVersion.coverImage.base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+          fs.writeFileSync(path.join(finalDir, imageFileName), jpegBuffer);
+          console.log(`   🗼 Cover: ${imageFileName}`);
         }
       } catch (error) {
-        console.error(`❌ Failed to export article ${i + 1}: ${(error as Error).message}`);
+        console.error(`❌ Export failed for "${title}": ${(error as Error).message}`);
       }
     }
 
-    // Generate manifest
+    // Generate manifest and report
+    const exportedFiles = fs.readdirSync(finalDir).map(f => path.join(finalDir, f));
     const manifest = this.generateManifest(finalDir, exportedFiles);
-    const manifestPath = path.join(finalDir, 'manifest.json');
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-
-    // Generate report
-    const report = this.generateReport();
-    const reportPath = path.join(finalDir, 'REPORT.md');
-    fs.writeFileSync(reportPath, this.formatReport(report));
-
-    console.log(`
-✅ Export complete:`);
-    console.log(`   📄 Articles: ${this.articles.length}`);
-    console.log(`   🗼️  Cover images: ${this.articles.filter(a => a.coverImage).length} (1 per article)`);
-    console.log(`   📋 Manifest: ${manifestPath}`);
-    console.log(`   📋 Report: ${reportPath}\n`);
+    fs.writeFileSync(path.join(finalDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+    fs.writeFileSync(path.join(finalDir, 'REPORT.md'), this.formatReport(this.generateReport()));
 
     return finalDir;
   }

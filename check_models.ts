@@ -1,5 +1,4 @@
-
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import 'dotenv/config';
 
 async function checkModels() {
@@ -9,7 +8,7 @@ async function checkModels() {
     return;
   }
 
-  const genAI = new GoogleGenAI({ apiKey });
+  const genAI = new GoogleGenerativeAI(apiKey);
 
   console.log("🔍 ТЕСТИРОВАНИЕ ОФИЦИАЛЬНЫХ МОДЕЛЕЙ (Март 2026):");
   
@@ -18,8 +17,6 @@ async function checkModels() {
     "gemini-3.1-flash-lite-preview",
     "gemini-2.5-pro",
     "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-3-flash-preview",
     "gemini-pro-latest",
     "gemini-flash-latest"
   ];
@@ -27,12 +24,9 @@ async function checkModels() {
   for (const modelName of candidates) {
     process.stdout.write(`📡 Проверка ${modelName}... `);
     try {
-      const result = await genAI.models.generateContent({
-        model: modelName,
-        contents: [{ role: 'user', parts: [{ text: 'Hi' }] }]
-      });
-      
-      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent('Hi');
+      const text = result.response.text();
       if (text) {
         console.log("✅ РАБОТАЕТ");
       } else {

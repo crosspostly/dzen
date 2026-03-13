@@ -270,11 +270,11 @@ export class ContentSanitizer {
       );
     }
 
-    // Sensory details density
+    // Sensory details density (v4.6: Expanded vocabulary)
     const sensoryWords =
-      /\b(пахло|запах|цвет|красн|голос|слышал|прикоснулся|ощутил|шелест|шум|света|темн|теплый|холодный|мягкий|твердый|резкий|нежный)\w*/gi;
+      /\b(пахло|запах|аромат|цвет|красн|голуб|зелен|золот|голос|звук|слышал|шум|крик|шепот|прикоснулся|ощутил|шелест|света|темн|теплый|холодный|мягкий|твердый|резкий|нежный|вкус|соленый|сладкий|горький|пряный|ветер|пыль|песок|жара|холод|дым|туман|блеск|сияние|звон|стук)\w*/gi;
     const sensoryMatches = cleaned.match(sensoryWords) || [];
-    const sensoryDensity = (sensoryMatches.length / (cleaned.length / 1000)) * 10;
+    const sensoryDensity = (sensoryMatches.length / (cleaned.length / 1000)) * 5; // Adjusted multiplier for realistic scale 0-10
 
     // Plot twist count (v4.5)
     const twistCount = this.calculateTwistCount(cleaned);

@@ -6,7 +6,7 @@
  */
 
 import { qualityGate } from "../utils/quality-gate";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as fs from 'fs';
 import * as path from 'path';
 import { Episode, OutlineStructure, EpisodeOutline, LongFormArticle, VoicePassport } from "../types/ContentArchitecture";
@@ -33,7 +33,7 @@ export interface MultiAgentOptions {
 }
 
 export class MultiAgentService {
-  private geminiClient: GoogleGenAI;
+  private geminiClient: GoogleGenerativeAI;
   private agents: ContentAgent[] = [];
   private contextManager: ContextManager;
   private phase2Service: Phase2AntiDetectionService;
@@ -45,7 +45,7 @@ export class MultiAgentService {
 
   constructor(apiKey?: string, options?: MultiAgentOptions) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenAI({ apiKey: key });
+    this.geminiClient = new GoogleGenerativeAI(key);
     this.contextManager = new ContextManager();
     this.maxChars = options?.maxChars || CHAR_BUDGET;
     this.phase2Service = new Phase2AntiDetectionService();
@@ -1066,13 +1066,13 @@ Respond as JSON:
 
     for (const currentModel of smartWaterfall) {
       try {
-        const response = await this.geminiClient.models.generateContent({
+        const genModel = this.geminiClient.getGenerativeModel({ 
           model: currentModel,
-          contents: prompt,
-          config: { temperature, topK: 40, topP: 0.95 },
+          generationConfig: { temperature, topK: 40, topP: 0.95 }
         });
 
-        const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+        const result = await genModel.generateContent(prompt);
+        const text = result.response.text();
         if (text && text.length > 50) return this.cleanGeminiResponse(text);
       } catch (error) {
         console.log(`🔄 Smart model ${currentModel} failed, trying next...`);
@@ -1095,13 +1095,13 @@ Respond as JSON:
 
     for (const currentModel of fastWaterfall) {
       try {
-        const response = await this.geminiClient.models.generateContent({
+        const genModel = this.geminiClient.getGenerativeModel({ 
           model: currentModel,
-          contents: prompt,
-          config: { temperature, topK: 40, topP: 0.95 },
+          generationConfig: { temperature, topK: 40, topP: 0.95 }
         });
 
-        const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+        const result = await genModel.generateContent(prompt);
+        const text = result.response.text();
         if (text && text.length > 10) return this.cleanGeminiResponse(text);
       } catch (error) {
         console.log(`🔄 Fast model ${currentModel} failed, trying next...`);
@@ -1251,10 +1251,10 @@ Respond as JSON:
 
 class ContentAgent {
   private id: number;
-  private geminiClient: GoogleGenAI;
+  private geminiClient: GoogleGenerativeAI;
   private titleGenerator: EpisodeTitleGenerator;
 
-  constructor(geminiClient: GoogleGenAI, id: number) {
+  constructor(geminiClient: GoogleGenerativeAI, id: number) {
     this.id = id;
     this.geminiClient = geminiClient;
     this.titleGenerator = new EpisodeTitleGenerator(process.env.GEMINI_API_KEY || process.env.API_KEY);
@@ -1304,12 +1304,13 @@ Output ONLY the episode text. No titles, no metadata.`;
 
     for (const currentModel of waterfall) {
       try {
-        const response = await this.geminiClient.models.generateContent({
+        const genModel = this.geminiClient.getGenerativeModel({ 
           model: currentModel,
-          contents: prompt,
-          config: { temperature: 0.7, topK: 40, topP: 0.95 },
+          generationConfig: { temperature: 0.7, topK: 40, topP: 0.95 }
         });
-        const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+        const result = await genModel.generateContent(prompt);
+        const text = result.response.text();
         if (text.length > 100) {
           return this.cleanResponse(text);
         }
