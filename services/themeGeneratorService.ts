@@ -10,7 +10,7 @@
  * ПРАВИЛО: Только актуальные модели 3.1+ или 2.5+. 
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 import path from "path";
 import { MODELS } from "../constants/MODELS_CONFIG";
@@ -25,7 +25,7 @@ const LOG = {
 };
 
 export class ThemeGeneratorService {
-  private geminiClient: GoogleGenerativeAI;
+  private geminiClient: GoogleGenAI;
   private examplesPath = path.join(process.cwd(), 'parsed_examples.json');
   private cachedThemes: string[] = [];
   private lastFetchTime: number = 0;
@@ -33,7 +33,7 @@ export class ThemeGeneratorService {
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenerativeAI(key);
+    this.geminiClient = new GoogleGenAI({ apiKey: key });
   }
 
   /**
@@ -167,33 +167,33 @@ GENERATE 1 NEW RUSSIAN SERIAL TITLE (Punchy, realistic, Dzen-optimized):`;
 
       console.log(`${LOG.BRAIN} Generating serial theme with journey persistence...`);
 
-      let result;
+      let text;
       try {
-        const genModel = this.geminiClient.getGenerativeModel({ 
+        const response = await this.geminiClient.models.generateContent({
           model: MODELS.TEXT.PRIMARY,
-          generationConfig: {
+          contents: prompt,
+          config: {
             temperature: 1.0,
             topK: 40,
             topP: 0.95,
           },
         });
-        result = await genModel.generateContent(prompt);
+        text = response.candidates?.[0]?.content?.parts?.[0]?.text;
       } catch (error) {
-        const errorMessage = (error as Error).message;
         console.warn(`${LOG.WARN} Primary model failed, trying fallback...`);
         
-        const genModel = this.geminiClient.getGenerativeModel({ 
+        const response = await this.geminiClient.models.generateContent({
           model: MODELS.TEXT.STABLE,
-          generationConfig: {
+          contents: prompt,
+          config: {
             temperature: 0.95,
             topK: 40,
             topP: 0.95,
           },
         });
-        result = await genModel.generateContent(prompt);
+        text = response.candidates?.[0]?.content?.parts?.[0]?.text;
       }
 
-      const text = result.response.text();
       if (!text || typeof text !== 'string') {
         throw new Error("Gemini returned empty/invalid response");
       }

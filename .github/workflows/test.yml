@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+defaults:
+  run:
+    working-directory: dzen
+
 jobs:
   test:
     runs-on: ubuntu-latest

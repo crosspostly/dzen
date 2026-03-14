@@ -1,16 +1,16 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { MODELS } from "../constants/MODELS_CONFIG";
 
 /**
  * Генерирует лаконичные русские названия для эпизодов.
  */
 export class EpisodeTitleGenerator {
-  private geminiClient: GoogleGenerativeAI;
+  private geminiClient: GoogleGenAI;
   private MAX_RETRIES = 3; 
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || "";
-    this.geminiClient = new GoogleGenerativeAI(key);
+    this.geminiClient = new GoogleGenAI({ apiKey: key });
   }
 
   async generateEpisodeTitle(
@@ -35,13 +35,13 @@ export class EpisodeTitleGenerator {
 
         console.log(`   📝 Generating title (attempt ${attempt}/${this.MAX_RETRIES}, model: ${modelName})...`);
 
-        const genModel = this.geminiClient.getGenerativeModel({ 
+        const response = await this.geminiClient.models.generateContent({
           model: modelName,
-          generationConfig: { temperature: 0.85, topK: 40, topP: 0.95 }
+          contents: prompt,
+          config: { temperature: 0.85, topK: 40, topP: 0.95 }
         });
 
-        const result = await genModel.generateContent(prompt);
-        const text = result.response.text();
+        const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!text || typeof text !== 'string') {
           if (attempt < this.MAX_RETRIES) continue;

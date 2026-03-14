@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import * as fs from 'fs';
 import * as path from 'path';
 import { calculateSimilarity } from "../utils/levenshtein-distance";
@@ -18,7 +18,7 @@ export interface EpisodeGeneratorOptions {
 }
 
 export class EpisodeGeneratorService {
-  private geminiClient: GoogleGenerativeAI;
+  private geminiClient: GoogleGenAI;
   private titleGenerator: EpisodeTitleGenerator;
   private phase2Service: Phase2AntiDetectionService;
   private TOTAL_BUDGET: number; 
@@ -32,7 +32,7 @@ export class EpisodeGeneratorService {
 
   constructor(apiKey?: string, options?: EpisodeGeneratorOptions) {
     const key = apiKey || process.env.GEMINI_API_KEY || process.env.API_KEY || '';
-    this.geminiClient = new GoogleGenerativeAI(key);
+    this.geminiClient = new GoogleGenAI({ apiKey: key });
     this.titleGenerator = new EpisodeTitleGenerator(key);
     this.phase2Service = new Phase2AntiDetectionService();
     this.TOTAL_BUDGET = options?.maxChars || CHAR_BUDGET;
@@ -246,12 +246,12 @@ export class EpisodeGeneratorService {
 
   private async callGemini(params: { prompt: string; model: string; temperature: number }): Promise<string> {
     const { prompt, temperature, model } = params;
-    const genModel = this.geminiClient.getGenerativeModel({ 
+    const response = await this.geminiClient.models.generateContent({
       model: model,
-      generationConfig: { temperature, topK: this.topK, topP: 0.95, maxOutputTokens: 8192 }
+      contents: prompt,
+      config: { temperature, topK: this.topK, topP: 0.95, maxOutputTokens: 8192 }
     });
-    const result = await genModel.generateContent(prompt);
-    return result.response.text();
+    return response.candidates?.[0]?.content?.parts?.[0]?.text || "";
   }
 }
 

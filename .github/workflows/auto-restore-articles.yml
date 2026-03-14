@@ -34,6 +34,10 @@ jobs:
       contents: write
       pull-requests: write
 
+    defaults:
+      run:
+        working-directory: dzen
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

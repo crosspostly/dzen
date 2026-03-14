@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm install && node scripts/generate-feed.js",
-  "outputDirectory": "public",
+  "buildCommand": "node scripts/generate-feed.js && npm run build",
+  "outputDirectory": "dist",
   "public": false,
   "rewrites": [
     {
@@ -9,6 +9,10 @@
     },
     {
       "source": "/index.html",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]

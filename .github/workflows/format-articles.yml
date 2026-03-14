@@ -6,6 +6,10 @@ on:
     paths:
       - 'articles/**/*.md'
 
+defaults:
+  run:
+    working-directory: dzen
+
 jobs:
   ensure-newline:
     runs-on: ubuntu-latest

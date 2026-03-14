@@ -37,6 +37,10 @@ jobs:
     permissions:
       contents: write
 
+    defaults:
+      run:
+        working-directory: dzen
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4

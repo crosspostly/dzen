@@ -28,6 +28,10 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    working-directory: dzen
+
 jobs:
   factory:
     runs-on: ubuntu-latest

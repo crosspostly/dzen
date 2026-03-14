@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    working-directory: dzen
+
 jobs:
   generate-videos:
     runs-on: ubuntu-latest

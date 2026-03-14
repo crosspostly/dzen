@@ -6,6 +6,10 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    working-directory: dzen
+
 jobs:
   merge:
     runs-on: ubuntu-latest
