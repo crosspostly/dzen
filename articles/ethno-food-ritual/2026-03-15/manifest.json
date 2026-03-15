@@ -1,0 +1,30 @@
+{
+  "version": "4.0",
+  "generatedAt": 1773567813303,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 13680,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-15/vypali-iz-nivy-pryamo-v-oblaka-nad-gunibom-snyali-.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-15/REPORT.md"
+  }
+}
