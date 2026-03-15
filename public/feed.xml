@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Путевой дневник о путешествиях со смыслом, честных ценах и верном псе Батоне.</description>
-    <lastBuildDate>Sun, 15 Mar 2026 12:40:04 +0300</lastBuildDate>
+    <lastBuildDate>Sun, 15 Mar 2026 16:26:15 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Ethno-Travel Edition)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[Помню, как земля буквально ушла из-под ног. Не фигурально, а по-настоящему. Один шаг – и пустота, другой – и снова пустота. Только густой, молочный туман Гуниба, обволакивающий, проникающий под...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vypali-iz-nivy-pryamo-v-oblaka-nad-gunibom-snyali--20260315</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vypali-iz-nivy-pryamo-v-oblaka-nad-gunibom-snyali--20260315</guid>
-      <pubDate>Sun, 15 Mar 2026 15:40:04 +0300</pubDate>
+      <pubDate>Sun, 15 Mar 2026 19:26:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[— Марин, ну сколько можно? Заканчивай этот цирк! — голос мужа полоснул по ушам, как ржавая пила по сырому дереву. Раздражает. До дрожи. Я замерла, сжимая в руках старую тряпку. В бабушкиной...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-stalo-zhutko-ya-vybrosila-staruyu-shkatulku-a--20260309</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-stalo-zhutko-ya-vybrosila-staruyu-shkatulku-a--20260309</guid>
-      <pubDate>Sun, 15 Mar 2026 17:10:04 +0300</pubDate>
+      <pubDate>Sun, 15 Mar 2026 20:56:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[Серый свитер в катышках. Знаете, таких мерзких, которые цепляются за пальцы, когда проводишь по рукаву? Я сидела в этом шмоте, доставшемся от покойной тетки, и вдыхала пыль. Вонь старой шерсти,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/na-sobesedovanie-ya-prishla-v-ponoshennoy-odezhde--20260309</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/na-sobesedovanie-ya-prishla-v-ponoshennoy-odezhde--20260309</guid>
-      <pubDate>Sun, 15 Mar 2026 15:40:04 +0300</pubDate>
+      <pubDate>Sun, 15 Mar 2026 19:26:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[— Елена Викторовна, ну куда вам? Мечтать-то не вредно, — Виктор Петрович улыбнулся, обнажая желтоватый, как старый мел, зуб. В воздухе висел удушливый запах его дешевого табака и прогорклого масла...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-ya-byla-nikem-no-cherez-god-ya-kupila-ego-f-20260309</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-ya-byla-nikem-no-cherez-god-ya-kupila-ego-f-20260309</guid>
-      <pubDate>Sun, 15 Mar 2026 17:10:04 +0300</pubDate>
+      <pubDate>Sun, 15 Mar 2026 20:56:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -103,7 +103,7 @@
       <description><![CDATA[— Вы просто не вписываетесь в новую архитектуру смыслов, — Артем улыбается, и от этой улыбки в воздухе будто воняет дешевым пластиком. Мерзкий такой запах, как от перегретого китайского принтера....]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-ya-terpela-izdevki-bossa-no-moy-staryy-kadr-20260309</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-ya-terpela-izdevki-bossa-no-moy-staryy-kadr-20260309</guid>
-      <pubDate>Sun, 15 Mar 2026 18:40:04 +0300</pubDate>
+      <pubDate>Sun, 15 Mar 2026 22:26:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -124,7 +124,7 @@
       <description><![CDATA[Четвертая струна дребезжала. Противно так, назойливо, как жирная муха в ухе в три часа ночи. Бесит? Нет, мне уже было почти плевать. Я сидела на ледяном полу кухни, а вокруг — горы. Не настоящие,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smeshno-ya-slushala-nasmeshki-kuzena-nad-gitaroy-p-20260309</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smeshno-ya-slushala-nasmeshki-kuzena-nad-gitaroy-p-20260309</guid>
-      <pubDate>Sun, 15 Mar 2026 20:10:04 +0300</pubDate>
+      <pubDate>Sun, 15 Mar 2026 23:56:15 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
