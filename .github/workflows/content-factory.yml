@@ -28,10 +28,6 @@ on:
 permissions:
   contents: write
 
-defaults:
-  run:
-    working-directory: dzen
-
 jobs:
   factory:
     runs-on: ubuntu-latest
@@ -46,7 +42,7 @@ jobs:
       - name: ⚙️ Установка Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       
       - name: 🔧 Установка системных зависимостей (Canvas)
         run: |
