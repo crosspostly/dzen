@@ -24,7 +24,7 @@ on:
   schedule:
     - cron: '0 */4 * * *'
   workflow_run:
-    workflows: ["\u0424\u0430\u0431\u0440\u0438\u043a\u0430 \u043a\u043e\u043d\u0442\u0435\u043d\u0442\u0430 - \u0413\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u044f \u0441\u0442\u0430\u0442\u0435\u0439 (\u0414\u0437\u0435\u043d)"]
+    workflows: ["Фабрика контента - Генерация статей (Дзен)"]
     types:
       - completed
     branches:
@@ -42,7 +42,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
@@ -75,7 +75,7 @@ jobs:
       run: |
         MODE="${{ github.event.inputs.mode || 'incremental' }}"
         VERBOSE="${{ github.event.inputs.verbose || 'false' }}"
-        echo "\ud83d\ude80 Running RSS generator in $MODE mode..."
+        echo "🚀 Running RSS generator in $MODE mode..."
         if [ "$VERBOSE" = "true" ]; then
           node scripts/generate-feed.js $MODE --verbose
         else
@@ -95,9 +95,9 @@ jobs:
           git add public/articles/
         fi
         if git diff --staged --quiet; then
-          echo "\u2705 No changes to commit"
+          echo "✅ No changes to commit"
         else
-          git commit -m "chore(rss): update feed and html mirrors [${{ github.event.inputs.mode || 'incremental' }} mode]"
+          git commit -m "chore(rss): update feed [${{ github.event.inputs.mode || 'incremental' }} mode]"
           git push
         fi
       continue-on-error: true
@@ -105,39 +105,27 @@ jobs:
     - name: Summary
       if: always()
       run: |
-        echo "### \ud83d\udcca Workflow Summary" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Workflow Summary" >> $GITHUB_STEP_SUMMARY
         echo "- **Mode**: ${{ github.event.inputs.mode || 'incremental' }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Dry Run**: ${{ github.event.inputs.dry_run || 'false' }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Status**: \u2705 Completed" >> $GITHUB_STEP_SUMMARY
 
   notify-on-error:
     runs-on: ubuntu-latest
     needs: generate-feed
     if: failure()
     steps:
-      - name: "\ud83d\udcbe \u0424\u0438\u043a\u0441\u0430\u0446\u0438\u044f \u043e\u0448\u0438\u0431\u043e\u043a"
-        run: |
-          echo "### \u274c \u041e\u0428\u0418\u0411\u041a\u0410 \u0413\u0415\u041d\u0415\u0420\u0410\u0426\u0418\u0418 RSS" > FEED_ERROR.md
-          echo "\u0414\u0430\u0442\u0430: $(date)" >> FEED_ERROR.md
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add FEED_ERROR.md
-          git commit -m "\ud83d\udea8 ALERT: RSS Feed Generation Failed"
-          git push origin main
-
-      - name: "\ud83d\udce7 Send Email Notification"
+      - name: 📧 Send Email Notification
         uses: dawidd6/action-send-mail@v4
         with:
           server_address: smtp.gmail.com
           server_port: 465
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "\u274c Dzen RSS Generation Failed"
+          subject: ❌ Dzen RSS Generation Failed
           body: |
-            \u041e\u0448\u0438\u0431\u043a\u0430 \u043f\u0440\u0438 \u0433\u0435\u043d\u0435\u0440\u0430\u0446\u0438\u0438 RSS \u0444\u0438\u0434\u0430.
-            \u0420\u0435\u043f\u043e\u0437\u0438\u0442\u043e\u0440\u0438\u0439: ${{ github.repository }}
-            \u041b\u043e\u0433: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Ошибка при генерации RSS фида.
+            Лог: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           to: sheepoff@gmail.com
           from: Dzen Bot
           secure: true
