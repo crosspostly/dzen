@@ -1,18 +1,7 @@
-name: TEST - Git Push Strategy
+name: TEST - Git Push
 
 on:
   workflow_dispatch:
-    inputs:
-      strategy:
-        description: 'Push strategy'
-        required: true
-        default: 'ours'
-        type: choice
-        options:
-          - ours
-          - theirs
-          - merge
-          - rebase
 
 permissions:
   contents: write
@@ -28,40 +17,15 @@ jobs:
           fetch-depth: 0
 
       - name: Create test file
-        run: |
-          echo "test-$(date +%s)" > test-git-push-$(date +%s).txt
-          echo "ignored" > ignored.log
+        run: echo "test-$(date +%s)" > test-git-push-$(date +%s).txt
 
-      - name: Run strategy
+      - name: Commit and push with ours strategy
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-
-          STRATEGY="${{ inputs.strategy }}"
-          echo "=== Strategy: $STRATEGY ==="
-
           rm -f *.log
           git add -A
-
-          if git diff --cached --quiet; then
-            echo "Nothing to commit"
-            exit 0
-          fi
-
-          git commit -m "TEST push strategy=$STRATEGY $(date +%H:%M:%S)"
-          git status
-
-          if [ "$STRATEGY" = "rebase" ]; then
-            git pull --rebase origin main && git push origin main
-
-          elif [ "$STRATEGY" = "merge" ]; then
-            git pull --no-rebase origin main && git push origin main
-
-          elif [ "$STRATEGY" = "ours" ]; then
-            git pull --no-rebase -X ours origin main && git push origin main
-
-          elif [ "$STRATEGY" = "theirs" ]; then
-            git pull --no-rebase -X theirs origin main && git push origin main
-          fi
-
+          git commit -m "TEST ours strategy $(date +%H:%M:%S)"
+          git pull --no-rebase -X ours origin main
+          git push origin main
           echo "=== EXIT: $? ==="
