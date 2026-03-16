@@ -461,7 +461,8 @@ export class ImageGeneratorAgent {
    * 🎭 Extract protagonist details (Baton is the star!)
    */
   private extractProtagonist(title: string, lede: string, narrator: any) {
-    const isBatonPresent = /батон|пес|собака|пушист/i.test(`${title} ${lede}`.toLowerCase()) || true;
+    // FIX: removed || true which was forcing isBatonPresent to always be true
+    const isBatonPresent = /батон|пес|собака|пушист/i.test(`${title} ${lede}`.toLowerCase());
     
     return {
       name: 'Baton (The Mascot)',
@@ -646,10 +647,11 @@ export class ImageGeneratorAgent {
     if (text.includes('бежит') || text.includes('бега')) details.push('dog running happily');
     if (text.includes('спит') || text.includes('дремл')) details.push('dog sleeping curled up');
     if (text.includes('смотрит') || text.includes('вид')) details.push('dog looking at the mountain view');
-    if (text.includes('грязн') || text.includes('пыль')) details.push('dog with slightly dusty white fur');
+    if (text.includes('грязн') || text.includes('пыль')) details.push('dog with slightly dusty fur');
     if (text.includes('машина') || text.includes('буханка')) details.push('dog looking out of a car window');
 
-    return details.length > 0 ? details : ['small white fluffy dog in nature'];
+    // FIX: default was 'small white fluffy dog' — wrong breed! Baton is golden-brown scruffy terrier
+    return details.length > 0 ? details : ['Baton the golden-brown scruffy wire-haired terrier with red bandana exploring nature'];
   }
 
   /**
