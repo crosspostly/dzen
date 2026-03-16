@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
     inputs:
       count:
-        description: 'Количество статей (1, 5, 7, 8, 10, 25, 50, 100)'
+        description: 'Количество статей'
         required: true
         default: '1'
         type: choice
         options: ['1', '5', '7', '8', '10', '25', '50', '100']
       channel:
-        description: 'Тематика канала'
+        description: 'Канал'
         required: true
         default: 'ethno-food-ritual'
         type: choice
@@ -31,70 +31,27 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  preflight:
-    name: 🔍 Pre-flight TypeCheck
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v5
-
-      - name: ⚙️ Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: 📦 Install deps
-        run: npm ci
-
-      - name: 🔍 TypeScript check
-        run: |
-          echo "🔍 Checking TypeScript..."
-          npx tsc --noEmit
-          echo "✅ No TypeScript errors!"
-
-      - name: 📁 Check config JSON files
-        run: |
-          echo "📁 Checking JSON configs..."
-          FAIL=0
-          for f in config/*.json; do
-            [ -f "$f" ] || continue
-            if python3 -m json.tool "$f" > /dev/null 2>&1; then
-              echo "  ✅ $f"
-            else
-              echo "  ❌ BAD JSON: $f"
-              FAIL=1
-            fi
-          done
-          [ $FAIL -eq 0 ] && echo "✅ All JSON valid" || exit 1
-
   factory:
     name: ✨ Generate Articles
-    needs: preflight
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: 📥 Получение кода
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      
-      - name: ⚙️ Установка Node.js
-        uses: actions/setup-node@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      
-      - name: 🔧 Установка Canvas
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
-      
-      - name: 📦 Установка зависимостей
+
+      - name: 🔧 Install Canvas deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+
+      - name: 📦 Install deps
         run: npm install
-      
-      - name: ✍️ Генерация статей
+
+      - name: ✍️ Generate
         run: |
           if [ "${{ github.event_name }}" == "schedule" ]; then
             COUNT="8"; CHANNEL="ethno-food-ritual"; IMAGES="true"
@@ -102,84 +59,23 @@ jobs:
             COUNT="${{ inputs.count }}"; CHANNEL="${{ inputs.channel }}"; IMAGES="${{ inputs.images }}"
           fi
           CMD="node --import tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
-          if [ "$IMAGES" = "true" ]; then CMD="$CMD --images"; fi
+          [ "$IMAGES" = "true" ] && CMD="$CMD --images"
           echo "🚀 Running: $CMD"
-          eval "$CMD" 2>&1 | tee publish.log
+          eval "$CMD"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: 🔧 Восстановление статей
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          CHANNEL="${{ inputs.channel || 'ethno-food-ritual' }}"
-          TARGET_DIR="articles/$CHANNEL/$(date +%Y-%m-%d)"
-          if [ -d "$TARGET_DIR" ]; then
-            FILES=$(find "$TARGET_DIR" -name "*.md" -type f)
-            if [ ! -z "$FILES" ]; then
-               node scripts/restore-articles-safe.js $(echo "$FILES" | tr '\n' ' ')
-            fi
-          fi
-
-      - name: 📊 Подсчет результатов
+      - name: 🔐 Save to GitHub
         if: always()
         run: |
-          find ./articles -name "*.md" 2>/dev/null | wc -l | xargs echo "Статей:"
-          find ./articles -name "*.jpg" 2>/dev/null | wc -l | xargs echo "Картинок:"
-      
-      - name: 🔐 Сохранение в GitHub
-        if: always()
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          rm -f publish.log
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add -A
-          if git diff --cached --quiet; then
-            echo "✅ Нет изменений"
-          else
-            git commit -m "🚀 AUTO: Generated content $(date +%Y-%m-%d)"
-          fi
-          MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
-            echo "Attempt $i..."
-            if git pull --no-rebase -X ours origin main && git push origin main; then
-              echo "✅ Pushed!"
-              exit 0
-            fi
+          git diff --cached --quiet && echo "✅ Нет изменений" && exit 0
+          git commit -m "🚀 AUTO: Generated content $(date +%Y-%m-%d)"
+          for i in 1 2 3 4 5; do
+            git pull --no-rebase -X ours origin main && git push origin main && exit 0
             sleep 5
           done
           exit 1
-      
-      - name: 💾 Фиксация ошибок
-        if: failure()
-        run: |
-          echo "### ❌ ОШИБКА $(date)" > ERROR_REPORT.md
-          tail -n 100 publish.log >> ERROR_REPORT.md 2>/dev/null || echo "Лог не найден" >> ERROR_REPORT.md
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          rm -f publish.log
-          git add ERROR_REPORT.md
-          git pull --no-rebase -X ours origin main 2>/dev/null || true
-          git add ERROR_REPORT.md
-          git commit -m "🚨 ALERT: Content Factory Failed $(date +%Y-%m-%d)" || true
-          git push origin main || true
-
-  notify-on-error:
-    runs-on: ubuntu-latest
-    needs: [preflight, factory]
-    if: failure()
-    steps:
-      - name: 📧 Send Email
-        uses: dawidd6/action-send-mail@v4
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: ❌ Dzen Content Factory Failed
-          body: "Ошибка. См. https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          to: sheepoff@gmail.com
-          from: Dzen Bot
-          secure: true
-        continue-on-error: true
