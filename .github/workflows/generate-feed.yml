@@ -2,6 +2,8 @@ name: Generate RSS Feed
 
 on:
   workflow_dispatch:
+nenv:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     inputs:
       mode:
         description: 'Generation mode (full or incremental)'
@@ -46,7 +48,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22'
+        node-version: "24"
         cache: 'npm'
 
     - name: Cache node modules
@@ -127,7 +129,7 @@ jobs:
           git push origin main
 
       - name: 📧 Send Email Notification
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@v4
         with:
           server_address: smtp.gmail.com
           server_port: 465
