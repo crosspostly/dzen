@@ -1,0 +1,74 @@
+name: 🧪 TEST - Git Push Strategy
+
+on:
+  workflow_dispatch:
+    inputs:
+      strategy:
+        description: 'Стратегия push'
+        required: true
+        default: 'rebase'
+        type: choice
+        options:
+          - rebase
+          - merge
+          - ours
+          - theirs
+
+permissions:
+  contents: write
+
+jobs:
+  test-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 📝 Создаём тестовый файл
+        run: |
+          echo "test-$(date +%s)" > test-git-push-$(date +%s).txt
+          echo "ignored-file" > ignored.log
+
+      - name: 🔍 Стратегия: ${{ inputs.strategy }}
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          STRATEGY="${{ inputs.strategy }}"
+          echo "=== Using strategy: $STRATEGY ==="
+
+          # Удаляем ignored-файлы (как *.log)
+          rm -f *.log
+
+          git add -A
+          git diff --cached --stat
+
+          if git diff --cached --quiet; then
+            echo "✅ Nothing to commit"
+            exit 0
+          fi
+
+          git commit -m "🧪 TEST: git push strategy=$STRATEGY $(date +%H:%M:%S)"
+
+          echo "--- git status before pull ---"
+          git status
+
+          if [ "$STRATEGY" = "rebase" ]; then
+            git pull --rebase origin main && git push origin main
+
+          elif [ "$STRATEGY" = "merge" ]; then
+            git pull --no-rebase origin main && git push origin main
+
+          elif [ "$STRATEGY" = "ours" ]; then
+            # При конфликте побеждает наша версия
+            git pull --no-rebase -X ours origin main && git push origin main
+
+          elif [ "$STRATEGY" = "theirs" ]; then
+            # При конфликте побеждает remote-версия
+            git pull --no-rebase -X theirs origin main && git push origin main
+          fi
+
+          echo "=== RESULT: $? ==="
