@@ -1,19 +1,19 @@
-### ❌ ОШИБКА ГЕНЕРАЦИИ СТАТЕЙ Sun Mar 15 09:43:48 UTC 2026
+### ❌ ОШИБКА ГЕНЕРАЦИИ СТАТЕЙ Mon Mar 16 09:07:36 UTC 2026
 
    ✅ Article 1 queued for cover image
 
 📼  Starting cover image generation (1/min) with REAL Gemini API...
 
-  📼  Cover 1/1: Generating for "Выпали из «Нивы» прямо в облака над Гуни..."
-🎨 Generating cover for: "Выпали из «Нивы» прямо в облака над Гунибом: сняли комнату в каменном доме за 1500 рублей. Хозяйка откармливает нас обжигающим аварским хинкалом, пока Батон жадно грызёт баранью кость и чихает от густого запаха горного чабреца."
-📖 Story context extracted: Woman: life-changing moment at apartment interior (relief and peace)
-🎬 Story-specific prompt built (917 chars)
+  📼  Cover 1/1: Generating for "Пробираемся в аул-призрак Гамсутль: запл..."
+🎨 Generating cover for: "Пробираемся в аул-призрак Гамсутль: заплатила 2000 рублей за тряску в «буханке», а Батон теперь грызёт баранью кость, найденную в заброшенной сакле."
+📖 Story context extracted: Woman: critical moment in life at high window overlooking city (thoughtful)
+🎬 Story-specific prompt built (856 chars)
 🔧 Stage 4: Applying mobile photo authenticity...
    ✅ Authenticity applied. Effects: color_science, edge_enhancement
    📷 Device: iPhone 15 Pro | Level: high
-✅ Image generated in 13391ms
-✅ Cover generated for "Выпали из «Нивы» прямо в облака над Гунибом: сняли комнату в каменном доме за 1500 рублей. Хозяйка откармливает нас обжигающим аварским хинкалом, пока Батон жадно грызёт баранью кость и чихает от густого запаха горного чабреца."
-     ✅ Generated (2641974 bytes, iVBORw0KGgoAAAANSUhEUgAABWAAAA...)
+✅ Image generated in 10487ms
+✅ Cover generated for "Пробираемся в аул-призрак Гамсутль: заплатила 2000 рублей за тряску в «буханке», а Батон теперь грызёт баранью кость, найденную в заброшенной сакле."
+     ✅ Generated (2669115 bytes, iVBORw0KGgoAAAANSUhEUgAABWAAAA...)
 
 📼  Attaching cover images to articles...
 
@@ -33,7 +33,7 @@
    📋 Validating base64 format...
    📋 Validating base64 format...
    🔄 Decoding base64...
-      ✅ Size: 2580KB
+      ✅ Size: 2607KB
    🔍 Validating image magic bytes...
       ✅ Magic bytes valid (89504E47)
    🎨 Loading image into Canvas...
@@ -43,17 +43,17 @@
    🖌️  Drawing on Canvas...
       ✅ Image drawn successfully
    💾 Exporting as JPEG (quality 0.8)...
-      ✅ JPEG exported (130KB)
-   ⏱️  Processing completed in 35ms
+      ✅ JPEG exported (111KB)
+   ⏱️  Processing completed in 29ms
    ✅ Canvas rendering: PASS (dimensions 1280x720)
    ✅ Filter application: Skipped
    ✅ EXIF removal: Complete
    ✅ Re-encoding to JPEG: quality 80%
 
    📊 Image transformation:
-      Original (from API): 2580 KB, format: JPEG
-      Processed (from Canvas): 130 KB, format: JPEG, quality: 80%
-      Size change: 94.9%
+      Original (from API): 2607 KB, format: JPEG
+      Processed (from Canvas): 111 KB, format: JPEG, quality: 80%
+      Size change: 95.7%
       Ready for publication: YES ✓
 
 ✅ Stage 3 complete: 1 images processed, all ready for export
@@ -74,28 +74,28 @@
 ============================================================
 📄 Articles: 1/1
 🗼️  Images: 1/1
-⏱️  Duration: 2.1 minutes
+⏱️  Duration: 13.0 minutes
 ✅ Success rate: 100.0%
-📁 Saved to: articles/ethno-food-ritual/2026-03-15/
+📁 Saved to: articles/ethno-food-ritual/2026-03-16/
 
 📊 QUALITY METRICS (Average):
    📖 Readability: 55.0/100
-   🗣️  Dialogue: 8.1%
+   🗣️  Dialogue: 10.5%
    🌟 Sensory: 0.0/10
 ============================================================
 
 
 💾 Exporting articles...
-📁 Exporting to: articles/ethno-food-ritual/2026-03-15 (1 unique stories)
-✅ Article: vypali-iz-nivy-pryamo-v-oblaka-nad-gunibom-snyali-.md
-   🗼 Cover: vypali-iz-nivy-pryamo-v-oblaka-nad-gunibom-snyali-.jpg
+📁 Exporting to: articles/ethno-food-ritual/2026-03-16 (1 unique stories)
+✅ Article: probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000-.md
+   🗼 Cover: probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000-.jpg
 
 ============================================================
 ✅ FACTORY COMPLETE
 ============================================================
 📄 Articles generated: 1
-⏱️  Total time: 125.09s
-💾 Output directory: articles/ethno-food-ritual/2026-03-15
-📊 Average time/article: 125.09s
+⏱️  Total time: 782.58s
+💾 Output directory: articles/ethno-food-ritual/2026-03-16
+📊 Average time/article: 782.58s
 ============================================================
 
