@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "noEmit": true
+  },
+  "include": [
+    "services/**/*.ts",
+    "types/**/*.ts",
+    "utils/**/*.ts",
+    "config/**/*.ts",
+    "constants/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "archive",
+    "scripts",
+    "dist",
+    "public",
+    "promo_video",
+    "neuro_experiment",
+    "App.tsx",
+    "cli.ts",
+    "index.tsx",
+    "vite.config.ts",
+    "check_models.ts"
+  ]
+}
