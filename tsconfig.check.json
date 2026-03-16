@@ -23,6 +23,7 @@
     "cli.ts",
     "index.tsx",
     "vite.config.ts",
-    "check_models.ts"
+    "check_models.ts",
+    "services/__tests__"
   ]
 }
