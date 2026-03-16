@@ -466,7 +466,7 @@ export class ImageGeneratorAgent {
     return {
       name: 'Baton (The Mascot)',
       species: 'Dog',
-      description: 'Small, fluffy white dog, curly soft fur, dark expressive eyes, black nose (Bichon Frise style)',
+      description: 'Golden-brown scruffy wire-haired terrier mix, white chest patch, large erect ears, wearing a red bandana.',
       isBaton: isBatonPresent,
       state: this.extractPhysicalState(lede),
       humanInvolved: /я |мне |мой |меня /i.test(`${title} ${lede}`.toLowerCase())
@@ -731,7 +731,7 @@ export class ImageGeneratorAgent {
    * 🎬 BUILD STORY-SPECIFIC PROMPT (Baton Edition)
    */
   private buildStorySpecificPrompt(context: any, plotBible?: PlotBible): string {
-    const dogDesc = 'Small, fluffy white dog (Bichon Frise style), very cute, curly soft fur, dark expressive eyes, black nose.';
+    const dogDesc = 'Baton: a golden-brown scruffy wire-haired terrier mix, distinct white fluffy patch on chest, large erect pointed ears, wearing a bright red bandana around his neck.';
     
     // Create a UNIQUE prompt for BATON in this story
     const prompt = `
@@ -743,14 +743,14 @@ ${context.mainEvent}
 
 👤 MAIN SUBJECT (THE STAR):
 - ${dogDesc}
-- Name: Baton (Батон)
 - Action: ${context.focalPoint || 'exploring the surroundings'}
 - Emotion: ${context.emotionalArc.primary}
+- Appearance: Scruffy, adventurous, real dog (not a cartoon)
 
 📍 LOCATION & ATMOSPHERE:
 - Where: ${this.varyLocation(context.location, plotBible)}
 - Lighting: ${this.varyLighting(context.emotionalArc.primary)}
-- Background: ${context.location === 'mountain road' ? 'Old mountain road, "Bukhanka" or "Niva" 4x4 car' : 'Ancient mountain village ruins'}
+- Background: ${context.location === 'mountain road' ? 'Rugged mountain terrain, old 4x4 car like a Niva or Bukhanka' : 'Ancient ruins of a mountain village'}
 
 👁️ SCENE DETAILS (WHAT WE SEE):
 • ${dogDesc} is the main character in the center
@@ -758,22 +758,20 @@ ${context.mainEvent}
 ${context.presenceContext.includes('husband') || context.presenceContext.includes('child') ? '• Human companion (partially visible, background only)' : '• Narrator is behind the camera'}
 
 🎯 VISUAL STYLE:
-- HIGH REALISM, authentic mobile photo aesthetic
+- HIGH REALISM, authentic mobile photo aesthetic (Samsung S24 / iPhone 15 style)
 - CINEMATIC 16:9 composition, rule of thirds
-- Candid moment, NOT looking at camera
+- Candid moment, dog is NOT looking at camera
 - Natural, non-studio lighting
 - Background is secondary to the dog
 
 🚫 ABSOLUTE RULES:
-- NO generic portraits of men or women
-- NO humans in the center (Baton is the ONLY protagonist)
+- NO generic white fluffy dogs (must be golden-brown scruffy terrier)
+- NO humans in the center
 - NO text, captions, watermarks
-- NO "ai-generated" look (must feel like a real travel photo)
+- NO "ai-generated" digital art look
 
 ✅ SUCCESS:
-Baton is doing something that perfectly illustrates the story.
-If he finds a bone in the ruins, show him with the bone.
-If he is scared of a 4x4 car, show him peeking from behind a rock.
+The image looks like a real travel photo of a scruffy brown dog with a red bandana in the mountains.
     `.trim();
 
     return prompt;
