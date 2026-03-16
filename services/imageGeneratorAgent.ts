@@ -458,25 +458,18 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎭 Extract protagonist details
+   * 🎭 Extract protagonist details (Baton is the star!)
    */
   private extractProtagonist(title: string, lede: string, narrator: any) {
-    const age = narrator.age || 50;
-    const isTravel = /аул|гора|дагестан|батон|путешеств|поездк|дорога/i.test(`${title} ${lede}`.toLowerCase());
+    const isBatonPresent = /батон|пес|собака|пушист/i.test(`${title} ${lede}`.toLowerCase()) || true;
     
-    // Use narrator gender from PlotBible if available, otherwise detect
-    let gender = narrator.gender || (isTravel ? 'male' : 'female');
-    
-    const appearance = lede.includes('молодая') || lede.includes('молодой') ? 'young' :
-                      lede.includes('старая') || lede.includes('старый') ? 'elderly' : 'middle-aged';
-
     return {
-      name: gender === 'female' ? 'Woman' : 'Man',
-      gender,
-      age,
-      appearance,
+      name: 'Baton (The Mascot)',
+      species: 'Dog',
+      description: 'Small, fluffy white dog, curly soft fur, dark expressive eyes, black nose (Bichon Frise style)',
+      isBaton: isBatonPresent,
       state: this.extractPhysicalState(lede),
-      relationship: this.extractRelationshipContext(title, lede)
+      humanInvolved: /я |мне |мой |меня /i.test(`${title} ${lede}`.toLowerCase())
     };
   }
 
@@ -641,80 +634,36 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 👁️ Extract VISIBLE DETAILS from story
+   * 👁️ Extract VISIBLE DETAILS from story (Dog focused)
    */
   private extractVisibleDetails(title: string, lede: string): string[] {
     const text = `${title}. ${lede}`.toLowerCase();
     const details: string[] = [];
 
-    // EMOTIONAL MARKERS (what do we SEE?)
-    if (text.includes('слёз') || text.includes('плач')) details.push('tears on cheeks');
-    if (text.includes('красн') && text.includes('глаз')) details.push('red puffy eyes');
-    if (text.includes('улыбк') || text.includes('смех')) details.push('genuine smile');
-    if (text.includes('дрож')) details.push('trembling hands');
-    if (text.includes('пальц')) details.push('fingers visible and expressive');
-    if (text.includes('рук') && (text.includes('горяч') || text.includes('холодн'))) details.push('hands that show emotion');
+    // DOG ACTIONS/DETAILS
+    if (text.includes('кость') || text.includes('грыз')) details.push('dog holding or gnawing a large bone');
+    if (text.includes('вода') || text.includes('пьет')) details.push('dog drinking water from a bowl or stream');
+    if (text.includes('бежит') || text.includes('бега')) details.push('dog running happily');
+    if (text.includes('спит') || text.includes('дремл')) details.push('dog sleeping curled up');
+    if (text.includes('смотрит') || text.includes('вид')) details.push('dog looking at the mountain view');
+    if (text.includes('грязн') || text.includes('пыль')) details.push('dog with slightly dusty white fur');
+    if (text.includes('машина') || text.includes('буханка')) details.push('dog looking out of a car window');
 
-    // OBJECTS
-    if (text.includes('кольцо') || text.includes('кольца')) details.push('wedding ring prominent / being removed');
-    if (text.includes('чай') || text.includes('кофе')) details.push('cup of tea/coffee');
-    if (text.includes('платок') || text.includes('ткань')) details.push('tissue or cloth');
-    if (text.includes('фото') || text.includes('фотограф')) details.push('photo or photograph visible');
-    if (text.includes('письмо') || text.includes('записка')) details.push('letter or note');
-    if (text.includes('пальто') || text.includes('плащ')) details.push('coat or outer clothing');
-    if (text.includes('часы')) details.push('clock or watch visible');
-    if (text.includes('зеркало')) details.push('mirror reflection');
-    if (text.includes('телефон')) details.push('phone in hand or on table');
-    if (text.includes('свеча')) details.push('candlelight');
-
-    // BODY LANGUAGE
-    if (text.includes('плечо')) details.push('shoulders that convey emotion');
-    if (text.includes('голова')) details.push('head position (down, up, tilted)');
-    if (text.includes('сидеть') || text.includes('сидя')) details.push('sitting posture');
-    if (text.includes('стоять') || text.includes('стоя')) details.push('standing posture');
-    if (text.includes('идти') || text.includes('ходить')) details.push('movement/walking');
-
-    // CLOTHING/APPEARANCE
-    if (text.includes('волос')) details.push('hair style (neat or disheveled)');
-    if (text.includes('красива') || text.includes('нарядна')) details.push('dressed carefully');
-    if (text.includes('неопрятн') || text.includes('растрёпан')) details.push('appearance disheveled');
-
-    return details.length > 0 ? details : ['woman, emotional, present in moment'];
+    return details.length > 0 ? details : ['small white fluffy dog in nature'];
   }
 
   /**
-   * 🎯 Extract FOCAL POINT (what is the key visual element?)
+   * 🎯 Extract FOCAL POINT (Baton's action)
    */
   private extractFocalPoint(title: string, lede: string, visibleDetails: string[]): string {
     const text = `${title}. ${lede}`.toLowerCase();
 
-    // RING is often the focal point
-    if (text.includes('кольцо') || text.includes('палец')) {
-      return 'wedding ring - either on finger being twisted or in hand being removed';
-    }
+    if (text.includes('кость')) return 'Baton gnawing on a bone';
+    if (text.includes('вид') || text.includes('горы')) return 'Baton looking at the vast mountain landscape';
+    if (text.includes('машина')) return 'Baton sitting inside a rugged 4x4 vehicle';
+    if (text.includes('еда') || text.includes('кухн')) return 'Baton waiting for food';
 
-    // TEARS and EYES
-    if (text.includes('слёз') || text.includes('глаз') && text.includes('красн')) {
-      return 'eyes - red, puffy, full of emotion';
-    }
-
-    // SMILE
-    if (text.includes('улыбк') || text.includes('смех')) {
-      return 'smile - genuine and warm';
-    }
-
-    // HANDS
-    if (text.includes('рук') && text.includes('дрож')) {
-      return 'trembling hands - showing vulnerability';
-    }
-
-    // FACE/EXPRESSION
-    if (text.includes('выраж') || text.includes('лиц')) {
-      return 'face - showing core emotion of the story';
-    }
-
-    // POSTURE/BODY
-    return 'overall posture and body language - telling the emotional story';
+    return 'Baton exploring the mountain surroundings';
   }
 
   /**
@@ -779,110 +728,52 @@ export class ImageGeneratorAgent {
   }
 
   /**
-   * 🎬 BUILD STORY-SPECIFIC PROMPT (not generic template!)
-   * Uses variation methods to ensure unique images
+   * 🎬 BUILD STORY-SPECIFIC PROMPT (Baton Edition)
    */
   private buildStorySpecificPrompt(context: any, plotBible?: PlotBible): string {
-    // 🔥 PRIORITY: Use visual plan from PlotBible (Stage 0) if available
-    if (plotBible?.coverVisual) {
-      const v = plotBible.coverVisual;
-      return `
-🎬 PLANNED STORY SCENE (from PlotBible Stage 0):
-
-📖 STORY: ${context.title}
-👤 SUBJECT: ${v.who}, emotional state matches ${v.mood}
-📍 LOCATION: ${v.where}
-💡 LIGHTING: ${v.lighting}
-🎭 ACTION: ${v.what}
-👁️ DETAILS:
-${v.details.map(d => `• ${d}`).join('\n')}
-
-🎨 VISUAL DIRECTION:
-- Capture this SPECIFIC moment planned at Stage 0
-- High realism, authentic mobile photo aesthetic
-- No studio lighting, no filters
-- Match the emotional tone: ${v.mood}
-- The image must perfectly illustrate the story theme
-
-🚫 ABSOLUTE RULES:
-- NO text, captions, watermarks
-- NO perfect posing
-- NO generic "person portrait"
-      `.trim();
-    }
-
-    // 🎨 Fallback to random variations if no coverVisual
-    const variedLocation = this.varyLocation(context.location, plotBible);
-    const variedLighting = this.varyLighting(context.emotionalArc.primary);
-    const variedComposition = this.varyComposition();
-    const variedArtStyle = this.varyArtStyle();
-    const variedMood = this.varyMood(context.emotionalArc.primary);
-    const sensoryDetails = this.varySensoryPalette(plotBible);
-    const interiorStyle = this.varyInteriorStyle();
-
-    // Create a UNIQUE prompt for THIS specific story
+    const dogDesc = 'Small, fluffy white dog (Bichon Frise style), very cute, curly soft fur, dark expressive eyes, black nose.';
+    
+    // Create a UNIQUE prompt for BATON in this story
     const prompt = `
-🎬 STORY SCENE - Generate image for this specific story:
+🎬 STORY SCENE - Mascot: BATON THE DOG
 
-📖 STORY:
+📖 THE STORY:
 ${context.title}
-
-🎭 MAIN EVENT:
 ${context.mainEvent}
 
-👤 PROTAGONIST:
-${context.protagonist.name}, age ${context.protagonist.age}
-Emotional state: ${context.protagonist.state}
-Relationship context: ${context.protagonist.relationship}
-${context.presenceContext !== 'alone' ? `\nWith: ${context.presenceContext}` : ''}
+👤 MAIN SUBJECT (THE STAR):
+- ${dogDesc}
+- Name: Baton (Батон)
+- Action: ${context.focalPoint || 'exploring the surroundings'}
+- Emotion: ${context.emotionalArc.primary}
 
-📍 LOCATION & TIME (VARIED):
-Where: ${variedLocation}
-When: ${context.timeContext}
-Lighting: ${variedLighting}
-Interior Style: ${interiorStyle}
+📍 LOCATION & ATMOSPHERE:
+- Where: ${this.varyLocation(context.location, plotBible)}
+- Lighting: ${this.varyLighting(context.emotionalArc.primary)}
+- Background: ${context.location === 'mountain road' ? 'Old mountain road, "Bukhanka" or "Niva" 4x4 car' : 'Ancient mountain village ruins'}
 
-💔 EMOTIONAL TONE:
-Primary emotion: ${context.emotionalArc.primary}
-Mood: ${variedMood}
+👁️ SCENE DETAILS (WHAT WE SEE):
+• ${dogDesc} is the main character in the center
+• ${context.visibleDetails.join('\n• ')}
+${context.presenceContext.includes('husband') || context.presenceContext.includes('child') ? '• Human companion (partially visible, background only)' : '• Narrator is behind the camera'}
 
-👁️ WHAT WE SEE (VISIBLE DETAILS):
-${context.visibleDetails.map((d: string) => `• ${d}`).join('\n')}
-${sensoryDetails ? '\n' + sensoryDetails : ''}
-
-🎯 KEY FOCAL POINT:
-${context.focalPoint}
-
-🎥 CAMERA & ANGLE (CRITICAL):
-${variedComposition}
-- Depth of field: Shallow (bokeh background) to focus on emotion
-- Framing: Cinematic, rule of thirds
-
-🎭 ART STYLE:
-${variedArtStyle}
-
-🎨 VISUAL DIRECTION:
-- 🚫 AVOID: Person just sitting at table looking at camera (BORING!)
-- ✅ DO: Show ACTION or REACTION (packing, crying, laughing, turning away)
-- ✅ DO: Use dramatic lighting (shadows, silhouettes, window light)
-- ✅ DO: Make it look like a still frame from a high-quality movie about real life
-- Capture the EXACT emotion of this scene
-- Include visible details that show WHAT HAPPENED
+🎯 VISUAL STYLE:
+- HIGH REALISM, authentic mobile photo aesthetic
+- CINEMATIC 16:9 composition, rule of thirds
+- Candid moment, NOT looking at camera
+- Natural, non-studio lighting
+- Background is secondary to the dog
 
 🚫 ABSOLUTE RULES:
+- NO generic portraits of men or women
+- NO humans in the center (Baton is the ONLY protagonist)
 - NO text, captions, watermarks
-- NO looking directly at camera (candid look only)
-- NO stock photo aesthetic (must look authentic/raw)
-- NO perfect studio lighting
-- NO generic "person portrait"
+- NO "ai-generated" look (must feel like a real travel photo)
 
 ✅ SUCCESS:
-When viewer sees this image, they immediately FEEL the emotion
-They understand SOMETHING HAPPENED
-They can sense the CONTEXT without reading
-
-🎯 TONE GUIDE by emotion:
-${this.getToneGuide(context.emotionalArc.primary)}
+Baton is doing something that perfectly illustrates the story.
+If he finds a bone in the ruins, show him with the bone.
+If he is scared of a 4x4 car, show him peeking from behind a rock.
     `.trim();
 
     return prompt;

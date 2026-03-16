@@ -146,14 +146,14 @@ export class PlotBibleBuilder {
       context.setting === 'rural' ? 'занавески в цветочек' : 'минималистичные жалюзи',
       isBetrayal ? 'небрежно брошенные ключи' : 'аккуратно сложенная салфетка'
     ];
-return {
-  who: `${context.gender === 'female' ? 'женщина' : 'мужчина'} ${narrator.age} лет`,
-  where,
-  what,
-  lighting,
-  mood: context.emotionalTone,
-  details: context.isTravel ? [...details, 'белый пес Батон рядом', 'старый рюкзак'] : details
-};
+    return {
+      who: `маленький белый пушистый пес Батон (порода бишон фризе)`,
+      where,
+      what: context.isTravel ? 'изучает окрестности или занят делом из сюжета' : 'сидит рядом',
+      lighting,
+      mood: context.emotionalTone,
+      details: context.isTravel ? [...details, 'горы на заднем плане', 'путешествие'] : details
+    };
     /**
      * 🔍 Analyze theme to extract context
      */
