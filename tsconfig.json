@@ -18,11 +18,25 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
+  "include": [
+    "services/**/*.ts",
+    "types/**/*.ts",
+    "utils/**/*.ts",
+    "config/**/*.ts",
+    "constants/**/*.ts",
+    "tools/**/*.ts"
+  ],
   "exclude": [
     "node_modules",
     "archive",
     "scripts",
     "dist",
-    "public"
+    "public",
+    "promo_video",
+    "neuro_experiment",
+    "App.tsx",
+    "cli.ts",
+    "index.tsx",
+    "vite.config.ts"
   ]
 }
