@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "generate": "node --import tsx cli.ts generate",
     "generate:v2": "node --import tsx cli.ts generate:v2",
     "factory": "node --import tsx cli.ts factory",
