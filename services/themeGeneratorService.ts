@@ -143,8 +143,9 @@ export class ThemeGeneratorService {
 
       const prompt = `\
 You are a "Journey Architect" for a serial Travel Blog on Yandex.Dzen.
-CHARACTER: A seasoned solo traveler (50+) and their white dog "Baton" (Батон).
+CHARACTER: A seasoned solo traveler (MALE, 55 years old) and their white dog "Baton" (Батон).
 STYLE: Real-time travel diary (сериальный блог), "Сказ" (conversational, honest, sensory).
+GENDER RULE: Use MALE GENDER for all Russian verbs (e.g., "заплатил", "пришел", "увидел" instead of "заплатила", "пришла", "увидела").
 
 CURRENT JOURNEY STATE:
 - Country: ${journeyState.currentCountry}
@@ -158,12 +159,12 @@ LOGIC:
 1. CONTINUITY (80%): Stay in the current region/country. Move to a neighboring village, a local market, or describe a ritual.
 2. TRANSITION (20%): If we've been here long (3+ articles), plan a move to a new country from the allowed list (Russia, Asia, Africa, South America). 
 3. SERIALITY: Mention the dog (Baton), prices in local currency, and a specific sensory hook.
-4. NO MELODRAMA: No "evil mother-in-laws" or "revenge". Just travel reality.
+4. NO MELODRAMA: No "evil mother-in-laws", "revenge", or "betrayal". Just travel reality and observations.
 
 ALLOWED REGIONS: Russia (Altai, Baikal, etc.), Asia (Vietnam, China, Uzbekistan), Africa (Morocco), South America (Peru). 
 EXCLUDE: Europe, USA, Canada.
 
-GENERATE 1 NEW RUSSIAN SERIAL TITLE (Punchy, realistic, Dzen-optimized):`;
+GENERATE 1 NEW RUSSIAN SERIAL TITLE (Punchy, realistic, masculine, Dzen-optimized):`;
 
       console.log(`${LOG.BRAIN} Generating serial theme with journey persistence...`);
 

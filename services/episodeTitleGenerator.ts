@@ -30,15 +30,15 @@ export class EpisodeTitleGenerator {
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
         const modelName = (attempt === 1) 
-          ? (MODELS.TEXT.PRIMARY || "gemini-3.1-pro-preview")
-          : (MODELS.TEXT.FALLBACK || "gemini-2.5-flash");
+          ? (MODELS.TEXT.LITE || "gemini-3.1-flash-lite-preview")
+          : (MODELS.TEXT.FLASH || "gemini-2.5-flash");
 
         console.log(`   📝 Generating title (attempt ${attempt}/${this.MAX_RETRIES}, model: ${modelName})...`);
 
         const response = await this.geminiClient.models.generateContent({
           model: modelName,
           contents: prompt,
-          config: { temperature: 0.85, topK: 40, topP: 0.95 }
+          config: { temperature: 0.7, topK: 40, topP: 0.95 }
         });
 
         const text = response.candidates?.[0]?.content?.parts?.[0]?.text;

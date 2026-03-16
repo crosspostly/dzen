@@ -461,12 +461,18 @@ export class ImageGeneratorAgent {
    * 🎭 Extract protagonist details
    */
   private extractProtagonist(title: string, lede: string, narrator: any) {
-    const age = narrator.age || 40;
-    const appearance = lede.includes('молодая') ? 'young' :
-                      lede.includes('старая') ? 'elderly' : 'middle-aged';
+    const age = narrator.age || 50;
+    const isTravel = /аул|гора|дагестан|батон|путешеств|поездк|дорога/i.test(`${title} ${lede}`.toLowerCase());
+    
+    // Use narrator gender from PlotBible if available, otherwise detect
+    let gender = narrator.gender || (isTravel ? 'male' : 'female');
+    
+    const appearance = lede.includes('молодая') || lede.includes('молодой') ? 'young' :
+                      lede.includes('старая') || lede.includes('старый') ? 'elderly' : 'middle-aged';
 
     return {
-      name: 'Woman', // Generic, focus on emotion
+      name: gender === 'female' ? 'Woman' : 'Man',
+      gender,
       age,
       appearance,
       state: this.extractPhysicalState(lede),
@@ -513,6 +519,10 @@ export class ImageGeneratorAgent {
       return 'encountering past love/memory';
     }
 
+    if (text.includes('гора') || text.includes('аул') || text.includes('батон')) {
+      return 'travel adventure in the mountains';
+    }
+
     if (text.includes('случай') || text.includes('момент') || text.includes('день')) {
       return 'critical moment in life';
     }
@@ -525,6 +535,17 @@ export class ImageGeneratorAgent {
    */
   private extractLocation(lede: string): string {
     const text = lede.toLowerCase();
+
+    // TRAVEL LOCATIONS
+    if (text.includes('аул') || text.includes('заброшен') || text.includes('сакля') || text.includes('гамсутль')) {
+      return 'abandoned mountain village (ghost town)';
+    }
+    if (text.includes('гора') || text.includes('хребет') || text.includes('обрыв') || text.includes('ущель')) {
+      return 'mountain landscape with dramatic view';
+    }
+    if (text.includes('дорога') || text.includes('серпантин') || text.includes('машина') || text.includes('нива')) {
+      return 'mountain road or rugged vehicle';
+    }
 
     // SPECIFIC LOCATIONS mentioned in text
     if (text.includes('кафе') || text.includes('кофейня') || text.includes('бар')) {
@@ -786,7 +807,7 @@ ${v.details.map(d => `• ${d}`).join('\n')}
 🚫 ABSOLUTE RULES:
 - NO text, captions, watermarks
 - NO perfect posing
-- NO generic "woman portrait"
+- NO generic "person portrait"
       `.trim();
     }
 
@@ -853,7 +874,7 @@ ${variedArtStyle}
 - NO looking directly at camera (candid look only)
 - NO stock photo aesthetic (must look authentic/raw)
 - NO perfect studio lighting
-- NO generic "woman portrait"
+- NO generic "person portrait"
 
 ✅ SUCCESS:
 When viewer sees this image, they immediately FEEL the emotion

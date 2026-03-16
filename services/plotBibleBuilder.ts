@@ -146,36 +146,46 @@ export class PlotBibleBuilder {
       context.setting === 'rural' ? 'занавески в цветочек' : 'минималистичные жалюзи',
       isBetrayal ? 'небрежно брошенные ключи' : 'аккуратно сложенная салфетка'
     ];
+return {
+  who: `${context.gender === 'female' ? 'женщина' : 'мужчина'} ${narrator.age} лет`,
+  where,
+  what,
+  lighting,
+  mood: context.emotionalTone,
+  details: context.isTravel ? [...details, 'белый пес Батон рядом', 'старый рюкзак'] : details
+};
+    /**
+     * 🔍 Analyze theme to extract context
+     */
+    private static analyzeTheme(theme: string): ThemeContext {
+      const lower = theme.toLowerCase();
 
-    return {
-      who: `женщина ${narrator.age} лет`,
-      where,
-      what,
-      lighting,
-      mood: context.emotionalTone,
-      details
-    };
-  }
+      // Detect if this is a TRAVEL/SERIAL STORY (Mascot "Baton" is a key trigger)
+      const isTravel = /аул|гора|дагестан|батон|путешеств|поездк|дорога|чемодан|рюкзак|гав|собака/i.test(theme);
 
-  /**
-   * 🔍 Analyze theme to extract context
-   */
-  private static analyzeTheme(theme: string): ThemeContext {
-    const lower = theme.toLowerCase();
+      // Detect gender
+      let gender: "male" | "female" | "neutral" = "neutral";
+      if (isTravel) {
+        gender = "male"; // Travel blog persona is MALE 50+
+      } else if (/женщин|она|моя|мать|сестра|дочь|жена|подруг/i.test(theme)) {
+        gender = "female";
+      } else if (/мужчин|он|мой|отец|брат|сын|муж|друг/i.test(theme)) {
+        gender = "male";
+      }
 
-    // Detect gender
-    const isFemale = /женщин|она|моя|мать|сестра|дочь|жена|подруг/i.test(theme);
-    const isMale = /мужчин|он|мой|отец|брат|сын|муж|друг/i.test(theme);
-
-    // Detect age range
-    let ageRange: [number, number] = [40, 60]; // Default
-    if (/молод|девушк|парен|20|25|30/i.test(theme)) {
-      ageRange = [25, 35];
-    } else if (/стар|пожил|60|70/i.test(theme)) {
-      ageRange = [55, 70];
-    }
-
-    // Detect relationship context
+      // Detect age range
+      let ageRange: [number, number] = isTravel ? [50, 60] : [40, 60]; 
+      if (/молод|девушк|парен|20|25|30/i.test(theme)) {
+        ageRange = [25, 35];
+      } else if (/стар|пожил|60|70/i.test(theme)) {
+        ageRange = [55, 70];
+      }
+    ...
+      return {
+        gender,
+        isTravel,
+        ageRange,
+    ...
     const hasFamily = /семь|муж|жена|дети|ребенок|мать|отец/i.test(theme);
     const hasWork = /работ|коллег|начальник|офис|карьер/i.test(theme);
     const hasFriendship = /друг|подруг|знаком|сосед/i.test(theme);
@@ -243,16 +253,26 @@ export class PlotBibleBuilder {
     }
 
     // Russian voice markers
-    const voiceMarkers = [
+    let voiceMarkers = [
       "я же тебе скажу",
       "честное слово",
       "вот тогда и началось",
-      "может быть, я ошиблась",
-      "ну что вы хотите",
       "как говорится",
-      "не знаю даже",
       "представьте себе"
     ];
+
+    if (context.isTravel) {
+      voiceMarkers = [
+        "Батон первым почуял",
+        "Дорога — она такая",
+        "Тут я понял: приехали",
+        "Местные говорят",
+        "Вид — закачаешься",
+        "В горах время иначе идет",
+        "Батон навострил уши",
+        "За 500 рублей договорились"
+      ];
+    }
 
     // Shuffle and pick 4-5 markers
     const shuffled = voiceMarkers.sort(() => Math.random() - 0.5);
@@ -261,10 +281,10 @@ export class PlotBibleBuilder {
     return {
       gender: context.gender,
       age,
-      tone,
+      tone: context.isTravel ? "conversational and honest" : tone,
       voiceMarkers: selected,
-      education: age > 45 ? "высшее" : "среднее профессиональное",
-      socialStatus: "middle class"
+      education: "высшее",
+      socialStatus: context.isTravel ? "traveler" : "middle class"
     };
   }
 
@@ -272,6 +292,46 @@ export class PlotBibleBuilder {
    * 🎨 Build sensory palette
    */
   private static buildSensoryPalette(context: ThemeContext): SensoryPalette {
+    if (context.isTravel) {
+      return {
+        smells: [
+          "запах горного чабреца",
+          "аромат свежего хлеба из тандыра",
+          "пыль проселочной дороги",
+          "запах мокрой шерсти Батона",
+          "дым от дровяной печи"
+        ],
+        sounds: [
+          "шум горной реки",
+          "лай Батона на коров",
+          "скрип старой калитки",
+          "ветер в ущелье",
+          "шум мотора УАЗа"
+        ],
+        textures: [
+          "шершавый камень сакли",
+          "холодный металл фляги",
+          "мягкое ухо Батона",
+          "колючая шерсть папахи",
+          "липкая горная глина"
+        ],
+        details: [
+          "заброшенный аул на скале",
+          "пасущиеся овцы вдалеке",
+          "старая 'Нива' у забора",
+          "вид на Гамсутль",
+          "хвостик Батона"
+        ],
+        lightSources: [
+          "заходящее солнце над хребтом",
+          "тусклая лампочка в сакле",
+          "блики на капоте",
+          "костер в ночи",
+          "яркий свет в горах"
+        ]
+      };
+    }
+
     // Base palette for urban apartment setting
     const basePalette = {
       smells: [
@@ -428,6 +488,7 @@ export class PlotBibleBuilder {
  */
 interface ThemeContext {
   gender: "male" | "female" | "neutral";
+  isTravel: boolean;
   ageRange: [number, number];
   hasFamily: boolean;
   hasWork: boolean;
