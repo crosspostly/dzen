@@ -2,7 +2,8 @@ name: Merge All Files to Markdown
 
 on:
   workflow_dispatch:
-nenv:
+
+env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
@@ -57,7 +58,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
           if ! git diff --quiet KNOWLEDGE_BASE.md; then
             git add KNOWLEDGE_BASE.md
             git commit -m "🤖 Auto-update: Merge all files to KNOWLEDGE_BASE.md"
