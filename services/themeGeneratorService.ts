@@ -5,9 +5,10 @@
  */
 
 /**
- * 🗺️ ThemeGeneratorService v10.0
+ * 🗺️ ThemeGeneratorService v10.1
  * СТАТУС: Март 2026 года.
- * ПРАВИЛО: Только актуальные модели 3.1+ или 2.5+. 
+ * ПРАВИЛО: Только актуальные модели 3.1+ или 2.5+.
+ * FIX v10.1: Full WATERFALL with 503/429 retry backoff (no more single-shot failures).
  */
 
 import { GoogleGenAI } from "@google/genai";
@@ -37,6 +38,49 @@ export class ThemeGeneratorService {
   }
 
   /**
+   * 🔄 Full waterfall call with 503/429 retry backoff
+   */
+  private async callWithWaterfall(prompt: string): Promise<string> {
+    const waterfall = MODELS.WATERFALL;
+
+    for (let i = 0; i < waterfall.length; i++) {
+      const model = waterfall[i];
+      const maxRetries = 3;
+
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`${LOG.BRAIN} Trying model ${model} (attempt ${attempt}/${maxRetries})...`);
+          const response = await this.geminiClient.models.generateContent({
+            model,
+            contents: prompt,
+            config: { temperature: 1.0, topK: 40, topP: 0.95 },
+          });
+          const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!text) throw new Error('Empty response');
+          return text;
+        } catch (error: any) {
+          const msg = error?.message || '';
+          const isRetryable = msg.includes('503') || msg.includes('429') ||
+                              msg.includes('UNAVAILABLE') || msg.includes('overloaded');
+
+          if (isRetryable && attempt < maxRetries) {
+            const delay = attempt * 10000; // 10s, 20s
+            console.warn(`${LOG.WARN} ${model} unavailable (503/429), retrying in ${delay/1000}s...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+
+          // Not retryable or exhausted retries — try next model in waterfall
+          console.warn(`${LOG.WARN} ${model} failed: ${msg.substring(0, 80)}. Trying next model...`);
+          break;
+        }
+      }
+    }
+
+    throw new Error('All models in waterfall exhausted');
+  }
+
+  /**
    * Load Themes from both JSON files
    */
   private async loadThemesFromJSON(): Promise<string[]> {
@@ -54,8 +98,6 @@ export class ThemeGeneratorService {
             const themes = data
               .map((item: any) => item.title)
               .filter((title: string) => title && title.length > 5);
-            
-            // If it's travel_examples, give it priority/more weight if needed
             allThemes = [...allThemes, ...themes];
           }
         } catch (e) {
@@ -77,8 +119,6 @@ export class ThemeGeneratorService {
    */
   private async getAvailableThemes(): Promise<string[]> {
     const now = Date.now();
-    
-    // Use cache if fresh
     if (this.cachedThemes.length > 0 && (now - this.lastFetchTime) < this.cacheDuration) {
       console.log(`${LOG.BRAIN} Using cached themes (${this.cachedThemes.length} items)`);
       return this.cachedThemes;
@@ -109,7 +149,7 @@ export class ThemeGeneratorService {
       'Старая бабушка в Грузии показала мне обряд выпечки хлеба в тоне',
       'Почему японцы извиняются перед едой: наше с Батоном открытие в Киото',
       'Ритуал подношения риса духам на Бали: сколько это стоит на самом деле',
-      'Вкус детства в другой стране: как я нашел идеальный чебурек в Стамбуле',
+      'Вкус детства в другой стране: как я нашёл идеальный чебурек в Стамбуле',
       'Почему в 55 лет я решил бросить всё и поехать изучать обряды еды в Перу',
     ];
   }
@@ -127,7 +167,6 @@ export class ThemeGeneratorService {
    */
   async generateNewTheme(): Promise<string> {
     try {
-      // 1. Load context
       const journeyStatePath = path.join(process.cwd(), 'journey_state.json');
       const worldLocationsPath = path.join(process.cwd(), 'world_locations.json');
       
@@ -144,7 +183,7 @@ export class ThemeGeneratorService {
       const prompt = `\
 You are a "Journey Architect" for a serial Travel Blog on Yandex.Dzen.
 CHARACTER: A seasoned solo traveler (MALE, 55 years old) and their white dog "Baton" (Батон).
-STYLE: Real-time travel diary (сериальный блог), "Сказ" (conversational, honest, sensory).
+STYLE: Real-time travel diary (сериальный блог), "Сказз" (conversational, honest, sensory).
 GENDER RULE: Use MALE GENDER for all Russian verbs (e.g., "заплатил", "пришел", "увидел" instead of "заплатила", "пришла", "увидела").
 
 CURRENT JOURNEY STATE:
@@ -168,38 +207,9 @@ GENERATE 1 NEW RUSSIAN SERIAL TITLE (Punchy, realistic, masculine, Dzen-optimize
 
       console.log(`${LOG.BRAIN} Generating serial theme with journey persistence...`);
 
-      let text;
-      try {
-        const response = await this.geminiClient.models.generateContent({
-          model: MODELS.TEXT.PRIMARY,
-          contents: prompt,
-          config: {
-            temperature: 1.0,
-            topK: 40,
-            topP: 0.95,
-          },
-        });
-        text = response.candidates?.[0]?.content?.parts?.[0]?.text;
-      } catch (error) {
-        console.warn(`${LOG.WARN} Primary model failed, trying fallback...`);
-        
-        const response = await this.geminiClient.models.generateContent({
-          model: MODELS.TEXT.STABLE,
-          contents: prompt,
-          config: {
-            temperature: 0.95,
-            topK: 40,
-            topP: 0.95,
-          },
-        });
-        text = response.candidates?.[0]?.content?.parts?.[0]?.text;
-      }
+      const text = await this.callWithWaterfall(prompt);
 
-      if (!text || typeof text !== 'string') {
-        throw new Error("Gemini returned empty/invalid response");
-      }
-
-      // 🔥 FIX: Clean up the theme (remove markdown, "Заголовок:" prefix, etc)
+      // Clean up the theme
       const theme = text.trim()
         .replace(/^["']|["']$/g, '')
         .replace(/^\*\*Заголовок:\*\*\s*/i, '')
@@ -212,7 +222,6 @@ GENERATE 1 NEW RUSSIAN SERIAL TITLE (Punchy, realistic, masculine, Dzen-optimize
         throw new Error("Generated theme too short");
       }
 
-      // Update journey state for next run (simplified logic)
       journeyState.lastEvent = `Generated article: ${theme}`;
       fs.writeFileSync(journeyStatePath, JSON.stringify(journeyState, null, 2));
 
@@ -221,6 +230,7 @@ GENERATE 1 NEW RUSSIAN SERIAL TITLE (Punchy, realistic, masculine, Dzen-optimize
 
     } catch (error) {
       console.error(`${LOG.ERROR} Theme generation failed:`, error);
+      // Hard fallback — never crash the whole pipeline
       return "Как мы с Батоном искали ночлег в новом месте: цены и реалии";
     }
   }
@@ -234,8 +244,6 @@ GENERATE 1 NEW RUSSIAN SERIAL TITLE (Punchy, realistic, masculine, Dzen-optimize
     for (let i = 0; i < count; i++) {
       const theme = await this.generateNewTheme();
       themes.push(theme);
-      
-      // Delay between requests (be nice to API)
       if (i < count - 1) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
