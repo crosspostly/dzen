@@ -1,0 +1,30 @@
+{
+  "version": "4.0",
+  "generatedAt": 1773652033757,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 16884,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-16/probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000-.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-16/REPORT.md"
+  }
+}
