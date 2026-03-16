@@ -1,19 +1,15 @@
 /**
- * 🎨 ZenMaster v4.3 - Image Generator Agent
- * 
- * CRITICAL CHANGE: Extract ACTUAL STORY from article content
- * Not templates, not generic tags
- * EVERY STORY → UNIQUE SCENE with specific details, context, emotions
- * 
- * Features:
- * - Extract scene from article LEDE (first 300 chars)
- * - Identify key story elements (who, what, where, why, emotion)
- * - Build SPECIFIC scene description for Gemini
- * - Generate UNIQUE image per story
- * - Fallback on generation failure
- * - Image validation (dimensions, size, format)
+ * 🎨 ZenMaster v4.4 - Image Generator Agent
+ *
+ * FIXES:
+ * - dog.png is now passed as inlineData to Gemini (multimodal)
+ * - Background is taken from story context, NOT hardcoded to 'ancient mountain village'
+ * - isBatonPresent no longer forced to true via || true
+ * - Default visible detail matches actual dog breed
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { GoogleGenAI, Modality } from "@google/genai";
 import {
   ImageGenerationRequest,
@@ -27,6 +23,23 @@ import {
 import { PlotBible } from "../types/PlotBible";
 import { MobilePhotoAuthenticityProcessor } from "./mobilePhotoAuthenticityProcessor";
 import { MODELS } from "../constants/MODELS_CONFIG";
+
+// Load dog reference image once at module level
+let DOG_REFERENCE_BASE64: string | null = null;
+let DOG_REFERENCE_MIME: 'image/png' | 'image/jpeg' = 'image/png';
+
+try {
+  const dogPath = path.join(process.cwd(), 'dog.png');
+  if (fs.existsSync(dogPath)) {
+    DOG_REFERENCE_BASE64 = fs.readFileSync(dogPath).toString('base64');
+    DOG_REFERENCE_MIME = 'image/png';
+    console.log(`🐶 Dog reference image loaded: ${dogPath} (${Math.round(DOG_REFERENCE_BASE64.length * 0.75 / 1024)} KB)`);
+  } else {
+    console.warn(`⚠️  dog.png not found at ${dogPath} - will use text description only`);
+  }
+} catch (e) {
+  console.warn(`⚠️  Failed to load dog.png: ${(e as Error).message}`);
+}
 
 export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
@@ -52,18 +65,13 @@ export class ImageGeneratorAgent {
       ...config
     };
 
-    // Initialize Stage 4: Mobile Photo Authenticity Processor
     this.authenticityProcessor = new MobilePhotoAuthenticityProcessor();
   }
 
   // ============================================
-  // 🎨 METHODS FOR IMAGE PROMPT VARIATION
+  // 🎨 VARIATION METHODS
   // ============================================
 
-  /**
-   * 🏠 Vary location based on base type
-   * Add diversity to avoid repetitive "apartment interior" images
-   */
   private varyLocation(base: string, plotBible?: PlotBible): string {
     const locationVariations: Record<string, string[]> = {
       'apartment interior': [
@@ -72,9 +80,7 @@ export class ImageGeneratorAgent {
         'living room with comfortable sofa',
         'balcony with fresh plants',
         'hallway with mirror',
-        'bathroom with clean surfaces',
         'home office corner with technology',
-        'staircase with natural light',
         'cozy bedroom with personal details',
         'kitchen table with breakfast setting'
       ],
@@ -140,12 +146,31 @@ export class ImageGeneratorAgent {
         'pottery studio with clay',
         'photography studio with lights',
         'craft room with materials'
+      ],
+      'mountain landscape with dramatic view': [
+        'high mountain ridge with valley below',
+        'rocky mountain summit at dawn',
+        'alpine meadow with peaks behind',
+        'cliff edge overlooking gorge',
+        'mountain trail with sweeping panorama'
+      ],
+      'abandoned mountain village (ghost town)': [
+        'crumbling stone walls of a ghost village',
+        'ancient aul ruins with mountain backdrop',
+        'abandoned Caucasian village on steep hillside',
+        'deserted mountain settlement with fog',
+        'ruined highland village with grassy paths'
+      ],
+      'mountain road or rugged vehicle': [
+        'dusty mountain road with hairpin turns',
+        'old Niva 4x4 parked on rocky track',
+        'unpaved mountain path with stones',
+        'Soviet-era Bukhanka van on dirt road',
+        'off-road trail through mountain forest'
       ]
     };
 
-    // If PlotBible has sensory palette, use it for variety
     if (plotBible?.sensoryPalette && Object.keys(plotBible.sensoryPalette).length > 0) {
-      // Look through all sensory arrays for location-like items
       const allSensory = [
         ...(plotBible.sensoryPalette.smells || []),
         ...(plotBible.sensoryPalette.details || []),
@@ -163,9 +188,6 @@ export class ImageGeneratorAgent {
     return variations[Math.floor(Math.random() * variations.length)];
   }
 
-  /**
-   * 🏠 Vary interior style for diversity
-   */
   private varyInteriorStyle(): string {
     const styles = [
       'Modern Scandinavian (clean lines, light wood, white walls)',
@@ -179,148 +201,65 @@ export class ImageGeneratorAgent {
     return styles[Math.floor(Math.random() * styles.length)];
   }
 
-  /**
-   * 💡 Vary lighting based on emotion
-   * Different emotions need different lighting atmospheres
-   */
   private varyLighting(emotion: string): string {
     const lightingOptions: Record<string, string[]> = {
-      'grief and pain': [
-        'cold overhead lighting',
-        'dim corner with shadows',
-        'grey daylight from window',
-        'single lamp with weak bulb',
-        'blinds creating stripe shadows'
-      ],
-      'joy and relief': [
-        'golden hour warm sunlight',
-        'candlelight with soft glow',
-        'soft diffused window light',
-        'festive string lights',
-        'bright morning light'
-      ],
-      'relief and peace': [
-        'soft dawn light',
-        'gentle evening lamp',
-        'warm fireplace glow',
-        'sunset orange hues',
-        'natural window light'
-      ],
-      'triumph and freedom': [
-        'dramatic backlighting',
-        'bright expansive window light',
-        'high contrast sunlight',
-        'clear midday clarity',
-        'crisp winter light'
-      ],
-      'fear and anxiety': [
-        'uncertain flickering light',
-        'shadowy corner lighting',
-        'harsh fluorescent light',
-        'dim hallway illumination',
-        'creeping shadows from door'
-      ],
-      'anger and rage': [
-        'sharp high contrast',
-        'harsh side lighting',
-        'intense directional spotlight',
-        'electric cold light',
-        'stark black and white contrast'
-      ],
-      'shame and regret': [
-        'subdued soft shadows',
-        'intimate dim corner',
-        'looking-down-from-above light',
-        'soft window curtain light',
-        'moody atmospheric glow'
-      ],
-      'loneliness and emptiness': [
-        'isolated single light source',
-        'wide empty space shadows',
-        'long corridor perspective',
-        'single chair in empty room',
-        'distant city light through window'
-      ],
-      'nostalgia and memory': [
-        'warm vintage tones',
-        'soft focus nostalgic glow',
-        'memory-like soft edges',
-        'soft sepia undertones',
-        'gentle misty light'
-      ]
+      'grief and pain': ['cold overhead lighting', 'dim corner with shadows', 'grey daylight from window', 'single lamp with weak bulb'],
+      'joy and relief': ['golden hour warm sunlight', 'candlelight with soft glow', 'soft diffused window light', 'bright morning light'],
+      'relief and peace': ['soft dawn light', 'gentle evening lamp', 'warm fireplace glow', 'natural window light'],
+      'triumph and freedom': ['dramatic backlighting', 'bright expansive window light', 'high contrast sunlight', 'crisp winter light'],
+      'fear and anxiety': ['uncertain flickering light', 'shadowy corner lighting', 'harsh fluorescent light', 'dim hallway illumination'],
+      'anger and rage': ['sharp high contrast', 'harsh side lighting', 'intense directional spotlight', 'electric cold light'],
+      'shame and regret': ['subdued soft shadows', 'intimate dim corner', 'soft window curtain light', 'moody atmospheric glow'],
+      'loneliness and emptiness': ['isolated single light source', 'wide empty space shadows', 'long corridor perspective', 'distant city light through window'],
+      'nostalgia and memory': ['warm vintage tones', 'soft focus nostalgic glow', 'soft sepia undertones', 'gentle misty light'],
+      'thoughtful': ['diffused natural daylight', 'soft overcast light', 'warm afternoon window light', 'calm even lighting']
     };
-
     const options = lightingOptions[emotion] || ['natural daylight', 'soft ambient light'];
     return options[Math.floor(Math.random() * options.length)];
   }
 
-  /**
-   * 📐 Vary composition for visual diversity
-   */
   private varyComposition(): string {
     const options = [
-      'close-up portrait focusing on face',
-      'medium shot showing upper body',
-      'wide environmental shot with context',
-      'over-the-shoulder perspective',
-      'profile view from side',
-      'point of view from character\'s eyes',
-      'high angle looking down',
-      'low angle looking up',
-      'rule of thirds composition',
-      'centered composition with negative space'
+      'close-up focusing on dog face and expression',
+      'medium shot showing whole dog body',
+      'wide environmental shot showing dog in landscape',
+      'low angle looking up at dog',
+      'high angle looking down at dog',
+      'rule of thirds composition with dog off-center',
+      'dog in foreground, blurred background'
     ];
     return options[Math.floor(Math.random() * options.length)];
   }
 
-  /**
-   * 🎭 Vary art style for uniqueness
-   */
   private varyArtStyle(): string {
     const options = [
-      'cinematic documentary style',
-      'artistic photograph',
-      'raw candid snapshot',
-      'emotional portrait photography',
-      'dramatic photojournalism',
-      'intimate fine art photography',
-      'authentically unposed moment',
-      'lifestyle documentary aesthetic',
-      'emotive editorial style',
-      'raw emotional documentation'
+      'authentic smartphone travel photo',
+      'candid documentary photography',
+      'raw travel snapshot',
+      'lifestyle travel photography',
+      'real-life adventure photography'
     ];
     return options[Math.floor(Math.random() * options.length)];
   }
 
-  /**
-   * 🎭 Vary mood based on emotion
-   */
   private varyMood(emotion: string): string {
     const moodOptions: Record<string, string[]> = {
-      'grief and pain': ['devastated', 'shattered', 'frozen in shock', 'numb', 'broken'],
-      'joy and relief': ['radiant', 'lighter', 'warm', 'free', 'peaceful'],
-      'relief and peace': ['calm', 'healing', 'serene', ' ACCEPTING', 'gentle'],
-      'triumph and freedom': ['powerful', 'defiant', 'radiant', 'triumphant', 'bold'],
-      'fear and anxiety': ['uneasy', 'tense', 'vulnerable', 'uncertain', 'guarded'],
-      'anger and rage': ['intense', 'explosive', 'confrontational', 'ferocious', 'charged'],
-      'shame and regret': ['subdued', 'introspective', 'heavy', 'contemplative', 'burdened'],
-      'loneliness and emptiness': ['isolated', 'hollow', 'quiet', 'deserted', 'echoing'],
-      'nostalgia and memory': ['bittersweet', 'wistful', 'tender', 'soft-focus memory', 'cherished']
+      'grief and pain': ['heavy', 'still', 'somber'],
+      'joy and relief': ['playful', 'energetic', 'happy'],
+      'relief and peace': ['calm', 'serene', 'peaceful'],
+      'triumph and freedom': ['bold', 'triumphant', 'free'],
+      'fear and anxiety': ['alert', 'tense', 'cautious'],
+      'anger and rage': ['intense', 'charged', 'restless'],
+      'shame and regret': ['subdued', 'quiet', 'withdrawn'],
+      'loneliness and emptiness': ['solitary', 'still', 'quiet'],
+      'nostalgia and memory': ['wistful', 'gentle', 'soft']
     };
-
-    const options = moodOptions[emotion] || ['emotional', 'authentic', 'genuine'];
+    const options = moodOptions[emotion] || ['curious', 'alert', 'adventurous'];
     return options[Math.floor(Math.random() * options.length)];
   }
 
-  /**
-   * 🌈 Use sensory palette from PlotBible
-   */
   private varySensoryPalette(plotBible?: PlotBible): string {
-    if (!plotBible?.sensoryPalette || Object.keys(plotBible.sensoryPalette).length === 0) {
-      return '';
-    }
-
-    // Collect all sensory elements into one array
+    if (!plotBible?.sensoryPalette || Object.keys(plotBible.sensoryPalette).length === 0) return '';
     const allSensory = [
       ...(plotBible.sensoryPalette.smells || []),
       ...(plotBible.sensoryPalette.sounds || []),
@@ -328,119 +267,66 @@ export class ImageGeneratorAgent {
       ...(plotBible.sensoryPalette.details || []),
       ...(plotBible.sensoryPalette.lightSources || [])
     ];
-
-    if (allSensory.length === 0) {
-      return '';
-    }
-
-    // Take 2-3 random sensory elements
+    if (allSensory.length === 0) return '';
     const shuffled = allSensory.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 3);
-
-    return selected.map(s => `- ${s}`).join('\n');
+    return shuffled.slice(0, 3).map(s => `- ${s}`).join('\n');
   }
 
-  /**
-   * 🔄 Avoid repeating similar prompts
-   */
   private isPromptTooSimilar(newPrompt: string): boolean {
-    // Create a simplified hash
     const hash = newPrompt.substring(0, 100).toLowerCase()
-      .replace(/[^a-zа-я0-9]/g, '')
-      .substring(0, 50);
-
-    if (this.usedPrompts.has(hash)) {
-      return true;
-    }
-
+      .replace(/[^a-zа-я0-9]/g, '').substring(0, 50);
+    if (this.usedPrompts.has(hash)) return true;
     this.usedPrompts.add(hash);
-    // Keep only last 50 prompts to avoid memory bloat
     if (this.usedPrompts.size > 50) {
       const first = this.usedPrompts.values().next().value;
       this.usedPrompts.delete(first);
     }
-
     return false;
   }
 
   // ============================================
-  // 🎨 END OF VARIATION METHODS
+  // 🎨 MAIN GENERATION
   // ============================================
 
-  /**
-   * 🎨 v4.3: Generate cover image with ACTUAL STORY from article
-   * Not hardcoded templates!
-   */
   async generateCoverImage(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🎨 Generating cover for: "${request.title}"`);
 
     try {
-      // 🔥 EXTRACT ACTUAL STORY from article lede + content
-      const storyContext = this.extractStoryContext(
-        request.title,
-        request.ledeText,
-        request.plotBible
-      );
-      console.log(`📖 Story context extracted: ${storyContext.summary}`);
+      const storyContext = this.extractStoryContext(request.title, request.ledeText, request.plotBible);
+      console.log(`📖 Story context: ${storyContext.summary}`);
 
-      // 🔥 Build SPECIFIC scene description from story
       const prompt = this.buildStorySpecificPrompt(storyContext, request.plotBible);
-      console.log(`🎬 Story-specific prompt built (${prompt.length} chars)`);
+      console.log(`🎬 Prompt built (${prompt.length} chars), dog.png reference: ${DOG_REFERENCE_BASE64 ? 'YES ✅' : 'NO ⚠️'}`);
 
-      // Generate with primary model
-      const image = await this.generateWithModel(
-        this.primaryModel,
-        prompt,
-        request.articleId
-      );
-
+      const image = await this.generateWithModel(this.primaryModel, prompt, request.articleId);
       console.log(`✅ Cover generated for "${request.title}"`);
       return image;
 
     } catch (error) {
       const errorMsg = (error as Error).message;
       console.warn(`⚠️  Primary generation failed: ${errorMsg}`);
-
       if (this.config.enableFallback) {
         console.log(`🔄 Attempting fallback...`);
         return await this.generateCoverImageFallback(request);
       }
-
       throw error;
     }
   }
 
-  /**
-   * 🔥 EXTRACT STORY CONTEXT from article content
-   * Find: Who, What, Where, When, Why, How, Emotion
-   */
+  // ============================================
+  // 🔍 STORY CONTEXT EXTRACTION
+  // ============================================
+
   private extractStoryContext(title: string, lede: string, plotBible: PlotBible | undefined) {
-    const fullText = `${title}. ${lede}`.toLowerCase();
     const narrator = plotBible?.narrator || { age: 40, gender: 'female', tone: 'confessional' };
-
-    // КТО? (Who is the main character and what's their situation?)
-    let protagonist = this.extractProtagonist(title, lede, narrator);
-
-    // ЧТО ПРОИЗОШЛО? (What is the MAIN EVENT/CONFLICT?)
-    let mainEvent = this.extractMainEvent(title, lede);
-
-    // ГДЕ? (Where does the story take place? What location?)
-    let location = this.extractLocation(lede);
-
-    // КОГДА? (When? Morning/evening? Past/present?)
-    let timeContext = this.extractTimeContext(lede);
-
-    // КАКАЯ ЭМОЦИЯ? (What emotion defines this story?)
-    let emotionalArc = this.extractEmotionalArc(title, lede);
-
-    // КАКИЕ ВИДИМЫЕ ДЕТАЛИ? (What specific objects/actions are visible?)
-    let visibleDetails = this.extractVisibleDetails(title, lede);
-
-    // ФОКУС СЦЕНЫ? (What is the focal point? The key object/action?)
-    let focalPoint = this.extractFocalPoint(title, lede, visibleDetails);
-
-    // КТО ПРИСУТСТВУЕТ? (Who else is there? Alone or with others?)
-    let presenceContext = this.extractPresenceContext(lede);
+    const protagonist = this.extractProtagonist(title, lede, narrator);
+    const mainEvent = this.extractMainEvent(title, lede);
+    const location = this.extractLocation(lede);
+    const timeContext = this.extractTimeContext(lede);
+    const emotionalArc = this.extractEmotionalArc(title, lede);
+    const visibleDetails = this.extractVisibleDetails(title, lede);
+    const focalPoint = this.extractFocalPoint(title, lede, visibleDetails);
+    const presenceContext = this.extractPresenceContext(lede);
 
     return {
       title,
@@ -457,13 +343,8 @@ export class ImageGeneratorAgent {
     };
   }
 
-  /**
-   * 🎭 Extract protagonist details (Baton is the star!)
-   */
   private extractProtagonist(title: string, lede: string, narrator: any) {
-    // FIX: removed || true which was forcing isBatonPresent to always be true
     const isBatonPresent = /батон|пес|собака|пушист/i.test(`${title} ${lede}`.toLowerCase());
-    
     return {
       name: 'Baton (The Mascot)',
       species: 'Dog',
@@ -474,424 +355,202 @@ export class ImageGeneratorAgent {
     };
   }
 
-  /**
-   * 📖 Extract MAIN EVENT (the core story)
-   */
   private extractMainEvent(title: string, lede: string): string {
     const text = `${title}. ${lede}`.toLowerCase();
-
-    // DETECT MAJOR LIFE EVENTS
     if (text.includes('развод') || text.includes('муж')) {
-      if (text.includes('ненавид') || text.includes('обман') || text.includes('предател')) {
-        return 'discovering husband\'s betrayal and divorce';
-      }
+      if (text.includes('ненавид') || text.includes('обман') || text.includes('предател')) return 'discovering betrayal and divorce';
       return 'dealing with marriage conflict';
     }
-
     if (text.includes('сын') || text.includes('ребён')) {
-      if (text.includes('помирил') || text.includes('мир')) {
-        return 'reconciliation with son after conflict';
-      }
-      if (text.includes('ссора') || text.includes('конфлик')) {
-        return 'conflict with child';
-      }
+      if (text.includes('помирил') || text.includes('мир')) return 'reconciliation with son';
+      if (text.includes('ссора') || text.includes('конфлик')) return 'conflict with child';
       return 'moment with son';
     }
-
-    if (text.includes('смерт') || text.includes('умер')) {
-      return 'dealing with loss and grief';
-    }
-
-    if (text.includes('победа') || text.includes('преодол') || text.includes('страх')) {
-      if (text.includes('преодол') || text.includes('победи')) {
-        return 'overcoming a deep fear';
-      }
-      return 'facing personal struggle';
-    }
-
-    if (text.includes('первая любовь') || text.includes('встреча') || text.includes('прошлое')) {
-      return 'encountering past love/memory';
-    }
-
-    if (text.includes('гора') || text.includes('аул') || text.includes('батон')) {
-      return 'travel adventure in the mountains';
-    }
-
-    if (text.includes('случай') || text.includes('момент') || text.includes('день')) {
-      return 'critical moment in life';
-    }
-
+    if (text.includes('смерт') || text.includes('умер')) return 'dealing with loss and grief';
+    if (text.includes('преодол') || text.includes('победи')) return 'overcoming a deep fear';
+    if (text.includes('гора') || text.includes('аул') || text.includes('батон')) return 'travel adventure in the mountains';
+    if (text.includes('первая любовь') || text.includes('встреча') || text.includes('прошлое')) return 'encountering past love';
+    if (text.includes('случай') || text.includes('момент') || text.includes('день')) return 'critical moment in life';
     return 'life-changing moment';
   }
 
-  /**
-   * 📍 Extract LOCATION from story
-   */
   private extractLocation(lede: string): string {
     const text = lede.toLowerCase();
-
-    // TRAVEL LOCATIONS
-    if (text.includes('аул') || text.includes('заброшен') || text.includes('сакля') || text.includes('гамсутль')) {
-      return 'abandoned mountain village (ghost town)';
-    }
-    if (text.includes('гора') || text.includes('хребет') || text.includes('обрыв') || text.includes('ущель')) {
-      return 'mountain landscape with dramatic view';
-    }
-    if (text.includes('дорога') || text.includes('серпантин') || text.includes('машина') || text.includes('нива')) {
-      return 'mountain road or rugged vehicle';
-    }
-
-    // SPECIFIC LOCATIONS mentioned in text
-    if (text.includes('кафе') || text.includes('кофейня') || text.includes('бар')) {
-      return 'intimate cafe with candlelight';
-    }
-    if (text.includes('мост') || text.includes('набережная') || text.includes('вода')) {
-      return 'bridge over river, evening light';
-    }
-    if (text.includes('дома') || text.includes('подъезд') || text.includes('прихожая')) {
-      return 'apartment entrance/hallway';
-    }
-    if (text.includes('кухня')) {
-      return 'kitchen with table';
-    }
-    if (text.includes('офис') || text.includes('адвокат')) {
-      return 'office building';
-    }
-    if (text.includes('парк')) {
-      return 'park bench';
-    }
-    if (text.includes('улица') || text.includes('дождь')) {
-      return 'street in rain';
-    }
-    if (text.includes('окно') || text.includes('высот') || text.includes('этаж')) {
-      return 'high window overlooking city';
-    }
-    if (text.includes('метро') || text.includes('вокзал')) {
-      return 'transit station';
-    }
-    if (text.includes('мастерск') || text.includes('студи')) {
-      return 'artist studio';
-    }
-
+    if (text.includes('аул') || text.includes('заброшен') || text.includes('сакля') || text.includes('гамсутль')) return 'abandoned mountain village (ghost town)';
+    if (text.includes('гора') || text.includes('хребет') || text.includes('обрыв') || text.includes('ущель')) return 'mountain landscape with dramatic view';
+    if (text.includes('дорога') || text.includes('серпантин') || text.includes('машина') || text.includes('нива')) return 'mountain road or rugged vehicle';
+    if (text.includes('кафе') || text.includes('кофейня') || text.includes('бар')) return 'intimate cafe with candlelight';
+    if (text.includes('мост') || text.includes('набережная') || text.includes('вода')) return 'bridge over river, evening light';
+    if (text.includes('дома') || text.includes('подъезд') || text.includes('прихожая')) return 'apartment entrance/hallway';
+    if (text.includes('кухня')) return 'kitchen with table';
+    if (text.includes('офис') || text.includes('адвокат')) return 'office building';
+    if (text.includes('парк')) return 'park bench';
+    if (text.includes('улица') || text.includes('дождь')) return 'street in rain';
+    if (text.includes('окно') || text.includes('высот') || text.includes('этаж')) return 'high window overlooking city';
+    if (text.includes('метро') || text.includes('вокзал')) return 'transit station';
+    if (text.includes('мастерск') || text.includes('студи')) return 'artist studio';
     return 'apartment interior';
   }
 
-  /**
-   * ⏰ Extract TIME CONTEXT
-   */
   private extractTimeContext(lede: string): string {
     const text = lede.toLowerCase();
-
     if (text.includes('утро') || text.includes('рассвет')) return 'morning, soft light';
     if (text.includes('полден') || text.includes('день')) return 'midday, bright light';
     if (text.includes('вечер') || text.includes('закат')) return 'evening, golden light';
     if (text.includes('ночь')) return 'night, lamp light';
     if (text.includes('дождь') || text.includes('серый')) return 'rainy day, grey light';
     if (text.includes('снег')) return 'snowy weather';
-
     return 'daytime';
   }
 
-  /**
-   * 💔 Extract EMOTIONAL ARC
-   */
   private extractEmotionalArc(title: string, lede: string): { primary: string; secondary: string[] } {
     const text = `${title}. ${lede}`.toLowerCase();
-
-    let primary = 'thoughtful';
-    let secondary: string[] = [];
-
-    // PRIMARY EMOTION
-    if (text.includes('плач') || text.includes('слёз') || text.includes('горе') || text.includes('ненавид')) {
-      primary = 'grief and pain';
-      secondary = ['shock', 'betrayal', 'despair'];
-    } else if (text.includes('радость') || text.includes('улыбка') || text.includes('счастли')) {
-      primary = 'joy and relief';
-      secondary = ['hope', 'warmth', 'connection'];
-    } else if (text.includes('облегчение') || text.includes('спокойн') || text.includes('мир')) {
-      primary = 'relief and peace';
-      secondary = ['quiet happiness', 'acceptance', 'healing'];
-    } else if (text.includes('страх') || text.includes('трево') || text.includes('ужас')) {
-      primary = 'fear and anxiety';
-      secondary = ['uncertainty', 'dread', 'vulnerability'];
-    } else if (text.includes('гнев') || text.includes('злост') || text.includes('ярост')) {
-      primary = 'anger and rage';
-      secondary = ['indignation', 'determination', 'strength'];
-    } else if (text.includes('стыд') || text.includes('вина') || text.includes('покаяние')) {
-      primary = 'shame and regret';
-      secondary = ['introspection', 'vulnerability', 'acceptance'];
-    } else if (text.includes('триумф') || text.includes('победа') || text.includes('преодол') || text.includes('свобод')) {
-      primary = 'triumph and freedom';
-      secondary = ['strength', 'determination', 'new beginning'];
-    } else if (text.includes('одиночество') || text.includes('пустот')) {
-      primary = 'loneliness and emptiness';
-      secondary = ['melancholy', 'introspection', 'loss'];
-    } else if (text.includes('nostalgia') || text.includes('прошлое') || text.includes('память')) {
-      primary = 'nostalgia and memory';
-      secondary = ['longing', 'bittersweet', 'reflection'];
-    }
-
-    return { primary, secondary };
+    if (text.includes('плач') || text.includes('слёз') || text.includes('горе') || text.includes('ненавид')) return { primary: 'grief and pain', secondary: ['shock', 'betrayal', 'despair'] };
+    if (text.includes('радость') || text.includes('улыбка') || text.includes('счастли')) return { primary: 'joy and relief', secondary: ['hope', 'warmth', 'connection'] };
+    if (text.includes('облегчение') || text.includes('спокойн') || text.includes('мир')) return { primary: 'relief and peace', secondary: ['quiet happiness', 'acceptance', 'healing'] };
+    if (text.includes('страх') || text.includes('трево') || text.includes('ужас')) return { primary: 'fear and anxiety', secondary: ['uncertainty', 'dread', 'vulnerability'] };
+    if (text.includes('гнев') || text.includes('злость') || text.includes('ярость')) return { primary: 'anger and rage', secondary: ['indignation', 'determination', 'strength'] };
+    if (text.includes('стыд') || text.includes('вина') || text.includes('покаяние')) return { primary: 'shame and regret', secondary: ['introspection', 'vulnerability', 'acceptance'] };
+    if (text.includes('триумф') || text.includes('победа') || text.includes('преодол') || text.includes('свобод')) return { primary: 'triumph and freedom', secondary: ['strength', 'determination', 'new beginning'] };
+    if (text.includes('одиночество') || text.includes('пустот')) return { primary: 'loneliness and emptiness', secondary: ['melancholy', 'introspection', 'loss'] };
+    if (text.includes('прошлое') || text.includes('память')) return { primary: 'nostalgia and memory', secondary: ['longing', 'bittersweet', 'reflection'] };
+    return { primary: 'thoughtful', secondary: ['curious', 'present', 'aware'] };
   }
 
-  /**
-   * 👁️ Extract VISIBLE DETAILS from story (Dog focused)
-   */
   private extractVisibleDetails(title: string, lede: string): string[] {
     const text = `${title}. ${lede}`.toLowerCase();
     const details: string[] = [];
-
-    // DOG ACTIONS/DETAILS
-    if (text.includes('кость') || text.includes('грыз')) details.push('dog holding or gnawing a large bone');
-    if (text.includes('вода') || text.includes('пьет')) details.push('dog drinking water from a bowl or stream');
-    if (text.includes('бежит') || text.includes('бега')) details.push('dog running happily');
-    if (text.includes('спит') || text.includes('дремл')) details.push('dog sleeping curled up');
-    if (text.includes('смотрит') || text.includes('вид')) details.push('dog looking at the mountain view');
-    if (text.includes('грязн') || text.includes('пыль')) details.push('dog with slightly dusty fur');
-    if (text.includes('машина') || text.includes('буханка')) details.push('dog looking out of a car window');
-
-    // FIX: default was 'small white fluffy dog' — wrong breed! Baton is golden-brown scruffy terrier
-    return details.length > 0 ? details : ['Baton the golden-brown scruffy wire-haired terrier with red bandana exploring nature'];
+    if (text.includes('кость') || text.includes('грыз')) details.push('dog gnawing a large bone');
+    if (text.includes('вода') || text.includes('пьет')) details.push('dog drinking from a stream or bowl');
+    if (text.includes('бежит') || text.includes('бега')) details.push('dog running in open space');
+    if (text.includes('спит') || text.includes('дремл')) details.push('dog sleeping in a cozy spot');
+    if (text.includes('смотрит') || text.includes('вид')) details.push('dog gazing at the landscape');
+    if (text.includes('грязн') || text.includes('пыль')) details.push('dog with dusty paws after trail');
+    if (text.includes('машина') || text.includes('буханка')) details.push('dog hanging head out of car window');
+    if (text.includes('еда') || text.includes('миска') || text.includes('корм')) details.push('dog waiting near food bowl eagerly');
+    // Default matches actual Baton breed
+    return details.length > 0 ? details : ['Baton exploring, sniffing the ground, tail up, alert ears'];
   }
 
-  /**
-   * 🎯 Extract FOCAL POINT (Baton's action)
-   */
   private extractFocalPoint(title: string, lede: string, visibleDetails: string[]): string {
     const text = `${title}. ${lede}`.toLowerCase();
-
-    if (text.includes('кость')) return 'Baton gnawing on a bone';
-    if (text.includes('вид') || text.includes('горы')) return 'Baton looking at the vast mountain landscape';
-    if (text.includes('машина')) return 'Baton sitting inside a rugged 4x4 vehicle';
-    if (text.includes('еда') || text.includes('кухн')) return 'Baton waiting for food';
-
-    return 'Baton exploring the mountain surroundings';
+    if (text.includes('кость')) return 'Baton gnawing on a bone, fully focused';
+    if (text.includes('вид') || text.includes('горы')) return 'Baton standing at edge, gazing at the mountain view';
+    if (text.includes('машина')) return 'Baton leaning out of a dusty 4x4 car window';
+    if (text.includes('еда') || text.includes('кухн')) return 'Baton sitting, ears up, watching the cook';
+    if (text.includes('аул') || text.includes('заброшен')) return 'Baton sniffing ancient stone ruins';
+    if (text.includes('дорога') || text.includes('тропа')) return 'Baton trotting confidently on mountain trail';
+    return visibleDetails[0] || 'Baton in natural pose, in his element';
   }
 
-  /**
-   * 👥 Extract presence context (alone? with who?)
-   */
   private extractPresenceContext(lede: string): string {
     const text = lede.toLowerCase();
-
-    if (text.includes('один') || text.includes('одна') || text.includes('сама')) {
-      return 'alone';
-    }
-    if (text.includes('муж')) {
-      return 'with husband (tense/conflicted)';
-    }
-    if (text.includes('сын') || text.includes('дочь') || text.includes('ребён')) {
-      return 'with child';
-    }
-    if (text.includes('подруг') || text.includes('друг')) {
-      return 'with friend';
-    }
-    if (text.includes('мать') || text.includes('мама')) {
-      return 'with mother';
-    }
-
-    return 'alone or in private moment';
+    if (text.includes('один') || text.includes('одна') || text.includes('сама')) return 'alone';
+    if (text.includes('муж')) return 'with human companion';
+    if (text.includes('сын') || text.includes('дочь') || text.includes('ребён')) return 'with child';
+    if (text.includes('подруг') || text.includes('друг')) return 'with friend';
+    if (text.includes('мать') || text.includes('мама')) return 'with mother';
+    return 'dog alone, human behind camera';
   }
 
-  /**
-   * 🏃 Extract physical state (how is she physically?)
-   */
   private extractPhysicalState(lede: string): string {
     const text = lede.toLowerCase();
-
-    if (text.includes('дрож') || text.includes('стояла') || text.includes('замерз')) {
-      return 'frozen, trembling, in shock';
-    }
-    if (text.includes('расслаб') || text.includes('мирн')) {
-      return 'relaxed and peaceful';
-    }
-    if (text.includes('спешн') || text.includes('торопл')) {
-      return 'rushed, urgent';
-    }
-    if (text.includes('устал')) {
-      return 'exhausted';
-    }
-
-    return 'present and aware';
+    if (text.includes('дрож') || text.includes('стояла') || text.includes('замерз')) return 'frozen, trembling, in shock';
+    if (text.includes('расслаб') || text.includes('мирн')) return 'relaxed and peaceful';
+    if (text.includes('спешн') || text.includes('торопл')) return 'rushing, urgent';
+    if (text.includes('устал')) return 'exhausted';
+    return 'present and alert';
   }
 
-  /**
-   * 💕 Extract relationship context
-   */
-  private extractRelationshipContext(title: string, lede: string): string {
-    const text = `${title}. ${lede}`.toLowerCase();
-
-    if (text.includes('муж')) return 'married/dealing with marriage';
-    if (text.includes('сын') || text.includes('ребён')) return 'mother';
-    if (text.includes('лю')) return 'in love or heartbreak';
-    if (text.includes('одинок')) return 'alone';
-
-    return 'in relationship';
-  }
+  // ============================================
+  // 🎬 PROMPT BUILDER
+  // ============================================
 
   /**
-   * 🎬 BUILD STORY-SPECIFIC PROMPT (Baton Edition)
+   * Build story-specific prompt.
+   * Background is derived from story location, NOT hardcoded.
    */
   private buildStorySpecificPrompt(context: any, plotBible?: PlotBible): string {
-    const dogDesc = 'Baton: a golden-brown scruffy wire-haired terrier mix, distinct white fluffy patch on chest, large erect pointed ears, wearing a bright red bandana around his neck.';
-    
-    // Create a UNIQUE prompt for BATON in this story
-    const prompt = `
-🎬 STORY SCENE - Mascot: BATON THE DOG
+    const location = this.varyLocation(context.location, plotBible);
+    const lighting = this.varyLighting(context.emotionalArc.primary);
+    const composition = this.varyComposition();
+    const artStyle = this.varyArtStyle();
+    const mood = this.varyMood(context.emotionalArc.primary);
 
-📖 THE STORY:
-${context.title}
-${context.mainEvent}
+    // Map location to a concrete background description for the prompt
+    const backgroundDescription = this.locationToBackgroundDescription(context.location, location);
 
-👤 MAIN SUBJECT (THE STAR):
-- ${dogDesc}
-- Action: ${context.focalPoint || 'exploring the surroundings'}
-- Emotion: ${context.emotionalArc.primary}
-- Appearance: Scruffy, adventurous, real dog (not a cartoon)
+    const referenceNote = DOG_REFERENCE_BASE64
+      ? 'REFERENCE IMAGE PROVIDED: Draw THIS EXACT DOG from the reference photo — same breed, same markings, same red bandana. Replicate the exact appearance.'
+      : 'BREED: Golden-brown scruffy wire-haired terrier mix, white chest patch, large erect ears, bright red bandana.';
 
-📍 LOCATION & ATMOSPHERE:
-- Where: ${this.varyLocation(context.location, plotBible)}
-- Lighting: ${this.varyLighting(context.emotionalArc.primary)}
-- Background: ${context.location === 'mountain road' ? 'Rugged mountain terrain, old 4x4 car like a Niva or Bukhanka' : 'Ancient ruins of a mountain village'}
+    return `🎬 TRAVEL PHOTO — BATON THE DOG
 
-👁️ SCENE DETAILS (WHAT WE SEE):
-• ${dogDesc} is the main character in the center
-• ${context.visibleDetails.join('\n• ')}
-${context.presenceContext.includes('husband') || context.presenceContext.includes('child') ? '• Human companion (partially visible, background only)' : '• Narrator is behind the camera'}
+${referenceNote}
 
-🎯 VISUAL STYLE:
-- HIGH REALISM, authentic mobile photo aesthetic (Samsung S24 / iPhone 15 style)
-- CINEMATIC 16:9 composition, rule of thirds
-- Candid moment, dog is NOT looking at camera
-- Natural, non-studio lighting
-- Background is secondary to the dog
+📖 STORY CONTEXT:
+Title: ${context.title}
+Event: ${context.mainEvent}
+Time: ${context.timeContext}
 
-🚫 ABSOLUTE RULES:
-- NO generic white fluffy dogs (must be golden-brown scruffy terrier)
-- NO humans in the center
-- NO text, captions, watermarks
-- NO "ai-generated" digital art look
+🐶 WHAT BATON IS DOING:
+${context.focalPoint}
+${context.visibleDetails.slice(0, 2).map((d: string) => `- ${d}`).join('\n')}
+Mood: ${mood}
 
-✅ SUCCESS:
-The image looks like a real travel photo of a scruffy brown dog with a red bandana in the mountains.
-    `.trim();
+📍 LOCATION (from the story):
+Scene: ${location}
+Background: ${backgroundDescription}
+Lighting: ${lighting}
 
-    return prompt;
+📸 PHOTO STYLE:
+- ${artStyle}
+- ${composition}
+- 16:9 cinematic format
+- Natural authentic smartphone photo (NOT studio, NOT stock)
+- Baton is the main subject, NOT humans
+- Dog is NOT posing or looking at camera — candid moment
+
+🚫 NEVER:
+- No text, watermarks, captions
+- No white fluffy dogs (wrong breed)
+- No cartoon or illustrated style
+- No humans as main subject
+- Background must match story location (NOT always mountains/ruins)
+`.trim();
   }
 
   /**
-   * 🎨 Get tone/style guide based on primary emotion
+   * Convert abstract location key to concrete background description
    */
-  private getToneGuide(emotion: string): string {
-    const toneGuides: Record<string, string> = {
-      'grief and pain': `
-GRIEF scene:
-- Cold, clinical lighting (no warmth)
-- Empty spaces, silence visible
-- Body language: frozen, numb, shock
-- Eyes: red, empty, distant look
-- Hands: trembling or limp
-- Focal point: ring on finger or in hand
-- Everything feels FINAL and BROKEN
-- This moment changed everything
-- Show the MOMENT OF REALIZATION`,
-
-      'relief and peace': `
-RELIEF scene:
-- Warm, intimate lighting (candlelight or soft lamp)
-- Cozy enclosed space (cafe, corner, safe place)
-- Body language: relaxed, shoulders down, loose
-- Eyes: peaceful, maybe a happy tear
-- Hands: unclenched, peaceful
-- Focal point: smile or calm expression
-- Everything feels HEALED and WHOLE
-- Show the MOMENT OF ACCEPTANCE`,
-
-      'triumph and freedom': `
-TRIUMPH scene:
-- Bright, open, expansive (high window, view)
-- Space and air visible
-- Body language: standing tall, shoulders back, chest open
-- Eyes: looking forward, determined
-- Hands: strong, confident, free
-- Focal point: absence of ring or hand raised
-- Everything feels POSSIBLE and NEW
-- Show the MOMENT OF EMPOWERMENT`,
-
-      'fear and anxiety': `
-FEAR scene:
-- Uncertain, shadowy lighting
-- Tight, enclosed spaces
-- Body language: curled, protective, small
-- Eyes: worried, scanning, uncertain
-- Hands: clenched or protecting
-- Focal point: worried expression or protective gesture
-- Everything feels UNCERTAIN and THREATENING
-- Show the MOMENT OF VULNERABILITY`,
-
-      'anger and rage': `
-ANGER scene:
-- Sharp, high contrast lighting
-- Tight framing, nowhere to hide
-- Body language: tense, ready, confrontational
-- Eyes: intense, blazing, direct
-- Hands: clenched, ready to act
-- Focal point: fierce expression or aggressive gesture
-- Everything feels CHARGED and EXPLOSIVE
-- Show the MOMENT OF BREAKING POINT`,
-
-      'shame and regret': `
-SHAME scene:
-- Subdued, introspective lighting
-- Small, contained space (looking down)
-- Body language: turned inward, small, withdrawn
-- Eyes: downcast, avoiding, ashamed
-- Hands: covering, protective, hiding
-- Focal point: face showing regret or downturned head
-- Everything feels HEAVY and BURDENSOME
-- Show the MOMENT OF RECKONING`
+  private locationToBackgroundDescription(locationKey: string, variedLocation: string): string {
+    const descriptions: Record<string, string> = {
+      'abandoned mountain village (ghost town)': 'crumbling stone walls, overgrown paths, ancient Caucasian aul ruins, dramatic mountain peaks behind',
+      'mountain landscape with dramatic view': 'sweeping mountain panorama, rocky ridge, alpine vegetation, blue sky with clouds',
+      'mountain road or rugged vehicle': 'dusty unpaved mountain road, hairpin turns visible, old 4x4 vehicle nearby, rocky terrain',
+      'apartment interior': 'cozy home interior, natural window light, lived-in domestic space',
+      'intimate cafe with candlelight': 'warm coffee shop interior, soft light, wooden tables, steam from cups',
+      'bridge over river, evening light': 'city river view, stone bridge railing, golden evening light on water',
+      'kitchen with table': 'domestic kitchen, cooking smells implied, table with food or dishes',
+      'office building': 'professional office space, city view through glass, work environment',
+      'park bench': 'tree-lined park, seasonal foliage, pedestrian paths, natural city park',
+      'street in rain': 'wet urban street, neon reflections on pavement, grey sky, umbrellas',
+      'high window overlooking city': 'city skyline visible through large window, urban panorama, height implied',
+      'transit station': 'metro or train station platform, architectural space, movement implied',
+      'artist studio': 'creative workspace, art supplies, interesting light, organised chaos',
+      'apartment entrance/hallway': 'apartment building corridor, letterboxes, concrete or tiled floor'
     };
-
-    return toneGuides[emotion] || 'Neutral scene showing introspection and presence';
+    return descriptions[locationKey] || variedLocation;
   }
 
-  /**
-   * Fallback cover generation - SIMPLIFIED
-   */
-  private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
-    console.log(`🔄 Fallback: Generating simplified cover...`);
-
-    const context = this.extractStoryContext(
-      request.title,
-      request.ledeText,
-      request.plotBible
-    );
-
-    const fallbackPrompt = `
-🎬 STORY IMAGE:
-Title: ${request.title}
-Emotion: ${context.emotionalArc.primary}
-Location: ${context.location}
-Key emotion: Show this emotion clearly
-
-Generate realistic candid scene matching the emotional tone.
-No text, no filters, authentic moment.
-    `.trim();
-
-    try {
-      return await this.generateWithModel(
-        this.fallbackModel,
-        fallbackPrompt,
-        request.articleId
-      );
-    } catch (error) {
-      console.error(`❌ Fallback failed:`, (error as Error).message);
-      throw error;
-    }
-  }
+  // ============================================
+  // 🚀 MODEL CALL (with dog.png reference)
+  // ============================================
 
   /**
-   * Generate image with specified model
+   * Generate image using Gemini.
+   * If dog.png is available, it is passed as the first part (image reference).
+   * The text prompt follows as the second part.
    */
   private async generateWithModel(
     model: string,
@@ -900,11 +559,23 @@ No text, no filters, authentic moment.
   ): Promise<GeneratedImage> {
     const startTime = Date.now();
 
+    // Build multimodal parts: reference image first, then text prompt
+    const parts: any[] = [];
+
+    if (DOG_REFERENCE_BASE64) {
+      parts.push({
+        inlineData: {
+          mimeType: DOG_REFERENCE_MIME,
+          data: DOG_REFERENCE_BASE64
+        }
+      });
+    }
+
+    parts.push({ text: prompt });
+
     const response = await this.geminiClient.models.generateContent({
       model: model,
-      contents: { 
-        parts: [{ text: prompt }] 
-      },
+      contents: { parts },
       config: {
         responseModalities: [Modality.IMAGE],
         temperature: 0.85,
@@ -950,9 +621,10 @@ No text, no filters, authentic moment.
       prompt: prompt,
       metadata: {
         articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
-        sceneDescription: prompt.substring(0, 200), // Store first 200 chars as description
+        sceneDescription: prompt.substring(0, 200),
         generationAttempts: 1,
         fallbackUsed: model !== this.primaryModel,
+        dogReferenceUsed: !!DOG_REFERENCE_BASE64
       }
     };
 
@@ -961,67 +633,62 @@ No text, no filters, authentic moment.
       throw new Error(`Image validation failed: ${validation.errors.join(', ')}`);
     }
 
-    // 🆕 STAGE 4: Apply mobile photo authenticity processing
+    // Stage 4: Mobile photo authenticity
     console.log(`🔧 Stage 4: Applying mobile photo authenticity...`);
     try {
-      const authResult = await this.authenticityProcessor.processForMobileAuthenticity(
-        generatedImage.base64
-      );
-
+      const authResult = await this.authenticityProcessor.processForMobileAuthenticity(generatedImage.base64);
       if (authResult.success && authResult.processedBuffer) {
-        // Replace original base64 with processed version
         generatedImage.base64 = authResult.processedBuffer.toString('base64');
         generatedImage.fileSize = generatedImage.base64.length * 0.75;
-
-        // Add authenticity metadata
         generatedImage.metadata!.authenticityApplied = true;
         generatedImage.metadata!.authenticityLevel = authResult.authenticityLevel;
         generatedImage.metadata!.appliedEffects = authResult.appliedEffects;
         generatedImage.metadata!.deviceSimulated = authResult.deviceSimulated;
-
         console.log(`   ✅ Authenticity applied. Effects: ${authResult.appliedEffects.join(', ')}`);
-        console.log(`   📷 Device: ${authResult.deviceSimulated} | Level: ${authResult.authenticityLevel}`);
       } else {
         console.warn(`   ⚠️  Authenticity processing failed: ${authResult.errorMessage}`);
-        console.log(`   📷 Using original image (graceful degradation)`);
-        // Continue with original image (graceful degradation)
       }
     } catch (authError) {
       console.warn(`   ⚠️  Authenticity error: ${(authError as Error).message}`);
-      console.log(`   📷 Using original image (graceful degradation)`);
-      // Continue with original image (graceful degradation)
     }
 
-    console.log(`✅ Image generated in ${Date.now() - startTime}ms`);
+    console.log(`✅ Image generated in ${Date.now() - startTime}ms (dog ref: ${DOG_REFERENCE_BASE64 ? 'yes' : 'no'})`);
     return generatedImage;
   }
 
-  /**
-   * Validate image
-   */
+  // ============================================
+  // 🔄 FALLBACK
+  // ============================================
+
+  private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
+    console.log(`🔄 Fallback: Generating simplified cover...`);
+    const context = this.extractStoryContext(request.title, request.ledeText, request.plotBible);
+    const fallbackPrompt = `Travel photo of a golden-brown scruffy wire-haired terrier dog with a red bandana.
+Scene: ${context.location}
+Mood: ${context.emotionalArc.primary}
+No text, no watermarks, authentic photo style.`;
+    try {
+      return await this.generateWithModel(this.fallbackModel, fallbackPrompt, request.articleId);
+    } catch (error) {
+      console.error(`❌ Fallback failed:`, (error as Error).message);
+      throw error;
+    }
+  }
+
+  // ============================================
+  // ✅ VALIDATION
+  // ============================================
+
   validateImage(image: GeneratedImage): ImageValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
-
     const dimensionsOk = image.width === 1920 && image.height === 1080;
-    if (!dimensionsOk) {
-      errors.push(`Invalid dimensions: ${image.width}x${image.height}`);
-    }
-
+    if (!dimensionsOk) errors.push(`Invalid dimensions: ${image.width}x${image.height}`);
     const sizeOk = image.fileSize > 10000 && image.fileSize < 5000000;
-    if (!sizeOk) {
-      warnings.push(`Unusual file size: ${image.fileSize} bytes`);
-    }
-
+    if (!sizeOk) warnings.push(`Unusual file size: ${image.fileSize} bytes`);
     const formatOk = image.mimeType === "image/jpg" || image.mimeType === "image/png";
-    if (!formatOk) {
-      errors.push(`Invalid format: ${image.mimeType}`);
-    }
-
-    if (!image.base64 || image.base64.length < 100) {
-      errors.push("Base64 data missing or too short");
-    }
-
+    if (!formatOk) errors.push(`Invalid format: ${image.mimeType}`);
+    if (!image.base64 || image.base64.length < 100) errors.push("Base64 data missing or too short");
     return {
       valid: errors.length === 0,
       errors,
