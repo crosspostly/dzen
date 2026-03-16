@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1773652033757,
+  "generatedAt": 1773693425095,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 3,
@@ -18,12 +18,15 @@
     "skipCleanupGates": false
   },
   "articleCount": 1,
-  "totalCharacters": 16884,
+  "totalCharacters": 15721,
   "totalImages": 1,
   "outputPaths": {
-    "articles": [],
+    "articles": [
+      "articles/ethno-food-ritual/2026-03-16/manifest.json"
+    ],
     "images": [
-      "articles/ethno-food-ritual/2026-03-16/probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000-.jpg"
+      "articles/ethno-food-ritual/2026-03-16/probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000-.jpg",
+      "articles/ethno-food-ritual/2026-03-16/ushel-iz-choha-v-aul-prizrak-gamsutl-otdal-500-rub.jpg"
     ],
     "report": "articles/ethno-food-ritual/2026-03-16/REPORT.md"
   }
