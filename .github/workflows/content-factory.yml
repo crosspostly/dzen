@@ -98,7 +98,10 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # 1. Добавляем ВСЕ файлы (включая логи и новые статьи)
+          # Удаляем ignored-файлы которые мешают rebase (publish.log в .gitignore как *.log)
+          rm -f publish.log
+          
+          # 1. Добавляем ВСЕ файлы
           git add -A
           
           # 2. Проверяем, есть ли что коммитить
@@ -107,28 +110,21 @@ jobs:
           else
             echo "🚀 Коммит изменений..."
             git commit -m "🚀 AUTO: Generated content $(date +%Y-%m-%d)"
-            
-            # 3. Пушим с ретраями и ребейзом
-            MAX_RETRIES=5
-            for i in $(seq 1 $MAX_RETRIES); do
-              echo "Attempt $i to push changes..."
-              # Сначала stash незакомиченных изменений (если есть), потом rebase
-              git stash --include-untracked 2>/dev/null || true
-              if git pull --rebase origin main; then
-                git stash pop 2>/dev/null || true
-                if git push origin main; then
-                  echo "✅ Successfully pushed!"
-                  exit 0
-                fi
-              else
-                git stash pop 2>/dev/null || true
-              fi
-              echo "⚠️ Push failed, retrying in 5s..."
-              sleep 5
-            done
-            echo "❌ Failed to push after $MAX_RETRIES attempts"
-            exit 1
           fi
+
+          # 3. Пушим с ретраями — pull --rebase перед каждой попыткой
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i to push..."
+            if git pull --rebase origin main && git push origin main; then
+              echo "✅ Successfully pushed!"
+              exit 0
+            fi
+            echo "⚠️ Failed, retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ Failed to push after $MAX_RETRIES attempts"
+          exit 1
       
       - name: 💾 Фиксация ошибок
         if: failure()
@@ -137,11 +133,10 @@ jobs:
           tail -n 100 publish.log >> ERROR_REPORT.md 2>/dev/null || echo "Лог не найден" >> ERROR_REPORT.md
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          # Удаляем ignored-файлы перед rebase
+          rm -f publish.log
           git add ERROR_REPORT.md
-          # Сбрасываем unstaged изменения и подтягиваем remote перед push
-          git stash --include-untracked 2>/dev/null || true
           git pull --rebase origin main 2>/dev/null || git pull --no-rebase origin main 2>/dev/null || true
-          git stash pop 2>/dev/null || true
           git add ERROR_REPORT.md
           git commit -m "🚨 ALERT: Content Factory Failed $(date +%Y-%m-%d)" || true
           git push origin main || true
