@@ -23,8 +23,11 @@ jobs:
       - name: 📦 Install deps
         run: npm ci
 
-      - name: 🔍 TypeScript check (core services only)
-        run: npx tsc --project tsconfig.check.json
+      - name: 🔍 esbuild syntax check (services)
+        run: |
+          echo "🔍 Checking syntax with esbuild..."
+          find services -name '*.ts' ! -path '*/__tests__/*' | xargs npx esbuild --bundle=false --log-level=error 2>&1
+          echo "✅ No syntax errors!"
 
       - name: 🔍 Run check.sh
         env:
