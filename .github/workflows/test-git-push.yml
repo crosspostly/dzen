@@ -1,18 +1,18 @@
-name: 🧪 TEST - Git Push Strategy
+name: TEST - Git Push Strategy
 
 on:
   workflow_dispatch:
     inputs:
       strategy:
-        description: 'Стратегия push'
+        description: 'Push strategy'
         required: true
-        default: 'rebase'
+        default: 'ours'
         type: choice
         options:
-          - rebase
-          - merge
           - ours
           - theirs
+          - merge
+          - rebase
 
 permissions:
   contents: write
@@ -27,33 +27,28 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - name: 📝 Создаём тестовый файл
+      - name: Create test file
         run: |
           echo "test-$(date +%s)" > test-git-push-$(date +%s).txt
-          echo "ignored-file" > ignored.log
+          echo "ignored" > ignored.log
 
-      - name: 🔍 Стратегия: ${{ inputs.strategy }}
+      - name: Run strategy
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
           STRATEGY="${{ inputs.strategy }}"
-          echo "=== Using strategy: $STRATEGY ==="
+          echo "=== Strategy: $STRATEGY ==="
 
-          # Удаляем ignored-файлы (как *.log)
           rm -f *.log
-
           git add -A
-          git diff --cached --stat
 
           if git diff --cached --quiet; then
-            echo "✅ Nothing to commit"
+            echo "Nothing to commit"
             exit 0
           fi
 
-          git commit -m "🧪 TEST: git push strategy=$STRATEGY $(date +%H:%M:%S)"
-
-          echo "--- git status before pull ---"
+          git commit -m "TEST push strategy=$STRATEGY $(date +%H:%M:%S)"
           git status
 
           if [ "$STRATEGY" = "rebase" ]; then
@@ -63,12 +58,10 @@ jobs:
             git pull --no-rebase origin main && git push origin main
 
           elif [ "$STRATEGY" = "ours" ]; then
-            # При конфликте побеждает наша версия
             git pull --no-rebase -X ours origin main && git push origin main
 
           elif [ "$STRATEGY" = "theirs" ]; then
-            # При конфликте побеждает remote-версия
             git pull --no-rebase -X theirs origin main && git push origin main
           fi
 
-          echo "=== RESULT: $? ==="
+          echo "=== EXIT: $? ==="
