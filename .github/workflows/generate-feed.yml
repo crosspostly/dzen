@@ -30,6 +30,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: git-push
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 

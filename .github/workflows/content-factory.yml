@@ -27,6 +27,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: git-push
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -71,11 +75,24 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
+
+          # 1. Сначала тянем последние изменения — статьи на диске, они не тронутся
+          git pull --rebase origin main
+
+          # 2. Теперь добавляем ВСЁ что есть на диске (статьи уже записаны)
           git add -A
+
+          # 3. Если нечего коммитить — выходим
           git diff --cached --quiet && echo "✅ Нет изменений" && exit 0
+
+          # 4. Коммитим
           git commit -m "🚀 AUTO: Generated content $(date +%Y-%m-%d)"
+
+          # 5. Пушим с ретраями
           for i in 1 2 3 4 5; do
-            git pull --no-rebase -X ours origin main && git push origin main && exit 0
-            sleep 5
+            git push origin main && exit 0
+            echo "Push attempt $i failed, retrying..."
+            git pull --rebase origin main
+            sleep 3
           done
           exit 1
