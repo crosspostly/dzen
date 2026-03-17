@@ -27,6 +27,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: git-push
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -75,7 +79,7 @@ jobs:
           git diff --cached --quiet && echo "✅ Нет изменений" && exit 0
           git commit -m "🚀 AUTO: Generated content $(date +%Y-%m-%d)"
           for i in 1 2 3 4 5; do
-            git pull --no-rebase -X ours origin main && git push origin main && exit 0
+            git pull --rebase origin main && git push origin main && exit 0
             sleep 5
           done
           exit 1
