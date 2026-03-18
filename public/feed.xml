@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Путевой дневник о путешествиях со смыслом, честных ценах и верном псе Батоне.</description>
-    <lastBuildDate>Wed, 18 Mar 2026 17:03:06 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 18 Mar 2026 20:39:31 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Ethno-Travel Edition)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[Помню, как земля буквально ушла из-под ног. Не фигурально, а по-настоящему. Один шаг – и пустота, другой – и снова пустота. Только густой, молочный туман Гуниба, обволакивающий, проникающий под...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vypali-iz-nivy-pryamo-v-oblaka-nad-gunibom-snyali--20260315</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vypali-iz-nivy-pryamo-v-oblaka-nad-gunibom-snyali--20260315</guid>
-      <pubDate>Wed, 18 Mar 2026 20:03:06 +0300</pubDate>
+      <pubDate>Wed, 18 Mar 2026 23:39:31 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[Солнце жгло немилосердно. Под лапами Батона крошилась сухая земля, смешанная с острыми камешками, которые то и дело норовили выскользнуть из-под когтей. Для него это было приключение – каждый новый...]]></description>
       <link>https://dzen-livid.vercel.app/articles/probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000--20260316</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000--20260316</guid>
-      <pubDate>Wed, 18 Mar 2026 21:33:06 +0300</pubDate>
+      <pubDate>Thu, 19 Mar 2026 01:09:31 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
