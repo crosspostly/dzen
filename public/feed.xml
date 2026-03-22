@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Путевой дневник о путешествиях со смыслом, честных ценах и верном псе Батоне.</description>
-    <lastBuildDate>Sun, 22 Mar 2026 05:19:45 +0300</lastBuildDate>
+    <lastBuildDate>Sun, 22 Mar 2026 08:37:22 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Ethno-Travel Edition)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[Солнце жгло немилосердно. Под лапами Батона крошилась сухая земля, смешанная с острыми камешками, которые то и дело норовили выскользнуть из-под когтей. Для него это было приключение – каждый новый...]]></description>
       <link>https://dzen-livid.vercel.app/articles/probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000--20260316</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/probiraemsya-v-aul-prizrak-gamsutl-zaplatila-2000--20260316</guid>
-      <pubDate>Sun, 22 Mar 2026 08:19:45 +0300</pubDate>
+      <pubDate>Sun, 22 Mar 2026 11:37:22 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
