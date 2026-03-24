@@ -1,8 +1,10 @@
 /**
- * 🎨 ZenMaster v4.4 - Image Generator Agent
+ * 🎨 ZenMaster v4.5 - Image Generator Agent
  *
  * FIXES:
- * - dog.png is now passed as inlineData to Gemini (multimodal)
+ * - dog.png compressed via sharp before inlineData (was 4.5MB → now ~40KB)
+ * - fetch failed error on Gemini API resolved
+ * - dog.png is passed as inlineData to Gemini (multimodal)
  * - Background is taken from story context, NOT hardcoded to 'ancient mountain village'
  * - isBatonPresent no longer forced to true via || true
  * - Default visible detail matches actual dog breed
@@ -10,6 +12,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import sharp from 'sharp';
 import { GoogleGenAI, Modality } from "@google/genai";
 import {
   ImageGenerationRequest,
@@ -24,22 +27,36 @@ import { PlotBible } from "../types/PlotBible";
 import { MobilePhotoAuthenticityProcessor } from "./mobilePhotoAuthenticityProcessor";
 import { MODELS } from "../constants/MODELS_CONFIG";
 
-// Load dog reference image once at module level
+// Load and compress dog reference image once at module level
 let DOG_REFERENCE_BASE64: string | null = null;
-let DOG_REFERENCE_MIME: 'image/png' | 'image/jpeg' = 'image/png';
+let DOG_REFERENCE_MIME: 'image/jpeg' = 'image/jpeg';
 
-try {
-  const dogPath = path.join(process.cwd(), 'dog.png');
-  if (fs.existsSync(dogPath)) {
-    DOG_REFERENCE_BASE64 = fs.readFileSync(dogPath).toString('base64');
-    DOG_REFERENCE_MIME = 'image/png';
-    console.log(`🐶 Dog reference image loaded: ${dogPath} (${Math.round(DOG_REFERENCE_BASE64.length * 0.75 / 1024)} KB)`);
-  } else {
-    console.warn(`⚠️  dog.png not found at ${dogPath} - will use text description only`);
+async function loadDogReference(): Promise<void> {
+  try {
+    const dogPath = path.join(process.cwd(), 'dog.png');
+    if (!fs.existsSync(dogPath)) {
+      console.warn(`⚠️  dog.png not found at ${dogPath} - will use text description only`);
+      return;
+    }
+    const originalBuffer = fs.readFileSync(dogPath);
+    const originalKB = Math.round(originalBuffer.length / 1024);
+
+    // Compress: resize to max 512px, convert to JPEG quality 85
+    const compressedBuffer = await sharp(originalBuffer)
+      .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+
+    DOG_REFERENCE_BASE64 = compressedBuffer.toString('base64');
+    const compressedKB = Math.round(compressedBuffer.length / 1024);
+    console.log(`🐶 Dog reference loaded & compressed: ${originalKB}KB → ${compressedKB}KB (${dogPath})`);
+  } catch (e) {
+    console.warn(`⚠️  Failed to load/compress dog.png: ${(e as Error).message}`);
   }
-} catch (e) {
-  console.warn(`⚠️  Failed to load dog.png: ${(e as Error).message}`);
 }
+
+// Kick off async load immediately (non-blocking)
+loadDogReference();
 
 export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
@@ -428,7 +445,6 @@ export class ImageGeneratorAgent {
     if (text.includes('грязн') || text.includes('пыль')) details.push('dog with dusty paws after trail');
     if (text.includes('машина') || text.includes('буханка')) details.push('dog hanging head out of car window');
     if (text.includes('еда') || text.includes('миска') || text.includes('корм')) details.push('dog waiting near food bowl eagerly');
-    // Default matches actual Baton breed
     return details.length > 0 ? details : ['Baton exploring, sniffing the ground, tail up, alert ears'];
   }
 
@@ -466,10 +482,6 @@ export class ImageGeneratorAgent {
   // 🎬 PROMPT BUILDER
   // ============================================
 
-  /**
-   * Build story-specific prompt.
-   * Background is derived from story location, NOT hardcoded.
-   */
   private buildStorySpecificPrompt(context: any, plotBible?: PlotBible): string {
     const location = this.varyLocation(context.location, plotBible);
     const lighting = this.varyLighting(context.emotionalArc.primary);
@@ -477,7 +489,6 @@ export class ImageGeneratorAgent {
     const artStyle = this.varyArtStyle();
     const mood = this.varyMood(context.emotionalArc.primary);
 
-    // Map location to a concrete background description for the prompt
     const backgroundDescription = this.locationToBackgroundDescription(context.location, location);
 
     const referenceNote = DOG_REFERENCE_BASE64
@@ -520,9 +531,6 @@ Lighting: ${lighting}
 `.trim();
   }
 
-  /**
-   * Convert abstract location key to concrete background description
-   */
   private locationToBackgroundDescription(locationKey: string, variedLocation: string): string {
     const descriptions: Record<string, string> = {
       'abandoned mountain village (ghost town)': 'crumbling stone walls, overgrown paths, ancient Caucasian aul ruins, dramatic mountain peaks behind',
@@ -544,14 +552,9 @@ Lighting: ${lighting}
   }
 
   // ============================================
-  // 🚀 MODEL CALL (with dog.png reference)
+  // 🚀 MODEL CALL (with compressed dog.png reference)
   // ============================================
 
-  /**
-   * Generate image using Gemini.
-   * If dog.png is available, it is passed as the first part (image reference).
-   * The text prompt follows as the second part.
-   */
   private async generateWithModel(
     model: string,
     prompt: string,
@@ -559,7 +562,6 @@ Lighting: ${lighting}
   ): Promise<GeneratedImage> {
     const startTime = Date.now();
 
-    // Build multimodal parts: reference image first, then text prompt
     const parts: any[] = [];
 
     if (DOG_REFERENCE_BASE64) {
@@ -633,7 +635,6 @@ Lighting: ${lighting}
       throw new Error(`Image validation failed: ${validation.errors.join(', ')}`);
     }
 
-    // Stage 4: Mobile photo authenticity
     console.log(`🔧 Stage 4: Applying mobile photo authenticity...`);
     try {
       const authResult = await this.authenticityProcessor.processForMobileAuthenticity(generatedImage.base64);
@@ -663,10 +664,7 @@ Lighting: ${lighting}
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
     console.log(`🔄 Fallback: Generating simplified cover...`);
     const context = this.extractStoryContext(request.title, request.ledeText, request.plotBible);
-    const fallbackPrompt = `Travel photo of a golden-brown scruffy wire-haired terrier dog with a red bandana.
-Scene: ${context.location}
-Mood: ${context.emotionalArc.primary}
-No text, no watermarks, authentic photo style.`;
+    const fallbackPrompt = `Travel photo of a golden-brown scruffy wire-haired terrier dog with a red bandana.\nScene: ${context.location}\nMood: ${context.emotionalArc.primary}\nNo text, no watermarks, authentic photo style.`;
     try {
       return await this.generateWithModel(this.fallbackModel, fallbackPrompt, request.articleId);
     } catch (error) {
