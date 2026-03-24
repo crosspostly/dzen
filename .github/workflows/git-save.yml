@@ -30,26 +30,11 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-
-          echo "=== git status ==="
-          git status
-
-          # Добавляем всё сразу
           git add -A
-
-          echo "=== staged files ==="
-          git diff --cached --name-only
-
           git diff --cached --quiet && echo "✅ Нет изменений" && exit 0
-
           git commit -m "🧪 TEST: Git save $(date +%Y-%m-%d)"
-
-          # Пушим с ретраями через fetch+merge
           for i in 1 2 3 4 5; do
-            git push origin main && echo "✅ Push OK" && exit 0
-            echo "Push attempt $i failed, retrying..."
-            git fetch origin main
-            git merge origin/main --no-edit
-            sleep 3
+            git pull --rebase origin main && git push origin main && echo "✅ Push OK" && exit 0
+            sleep 5
           done
           exit 1
