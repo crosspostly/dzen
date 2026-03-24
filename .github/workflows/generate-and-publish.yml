@@ -1,0 +1,266 @@
+name: 🏭➡️🚀 Генерация + Публикация в Дзен
+
+on:
+  schedule:
+    - cron: '0 5 * * *'   # Ежедневно в 08:00 МСК
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'Количество статей'
+        required: true
+        default: '1'
+        type: choice
+        options: ['1', '3', '5', '7', '8', '10', '25']
+      channel:
+        description: 'Канал'
+        required: true
+        default: 'ethno-food-ritual'
+        type: choice
+        options: ['ethno-food-ritual', 'budget-travel', 'nomad-tech']
+      images:
+        description: 'Генерировать обложки?'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+      skip_publish:
+        description: 'Только генерация (без публикации)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+
+  # ============================================================
+  # JOB 1: ГЕНЕРАЦИЯ СТАТЕЙ
+  # ============================================================
+  generate:
+    name: ✨ Генерация статей
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    outputs:
+      articles_count: ${{ steps.count.outputs.articles_count }}
+      feed_updated: ${{ steps.feed.outputs.feed_updated }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 🔧 Install Canvas deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+
+      - name: 📦 Install deps
+        run: npm install
+
+      - name: ✍️ Generate articles
+        run: |
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            COUNT="8"; CHANNEL="ethno-food-ritual"; IMAGES="true"
+          else
+            COUNT="${{ inputs.count }}"; CHANNEL="${{ inputs.channel }}"; IMAGES="${{ inputs.images }}"
+          fi
+          CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
+          [ "$IMAGES" = "true" ] && CMD="$CMD --images"
+          echo "🚀 Running: $CMD"
+          eval "$CMD"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FINAL_CLEANUP_ENABLED: true
+          CLEANUP_THRESHOLD: medium
+          CLEANUP_MODEL: gemini-2.0-flash
+          CLEANUP_TEMPERATURE: '0.3'
+          CLEANUP_MAX_RETRIES: '2'
+
+      - name: 📊 Count results
+        id: count
+        run: |
+          MD=$(find ./articles -name "*.md" 2>/dev/null | wc -l)
+          JPG=$(find ./articles -name "*.jpg" 2>/dev/null | wc -l)
+          echo "📝 Articles: $MD | 🖼️ Covers: $JPG"
+          echo "articles_count=$MD" >> $GITHUB_OUTPUT
+
+      - name: 📰 Generate feed.xml
+        id: feed
+        run: |
+          if npx tsx cli.ts feed 2>/dev/null || node scripts/generate-feed.js 2>/dev/null; then
+            echo "✅ feed.xml updated"
+            echo "feed_updated=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ feed generation skipped"
+            echo "feed_updated=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: 📤 Push articles to GitHub
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            execSync('git config --local user.email "github-actions[bot]@users.noreply.github.com"');
+            execSync('git config --local user.name "github-actions[bot]"');
+            for (let i = 1; i <= 3; i++) {
+              try {
+                execSync('git fetch origin main', { stdio: 'inherit' });
+                execSync('git rebase origin/main', { stdio: 'inherit' });
+                execSync('git add articles/ public/', { stdio: 'inherit' });
+                try { execSync('git diff --cached --quiet'); console.log('⚠️ No new files'); return; } catch(e) {}
+                const ts = new Date().toISOString().split('T')[0];
+                const ch = '${{ inputs.channel }}' || 'ethno-food-ritual';
+                const cnt = '${{ inputs.count }}' || '8';
+                const msg = '${{ github.event_name }}' === 'schedule'
+                  ? `🤖 Ежедневный контент: 8 статей (${ts})`
+                  : `📝 Генерация: ${ts} — ${cnt} шт. (${ch})`;
+                execSync(`git commit -m "${msg}"`, { stdio: 'inherit' });
+                execSync('git push origin main', { stdio: 'inherit' });
+                console.log('✅ Push OK');
+                return;
+              } catch(e) {
+                if (i === 3) throw e;
+                try { execSync('git rebase --abort', { stdio: 'pipe' }); } catch(e2) {}
+                await new Promise(r => setTimeout(r, 2000));
+              }
+            }
+
+      - name: 📦 Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: articles-${{ inputs.channel || 'scheduled' }}-${{ github.run_id }}
+          path: articles/
+          retention-days: 90
+          if-no-files-found: warn
+
+  # ============================================================
+  # JOB 2: ПУБЛИКАЦИЯ В ДЗЕН
+  # ============================================================
+  publish:
+    name: 🚀 Публикация в Дзен
+    runs-on: ubuntu-latest
+    needs: generate
+    timeout-minutes: 30
+    # Не запускаем если skip_publish=true
+    if: |
+      needs.generate.result == 'success' &&
+      github.event.inputs.skip_publish != 'true'
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: main   # Берём свежее после push из generate
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: 🔐 Validate DZEN_COOKIES_JSON
+        run: |
+          if [ -z "${{ secrets.DZEN_COOKIES_JSON }}" ]; then
+            echo "❌ Secret DZEN_COOKIES_JSON not found!"
+            exit 1
+          fi
+          echo "✅ DZEN_COOKIES_JSON found"
+          echo "$DZEN_COOKIES_JSON" | python3 -m json.tool > /dev/null 2>&1 && echo "✅ Valid JSON" || echo "⚠️ Not valid JSON"
+        env:
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
+
+      - name: 📤 Check feed.xml
+        run: |
+          if [ -f "public/feed.xml" ]; then
+            ITEMS=$(grep -c "<item>" public/feed.xml || echo 0)
+            echo "✅ feed.xml OK, articles: $ITEMS"
+          else
+            echo "❌ feed.xml not found!"
+            exit 1
+          fi
+
+      - name: 📦 Install deps
+        run: npm ci
+
+      - name: 🎬 Install Playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: 🤖 Publish to Dzen
+        id: publisher
+        env:
+          CI: true
+          HEADLESS: true
+          DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
+        run: |
+          CURRENT_HOUR=$(date -u +%H)
+          if [ "$CURRENT_HOUR" -ge 23 ] || [ "$CURRENT_HOUR" -lt 5 ]; then
+            echo "🌙 Night mode ($CURRENT_HOUR:00). Skipping."
+            exit 0
+          fi
+          timeout 300 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: 📊 Results
+        if: always()
+        run: |
+          cat publish.log 2>/dev/null || true
+          CODE=${{ steps.publisher.outputs.exit_code }}
+          [ "$CODE" = "0" ] && echo "✅ Published!" || echo "⚠️ Publisher finished with code $CODE"
+
+      - name: 💾 Commit publish log
+        if: always()
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "GitHub Actions Bot"
+          git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
+          git add "publish-*.log" 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "ℹ️ Nothing to commit"
+          else
+            git commit -m "🤖 Auto-publish: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git pull --rebase origin main || git pull origin main
+            git push origin main
+          fi
+
+  # ============================================================
+  # NOTIFY ON FAILURE
+  # ============================================================
+  notify:
+    runs-on: ubuntu-latest
+    needs: [generate, publish]
+    if: failure()
+    steps:
+      - name: 🔔 Notify on failure
+        run: echo "⚠️ FAILED: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: 📧 Email
+        uses: dawidd6/action-send-mail@v4
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ Генерация+Публикация в Дзен: Ошибка"
+          body: |
+            Сбой generate-and-publish workflow.
+            Репо: ${{ github.repository }}
+            Логи: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: sheepoff@gmail.com
+          from: Dzen Bot
+          secure: true
+        continue-on-error: true
