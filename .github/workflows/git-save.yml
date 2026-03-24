@@ -1,0 +1,58 @@
+name: 🔐 Git Save (тест)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: git-push
+  cancel-in-progress: false
+
+jobs:
+  save:
+    name: 🔐 Save to GitHub
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: 📝 Create test file
+        run: |
+          mkdir -p articles/ethno-food-ritual/$(date +%Y-%m-%d)
+          echo "test $(date)" > articles/ethno-food-ritual/$(date +%Y-%m-%d)/test.txt
+
+      - name: 🔐 Save to GitHub
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          echo "=== git status ==="
+          git status
+
+          git stash push --include-untracked -m "articles"
+          git pull --rebase origin main
+          git stash pop
+
+          git add -A
+
+          echo "=== staged files ==="
+          git diff --cached --name-only
+
+          git diff --cached --quiet && echo "✅ Нет изменений" && exit 0
+
+          git commit -m "🧪 TEST: Git save $(date +%Y-%m-%d)"
+
+          for i in 1 2 3 4 5; do
+            git push origin main && echo "✅ Push OK" && exit 0
+            echo "Push attempt $i failed, retrying..."
+            git stash push --include-untracked -m "retry"
+            git pull --rebase origin main
+            git stash pop
+            sleep 3
+          done
+          exit 1
