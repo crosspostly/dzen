@@ -1,29 +1,33 @@
 /**
  * 🚨 КРИТИЧЕСКАЯ КОНФИГУРАЦИЯ МОДЕЛЕЙ (Актуальность: Март 2026)
- * 
- * ВНИМАНИЕ: На дворе март 2026 года. 
- * ЗАПРЕЩЕНО использовать модели серии 1.0, 1.5 (кроме GA 2.5) или 2.0 (EOL июнь 2026).
- * Использовать ТОЛЬКО серию Gemini 3.1 (флагман) или Gemini 2.5 (стабильный стандарт).
+ *
+ * ВНИМАНИЕ: На дворе март 2026 года.
+ * TEXT: Gemini 3.1 (флагман) / Gemini 2.5 (стабильный стандарт)
+ * IMAGE: Imagen 3 (GA) — единственная рабочая image generation модель в Google AI SDK
  */
 
 export const MODELS = {
-  // 📝 ТЕКСТОВЫЕ МОДЕЛИ (Актуальные на 10.03.2026)
+  // 📝 ТЕКСТОВЫЕ МОДЕЛИ
   TEXT: {
-    PRIMARY: "gemini-3.1-pro-preview",       // ТОП-1: Лучшая логика и Сказ
-    STABLE: "gemini-2.5-pro",                // ТОП-2: Стабильная GA версия
-    FLASH: "gemini-2.5-flash",               // Высокая скорость
-    LITE: "gemini-3.1-flash-lite-preview",   // Ультра-эффективность (Launch: March 2026)
-    FALLBACK: "gemini-flash-latest",         // Авто-ссылка на самую свежую Flash
-  },
-  
-  // 🖼️ ГРАФИЧЕСКИЕ МОДЕЛИ (Nano Banana 2 Series)
-  IMAGE: {
-    PRIMARY: "gemini-3.1-flash-image-preview", // Новейшая генерация (Feb 2026)
-    STABLE: "gemini-2.5-flash-image",          // Стабильный продакшн
+    PRIMARY: "gemini-3.1-pro-preview",
+    STABLE: "gemini-2.5-pro",
+    FLASH: "gemini-2.5-flash",
+    LITE: "gemini-3.1-flash-lite-preview",
+    FALLBACK: "gemini-flash-latest",
   },
 
-  // 🔄 КАСКАД ПЕРЕКЛЮЧЕНИЯ (Waterfall)
-  // Иерархия строго от мощных 3.1 к быстрым 2.5. Никакого мусора 1.x!
+  // 🖼️ ГРАФИЧЕСКИЕ МОДЕЛИ
+  // Реальные модели Google AI SDK (март 2026):
+  // - imagen-3.0-generate-002 (GA, рекомендуется)
+  // - imagen-3.0-fast-generate-001 (быстрый, менее детальный)
+  // ВНИМАНИЕ: gemini-*-image-preview НЕ СУЩЕСТВУЕТ в SDK — fetch failed!
+  IMAGE: {
+    PRIMARY: "imagen-3.0-generate-002",
+    STABLE: "imagen-3.0-generate-002",
+    FAST: "imagen-3.0-fast-generate-001",
+  },
+
+  // 🔄 КАСКАД ПЕРЕКЛЮЧЕНИЯ
   WATERFALL: [
     "gemini-3.1-pro-preview",
     "gemini-2.5-pro",

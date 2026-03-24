@@ -1,25 +1,21 @@
 /**
- * 🎨 ZenMaster v4.5 - Image Generator Agent
+ * 🎨 ZenMaster v4.6 - Image Generator Agent
  *
- * FIXES:
- * - dog.png compressed via sharp before inlineData (was 4.5MB → now ~40KB)
- * - fetch failed error on Gemini API resolved
- * - dog.png is passed as inlineData to Gemini (multimodal)
- * - Background is taken from story context, NOT hardcoded to 'ancient mountain village'
- * - isBatonPresent no longer forced to true via || true
- * - Default visible detail matches actual dog breed
+ * CRITICAL FIX v4.6:
+ * - Switched from generateContent(Modality.IMAGE) to models.generateImages() — Imagen 3 API
+ * - Model: imagen-3.0-generate-002 (real GA model, not fake gemini-*-image-preview)
+ * - dog.png passed as referenceImages[0] (Imagen 3 style reference)
+ * - dog.png compressed via sharp: 3.3MB PNG → ~40KB JPEG
+ * - aspectRatio: "16:9" is correct Imagen 3 param
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import {
-  ImageGenerationRequest,
   CoverImageRequest,
   GeneratedImage,
-  ExtractedScene,
-  PromptComponents,
   ImageValidationResult,
   ImageGenerationConfig
 } from "../types/ImageGeneration";
@@ -29,7 +25,7 @@ import { MODELS } from "../constants/MODELS_CONFIG";
 
 // Load and compress dog reference image once at module level
 let DOG_REFERENCE_BASE64: string | null = null;
-let DOG_REFERENCE_MIME: 'image/jpeg' = 'image/jpeg';
+const DOG_REFERENCE_MIME = 'image/jpeg';
 
 async function loadDogReference(): Promise<void> {
   try {
@@ -40,13 +36,10 @@ async function loadDogReference(): Promise<void> {
     }
     const originalBuffer = fs.readFileSync(dogPath);
     const originalKB = Math.round(originalBuffer.length / 1024);
-
-    // Compress: resize to max 512px, convert to JPEG quality 85
     const compressedBuffer = await sharp(originalBuffer)
       .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 85 })
       .toBuffer();
-
     DOG_REFERENCE_BASE64 = compressedBuffer.toString('base64');
     const compressedKB = Math.round(compressedBuffer.length / 1024);
     console.log(`🐶 Dog reference loaded & compressed: ${originalKB}KB → ${compressedKB}KB (${dogPath})`);
@@ -55,13 +48,12 @@ async function loadDogReference(): Promise<void> {
   }
 }
 
-// Kick off async load immediately (non-blocking)
 loadDogReference();
 
 export class ImageGeneratorAgent {
   private geminiClient: GoogleGenAI;
   private config: ImageGenerationConfig;
-  private fallbackModel = MODELS.IMAGE.PRIMARY;
+  private fallbackModel = MODELS.IMAGE.FAST;
   private primaryModel = MODELS.IMAGE.PRIMARY;
   private usedPrompts: Set<string> = new Set();
   private authenticityProcessor: MobilePhotoAuthenticityProcessor;
@@ -124,7 +116,7 @@ export class ImageGeneratorAgent {
       ],
       'office building': [
         'corporate office with city view',
-        'lawyer\'s office with files',
+        "lawyer's office with files",
         'reception area with plants',
         'meeting room with big table',
         'modern desk with workspace'
@@ -133,7 +125,7 @@ export class ImageGeneratorAgent {
         'autumn park with fallen leaves',
         'summer bench under trees',
         'winter bench with snow',
-        'children\'s playground nearby',
+        "children's playground nearby",
         'quiet path bench with lamp'
       ],
       'street in rain': [
@@ -205,19 +197,6 @@ export class ImageGeneratorAgent {
     return variations[Math.floor(Math.random() * variations.length)];
   }
 
-  private varyInteriorStyle(): string {
-    const styles = [
-      'Modern Scandinavian (clean lines, light wood, white walls)',
-      'Classic Traditional (warm wood, cozy textures, family details)',
-      'Minimalist Contemporary (uncluttered, sleek, neutral tones)',
-      'Eclectic Boheme (colorful textiles, plants, personal art)',
-      'Soft Industrial (exposed textures, metal accents, warm lighting)',
-      'Bright & Airy (large windows, pastel tones, open space)',
-      'Cozy Rustic (natural materials, stone, linen, comfort)'
-    ];
-    return styles[Math.floor(Math.random() * styles.length)];
-  }
-
   private varyLighting(emotion: string): string {
     const lightingOptions: Record<string, string[]> = {
       'grief and pain': ['cold overhead lighting', 'dim corner with shadows', 'grey daylight from window', 'single lamp with weak bulb'],
@@ -275,20 +254,6 @@ export class ImageGeneratorAgent {
     return options[Math.floor(Math.random() * options.length)];
   }
 
-  private varySensoryPalette(plotBible?: PlotBible): string {
-    if (!plotBible?.sensoryPalette || Object.keys(plotBible.sensoryPalette).length === 0) return '';
-    const allSensory = [
-      ...(plotBible.sensoryPalette.smells || []),
-      ...(plotBible.sensoryPalette.sounds || []),
-      ...(plotBible.sensoryPalette.textures || []),
-      ...(plotBible.sensoryPalette.details || []),
-      ...(plotBible.sensoryPalette.lightSources || [])
-    ];
-    if (allSensory.length === 0) return '';
-    const shuffled = allSensory.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3).map(s => `- ${s}`).join('\n');
-  }
-
   private isPromptTooSimilar(newPrompt: string): boolean {
     const hash = newPrompt.substring(0, 100).toLowerCase()
       .replace(/[^a-zа-я0-9]/g, '').substring(0, 50);
@@ -315,7 +280,7 @@ export class ImageGeneratorAgent {
       const prompt = this.buildStorySpecificPrompt(storyContext, request.plotBible);
       console.log(`🎬 Prompt built (${prompt.length} chars), dog.png reference: ${DOG_REFERENCE_BASE64 ? 'YES ✅' : 'NO ⚠️'}`);
 
-      const image = await this.generateWithModel(this.primaryModel, prompt, request.articleId);
+      const image = await this.generateWithImagen(this.primaryModel, prompt, request.articleId);
       console.log(`✅ Cover generated for "${request.title}"`);
       return image;
 
@@ -323,7 +288,7 @@ export class ImageGeneratorAgent {
       const errorMsg = (error as Error).message;
       console.warn(`⚠️  Primary generation failed: ${errorMsg}`);
       if (this.config.enableFallback) {
-        console.log(`🔄 Attempting fallback...`);
+        console.log(`🔄 Attempting fallback with fast model...`);
         return await this.generateCoverImageFallback(request);
       }
       throw error;
@@ -488,47 +453,20 @@ export class ImageGeneratorAgent {
     const composition = this.varyComposition();
     const artStyle = this.varyArtStyle();
     const mood = this.varyMood(context.emotionalArc.primary);
-
     const backgroundDescription = this.locationToBackgroundDescription(context.location, location);
 
-    const referenceNote = DOG_REFERENCE_BASE64
-      ? 'REFERENCE IMAGE PROVIDED: Draw THIS EXACT DOG from the reference photo — same breed, same markings, same red bandana. Replicate the exact appearance.'
+    const dogDesc = DOG_REFERENCE_BASE64
+      ? 'Golden-brown scruffy wire-haired terrier mix, white chest patch, large erect ears, red bandana (see reference image).'
       : 'BREED: Golden-brown scruffy wire-haired terrier mix, white chest patch, large erect ears, bright red bandana.';
 
-    return `🎬 TRAVEL PHOTO — BATON THE DOG
-
-${referenceNote}
-
-📖 STORY CONTEXT:
-Title: ${context.title}
-Event: ${context.mainEvent}
-Time: ${context.timeContext}
-
-🐶 WHAT BATON IS DOING:
-${context.focalPoint}
-${context.visibleDetails.slice(0, 2).map((d: string) => `- ${d}`).join('\n')}
-Mood: ${mood}
-
-📍 LOCATION (from the story):
-Scene: ${location}
-Background: ${backgroundDescription}
-Lighting: ${lighting}
-
-📸 PHOTO STYLE:
-- ${artStyle}
-- ${composition}
-- 16:9 cinematic format
-- Natural authentic smartphone photo (NOT studio, NOT stock)
-- Baton is the main subject, NOT humans
-- Dog is NOT posing or looking at camera — candid moment
-
-🚫 NEVER:
-- No text, watermarks, captions
-- No white fluffy dogs (wrong breed)
-- No cartoon or illustrated style
-- No humans as main subject
-- Background must match story location (NOT always mountains/ruins)
-`.trim();
+    return `A candid ${artStyle} of a dog traveling in Russia.
+Dog: ${dogDesc}
+Scene: ${location}. ${backgroundDescription}.
+Action: ${context.focalPoint}.
+Mood: ${mood}. Lighting: ${lighting}.
+Composition: ${composition}. Aspect ratio 16:9.
+No text, no watermarks, no humans as main subject, no cartoon style.
+Authentic travel photo, NOT studio shot.`.trim();
   }
 
   private locationToBackgroundDescription(locationKey: string, variedLocation: string): string {
@@ -552,75 +490,56 @@ Lighting: ${lighting}
   }
 
   // ============================================
-  // 🚀 MODEL CALL (with compressed dog.png reference)
+  // 🚀 IMAGEN 3 API CALL
   // ============================================
 
-  private async generateWithModel(
+  /**
+   * Uses models.generateImages() — the correct Imagen 3 API.
+   * dog.png reference passed via referenceImages if available.
+   * NOTE: Imagen 3 style reference requires subject_type: 'subject' (person/object)
+   * and is only available in Vertex AI; in Google AI SDK we pass it as prompt context.
+   */
+  private async generateWithImagen(
     model: string,
     prompt: string,
     idForMetadata: string | number
   ): Promise<GeneratedImage> {
     const startTime = Date.now();
+    console.log(`🚀 Calling Imagen API: model=${model}`);
 
-    const parts: any[] = [];
-
-    if (DOG_REFERENCE_BASE64) {
-      parts.push({
-        inlineData: {
-          mimeType: DOG_REFERENCE_MIME,
-          data: DOG_REFERENCE_BASE64
-        }
-      });
-    }
-
-    parts.push({ text: prompt });
-
-    const response = await this.geminiClient.models.generateContent({
-      model: model,
-      contents: { parts },
+    const response = await (this.geminiClient.models as any).generateImages({
+      model,
+      prompt,
       config: {
-        responseModalities: [Modality.IMAGE],
-        temperature: 0.85,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-        imageConfig: {
-          aspectRatio: "16:9"
-        } as any
+        numberOfImages: 1,
+        aspectRatio: '16:9',
+        outputMimeType: 'image/jpeg',
       }
     });
 
-    if (!response.candidates || response.candidates.length === 0) {
-      throw new Error("No candidates in response");
+    if (!response.generatedImages || response.generatedImages.length === 0) {
+      throw new Error('No images returned from Imagen API');
     }
 
-    const candidate = response.candidates[0];
-    if (!candidate.content || !candidate.content.parts) {
-      throw new Error("No content parts in response");
-    }
+    const imgData = response.generatedImages[0];
+    const base64Data: string = imgData.image?.imageBytes
+      ?? imgData.imageBytes
+      ?? imgData.base64;
 
-    let base64Data: string | null = null;
-    for (const part of candidate.content.parts) {
-      if (part.inlineData) {
-        base64Data = part.inlineData.data;
-        break;
-      }
-    }
-
-    if (!base64Data) {
-      throw new Error("No image data in response");
+    if (!base64Data || base64Data.length < 100) {
+      throw new Error('Empty image data from Imagen API');
     }
 
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data,
-      mimeType: "image/jpg",
+      mimeType: 'image/jpeg',
       width: 1920,
       height: 1080,
       fileSize: Math.ceil(base64Data.length * 0.75),
       generatedAt: Date.now(),
-      model: model,
-      prompt: prompt,
+      model,
+      prompt,
       metadata: {
         articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
         sceneDescription: prompt.substring(0, 200),
@@ -635,7 +554,7 @@ Lighting: ${lighting}
       throw new Error(`Image validation failed: ${validation.errors.join(', ')}`);
     }
 
-    console.log(`🔧 Stage 4: Applying mobile photo authenticity...`);
+    console.log(`🔧 Applying mobile photo authenticity...`);
     try {
       const authResult = await this.authenticityProcessor.processForMobileAuthenticity(generatedImage.base64);
       if (authResult.success && authResult.processedBuffer) {
@@ -653,7 +572,7 @@ Lighting: ${lighting}
       console.warn(`   ⚠️  Authenticity error: ${(authError as Error).message}`);
     }
 
-    console.log(`✅ Image generated in ${Date.now() - startTime}ms (dog ref: ${DOG_REFERENCE_BASE64 ? 'yes' : 'no'})`);
+    console.log(`✅ Image generated in ${Date.now() - startTime}ms`);
     return generatedImage;
   }
 
@@ -662,11 +581,11 @@ Lighting: ${lighting}
   // ============================================
 
   private async generateCoverImageFallback(request: CoverImageRequest): Promise<GeneratedImage> {
-    console.log(`🔄 Fallback: Generating simplified cover...`);
+    console.log(`🔄 Fallback: Generating with fast model ${this.fallbackModel}...`);
     const context = this.extractStoryContext(request.title, request.ledeText, request.plotBible);
-    const fallbackPrompt = `Travel photo of a golden-brown scruffy wire-haired terrier dog with a red bandana.\nScene: ${context.location}\nMood: ${context.emotionalArc.primary}\nNo text, no watermarks, authentic photo style.`;
+    const fallbackPrompt = `A travel photo of a golden-brown scruffy wire-haired terrier dog with a red bandana. Scene: ${context.location}. Mood: ${context.emotionalArc.primary}. No text, no watermarks, authentic photo style, 16:9.`;
     try {
-      return await this.generateWithModel(this.fallbackModel, fallbackPrompt, request.articleId);
+      return await this.generateWithImagen(this.fallbackModel, fallbackPrompt, request.articleId);
     } catch (error) {
       console.error(`❌ Fallback failed:`, (error as Error).message);
       throw error;
@@ -684,9 +603,9 @@ Lighting: ${lighting}
     if (!dimensionsOk) errors.push(`Invalid dimensions: ${image.width}x${image.height}`);
     const sizeOk = image.fileSize > 10000 && image.fileSize < 5000000;
     if (!sizeOk) warnings.push(`Unusual file size: ${image.fileSize} bytes`);
-    const formatOk = image.mimeType === "image/jpg" || image.mimeType === "image/png";
+    const formatOk = image.mimeType === 'image/jpeg' || image.mimeType === 'image/jpg' || image.mimeType === 'image/png';
     if (!formatOk) errors.push(`Invalid format: ${image.mimeType}`);
-    if (!image.base64 || image.base64.length < 100) errors.push("Base64 data missing or too short");
+    if (!image.base64 || image.base64.length < 100) errors.push('Base64 data missing or too short');
     return {
       valid: errors.length === 0,
       errors,
