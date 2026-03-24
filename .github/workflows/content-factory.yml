@@ -27,27 +27,21 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: git-push
-  cancel-in-progress: false
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   factory:
     name: ✨ Generate Articles
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
+          cache: 'npm'
 
       - name: 🔧 Install Canvas deps
         run: sudo apt-get update && sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
@@ -62,24 +56,88 @@ jobs:
           else
             COUNT="${{ inputs.count }}"; CHANNEL="${{ inputs.channel }}"; IMAGES="${{ inputs.images }}"
           fi
-          CMD="node --import tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
+          CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
           [ "$IMAGES" = "true" ] && CMD="$CMD --images"
           echo "🚀 Running: $CMD"
           eval "$CMD"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          FINAL_CLEANUP_ENABLED: true
+          CLEANUP_THRESHOLD: medium
+          CLEANUP_MODEL: gemini-2.0-flash
+          CLEANUP_TEMPERATURE: 0.3
+          CLEANUP_MAX_RETRIES: 2
 
-      - name: 🔐 Save to GitHub
+      - name: 📊 Count results
         if: always()
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add -A
-          git diff --cached --quiet && echo "✅ Нет изменений" && exit 0
-          git commit -m "🚀 AUTO: Generated content $(date +%Y-%m-%d)"
-          for i in 1 2 3 4 5; do
-            git pull --rebase origin main && git push origin main && exit 0
-            sleep 5
-          done
-          exit 1
+          MD=$(find ./articles -name "*.md" 2>/dev/null | wc -l)
+          JPG=$(find ./articles -name "*.jpg" 2>/dev/null | wc -l)
+          echo "📝 Articles: $MD | 🖼️ Covers: $JPG"
+
+      - name: 📦 Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: articles-${{ inputs.channel || 'scheduled' }}-${{ github.run_id }}
+          path: articles/
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: 🔐 Git config
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: 📤 Push to GitHub
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const maxRetries = 3;
+            const retryDelay = 2000;
+
+            async function pushWithRetry() {
+              for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                  console.log(`\n🔄 Попытка ${attempt}/${maxRetries}...`);
+
+                  execSync('git fetch origin ${{ github.ref_name }}', { stdio: 'inherit' });
+                  execSync('git rebase origin/${{ github.ref_name }}', { stdio: 'inherit' });
+                  execSync('git add articles/', { stdio: 'inherit' });
+                  execSync('git status', { stdio: 'inherit' });
+
+                  try {
+                    execSync('git diff --cached --quiet');
+                    console.log('⚠️ Нет новых файлов');
+                    return true;
+                  } catch (e) { /* есть изменения */ }
+
+                  const timestamp = new Date().toISOString().split('T')[0];
+                  const eventName = '${{ github.event_name }}';
+                  let message;
+                  if (eventName === 'schedule') {
+                    message = `🤖 Ежедневный контент: 10 статей (${timestamp})`;
+                  } else {
+                    message = `📝 Генерация: ${timestamp} - ${{ inputs.count }} шт. (${{ inputs.channel }})`;
+                  }
+
+                  execSync(`git commit -m "${message}"`, { stdio: 'inherit' });
+                  execSync('git push origin ${{ github.ref_name }}', { stdio: 'inherit' });
+                  console.log('✅ Пуш успешен!');
+                  return true;
+
+                } catch (error) {
+                  if (attempt === maxRetries) throw error;
+                  console.log(`⚠️ Не удалось, повтор через ${retryDelay}мс...`);
+                  try { execSync('git rebase --abort', { stdio: 'pipe' }); } catch(e) {}
+                  try { execSync('git reset --hard HEAD', { stdio: 'pipe' }); } catch(e) {}
+                  await new Promise(r => setTimeout(r, retryDelay));
+                }
+              }
+            }
+
+            await pushWithRetry();
