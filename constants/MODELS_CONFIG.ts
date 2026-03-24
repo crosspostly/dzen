@@ -20,14 +20,11 @@ export const MODELS = {
   // Реальные модели Google AI SDK (март 2026):
   // - imagen-3.0-generate-002 (GA, рекомендуется)
   // - imagen-3.0-fast-generate-001 (быстрый, менее детальный)
-  // ВНИМАНИЕ: gemini-*-image-preview НЕ СУЩЕСТВУЕТ в SDK — fetch failed!
+  // ВНИМАНИЕ: gemini-*-image-preview НЕ СУЩЕСТВУЕТ в SDK — 404 NOT FOUND!
   IMAGE: {
     PRIMARY: "imagen-3.0-generate-002",
-    STABLE: "imagen-3.0-generate-002",
-    FAST: "imagen-3.0-fast-generate-001",
-    PRIMARY: 'gemini-3.1-flash-image-preview',  // основной — быстрый + мощный
-    STABLE:  'gemini-2.5-flash-image',           // стабильный, проверенный
-    PRO:     'gemini-3-pro-image-preview',       // для сложных/профессиональных задач
+    STABLE:  "imagen-3.0-generate-002",
+    FAST:    "imagen-3.0-fast-generate-001",
   },
 
   // 🔄 КАСКАД ПЕРЕКЛЮЧЕНИЯ
