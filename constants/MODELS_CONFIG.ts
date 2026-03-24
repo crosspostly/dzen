@@ -1,33 +1,24 @@
 /**
- * 🚨 КРИТИЧЕСКАЯ КОНФИГУРАЦИЯ МОДЕЛЕЙ (Актуальность: Март 2026)
- *
- * ВНИМАНИЕ: На дворе март 2026 года.
- * TEXT: Gemini 3.1 (флагман) / Gemini 2.5 (стабильный стандарт)
- * IMAGE: Imagen 3 (GA) — единственная рабочая image generation модель в Google AI SDK
+ * КОНФИГУРАЦИЯ МОДЕЛЕЙ (Март 2026)
+ * IMAGE: gemini-2.5-flash-image — generateContent + Modality.IMAGE
+ * НЕ используем Imagen (только predict/Vertex AI)
  */
 
 export const MODELS = {
-  // 📝 ТЕКСТОВЫЕ МОДЕЛИ
   TEXT: {
-    PRIMARY: "gemini-3.1-pro-preview",
-    STABLE: "gemini-2.5-pro",
-    FLASH: "gemini-2.5-flash",
-    LITE: "gemini-3.1-flash-lite-preview",
+    PRIMARY:  "gemini-3.1-pro-preview",
+    STABLE:   "gemini-2.5-pro",
+    FLASH:    "gemini-2.5-flash",
+    LITE:     "gemini-3.1-flash-lite-preview",
     FALLBACK: "gemini-flash-latest",
   },
 
-  // 🖼️ ГРАФИЧЕСКИЕ МОДЕЛИ
-  // Реальные модели Google AI SDK (март 2026):
-  // - imagen-3.0-generate-002 (GA, рекомендуется)
-  // - imagen-3.0-fast-generate-001 (быстрый, менее детальный)
-  // ВНИМАНИЕ: gemini-*-image-preview НЕ СУЩЕСТВУЕТ в SDK — 404 NOT FOUND!
   IMAGE: {
-    PRIMARY: "imagen-3.0-generate-002",
-    STABLE:  "imagen-3.0-generate-002",
-    FAST:    "imagen-3.0-fast-generate-001",
+    PRIMARY:  "gemini-3-pro-image-preview",   // лучшее качество
+    STABLE:   "gemini-2.5-flash-image",        // стабильный
+    FAST:     "gemini-2.5-flash-image",        // fallback
   },
 
-  // 🔄 КАСКАД ПЕРЕКЛЮЧЕНИЯ
   WATERFALL: [
     "gemini-3.1-pro-preview",
     "gemini-2.5-pro",
