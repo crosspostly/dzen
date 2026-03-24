@@ -36,7 +36,7 @@ jobs:
           npx tsx --version
           echo "✅ Окружение готово"
 
-      - name: 🔍 [3.5/6] Diagnose secrets
+      - name: 🔍 [3.5/6] Diagnose secrets + network
         run: |
           echo "=== SECRETS DIAGNOSTICS ==="
           if [ -z "$GEMINI_API_KEY" ]; then
@@ -48,6 +48,25 @@ jobs:
             echo "   Длина: $LEN символов"
             echo "   Начинается с: $FIRST4..."
           fi
+
+          echo ""
+          echo "=== RUNNER NETWORK ==="
+          echo "Внешний IP runner'а:"
+          curl -s https://api.ipify.org && echo ""
+          echo "Страна:"
+          curl -s "https://ipinfo.io/country" && echo ""
+
+          echo ""
+          echo "=== CURL VERBOSE TEST ==="
+          HTTP_STATUS=$(curl -s -o /tmp/gemini_response.json -w "%{http_code}" \
+            -X POST \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"contents": [{"parts": [{"text": "say: OK"}]}]}')
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response body:"
+          cat /tmp/gemini_response.json
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
@@ -157,9 +176,6 @@ MDEOF
                   console.log('\n✅ ВСЁ РАБОТАЕТ!');
                   console.log('✅ Gemini API: OK');
                   console.log('✅ Node 22: OK');
-                  console.log('✅ actions/checkout@v5: OK');
-                  console.log('✅ actions/setup-node@v5: OK');
-                  console.log('✅ actions/github-script@v8: OK');
                   console.log('✅ Git push: OK');
                   return true;
 
