@@ -28,45 +28,21 @@ jobs:
         run: |
           echo "=== NODE VERSION ==="
           node --version
-          echo "=== NPM VERSION ==="
           npm --version
-          echo "=== INSTALL DEPS ==="
           npm install
-          echo "=== TSX VERSION ==="
           npx tsx --version
           echo "✅ Окружение готово"
 
       - name: 🔍 [3.5/6] Diagnose secrets + network
         run: |
           echo "=== SECRETS DIAGNOSTICS ==="
-          if [ -z "$GEMINI_API_KEY" ]; then
-            echo "❌ GEMINI_API_KEY = ПУСТОЙ!"
-          else
-            LEN=${#GEMINI_API_KEY}
-            FIRST4="${GEMINI_API_KEY:0:4}"
-            echo "✅ GEMINI_API_KEY присутствует"
-            echo "   Длина: $LEN символов"
-            echo "   Начинается с: $FIRST4..."
-          fi
+          LEN=${#GEMINI_API_KEY}
+          echo "✅ GEMINI_API_KEY длина: $LEN"
 
           echo ""
-          echo "=== RUNNER NETWORK ==="
-          echo "Внешний IP runner'а:"
+          echo "=== RUNNER IP ==="
           curl -s https://api.ipify.org && echo ""
-          echo "Страна:"
-          curl -s "https://ipinfo.io/country" && echo ""
-
-          echo ""
-          echo "=== CURL VERBOSE TEST ==="
-          HTTP_STATUS=$(curl -s -o /tmp/gemini_response.json -w "%{http_code}" \
-            -X POST \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d '{"contents": [{"parts": [{"text": "say: OK"}]}]}')
-
-          echo "HTTP Status: $HTTP_STATUS"
-          echo "Response body:"
-          cat /tmp/gemini_response.json
+          curl -s https://ipinfo.io/country && echo ""
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
@@ -75,10 +51,17 @@ jobs:
           echo "=== GEMINI API SMOKE TEST ==="
           START=$(date +%s)
 
+          # Пишем JSON в файл чтобы избежать проблем с юникодом в shell
+          cat > /tmp/request.json << 'JSONEOF'
+          {"contents": [{"parts": [{"text": "Напиши 1 заголовок статьи для яндекс-Дзен в жанре этно-туризм. Только заголовок, без пояснений."}]}]}
+          JSONEOF
+
+          # Используем X-goog-api-key header вместо ?key= в URL
           RESPONSE=$(curl -s -X POST \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent" \
             -H "Content-Type: application/json" \
-            -d '{"contents": [{"parts": [{"text": "Напиши 1 заголовок статьи для яндекс-Дзен в жанре этно-туризм. Только заголовок, без пояснений."}]}]}')
+            -H "X-goog-api-key: $GEMINI_API_KEY" \
+            -d @/tmp/request.json)
 
           END=$(date +%s)
           ELAPSED=$((END - START))
@@ -96,8 +79,8 @@ jobs:
 
           echo ""
           echo "=== РЕЗУЛЬТАТ ==="
-          echo "⏱️  Время ответа: ${ELAPSED}s"
-          echo "📝 Заголовок: $TITLE"
+          echo "⏱️  ${ELAPSED}s"
+          echo "📝 $TITLE"
           echo "✅ Gemini API работает"
 
           TODAY=$(date +%Y-%m-%d)
@@ -115,23 +98,15 @@ gemini_response_time: ${ELAPSED}s
 
 # $TITLE
 
-Это smoke-test статья. Сгенерировано: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-
-**Gemini API:** ответил за ${ELAPSED}s
-**Модель:** gemini-2.0-flash
-**Node:** 22 (LTS)
-**Actions:** checkout@v5, setup-node@v5, github-script@v8
+Сгенерировано: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+**Gemini:** ${ELAPSED}s | gemini-2.0-flash | Node 22 | checkout@v5
 MDEOF
 
           node -e "
             const fs = require('fs');
             const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==', 'base64');
             fs.writeFileSync('$OUTDIR/smoke-cover.jpg', png);
-            console.log('✅ Cover placeholder создан');
           "
-
-          echo ""
-          echo "=== СОЗДАННЫЕ ФАЙЛЫ ==="
           ls -la "$OUTDIR/"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -153,19 +128,15 @@ MDEOF
               for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
                   console.log(`\n🔄 Пуш попытка ${attempt}/${maxRetries}...`);
-
                   execSync('git fetch origin main', { stdio: 'inherit' });
                   execSync('git rebase origin/main', { stdio: 'inherit' });
                   execSync('git add -f articles/_smoke-test/', { stdio: 'inherit' });
-
-                  console.log('=== GIT STATUS ===');
                   execSync('git status', { stdio: 'inherit' });
-                  console.log('=== STAGED FILES ===');
                   execSync('git diff --cached --stat', { stdio: 'inherit' });
 
                   try {
                     execSync('git diff --cached --quiet');
-                    console.log('⚠️ Нет новых файлов — нечего коммитить');
+                    console.log('⚠️ Нечего коммитить');
                     return true;
                   } catch (e) {}
 
@@ -173,14 +144,11 @@ MDEOF
                   execSync(`git commit -m "🔥 SMOKE TEST OK: ${ts}"`, { stdio: 'inherit' });
                   execSync('git push origin main', { stdio: 'inherit' });
 
-                  console.log('\n✅ ВСЁ РАБОТАЕТ!');
-                  console.log('✅ Gemini API: OK');
-                  console.log('✅ Node 22: OK');
-                  console.log('✅ Git push: OK');
+                  console.log('✅ ВСЁ РАБОТАЕТ! Gemini + Node 22 + checkout@v5 + push OK');
                   return true;
 
                 } catch (error) {
-                  console.error(`❌ Ошибка на попытке ${attempt}:`, error.message);
+                  console.error(`❌ ${attempt}:`, error.message);
                   if (attempt === maxRetries) throw error;
                   try { execSync('git rebase --abort', { stdio: 'pipe' }); } catch(e) {}
                   try { execSync('git reset --hard HEAD', { stdio: 'pipe' }); } catch(e) {}
@@ -188,5 +156,4 @@ MDEOF
                 }
               }
             }
-
             await pushWithRetry();
