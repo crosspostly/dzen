@@ -34,9 +34,17 @@ jobs:
           echo "=== git status ==="
           git status
 
-          git stash push --include-untracked -m "articles"
+          # Stash только если есть что прятать
+          if ! git diff --quiet || git ls-files --others --exclude-standard | grep -q .; then
+            git stash push --include-untracked -m "articles"
+            STASHED=1
+          else
+            STASHED=0
+          fi
+
           git pull --rebase origin main
-          git stash pop
+
+          [ "$STASHED" = "1" ] && git stash pop
 
           git add -A
 
@@ -50,9 +58,13 @@ jobs:
           for i in 1 2 3 4 5; do
             git push origin main && echo "✅ Push OK" && exit 0
             echo "Push attempt $i failed, retrying..."
-            git stash push --include-untracked -m "retry"
-            git pull --rebase origin main
-            git stash pop
+            if ! git diff --quiet || git ls-files --others --exclude-standard | grep -q .; then
+              git stash push --include-untracked -m "retry"
+              git pull --rebase origin main
+              git stash pop
+            else
+              git pull --rebase origin main
+            fi
             sleep 3
           done
           exit 1
