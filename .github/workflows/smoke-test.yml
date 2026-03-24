@@ -37,20 +37,14 @@ jobs:
           echo "✅ Окружение готово"
 
       - name: ⏱️ [4/6] Gemini API call + create article + image
-        id: generate
         run: |
           echo "=== GEMINI API SMOKE TEST ==="
           START=$(date +%s)
 
-          # Отправляем реальный запрос к Gemini
           RESPONSE=$(curl -s -X POST \
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
             -H "Content-Type: application/json" \
-            -d '{
-              "contents": [{
-                "parts": [{"text": "Напиши 1 заголовок статьи для яндекс-Дзен в жанре этно-туризм. Только заголовок, без пояснений."}]
-              }]
-            }')
+            -d '{"contents": [{"parts": [{"text": "Напиши 1 заголовок статьи для яндекс-Дзен в жанре этно-туризм. Только заголовок, без пояснений."}]}]}')
 
           END=$(date +%s)
           ELAPSED=$((END - START))
@@ -58,57 +52,53 @@ jobs:
           echo "=== RAW RESPONSE ==="
           echo "$RESPONSE"
 
-          # Извлекаем текст
-          TITLE=$(echo "$RESPONSE" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); const j=JSON.parse(d); console.log(j.candidates?.[0]?.content?.parts?.[0]?.text || 'ERROR: no text in response')")
+          TITLE=$(echo "$RESPONSE" | node -e "
+            const d=require('fs').readFileSync('/dev/stdin','utf8');
+            const j=JSON.parse(d);
+            const text = j.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (!text) { console.error('ERROR: no text in response'); process.exit(1); }
+            console.log(text.trim());
+          ")
 
           echo ""
-          echo "=== GEMINI RESPONSE ==="
-          echo "⏱️ Время ответа: ${ELAPSED}s"
-          echo "📝 Ответ: $TITLE"
-
-          if echo "$TITLE" | grep -q "ERROR"; then
-            echo "❌ GEMINI API Не ответил!"
-            exit 1
-          fi
-
+          echo "=== РЕЗУЛЬТАТ ==="
+          echo "⏱️  Время ответа: ${ELAPSED}s"
+          echo "📝 Заголовок: $TITLE"
           echo "✅ Gemini API работает"
 
-          # Создаём статью
           TODAY=$(date +%Y-%m-%d)
           OUTDIR="articles/_smoke-test/$TODAY"
           mkdir -p "$OUTDIR"
 
-          cat > "$OUTDIR/smoke-article.md" << EOF
-          ---
-          title: "$TITLE"
-          date: "$TODAY"
-          channel: _smoke-test
-          smoke_test: true
-          gemini_response_time: ${ELAPSED}s
-          ---
+          cat > "$OUTDIR/smoke-article.md" << MDEOF
+---
+title: "$TITLE"
+date: "$TODAY"
+channel: _smoke-test
+smoke_test: true
+gemini_response_time: ${ELAPSED}s
+---
 
-          # $TITLE
+# $TITLE
 
-          Это smoke-test статья. Сгенерировано: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+Это smoke-test статья. Сгенерировано: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
-          **Gemini API:** ответил за ${ELAPSED}s
-          **Модель:** gemini-2.0-flash
-          **Git push:** проверяется...
-          EOF
+**Gemini API:** ответил за ${ELAPSED}s
+**Модель:** gemini-2.0-flash
+**Git push:** проверяется...
+MDEOF
 
           # Создаём PNG-заглушку (имитация обложки)
           node -e "
             const fs = require('fs');
-            // Минимальный валидный PNG 1x1 пиксель (red)
-            const png1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-            fs.writeFileSync('$OUTDIR/smoke-cover.jpg', png1x1);
-            console.log('✅ Cover placeholder created (1x1 PNG)');
+            const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+            fs.writeFileSync('$OUTDIR/smoke-cover.jpg', png);
+            console.log('✅ Cover placeholder (1x1 PNG) создан');
           "
 
           echo ""
-          echo "=== CREATED FILES ==="
+          echo "=== СОЗДАННЫЕ ФАЙЛЫ ==="
           ls -la "$OUTDIR/"
-          echo "✅ Файлы созданы"
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
@@ -132,26 +122,31 @@ jobs:
 
                   execSync('git fetch origin main', { stdio: 'inherit' });
                   execSync('git rebase origin/main', { stdio: 'inherit' });
-                  execSync('git add articles/_smoke-test/', { stdio: 'inherit' });
+
+                  // -f чтобы добавить даже если в .gitignore
+                  execSync('git add -f articles/_smoke-test/', { stdio: 'inherit' });
 
                   console.log('=== GIT STATUS ===');
                   execSync('git status', { stdio: 'inherit' });
-                  console.log('=== GIT DIFF CACHED ===');
+                  console.log('=== STAGED FILES ===');
                   execSync('git diff --cached --stat', { stdio: 'inherit' });
 
                   try {
                     execSync('git diff --cached --quiet');
-                    console.log('⚠️ Нет новых файлов — пуш не нужен');
+                    console.log('⚠️ Нет новых файлов — нечего коммитить');
                     return true;
                   } catch (e) { /* есть изменения */ }
 
                   const ts = new Date().toISOString();
-                  execSync(`git commit -m "🔥 SMOKE TEST: ${ts}"`, { stdio: 'inherit' });
+                  execSync(`git commit -m "🔥 SMOKE TEST OK: ${ts}"`, { stdio: 'inherit' });
 
                   console.log('=== PUSHING ===');
                   execSync('git push origin main', { stdio: 'inherit' });
 
-                  console.log('✅ Пуш успешен! Файлы сохранены в GitHub.');
+                  console.log('\n✅ ВСЁ РАБОТАЕТ! Smoke test пройден.');
+                  console.log('✅ Gemini API: OK');
+                  console.log('✅ Git push: OK');
+                  console.log('✅ Файлы сохранены в GitHub');
                   return true;
 
                 } catch (error) {

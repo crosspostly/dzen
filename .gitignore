@@ -26,6 +26,11 @@ articles/**/*
 !articles/**/*.json
 !articles/**/REPORT.md
 !articles/**/manifest.json
+# Allow smoke-test output
+!articles/_smoke-test/
+!articles/_smoke-test/**
+!articles/_smoke-test/**/*.md
+!articles/_smoke-test/**/*.jpg
 
 # But ignore temporary files
 *.tmp
