@@ -36,6 +36,21 @@ jobs:
           npx tsx --version
           echo "✅ Окружение готово"
 
+      - name: 🔍 [3.5/6] Diagnose secrets
+        run: |
+          echo "=== SECRETS DIAGNOSTICS ==="
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "❌ GEMINI_API_KEY = ПУСТОЙ!"
+          else
+            LEN=${#GEMINI_API_KEY}
+            FIRST4="${GEMINI_API_KEY:0:4}"
+            echo "✅ GEMINI_API_KEY присутствует"
+            echo "   Длина: $LEN символов"
+            echo "   Начинается с: $FIRST4..."
+          fi
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
       - name: ⏱️ [4/6] Gemini API call + create article + image
         run: |
           echo "=== GEMINI API SMOKE TEST ==="
