@@ -34,18 +34,7 @@ jobs:
           echo "=== git status ==="
           git status
 
-          # Stash только если есть что прятать
-          if ! git diff --quiet || git ls-files --others --exclude-standard | grep -q .; then
-            git stash push --include-untracked -m "articles"
-            STASHED=1
-          else
-            STASHED=0
-          fi
-
-          git pull --rebase origin main
-
-          [ "$STASHED" = "1" ] && git stash pop
-
+          # Добавляем всё сразу
           git add -A
 
           echo "=== staged files ==="
@@ -55,16 +44,12 @@ jobs:
 
           git commit -m "🧪 TEST: Git save $(date +%Y-%m-%d)"
 
+          # Пушим с ретраями через fetch+merge
           for i in 1 2 3 4 5; do
             git push origin main && echo "✅ Push OK" && exit 0
             echo "Push attempt $i failed, retrying..."
-            if ! git diff --quiet || git ls-files --others --exclude-standard | grep -q .; then
-              git stash push --include-untracked -m "retry"
-              git pull --rebase origin main
-              git stash pop
-            else
-              git pull --rebase origin main
-            fi
+            git fetch origin main
+            git merge origin/main --no-edit
             sleep 3
           done
           exit 1
