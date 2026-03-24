@@ -25,6 +25,9 @@ export const MODELS = {
     PRIMARY: "imagen-3.0-generate-002",
     STABLE: "imagen-3.0-generate-002",
     FAST: "imagen-3.0-fast-generate-001",
+    PRIMARY: 'gemini-3.1-flash-image-preview',  // основной — быстрый + мощный
+    STABLE:  'gemini-2.5-flash-image',           // стабильный, проверенный
+    PRO:     'gemini-3-pro-image-preview',       // для сложных/профессиональных задач
   },
 
   // 🔄 КАСКАД ПЕРЕКЛЮЧЕНИЯ
