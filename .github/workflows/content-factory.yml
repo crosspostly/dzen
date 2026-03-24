@@ -76,23 +76,37 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-          # 1. Сначала тянем последние изменения — статьи на диске, они не тронутся
+          echo "=== git status ==="
+          git status
+
+          # 1. Stash всё (включая untracked статьи)
+          git stash push --include-untracked -m "articles"
+
+          # 2. Тянем remote без конфликтов
           git pull --rebase origin main
 
-          # 2. Теперь добавляем ВСЁ что есть на диске (статьи уже записаны)
+          # 3. Возвращаем статьи
+          git stash pop
+
+          # 4. Добавляем всё
           git add -A
 
-          # 3. Если нечего коммитить — выходим
+          echo "=== staged files ==="
+          git diff --cached --name-only
+
+          # 5. Если нечего коммитить — выходим
           git diff --cached --quiet && echo "✅ Нет изменений" && exit 0
 
-          # 4. Коммитим
+          # 6. Коммитим
           git commit -m "🚀 AUTO: Generated content $(date +%Y-%m-%d)"
 
-          # 5. Пушим с ретраями
+          # 7. Пушим с ретраями
           for i in 1 2 3 4 5; do
-            git push origin main && exit 0
+            git push origin main && echo "✅ Push OK" && exit 0
             echo "Push attempt $i failed, retrying..."
+            git stash push --include-untracked -m "retry"
             git pull --rebase origin main
+            git stash pop
             sleep 3
           done
           exit 1
