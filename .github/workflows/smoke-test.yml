@@ -1,0 +1,167 @@
+name: 🔥 Smoke Test - Быстрая проверка (AI + GitHub push)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  smoke:
+    name: 🔥 Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: ⏱️ [1/6] Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: ⏱️ [2/6] Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: ⏱️ [3/6] Check environment
+        run: |
+          echo "=== NODE VERSION ==="
+          node --version
+          echo "=== NPM VERSION ==="
+          npm --version
+          echo "=== INSTALL DEPS ==="
+          npm install
+          echo "=== TSX VERSION ==="
+          npx tsx --version
+          echo "✅ Окружение готово"
+
+      - name: ⏱️ [4/6] Gemini API call + create article + image
+        id: generate
+        run: |
+          echo "=== GEMINI API SMOKE TEST ==="
+          START=$(date +%s)
+
+          # Отправляем реальный запрос к Gemini
+          RESPONSE=$(curl -s -X POST \
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GEMINI_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "contents": [{
+                "parts": [{"text": "Напиши 1 заголовок статьи для яндекс-Дзен в жанре этно-туризм. Только заголовок, без пояснений."}]
+              }]
+            }')
+
+          END=$(date +%s)
+          ELAPSED=$((END - START))
+
+          echo "=== RAW RESPONSE ==="
+          echo "$RESPONSE"
+
+          # Извлекаем текст
+          TITLE=$(echo "$RESPONSE" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); const j=JSON.parse(d); console.log(j.candidates?.[0]?.content?.parts?.[0]?.text || 'ERROR: no text in response')")
+
+          echo ""
+          echo "=== GEMINI RESPONSE ==="
+          echo "⏱️ Время ответа: ${ELAPSED}s"
+          echo "📝 Ответ: $TITLE"
+
+          if echo "$TITLE" | grep -q "ERROR"; then
+            echo "❌ GEMINI API Не ответил!"
+            exit 1
+          fi
+
+          echo "✅ Gemini API работает"
+
+          # Создаём статью
+          TODAY=$(date +%Y-%m-%d)
+          OUTDIR="articles/_smoke-test/$TODAY"
+          mkdir -p "$OUTDIR"
+
+          cat > "$OUTDIR/smoke-article.md" << EOF
+          ---
+          title: "$TITLE"
+          date: "$TODAY"
+          channel: _smoke-test
+          smoke_test: true
+          gemini_response_time: ${ELAPSED}s
+          ---
+
+          # $TITLE
+
+          Это smoke-test статья. Сгенерировано: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          **Gemini API:** ответил за ${ELAPSED}s
+          **Модель:** gemini-2.0-flash
+          **Git push:** проверяется...
+          EOF
+
+          # Создаём PNG-заглушку (имитация обложки)
+          node -e "
+            const fs = require('fs');
+            // Минимальный валидный PNG 1x1 пиксель (red)
+            const png1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+            fs.writeFileSync('$OUTDIR/smoke-cover.jpg', png1x1);
+            console.log('✅ Cover placeholder created (1x1 PNG)');
+          "
+
+          echo ""
+          echo "=== CREATED FILES ==="
+          ls -la "$OUTDIR/"
+          echo "✅ Файлы созданы"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: ⏱️ [5/6] Git config
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: ⏱️ [6/6] Push to GitHub
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const maxRetries = 3;
+            const retryDelay = 2000;
+
+            async function pushWithRetry() {
+              for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                  console.log(`\n🔄 Пуш попытка ${attempt}/${maxRetries}...`);
+
+                  execSync('git fetch origin main', { stdio: 'inherit' });
+                  execSync('git rebase origin/main', { stdio: 'inherit' });
+                  execSync('git add articles/_smoke-test/', { stdio: 'inherit' });
+
+                  console.log('=== GIT STATUS ===');
+                  execSync('git status', { stdio: 'inherit' });
+                  console.log('=== GIT DIFF CACHED ===');
+                  execSync('git diff --cached --stat', { stdio: 'inherit' });
+
+                  try {
+                    execSync('git diff --cached --quiet');
+                    console.log('⚠️ Нет новых файлов — пуш не нужен');
+                    return true;
+                  } catch (e) { /* есть изменения */ }
+
+                  const ts = new Date().toISOString();
+                  execSync(`git commit -m "🔥 SMOKE TEST: ${ts}"`, { stdio: 'inherit' });
+
+                  console.log('=== PUSHING ===');
+                  execSync('git push origin main', { stdio: 'inherit' });
+
+                  console.log('✅ Пуш успешен! Файлы сохранены в GitHub.');
+                  return true;
+
+                } catch (error) {
+                  console.error(`❌ Ошибка на попытке ${attempt}:`, error.message);
+                  if (attempt === maxRetries) throw error;
+                  try { execSync('git rebase --abort', { stdio: 'pipe' }); } catch(e) {}
+                  try { execSync('git reset --hard HEAD', { stdio: 'pipe' }); } catch(e) {}
+                  await new Promise(r => setTimeout(r, retryDelay));
+                }
+              }
+            }
+
+            await pushWithRetry();
