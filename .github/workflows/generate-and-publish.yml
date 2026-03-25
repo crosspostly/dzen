@@ -72,7 +72,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: ✍️ Generate articles + 🚀 Auto-Push
+      - name: ✍️ Generate Articles + 🚀 Auto-Push
         run: |
           if [ "${{ github.event_name }}" == "schedule" ]; then
             COUNT="8"; CHANNEL="ethno-food-ritual"; IMAGES="true"
@@ -116,8 +116,8 @@ jobs:
 
       - name: 📤 Sync Feed to GitHub
         run: |
-          # После генерации фида нужно еще раз пушнуть (только public/)
-          npx tsx -e "import {GitSyncService} from './services/gitSyncService'; new GitSyncService().sync('📰 Update feed.xml', ['public/'])"
+          # После генерации фида нужно еще раз пушнуть (только public/ и articles/)
+          npx tsx cli.ts sync --message="📰 Update feed.xml and articles" --paths="articles/,public/"
 
       - name: 📦 Upload artifacts
         uses: actions/upload-artifact@v4
@@ -206,17 +206,7 @@ jobs:
       - name: 💾 Commit publish log
         if: always()
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "GitHub Actions Bot"
-          git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
-          git add "publish-*.log" 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "ℹ️ Nothing to commit"
-          else
-            git commit -m "🤖 Auto-publish: $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git pull --rebase origin main || git pull origin main
-            git push origin main
-          fi
+          npx tsx cli.ts sync --message="🤖 Auto-publish: $(date -u +'%Y-%m-%d %H:%M UTC')" --paths="!posts/PRODUCTION_READY/published_articles.txt,publish-*.log"
 
   # ============================================================
   # NOTIFY ON FAILURE

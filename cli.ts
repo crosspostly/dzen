@@ -100,7 +100,22 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
     // Handle different CLI commands
     // ============================================================================
     
-    if (command === 'smoke-push') {
+    } else if (command === 'sync') {
+      // ============================================================================
+      // 🔐 SYNC: Ручная синхронизация с GitHub
+      // ============================================================================
+      const message = getArg('message', 'Manual sync');
+      const pathsArg = getArg('paths', 'articles/,public/');
+      const paths = pathsArg.split(',');
+      
+      console.log(`\n${LOG.ROCKET} Starting Manual Sync...`);
+      const { GitSyncService } = await import('./services/gitSyncService');
+      const gitSync = new GitSyncService();
+      const success = await gitSync.sync(message, paths);
+      
+      process.exit(success ? 0 : 1);
+
+    } else if (command === 'smoke-push') {
       // ============================================================================
       // 🔥 SMOKE PUSH: Быстрая проверка сохранения в GitHub
       // ============================================================================
