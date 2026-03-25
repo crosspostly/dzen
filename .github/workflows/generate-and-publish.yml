@@ -67,14 +67,20 @@ jobs:
       - name: 📦 Install deps
         run: npm install
 
-      - name: ✍️ Generate articles
+      - name: 🧪 [PRE-FLIGHT] Smoke Push Test
+        run: npx tsx cli.ts smoke-push
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: ✍️ Generate articles + 🚀 Auto-Push
         run: |
           if [ "${{ github.event_name }}" == "schedule" ]; then
             COUNT="8"; CHANNEL="ethno-food-ritual"; IMAGES="true"
           else
             COUNT="${{ inputs.count }}"; CHANNEL="${{ inputs.channel }}"; IMAGES="${{ inputs.images }}"
           fi
-          CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
+          # Используем флаг --push для сохранения через GitSyncService
+          CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL --push"
           [ "$IMAGES" = "true" ] && CMD="$CMD --images"
           echo "🚀 Running: $CMD"
           eval "$CMD"
@@ -108,35 +114,10 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: 📤 Push articles to GitHub
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const { execSync } = require('child_process');
-            execSync('git config --local user.email "github-actions[bot]@users.noreply.github.com"');
-            execSync('git config --local user.name "github-actions[bot]"');
-            for (let i = 1; i <= 3; i++) {
-              try {
-                execSync('git fetch origin main', { stdio: 'inherit' });
-                execSync('git rebase origin/main', { stdio: 'inherit' });
-                execSync('git add articles/ public/', { stdio: 'inherit' });
-                try { execSync('git diff --cached --quiet'); console.log('⚠️ No new files'); return; } catch(e) {}
-                const ts = new Date().toISOString().split('T')[0];
-                const ch = '${{ inputs.channel }}' || 'ethno-food-ritual';
-                const cnt = '${{ inputs.count }}' || '8';
-                const msg = '${{ github.event_name }}' === 'schedule'
-                  ? `🤖 Ежедневный контент: 8 статей (${ts})`
-                  : `📝 Генерация: ${ts} — ${cnt} шт. (${ch})`;
-                execSync(`git commit -m "${msg}"`, { stdio: 'inherit' });
-                execSync('git push origin main', { stdio: 'inherit' });
-                console.log('✅ Push OK');
-                return;
-              } catch(e) {
-                if (i === 3) throw e;
-                try { execSync('git rebase --abort', { stdio: 'pipe' }); } catch(e2) {}
-                await new Promise(r => setTimeout(r, 2000));
-              }
-            }
+      - name: 📤 Sync Feed to GitHub
+        run: |
+          # После генерации фида нужно еще раз пушнуть (только public/)
+          npx tsx -e "import {GitSyncService} from './services/gitSyncService'; new GitSyncService().sync('📰 Update feed.xml', ['public/'])"
 
       - name: 📦 Upload artifacts
         uses: actions/upload-artifact@v4
