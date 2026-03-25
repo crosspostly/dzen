@@ -18,15 +18,21 @@ dist-ssr
 .env.*.local
 
 # ZenMaster Factory Output
-articles/
+# НЕ игнорируем статьи вообще, чтобы Git их всегда видел
+!articles/
 !articles/**
-!articles/**/*.md
-!articles/**/*.jpg
-!articles/**/*.json
-!articles/**/REPORT.md
-!articles/**/manifest.json
-!articles/_smoke-test/**
 
+# Но игнорируем временные файлы внутри
+articles/**/*.tmp
+articles/**/*.temp
+
+# Project State (Local sessions, NOT for GitHub)
+journey_state.json
+metadata.json
+models.json
+ERROR_REPORT.md
+RESTORE_ERROR.md
+publish-*.log
 
 # But ignore temporary files
 *.tmp
@@ -55,15 +61,6 @@ docs/.docusaurus/
 *.tmp
 *.temp
 .cache/
-
-# Project State (Local sessions, NOT for GitHub)
-journey_state.json
-metadata.json
-models.json
-ERROR_REPORT.md
-RESTORE_ERROR.md
-publish-*.log
-
 \!a_posts/config/config.json
 /\!a_posts
 article_generator_analysis.txt

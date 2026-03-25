@@ -32,30 +32,22 @@ export class GitSyncService {
         console.log(status || '   (Пусто)');
       } catch (e) {}
 
-      // 2. Добавляем статьи и публичные файлы
-      console.log(`\n📝 Adding files: ${paths.join(', ')}...`);
-      for (const p of paths) {
-        try {
-          if (require('fs').existsSync(path.join(process.cwd(), p))) {
-            // 🔥 Используем -A (All) для добавления новых файлов в подпапках
-            execSync(`git add -A --force ${p}`, { stdio: 'inherit' });
-          }
-        } catch (e) {
-          // Игнорируем ошибки для пустых папок
-        }
+      // 2. Добавляем изменения
+      console.log(`\n📝 Adding all changes...`);
+      try {
+        // 🔥 Используем -A на корень, чтобы точно подцепить всё, что не в игноре
+        execSync(`git add -A .`, { stdio: 'inherit' });
+      } catch (e) {
+        console.error(`   ❌ Failed to add files: ${(e as Error).message}`);
       }
 
       // Проверка изменений в индексе
       try {
         execSync('git diff --cached --quiet');
-        console.log('   ⚠️  Нет новых изменений в индексе для сохранения');
-        // Если ничего не добавилось, но мы и так хотели пушнуть - проверим статус
-        const status = execSync('git status --short', { encoding: 'utf8' });
-        if (!status.includes('A  ') && !status.includes('M  ')) {
-          console.log('   🛑 Изменения отсутствуют. Пропускаем пуш.');
-          return true;
-        }
+        console.log('   🛑 ОШИБКА: Нет новых изменений для сохранения! (Статьи не были добавлены в индекс)');
+        return false; // ❌ Если изменений нет - это провал для Фабрики!
       } catch (e) {
+        // Есть изменения для коммита - продолжаем
         console.log(`   💾 Committing: "${message}"`);
         execSync(`git commit -m "${message}"`, { stdio: 'inherit' });
       }
@@ -65,7 +57,6 @@ export class GitSyncService {
         try {
           console.log(`\n🔄 Попытка отправки ${attempt}/${this.maxRetries}...`);
           
-          // Ребейз на чистую голову (временные файлы теперь в .gitignore и не мешают)
           console.log(`   📡 Pulling with rebase from origin main...`);
           execSync('git pull --rebase origin main', { stdio: 'inherit' });
 

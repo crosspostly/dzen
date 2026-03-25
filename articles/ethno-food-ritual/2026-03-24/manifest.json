@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1774361428916,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 16515,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [
+      "articles/ethno-food-ritual/2026-03-24/manifest.json"
+    ],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-24/snyal-komnatu-v-kamennom-dome-guniba-za-1500-ruble.jpg",
+      "articles/ethno-food-ritual/2026-03-24/vybralsya-iz-tumana-v-aul-choh-otvalil-450-rubley-.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-24/REPORT.md"
+  }
+}

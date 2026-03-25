@@ -1,0 +1,28 @@
+{
+  "version": "4.0",
+  "generatedAt": 1773518040533,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": false,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 15928,
+  "totalImages": 0,
+  "outputPaths": {
+    "articles": [],
+    "images": [],
+    "report": "articles/ethno-food-ritual/2026-03-14/REPORT.md"
+  }
+}
