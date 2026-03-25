@@ -25,28 +25,22 @@ export class GitSyncService {
       // 1. Настройка пользователя (если не настроен)
       this.ensureGitConfig();
 
-      // 🔍 DEBUG: Проверим, что видит Git
+      // 🔍 DEBUG: Проверим, что видит Git (только важные изменения)
       console.log(`\n🔍 Git Status (Before Add):`);
       try {
         const status = execSync('git status --short', { encoding: 'utf8' });
         console.log(status || '   (Пусто)');
       } catch (e) {}
 
-      // 2. Сначала ДОБАВЛЯЕМ и КОММИТИМ локально (это делает ребейз проще)
+      // 2. Добавляем статьи и публичные файлы
       console.log(`\n📝 Adding files: ${paths.join(', ')}...`);
-      
-      // 🔥 Добавляем метаданные и состояние, чтобы они не блокировали ребейз
-      const extraPaths = ['journey_state.json', 'metadata.json', 'models.json'];
-      const allPaths = [...paths, ...extraPaths];
-
-      for (const p of allPaths) {
+      for (const p of paths) {
         try {
-          // Проверяем существование перед добавлением
           if (require('fs').existsSync(path.join(process.cwd(), p))) {
             execSync(`git add --force ${p}`, { stdio: 'inherit' });
           }
         } catch (e) {
-          // Игнорируем ошибки для необязательных файлов
+          // Игнорируем ошибки для пустых папок
         }
       }
 
@@ -54,19 +48,23 @@ export class GitSyncService {
       try {
         execSync('git diff --cached --quiet');
         console.log('   ⚠️  Нет новых изменений в индексе для сохранения');
-        // Если ничего не добавилось, но мы и так хотели пушнуть - это не ошибка, 
-        // просто изменений нет. Но проверим, нет ли чего-то в фоне.
+        // Если ничего не добавилось, но мы и так хотели пушнуть - проверим статус
+        const status = execSync('git status --short', { encoding: 'utf8' });
+        if (!status.includes('A  ') && !status.includes('M  ')) {
+          console.log('   🛑 Изменения отсутствуют. Пропускаем пуш.');
+          return true;
+        }
       } catch (e) {
         console.log(`   💾 Committing: "${message}"`);
         execSync(`git commit -m "${message}"`, { stdio: 'inherit' });
       }
 
-      // 3. Теперь цикл Pull --rebase + Push
+      // 3. ПУШ с ребейзом
       for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
         try {
           console.log(`\n🔄 Попытка отправки ${attempt}/${this.maxRetries}...`);
           
-          // Перед ребейзом убедимся, что нет грязных файлов (сташ на всякий случай)
+          // Ребейз на чистую голову (временные файлы теперь в .gitignore и не мешают)
           console.log(`   📡 Pulling with rebase from origin main...`);
           execSync('git pull --rebase origin main', { stdio: 'inherit' });
 
@@ -79,7 +77,6 @@ export class GitSyncService {
         } catch (error) {
           console.error(`   ❌ Ошибка на попытке ${attempt}:`, (error as Error).message);
           
-          // Если ребейз зафейлился, нужно его прервать
           try {
             execSync('git rebase --abort', { stdio: 'pipe' });
           } catch (e) {}

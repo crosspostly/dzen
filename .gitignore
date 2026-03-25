@@ -55,6 +55,15 @@ docs/.docusaurus/
 *.tmp
 *.temp
 .cache/
+
+# Project State (Local sessions, NOT for GitHub)
+journey_state.json
+metadata.json
+models.json
+ERROR_REPORT.md
+RESTORE_ERROR.md
+publish-*.log
+
 \!a_posts/config/config.json
 /\!a_posts
 article_generator_analysis.txt
