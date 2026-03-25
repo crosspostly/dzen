@@ -37,7 +37,8 @@ export class GitSyncService {
       for (const p of paths) {
         try {
           if (require('fs').existsSync(path.join(process.cwd(), p))) {
-            execSync(`git add --force ${p}`, { stdio: 'inherit' });
+            // 🔥 Используем -A (All) для добавления новых файлов в подпапках
+            execSync(`git add -A --force ${p}`, { stdio: 'inherit' });
           }
         } catch (e) {
           // Игнорируем ошибки для пустых папок
