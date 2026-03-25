@@ -3,6 +3,7 @@
 import { playwrightService } from '../services/playwrightService';
 import fs from 'fs/promises';
 import path from 'path';
+import { execSync } from 'child_process';
 
 // 📋 Configuration
 const CONFIG = {
@@ -162,10 +163,34 @@ async function main() {
     console.log(`\n📝 Publishing article: "${articleToPublish.title}"`);
     const processedContent = processArticleContent(articleToPublish.content);
     
+    // Resolve imageUrl to local path if it's a GitHub URL or similar
+    let finalImageUrl = articleToPublish.imageUrl;
+    if (finalImageUrl && (finalImageUrl.includes('raw.githubusercontent.com') || finalImageUrl.includes('github.com'))) {
+      const fileName = decodeURIComponent(path.basename(finalImageUrl)).trim();
+      // Look for this file in articles/ directory
+      try {
+        const articlesDir = path.join(process.cwd(), 'articles');
+        console.log(`🔍 Searching for local image: "${fileName}" in ${articlesDir}`);
+        
+        // Use a more flexible find that can handle potential issues
+        const findCmd = `find "${articlesDir}" -name "${fileName}" | head -n 1`;
+        const localPath = execSync(findCmd).toString().trim();
+        
+        if (localPath && (await fs.stat(localPath).catch(() => null))) {
+          console.log(`✅ Found local file: ${localPath}`);
+          finalImageUrl = localPath;
+        } else {
+          console.log(`⚠️ Local file not found via find command`);
+        }
+      } catch (e) {
+        console.log(`⚠️ Error resolving local path for ${fileName}: ${(e as Error).message}`);
+      }
+    }
+    
     const result = await playwrightService.publish({
       title: articleToPublish.title,
       content: processedContent,
-      imageUrl: articleToPublish.imageUrl
+      imageUrl: finalImageUrl
     }, {
       cookiesJson,
       headless: CONFIG.headless

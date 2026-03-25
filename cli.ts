@@ -100,7 +100,22 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
     // Handle different CLI commands
     // ============================================================================
     
-    if (command === 'factory') {
+    if (command === 'smoke-push') {
+      // ============================================================================
+      // 🔥 SMOKE PUSH: Быстрая проверка сохранения в GitHub
+      // ============================================================================
+      console.log(`\n${LOG.ROCKET} Running Smoke Push Test...`);
+      const { execSync } = await import('child_process');
+      const scriptPath = path.join(process.cwd(), 'scripts', 'smoke-push.ts');
+      
+      try {
+        execSync(`npx tsx ${scriptPath}`, { stdio: 'inherit' });
+      } catch (e) {
+        process.exit(1);
+      }
+      process.exit(0);
+
+    } else if (command === 'factory') {
       // ============================================================================
       // 🏭 ZenMaster v4.0: Content Factory
       // Generate 1-100 articles with parallel processing and image generation
@@ -120,6 +135,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       const includeImages = getFlag('images');
       const qualityLevel = getArg('quality', 'standard') as 'standard' | 'premium';
       const verbose = getFlag('verbose');
+      const shouldPush = getFlag('push');
       
       // 🆕 v7.0: Simplified generation options
       const useAntiDetection = getFlag('no-anti-detection') ? false : getFlag('anti-detection') ? true : undefined;
@@ -197,6 +213,14 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`\n${LOG.SAVE} Exporting articles...`);
       const exportPath = await factory.exportForZen('./articles');
 
+      // 🔥 Push to GitHub if requested
+      if (shouldPush) {
+        const { GitSyncService } = await import('./services/gitSyncService');
+        const gitSync = new GitSyncService();
+        const msg = `🏭 Factory: ${articles.length} articles (${channelName})`;
+        await gitSync.sync(msg);
+      }
+
       // Print summary
       console.log(`\n${'='.repeat(60)}`);
       console.log(`✅ FACTORY COMPLETE`);
@@ -204,6 +228,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`📄 Articles generated: ${articles.length}`);
       console.log(`⏱️  Total time: ${formatTime(duration)}`);
       console.log(`💾 Output directory: ${exportPath}`);
+      if (shouldPush) console.log(`🚀 Saved to GitHub: YES`);
       console.log(`📊 Average time/article: ${formatTime(duration / articles.length)}`);
       console.log(`${'='.repeat(60)}\n`);
 
@@ -227,6 +252,7 @@ ${'='.repeat(60)}`);
       const includeImages = getFlag('images');
       const qualityLevel = getArg('quality', 'standard') as 'standard' | 'premium';
       const verbose = getFlag('verbose');
+      const shouldPush = getFlag('push');
 
       // Validate count
       const validCounts = [1, 5, 7, 8, 10];
@@ -271,6 +297,14 @@ ${'='.repeat(60)}`);
       console.log(`\n${LOG.SAVE} Exporting article pairs...`);
       const exportPath = await factory.exportForZen('./articles');
 
+      // 🔥 Push to GitHub if requested
+      if (shouldPush) {
+        const { GitSyncService } = await import('./services/gitSyncService');
+        const gitSync = new GitSyncService();
+        const msg = `🎭 Both Mode: ${pairs.length} pairs (${channelName})`;
+        await gitSync.sync(msg);
+      }
+
       // Print summary
       console.log(`\n${'='.repeat(60)}`);
       console.log(`✅ BOTH MODE COMPLETE`);
@@ -281,6 +315,7 @@ ${'='.repeat(60)}`);
       console.log(`   🔧 RESTORED: ${pairs.length} articles`);
       console.log(`⏱️  Total time: ${formatTime(duration)}`);
       console.log(`💾 Output directory: ${exportPath}`);
+      if (shouldPush) console.log(`🚀 Saved to GitHub: YES`);
       console.log(`${'='.repeat(60)}\n`);
 
     } else if (command === 'validate') {
