@@ -234,14 +234,14 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
         const gitSync = new GitSyncService();
         const msg = `🏭 Factory: ${articles.length} articles (${channelName})`;
         const success = await gitSync.sync(msg);
-
+        
         if (!success) {
-          console.error(`\n${LOG.ERROR} CRITICAL: GitHub Sync failed! Terminating with error.`);
-          process.exit(1); // 🛑 Остановка с ошибкой, чтобы Action стал КРАСНЫМ
+          console.error(`\n${LOG.ERROR} CRITICAL: GitHub Sync failed! Articles were NOT saved to GitHub.`);
+          process.exit(1); // 🛑 Остановка СРАЗУ с ошибкой
         }
       }
 
-      // Print summary
+      // Print summary - ONLY if sync succeeded or was not requested
       console.log(`\n${'='.repeat(60)}`);
       console.log(`✅ FACTORY COMPLETE`);
       console.log(`${'='.repeat(60)}`);
@@ -252,7 +252,6 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`📊 Average time/article: ${formatTime(duration / articles.length)}`);
       console.log(`${'='.repeat(60)}\n`);
 
-      } else if (command === 'both') {
     } else if (command === 'both') {
       // ============================================================================
       // 🎭 BOTH MODE v7.1: Generate RAW + RESTORED article pairs (DEFAULT MODE)
