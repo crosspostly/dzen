@@ -233,7 +233,12 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
         const { GitSyncService } = await import('./services/gitSyncService');
         const gitSync = new GitSyncService();
         const msg = `🏭 Factory: ${articles.length} articles (${channelName})`;
-        await gitSync.sync(msg);
+        const success = await gitSync.sync(msg);
+
+        if (!success) {
+          console.error(`\n${LOG.ERROR} CRITICAL: GitHub Sync failed! Terminating with error.`);
+          process.exit(1); // 🛑 Остановка с ошибкой, чтобы Action стал КРАСНЫМ
+        }
       }
 
       // Print summary
@@ -247,6 +252,7 @@ function getThemeWithPriority(projectId: string, cliTheme?: string): string {
       console.log(`📊 Average time/article: ${formatTime(duration / articles.length)}`);
       console.log(`${'='.repeat(60)}\n`);
 
+      } else if (command === 'both') {
     } else if (command === 'both') {
       // ============================================================================
       // 🎭 BOTH MODE v7.1: Generate RAW + RESTORED article pairs (DEFAULT MODE)
@@ -317,7 +323,12 @@ ${'='.repeat(60)}`);
         const { GitSyncService } = await import('./services/gitSyncService');
         const gitSync = new GitSyncService();
         const msg = `🎭 Both Mode: ${pairs.length} pairs (${channelName})`;
-        await gitSync.sync(msg);
+        const success = await gitSync.sync(msg);
+        
+        if (!success) {
+          console.error(`\n${LOG.ERROR} CRITICAL: GitHub Sync failed! Terminating with error.`);
+          process.exit(1); // 🛑 Остановка с ошибкой, чтобы Action стал КРАСНЫМ
+        }
       }
 
       // Print summary
