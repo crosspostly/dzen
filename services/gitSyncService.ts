@@ -25,21 +25,35 @@ export class GitSyncService {
       // 1. Настройка пользователя (если не настроен)
       this.ensureGitConfig();
 
+      // 🔍 DEBUG: Проверим, что видит Git
+      console.log(`\n🔍 Git Status (Before Add):`);
+      try {
+        const status = execSync('git status --short', { encoding: 'utf8' });
+        console.log(status || '   (Пусто)');
+      } catch (e) {}
+
       // 2. Сначала ДОБАВЛЯЕМ и КОММИТИМ локально (это делает ребейз проще)
-      console.log(`   📝 Adding files: ${paths.join(', ')}...`);
+      console.log(`\n📝 Adding files: ${paths.join(', ')}...`);
       for (const p of paths) {
         try {
-          execSync(`git add ${p}`, { stdio: 'inherit' });
+          // 🔥 FORCE ADD: Игнорируем .gitignore для гарантии сохранения статей
+          execSync(`git add --force ${p}`, { stdio: 'inherit' });
         } catch (e) {
-          console.log(`   ⚠️  Could not add ${p} (maybe doesn't exist yet)`);
+          console.log(`   ⚠️  Could not add ${p}: ${(e as Error).message}`);
         }
       }
 
-      // Проверка изменений
+      // Проверка изменений в индексе
       try {
         execSync('git diff --cached --quiet');
-        console.log('   ⚠️  Нет новых изменений для сохранения');
-        return true;
+        console.log('   ⚠️  Нет новых изменений в индексе после git add');
+        
+        // Попробуем еще раз через статус
+        const status = execSync('git status --short', { encoding: 'utf8' });
+        if (!status.includes('A  ') && !status.includes('M  ')) {
+          console.log('   🛑 Изменения действительно отсутствуют. Пропускаем пуш.');
+          return true;
+        }
       } catch (e) {
         // Есть изменения для коммита
       }

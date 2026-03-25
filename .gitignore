@@ -18,19 +18,15 @@ dist-ssr
 .env.*.local
 
 # ZenMaster Factory Output
-# Allow all articles and images
-!articles/
-articles/**/*
+articles/
+!articles/**
 !articles/**/*.md
 !articles/**/*.jpg
 !articles/**/*.json
 !articles/**/REPORT.md
 !articles/**/manifest.json
-# Allow smoke-test output
-!articles/_smoke-test/
 !articles/_smoke-test/**
-!articles/_smoke-test/**/*.md
-!articles/_smoke-test/**/*.jpg
+
 
 # But ignore temporary files
 *.tmp
