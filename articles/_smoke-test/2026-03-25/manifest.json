@@ -1,6 +1,6 @@
 {
   "version": "4.0",
-  "generatedAt": 1774449404298,
+  "generatedAt": 1774450315585,
   "config": {
     "articleCount": 1,
     "parallelEpisodes": 1,
@@ -21,7 +21,8 @@
       "articles/_smoke-test/2026-03-25/smoke-test-article-2026-03-25t14-34-56-440z.jpg",
       "articles/_smoke-test/2026-03-25/smoke-test-article-2026-03-25t14-35-45-506z.jpg",
       "articles/_smoke-test/2026-03-25/smoke-test-article-2026-03-25t14-36-16-284z.jpg",
-      "articles/_smoke-test/2026-03-25/smoke-test-article-2026-03-25t14-36-44-269z.jpg"
+      "articles/_smoke-test/2026-03-25/smoke-test-article-2026-03-25t14-36-44-269z.jpg",
+      "articles/_smoke-test/2026-03-25/smoke-test-article-2026-03-25t14-51-55-554z.jpg"
     ],
     "report": "articles/_smoke-test/2026-03-25/REPORT.md"
   }
