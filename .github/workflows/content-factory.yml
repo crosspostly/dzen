@@ -49,14 +49,20 @@ jobs:
       - name: 📦 Install deps
         run: npm install
 
-      - name: ✍️ Generate
+      - name: 🧪 [PRE-FLIGHT] Smoke Push Test
+        run: npx tsx cli.ts smoke-push
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: ✍️ Generate + 🚀 Auto-Push
         run: |
           if [ "${{ github.event_name }}" == "schedule" ]; then
             COUNT="8"; CHANNEL="ethno-food-ritual"; IMAGES="true"
           else
             COUNT="${{ inputs.count }}"; CHANNEL="${{ inputs.channel }}"; IMAGES="${{ inputs.images }}"
           fi
-          CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL"
+          # Используем флаг --push для сохранения через GitSyncService
+          CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL --push"
           [ "$IMAGES" = "true" ] && CMD="$CMD --images"
           echo "🚀 Running: $CMD"
           eval "$CMD"
@@ -84,59 +90,3 @@ jobs:
           path: articles/
           retention-days: 90
           if-no-files-found: warn
-
-      - name: 🔐 Git config
-        if: success()
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
-      - name: 📤 Push to GitHub
-        if: success()
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const { execSync } = require('child_process');
-            const maxRetries = 3;
-            const retryDelay = 2000;
-
-            async function pushWithRetry() {
-              for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                try {
-                  console.log(`\n🔄 Попытка ${attempt}/${maxRetries}...`);
-                  execSync('git fetch origin ${{ github.ref_name }}', { stdio: 'inherit' });
-                  execSync('git rebase origin/${{ github.ref_name }}', { stdio: 'inherit' });
-                  execSync('git add articles/', { stdio: 'inherit' });
-                  execSync('git status', { stdio: 'inherit' });
-
-                  try {
-                    execSync('git diff --cached --quiet');
-                    console.log('⚠️ Нет новых файлов');
-                    return true;
-                  } catch (e) {}
-
-                  const timestamp = new Date().toISOString().split('T')[0];
-                  const eventName = '${{ github.event_name }}';
-                  let message;
-                  if (eventName === 'schedule') {
-                    message = `🤖 Ежедневный контент: 10 статей (${timestamp})`;
-                  } else {
-                    message = `📝 Генерация: ${timestamp} - ${{ inputs.count }} шт. (${{ inputs.channel }})`;
-                  }
-
-                  execSync(`git commit -m "${message}"`, { stdio: 'inherit' });
-                  execSync('git push origin ${{ github.ref_name }}', { stdio: 'inherit' });
-                  console.log('✅ Пуш успешен!');
-                  return true;
-
-                } catch (error) {
-                  if (attempt === maxRetries) throw error;
-                  console.log(`⚠️ Не удалось, повтор через ${retryDelay}мс...`);
-                  try { execSync('git rebase --abort', { stdio: 'pipe' }); } catch(e) {}
-                  try { execSync('git reset --hard HEAD', { stdio: 'pipe' }); } catch(e) {}
-                  await new Promise(r => setTimeout(r, retryDelay));
-                }
-              }
-            }
-
-            await pushWithRetry();
