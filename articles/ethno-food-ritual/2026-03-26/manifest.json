@@ -1,0 +1,37 @@
+{
+  "version": "4.0",
+  "generatedAt": 1774508270517,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 8,
+  "totalCharacters": 138674,
+  "totalImages": 8,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-26/dagestan-den-devyatyy-oglushitelnyy-rynok-mahachka.jpg",
+      "articles/ethno-food-ritual/2026-03-26/dagestan-den-pyatyy-sbezhal-iz-shumnoy-mahachkaly-.jpg",
+      "articles/ethno-food-ritual/2026-03-26/dagestan-den-sedmoy-polez-v-aul-prizrak-gamsutl-ot.jpg",
+      "articles/ethno-food-ritual/2026-03-26/dagestan-den-shestoy-spustilis-na-dno-sulakskogo-k.jpg",
+      "articles/ethno-food-ritual/2026-03-26/dagestan-den-vosmoy-spustilsya-s-gor-k-kaspiyu-v-d.jpg",
+      "articles/ethno-food-ritual/2026-03-26/mahachkala-den-chetvertyy-zaburilsya-na-koloritnyy.jpg",
+      "articles/ethno-food-ritual/2026-03-26/mahachkala-den-tretiy-rvanul-v-gory-na-staroy-nive.jpg",
+      "articles/ethno-food-ritual/2026-03-26/mahachkala-den-vtoroy-poshel-na-vtoroy-rynok-gusto.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-26/REPORT.md"
+  }
+}
