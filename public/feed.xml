@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Путевой дневник о путешествиях со смыслом, честных ценах и верном псе Батоне.</description>
-    <lastBuildDate>Thu, 26 Mar 2026 02:32:57 +0300</lastBuildDate>
+    <lastBuildDate>Thu, 26 Mar 2026 05:41:55 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Ethno-Travel Edition)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 2:34:56 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-34-56-440z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-34-56-440z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 05:32:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 08:41:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 2:35:45 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-35-45-506z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-35-45-506z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 07:02:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 10:11:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 2:36:16 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-36-16-284z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-36-16-284z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 05:32:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 08:41:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 2:36:44 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-36-44-269z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-36-44-269z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 07:02:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 10:11:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -103,7 +103,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 2:51:55 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-51-55-554z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t14-51-55-554z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 08:32:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 11:41:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -124,7 +124,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 3:05:18 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t15-05-18-176z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t15-05-18-176z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 10:02:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 13:11:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -145,7 +145,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 3:08:53 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t15-08-53-024z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t15-08-53-024z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 11:32:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 14:41:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -166,7 +166,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 3:51:05 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t15-51-05-396z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t15-51-05-396z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 13:02:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 16:11:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -187,7 +187,7 @@
       <description><![CDATA[Это тестовое описание для быстрой проверки пуша в GitHub. Это тело тестовой статьи. Она была создана автоматически для проверки механизма сохранения в GitHub. **Дата:** 3/25/2026, 3:51:23 PM...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t15-51-23-069z-20260325</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smoke-test-article-2026-03-25t15-51-23-069z-20260325</guid>
-      <pubDate>Thu, 26 Mar 2026 14:32:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 17:41:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -208,7 +208,7 @@
       <description><![CDATA[Газовал. Рвал вперед. Вверх. По краю обрыва. Я смотрела на его руки – слишком уверенные. Слишком быстрые. Где осторожность? Где, черт возьми, инстинкт самосохранения? Пыль. Запах бензина. Острый,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/snyal-komnatu-v-kamennom-dome-guniba-za-1500-ruble-20260324</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/snyal-komnatu-v-kamennom-dome-guniba-za-1500-ruble-20260324</guid>
-      <pubDate>Thu, 26 Mar 2026 16:02:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 19:11:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -229,7 +229,7 @@
       <description><![CDATA[Туман, что часами обволакивал нас плотным, влажным коконом, разорвался внезапно. Не рассеялся постепенно, не истончился, а именно разорвался, будто невидимая рука резко распахнула гигантские серые...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vybralsya-iz-tumana-v-aul-choh-otvalil-450-rubley--20260324</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vybralsya-iz-tumana-v-aul-choh-otvalil-450-rubley--20260324</guid>
-      <pubDate>Thu, 26 Mar 2026 17:32:57 +0300</pubDate>
+      <pubDate>Thu, 26 Mar 2026 20:41:55 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
