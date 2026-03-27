@@ -1,0 +1,37 @@
+{
+  "version": "4.0",
+  "generatedAt": 1774593772766,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 8,
+  "totalCharacters": 137953,
+  "totalImages": 8,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-27/dopolz-do-vershiny-aula-prizraka-gamsutl-otdal-300.jpg",
+      "articles/ethno-food-ritual/2026-03-27/osel-v-chohe-posle-adskogo-uazika-otdal-1200-ruble.jpg",
+      "articles/ethno-food-ritual/2026-03-27/osel-v-gunibe-snyal-ugol-u-mestnogo-deda-za-1500-r.jpg",
+      "articles/ethno-food-ritual/2026-03-27/polez-v-aul-prizrak-gamsutl-otdal-1000-rubley-mest.jpg",
+      "articles/ethno-food-ritual/2026-03-27/sbezhal-s-batonom-iz-mahachkaly-v-gory-zaplatil-15.jpg",
+      "articles/ethno-food-ritual/2026-03-27/spustilsya-iz-gamsutlya-v-sosedniy-aul-choh-otdal-.jpg",
+      "articles/ethno-food-ritual/2026-03-27/ushel-iz-choha-k-aulu-prizraku-gamsutl-zaplatil-35.jpg",
+      "articles/ethno-food-ritual/2026-03-27/zaglyanul-s-batonom-na-vtoroy-rynok-mahachkaly-otd.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-27/REPORT.md"
+  }
+}
