@@ -1,0 +1,37 @@
+{
+  "version": "4.0",
+  "generatedAt": 1774679066970,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 8,
+  "totalCharacters": 139674,
+  "totalImages": 8,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-28/dobralsya-do-vtorogo-rynka-mahachkaly-vzyal-sushen.jpg",
+      "articles/ethno-food-ritual/2026-03-28/ostavil-kaspiy-radi-gor-zagruzilsya-s-batonom-v-ra.jpg",
+      "articles/ethno-food-ritual/2026-03-28/spustilsya-s-gor-i-zagnal-batona-na-avtomoyku-za-1.jpg",
+      "articles/ethno-food-ritual/2026-03-28/uehal-iz-mahachkaly-v-gory-otdal-300-za-kofe-na-pe.jpg",
+      "articles/ethno-food-ritual/2026-03-28/ushli-s-shumnogo-rynka-na-dikiy-bereg-kaspiya-kupi.jpg",
+      "articles/ethno-food-ritual/2026-03-28/vtoroy-rynok-mahachkaly-kupil-goryachee-chudu-za-1.jpg",
+      "articles/ethno-food-ritual/2026-03-28/vybralsya-iz-sakli-na-rassvete-i-polez-po-zhare-v-.jpg",
+      "articles/ethno-food-ritual/2026-03-28/zabralsya-po-serpantinu-v-vysokogornyy-aul-choh-ot.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-28/REPORT.md"
+  }
+}
