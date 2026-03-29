@@ -1,0 +1,37 @@
+{
+  "version": "4.0",
+  "generatedAt": 1774766083109,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 8,
+  "totalCharacters": 130128,
+  "totalImages": 8,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-29/dobralsya-do-vtorogo-rynka-mahachkaly-otdal-150-ru.jpg",
+      "articles/ethno-food-ritual/2026-03-29/pervaya-noch-v-gunibe-snyal-komnatu-s-ledyanym-pol.jpg",
+      "articles/ethno-food-ritual/2026-03-29/promenyal-holodnyy-kaspiy-na-gory-dagestana-otvali.jpg",
+      "articles/ethno-food-ritual/2026-03-29/snyal-komnatu-v-gunibe-za-1500-rubley-i-prosnulsya.jpg",
+      "articles/ethno-food-ritual/2026-03-29/spustilsya-na-gornyy-rynok-pod-gunibom-zaplatil-80.jpg",
+      "articles/ethno-food-ritual/2026-03-29/svernul-s-gornogo-serpantina-na-gustoy-zapah-peche.jpg",
+      "articles/ethno-food-ritual/2026-03-29/uehal-iz-mahachkaly-v-gory-otdal-500-rubley-za-mes.jpg",
+      "articles/ethno-food-ritual/2026-03-29/vyshel-k-seromu-kaspiyu-smyt-dorozhnuyu-pyl-otdal-.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-29/REPORT.md"
+  }
+}
