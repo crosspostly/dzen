@@ -1,30 +1,40 @@
 /**
- * КОНФИГУРАЦИЯ МОДЕЛЕЙ (Март 2026)
- * IMAGE: gemini-2.5-flash-image — generateContent + Modality.IMAGE
- * НЕ используем Imagen (только predict/Vertex AI)
+ * КОНФИГУРАЦИЯ МОДЕЛЕЙ (Март 2026 - v2.5 STABLE ONLY)
+ * 
+ * ✅ STABLE MODELS (Production Ready):
+ * - gemini-2.5-pro: флагман для сложного текста
+ * - gemini-2.5-flash: быстрая универсальная
+ * - gemini-2.5-flash-lite: максимальная скорость
+ * - gemini-2.5-flash-image: генерация изображений
+ * 
+ * ❌ DEPRECATED (закрыты 9 марта 2026):
+ * - gemini-3-pro-preview
+ * - gemini-3.0-flash
+ * 
+ * ⚠️ PREVIEW (не использовать в production):
+ * - gemini-3.1-pro-preview
+ * - gemini-3.1-flash-lite-preview
  */
 
 export const MODELS = {
   TEXT: {
-    PRIMARY:  "gemini-3.1-pro-preview",
-    STABLE:   "gemini-2.5-pro",
-    FLASH:    "gemini-2.5-flash",
-    LITE:     "gemini-3.1-flash-lite-preview",
-    FALLBACK: "gemini-flash-latest",
+    PRIMARY:  "gemini-2.5-pro",        // ✅ Стабильный флагман
+    STABLE:   "gemini-2.5-pro",        // ✅ Тот же PRIMARY
+    FLASH:    "gemini-2.5-flash",      // ✅ Быстрая универсальная
+    LITE:     "gemini-2.5-flash-lite", // ✅ Максимальная скорость
+    FALLBACK: "gemini-2.5-flash",      // ✅ Fallback на flash
   },
 
   IMAGE: {
-    PRIMARY:  "gemini-3-pro-image-preview",   // лучшее качество
-    STABLE:   "gemini-2.5-flash-image",        // стабильный
-    FAST:     "gemini-2.5-flash-image",        // fallback
+    PRIMARY:  "gemini-2.5-flash-image", // ✅ Стабильная генерация фото
+    STABLE:   "gemini-2.5-flash-image", // ✅ Тот же PRIMARY
+    FAST:     "gemini-2.5-flash-image", // ✅ Без fallback на preview
   },
 
   WATERFALL: [
-    "gemini-3.1-pro-preview",
     "gemini-2.5-pro",
-    "gemini-3-flash-preview",
     "gemini-2.5-flash",
-    "gemini-3.1-flash-lite-preview"
+    "gemini-2.5-flash-lite"
   ]
 };
 

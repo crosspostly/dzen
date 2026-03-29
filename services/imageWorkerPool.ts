@@ -150,9 +150,11 @@ export class ImageWorkerPool {
 
     } catch (error) {
       const errorMsg = (error as Error).message;
-      console.warn(`  📦 Image generation failed (${errorMsg}), using fallback SVG...`);
+      console.error(`  ❌ Image generation FAILED (${errorMsg})`);
+      console.error(`  ⚠️  This should NOT happen with gemini-2.5-flash-image (stable model)`);
       
-      // Fallback to simple placeholder if API fails
+      // Fallback to simple placeholder if API fails completely
+      console.warn(`  📦 Using fallback SVG placeholder...`);
       return this.generatePlaceholderImage(article.title, article.metadata.emotion);
     }
   }
