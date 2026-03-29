@@ -135,7 +135,7 @@ jobs:
     name: 🚀 Публикация в Дзен
     runs-on: ubuntu-latest
     needs: generate
-    timeout-minutes: 30
+    timeout-minutes: 45
     # Не запускаем если skip_publish=true
     if: |
       needs.generate.result == 'success' &&
@@ -152,6 +152,9 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+
+      - name: 🔧 Install Canvas deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 
       - name: 🔐 Validate DZEN_COOKIES_JSON
         run: |
@@ -192,7 +195,8 @@ jobs:
             echo "🌙 Night mode ($CURRENT_HOUR:00). Skipping."
             exit 0
           fi
-          timeout 300 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
+          # Increased timeout for image processing (10 min per article)
+          timeout 600 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
           echo "exit_code=$?" >> $GITHUB_OUTPUT
         continue-on-error: true
 

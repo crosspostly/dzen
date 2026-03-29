@@ -132,6 +132,54 @@ async function savePublishedArticle(article: any, url: string) {
   }
 }
 
+// 🔍 Resolve image filename to local path
+async function resolveLocalImagePath(fileName: string, searchDir: string): Promise<string> {
+  try {
+    const baseDir = path.join(process.cwd(), searchDir);
+    console.log(`🔍 Searching for local image: "${fileName}" in ${baseDir}`);
+
+    // Method 1: Direct find command
+    const findCmd = `find "${baseDir}" -name "${fileName}" 2>/dev/null | head -n 1`;
+    const localPath = execSync(findCmd).toString().trim();
+
+    if (localPath) {
+      const exists = await fs.stat(localPath).catch(() => null);
+      if (exists) {
+        console.log(`✅ Found local file: ${localPath}`);
+        return localPath;
+      }
+    }
+
+    // Method 2: Try with common extensions if fileName has no extension
+    if (!path.extname(fileName)) {
+      const extensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+      for (const ext of extensions) {
+        const findWithExt = `find "${baseDir}" -name "${fileName}${ext}" 2>/dev/null | head -n 1`;
+        const pathWithExt = execSync(findWithExt).toString().trim();
+        if (pathWithExt && await fs.stat(pathWithExt).catch(() => null)) {
+          console.log(`✅ Found local file with extension: ${pathWithExt}`);
+          return pathWithExt;
+        }
+      }
+    }
+
+    // Method 3: Fuzzy find - search for partial match
+    const baseName = path.basename(fileName, path.extname(fileName));
+    const fuzzyFind = `find "${baseDir}" -name "*${baseName}*" 2>/dev/null | head -n 1`;
+    const fuzzyPath = execSync(fuzzyFind).toString().trim();
+    if (fuzzyPath && await fs.stat(fuzzyPath).catch(() => null)) {
+      console.log(`✅ Found local file (fuzzy match): ${fuzzyPath}`);
+      return fuzzyPath;
+    }
+
+    console.log(`⚠️ Local file not found: ${fileName}`);
+    return '';
+  } catch (e) {
+    console.log(`⚠️ Error resolving local path for ${fileName}: ${(e as Error).message}`);
+    return '';
+  }
+}
+
 // 🚀 Main
 async function main() {
   console.log('🤖 ==== AUTO-PUBLISHER (TS) STARTING ====\n');
@@ -162,35 +210,43 @@ async function main() {
     
     console.log(`\n📝 Publishing article: "${articleToPublish.title}"`);
     const processedContent = processArticleContent(articleToPublish.content);
-    
-    // Resolve imageUrl to local path if it's a GitHub URL or similar
+
+    // Resolve imageUrl to local path
     let finalImageUrl = articleToPublish.imageUrl;
-    if (finalImageUrl && (finalImageUrl.includes('raw.githubusercontent.com') || finalImageUrl.includes('github.com'))) {
-      const fileName = decodeURIComponent(path.basename(finalImageUrl)).trim();
-      // Look for this file in articles/ directory
-      try {
-        const articlesDir = path.join(process.cwd(), 'articles');
-        console.log(`🔍 Searching for local image: "${fileName}" in ${articlesDir}`);
-        
-        // Use a more flexible find that can handle potential issues
-        const findCmd = `find "${articlesDir}" -name "${fileName}" | head -n 1`;
-        const localPath = execSync(findCmd).toString().trim();
-        
-        if (localPath && (await fs.stat(localPath).catch(() => null))) {
-          console.log(`✅ Found local file: ${localPath}`);
-          finalImageUrl = localPath;
-        } else {
-          console.log(`⚠️ Local file not found via find command`);
-        }
-      } catch (e) {
-        console.log(`⚠️ Error resolving local path for ${fileName}: ${(e as Error).message}`);
-      }
-    }
     
+    if (finalImageUrl) {
+      console.log(`\n🖼️ Original imageUrl: ${finalImageUrl}`);
+      
+      // Strategy 1: GitHub/raw.githubusercontent.com URLs → look in articles/
+      if (finalImageUrl.includes('raw.githubusercontent.com') || finalImageUrl.includes('github.com')) {
+        const fileName = decodeURIComponent(path.basename(finalImageUrl)).trim();
+        finalImageUrl = await resolveLocalImagePath(fileName, 'articles');
+      }
+      // Strategy 2: dzen.ru URLs → extract filename and look in articles/
+      else if (finalImageUrl.includes('dzen.ru')) {
+        const fileName = decodeURIComponent(path.basename(finalImageUrl)).trim();
+        finalImageUrl = await resolveLocalImagePath(fileName, 'articles');
+      }
+      // Strategy 3: Already a local path → verify it exists
+      else if (finalImageUrl.startsWith('/') || finalImageUrl.includes(':\\')) {
+        const exists = await fs.stat(finalImageUrl).catch(() => null);
+        if (!exists) {
+          console.log(`⚠️ Local path does not exist: ${finalImageUrl}`);
+          finalImageUrl = '';
+        }
+      }
+      // Strategy 4: External URL → keep as is (for URL dialog method)
+      else {
+        console.log(`ℹ️ Keeping external URL as-is`);
+      }
+      
+      console.log(`🖼️ Final imageUrl: ${finalImageUrl || '(none)'}`);
+    }
+
     const result = await playwrightService.publish({
       title: articleToPublish.title,
       content: processedContent,
-      imageUrl: finalImageUrl
+      imageUrl: finalImageUrl || undefined
     }, {
       cookiesJson,
       headless: CONFIG.headless
