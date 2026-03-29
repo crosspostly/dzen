@@ -56,27 +56,32 @@ jobs:
         node-version: "24"
         cache: 'npm'
 
+    - name: Change to dzen/ directory
+      run: cd dzen && pwd
+
     - name: Cache node modules
       id: cache-node-modules
       uses: actions/cache@v4
       with:
-        path: node_modules
-        key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+        path: dzen/node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('dzen/**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-modules-
 
     - name: Install dependencies
       if: steps.cache-node-modules.outputs.cache-hit != 'true'
-      run: npm install
+      run: cd dzen && npm install
 
     - name: Set environment variables
       run: |
         echo "GITHUB_REPOSITORY=${{ github.repository }}" >> $GITHUB_ENV
         echo "DRY_RUN=${{ github.event.inputs.dry_run || false }}" >> $GITHUB_ENV
         echo "VERBOSE=${{ github.event.inputs.verbose || false }}" >> $GITHUB_ENV
+        echo "BASE_URL=https://raw.githubusercontent.com/${{ github.repository }}/main/dzen" >> $GITHUB_ENV
 
     - name: Generate RSS feed
       run: |
+        cd dzen
         MODE="${{ github.event.inputs.mode || 'incremental' }}"
         VERBOSE="${{ github.event.inputs.verbose || 'false' }}"
         echo "🚀 Running RSS generator in $MODE mode..."
@@ -87,11 +92,12 @@ jobs:
         fi
 
     - name: Validate RSS feed
-      run: node scripts/validate-rss.js public/feed.xml
+      run: cd dzen && node scripts/validate-rss.js public/feed.xml
 
     - name: Commit and push if changed
       if: ${{ github.event.inputs.dry_run != 'true' }}
       run: |
+        cd dzen
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add public/feed.xml
@@ -102,6 +108,7 @@ jobs:
           echo "✅ No changes to commit"
         else
           git commit -m "chore(rss): update feed [${{ github.event.inputs.mode || 'incremental' }} mode]"
+          git pull --rebase origin main
           git push
         fi
       continue-on-error: true
