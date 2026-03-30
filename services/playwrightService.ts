@@ -204,10 +204,14 @@ export class PlaywrightService {
       'text="Статья"',
       'span:has-text("Статья")',
       'div:has-text("Статья")',
+      'button:has-text("Статья")',
+      'a:has-text("Статья")',
       // Class based
       '[class*="articleType"]:has-text("Статья")',
       '[class*="article-card"]:has-text("Статья")',
       '[class*="type-card"]:has-text("Статья")',
+      '[class*="menu-item"]:has-text("Статья")',
+      '[class*="dropdown-item"]:has-text("Статья")',
       // Data attributes
       '[data-testid="article-type"]',
       '[data-testid="write-article"]',
@@ -215,12 +219,17 @@ export class PlaywrightService {
       // Aria labels
       '[aria-label*="Статья"]',
       '[aria-label*="написать"]',
+      // Role based
+      '[role="menuitem"]:has-text("Статья")',
+      '[role="button"]:has-text("Статья")',
+      // Fallback: any clickable with "Статья" text
+      '*:has-text("Статья")',
     ];
 
     let writeButton = null;
     for (const sel of writeSelectors) {
       try {
-        writeButton = await this.page.waitForSelector(sel, { timeout: 3000 });
+        writeButton = await this.page.waitForSelector(sel, { timeout: 2000 });
         if (writeButton && await writeButton.isVisible()) {
           this.log(`✅ Found write button with selector: ${sel}`);
           break;
@@ -237,6 +246,8 @@ export class PlaywrightService {
       await this.closeModals();
     } else {
       this.log('⚠️ Write button not found - checking if already in editor...');
+      // Try alternative: maybe menu auto-navigates, just wait
+      await this.page.waitForTimeout(5000);
     }
 
     // Verify we're in editor - enhanced selectors from tests
@@ -277,10 +288,37 @@ export class PlaywrightService {
     if (!this.page) throw new Error('Page not initialized');
 
     this.log('📝 Looking for inputs...');
-    const inputs = await this.page.$$('input[type="text"], textarea, div[contenteditable="true"]');
-    this.log(`Found ${inputs.length} input elements`);
-
-    if (inputs.length === 0) {
+    
+    // Enhanced input detection with multiple strategies
+    const allInputs = await this.page.$$('input[type="text"], textarea, div[contenteditable="true"], [contenteditable="true"], h1[contenteditable="true"]');
+    this.log(`Found ${allInputs.length} input elements`);
+    
+    // Debug: log all potential input elements
+    const allElements = await this.page.$$('*');
+    const potentialInputs = [];
+    for (const el of allElements) {
+      try {
+        const tag = await el.evaluate(e => e.tagName);
+        const type = await el.evaluate(e => (e as HTMLInputElement).type || '');
+        const placeholder = await el.evaluate(e => (e as HTMLElement).getAttribute('placeholder') || '');
+        const contentEditable = await el.evaluate(e => e.getAttribute('contenteditable'));
+        const role = await el.evaluate(e => e.getAttribute('role'));
+        const ariaLabel = await el.evaluate(e => e.getAttribute('aria-label'));
+        const dataTestId = await el.evaluate(e => e.getAttribute('data-testid'));
+        
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || contentEditable === 'true' || 
+            placeholder.includes('Заголовок') || placeholder.includes('Название') ||
+            role === 'textbox' || ariaLabel?.includes('Заголовок') || dataTestId?.includes('title')) {
+          potentialInputs.push({ tag, type, placeholder, contentEditable, role, ariaLabel, dataTestId });
+        }
+      } catch (e) {}
+    }
+    
+    if (potentialInputs.length > 0) {
+      this.log(`🔍 Potential inputs found: ${potentialInputs.map(i => `${i.tag}[${i.placeholder || i.ariaLabel || i.dataTestId || 'no-attr'}]`).join(', ')}`);
+    }
+    
+    if (allInputs.length === 0 && potentialInputs.length === 0) {
       await this.dumpState('no_inputs');
       throw new Error('No inputs found in editor');
     }
@@ -296,6 +334,9 @@ export class PlaywrightService {
       '.title-input',
       '.article-title-input',
       'input[type="text"][aria-label*="Заголовок"]',
+      'input[type="text"][aria-label*="Название"]',
+      '[role="textbox"][aria-label*="Заголовок"]',
+      '[role="textbox"][aria-label*="Название"]',
     ];
 
     let titleInput = null;
@@ -317,10 +358,10 @@ export class PlaywrightService {
       await titleInput.type(article.title, { delay: 100 });
     } else {
       // Fallback to first input
-      if (inputs.length > 0) {
+      if (allInputs.length > 0) {
         this.log('⚠️ Using first input for title...');
-        await inputs[0].focus();
-        await inputs[0].type(article.title, { delay: 100 });
+        await allInputs[0].focus();
+        await allInputs[0].type(article.title, { delay: 100 });
       }
     }
 
@@ -361,9 +402,9 @@ export class PlaywrightService {
       await this.page.mouse.wheel(0, -500);
     } else {
       // Fallback to second input
-      if (inputs.length > 1) {
+      if (allInputs.length > 1) {
         this.log('⚠️ Using second input for content...');
-        await inputs[1].focus();
+        await allInputs[1].focus();
         await this.page.evaluate((text) => navigator.clipboard.writeText(text), article.content);
         await this.page.waitForTimeout(1000);
         await this.page.keyboard.press('Control+V');
