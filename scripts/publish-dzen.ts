@@ -213,14 +213,14 @@ async function main() {
 
     // Resolve imageUrl to local path
     let finalImageUrl = articleToPublish.imageUrl;
-    
+
     if (finalImageUrl) {
       console.log(`\n🖼️ Original imageUrl: ${finalImageUrl}`);
-      
-      // Strategy 1: GitHub/raw.githubusercontent.com URLs → look in articles/
+
+      // Strategy 1: GitHub/raw.githubusercontent.com URLs → keep as URL (for CI)
       if (finalImageUrl.includes('raw.githubusercontent.com') || finalImageUrl.includes('github.com')) {
-        const fileName = decodeURIComponent(path.basename(finalImageUrl)).trim();
-        finalImageUrl = await resolveLocalImagePath(fileName, 'articles');
+        console.log(`ℹ️ GitHub URL detected - will use URL insertion method`);
+        // Keep as-is for playwrightService to handle via URL input
       }
       // Strategy 2: dzen.ru URLs → extract filename and look in articles/
       else if (finalImageUrl.includes('dzen.ru')) {
@@ -239,7 +239,7 @@ async function main() {
       else {
         console.log(`ℹ️ Keeping external URL as-is`);
       }
-      
+
       console.log(`🖼️ Final imageUrl: ${finalImageUrl || '(none)'}`);
     }
 
