@@ -34,8 +34,10 @@ import sharp from 'sharp';
 // ══════════════════════════════════════════════════════════════════════════════
 
 const MODE = process.argv[2] || 'incremental';
-const BASE_URL = process.env.BASE_URL || 'https://raw.githubusercontent.com/crosspostly/dzen/main';
-const DZEN_CHANNEL = 'https://dzen.ru/potemki'; 
+// ✅ Fix: Use GITHUB_REPOSITORY env or default to crosspostly/dzen
+// URL: https://raw.githubusercontent.com/crosspostly/dzen/main/articles/...
+const BASE_URL = process.env.BASE_URL || `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY || 'crosspostly/dzen'}/main`;
+const DZEN_CHANNEL = 'https://dzen.ru/potemki';
 const SITE_URL = 'https://dzen-livid.vercel.app'; // ✅ Вернули Vercel
 const RSS_URL = 'https://dzen-livid.vercel.app/feed.xml'; // ✅ Вернули Vercel
 const DEFAULT_IMAGE_SIZE = 50000;
@@ -125,7 +127,7 @@ function wrapGithubImagesInFigure(html) {
  */
 function getArticleFiles(mode) {
   const articlesDir = path.join(process.cwd(), 'articles');
-  
+
   if (!fs.existsSync(articlesDir)) {
     console.error('❌ ERROR: articles/ folder not found!');
     process.exit(1);
@@ -138,20 +140,25 @@ function getArticleFiles(mode) {
     console.log('🔄 FULL mode: collecting all articles...');
     files = getAllMdFiles(articlesDir);
   }
-  
+
   // INCREMENTAL mode: сканируем все новые статьи во всех подпапках
   else if (mode === 'incremental') {
     console.log('📧 INCREMENTAL mode: collecting new articles from all channels...');
     // Теперь сканируем всё в articles/ но фильтр по дате (внутри main) сделает своё дело
     files = getAllMdFiles(articlesDir);
   }
-  
+
   else {
     console.error(`❌ Unknown mode: ${mode}`);
     process.exit(1);
   }
 
-  return files.filter(f => f.endsWith('.md'));
+  // ✅ FIX: Exclude _smoke-test and REPORT files from production RSS
+  return files.filter(f => 
+    f.endsWith('.md') && 
+    !f.includes('_smoke-test') &&
+    !f.includes('REPORT.md')
+  );
 }
 
 /**

@@ -65,15 +65,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 
       - name: 📦 Install deps
-        run: npm install
+        run: cd dzen && npm install
 
       - name: 🧪 [PRE-FLIGHT] Smoke Push Test
-        run: npx tsx cli.ts smoke-push
+        run: cd dzen && npx tsx cli.ts smoke-push
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: ✍️ Generate Articles + 🚀 Auto-Push
         run: |
+          cd dzen
           if [ "${{ github.event_name }}" == "schedule" ]; then
             COUNT="8"; CHANNEL="ethno-food-ritual"; IMAGES="true"
           else
@@ -96,6 +97,7 @@ jobs:
       - name: 📊 Count results
         id: count
         run: |
+          cd dzen
           MD=$(find ./articles -name "*.md" 2>/dev/null | wc -l)
           JPG=$(find ./articles -name "*.jpg" 2>/dev/null | wc -l)
           echo "📝 Articles: $MD | 🖼️ Covers: $JPG"
@@ -104,6 +106,9 @@ jobs:
       - name: 📰 Generate feed.xml
         id: feed
         run: |
+          cd dzen
+          # Set BASE_URL for correct GitHub image URLs (NO /dzen suffix!)
+          export BASE_URL="https://raw.githubusercontent.com/${{ github.repository }}/main"
           if npx tsx cli.ts feed 2>/dev/null || node scripts/generate-feed.js 2>/dev/null; then
             echo "✅ feed.xml updated"
             echo "feed_updated=true" >> $GITHUB_OUTPUT
@@ -116,6 +121,7 @@ jobs:
 
       - name: 📤 Sync Feed to GitHub
         run: |
+          cd dzen
           # После генерации фида нужно еще раз пушнуть (только public/ и articles/)
           npx tsx cli.ts sync --message="📰 Update feed.xml and articles" --paths="articles/,public/"
 
@@ -169,6 +175,7 @@ jobs:
 
       - name: 📤 Check feed.xml
         run: |
+          cd dzen
           if [ -f "public/feed.xml" ]; then
             ITEMS=$(grep -c "<item>" public/feed.xml || echo 0)
             echo "✅ feed.xml OK, articles: $ITEMS"
@@ -178,10 +185,10 @@ jobs:
           fi
 
       - name: 📦 Install deps
-        run: npm ci
+        run: cd dzen && npm ci
 
       - name: 🎬 Install Playwright
-        run: npx playwright install chromium --with-deps
+        run: cd dzen && npx playwright install chromium --with-deps
 
       - name: 🤖 Publish to Dzen
         id: publisher
@@ -190,6 +197,7 @@ jobs:
           HEADLESS: true
           DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
+          cd dzen
           CURRENT_HOUR=$(date -u +%H)
           if [ "$CURRENT_HOUR" -ge 23 ] || [ "$CURRENT_HOUR" -lt 5 ]; then
             echo "🌙 Night mode ($CURRENT_HOUR:00). Skipping."
@@ -203,13 +211,14 @@ jobs:
       - name: 📊 Results
         if: always()
         run: |
-          cat publish.log 2>/dev/null || true
+          cd dzen && cat publish.log 2>/dev/null || true
           CODE=${{ steps.publisher.outputs.exit_code }}
           [ "$CODE" = "0" ] && echo "✅ Published!" || echo "⚠️ Publisher finished with code $CODE"
 
       - name: 💾 Commit publish log
         if: always()
         run: |
+          cd dzen
           npx tsx cli.ts sync --message="🤖 Auto-publish: $(date -u +'%Y-%m-%d %H:%M UTC')" --paths="!posts/PRODUCTION_READY/published_articles.txt,publish-*.log"
 
   # ============================================================
