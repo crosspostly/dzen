@@ -19,6 +19,18 @@
     "list-projects": "node --import tsx cli.ts list-projects",
     "test": "node --import tsx cli.ts test",
     "test:full": "npm run test && npm run validate && npm run list-projects",
+    
+    "📦 PUBLISH SCRIPTS": "",
+    "publish": "node --import tsx scripts/publish-dzen.ts",
+    "publish:feed": "node --import tsx scripts/publish-first-from-feed.ts",
+    "publish:test": "node --import tsx scripts/quick-publish-test.ts",
+    "publish:debug": "node --import tsx scripts/debug-dzen-editor.ts",
+    
+    "🧪 TEST SCRIPTS": "",
+    "test:selectors": "node --import tsx scripts/test-dzen-selectors.ts",
+    "test:smoke-push": "node --import tsx scripts/smoke-push.ts",
+    
+    "📰 FEED SCRIPTS": "",
     "feed:full": "node scripts/generate-feed.js full",
     "feed:incremental": "node scripts/generate-feed.js incremental",
     "feed:generate": "node scripts/generate-feed.js incremental"
