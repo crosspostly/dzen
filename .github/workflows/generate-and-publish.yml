@@ -65,22 +65,20 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 
       - name: 📦 Install deps
-        run: cd dzen && npm install
+        run: npm install
 
       - name: 🧪 [PRE-FLIGHT] Smoke Push Test
-        run: cd dzen && npx tsx cli.ts smoke-push
+        run: npx tsx cli.ts smoke-push
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: ✍️ Generate Articles + 🚀 Auto-Push
+      - name: ✍️ Generate Articles
         run: |
-          cd dzen
           if [ "${{ github.event_name }}" == "schedule" ]; then
             COUNT="8"; CHANNEL="ethno-food-ritual"; IMAGES="true"
           else
             COUNT="${{ inputs.count }}"; CHANNEL="${{ inputs.channel }}"; IMAGES="${{ inputs.images }}"
           fi
-          # Используем флаг --push для сохранения через GitSyncService
           CMD="npx tsx cli.ts factory --count=$COUNT --channel=$CHANNEL --push"
           [ "$IMAGES" = "true" ] && CMD="$CMD --images"
           echo "🚀 Running: $CMD"
@@ -97,7 +95,6 @@ jobs:
       - name: 📊 Count results
         id: count
         run: |
-          cd dzen
           MD=$(find ./articles -name "*.md" 2>/dev/null | wc -l)
           JPG=$(find ./articles -name "*.jpg" 2>/dev/null | wc -l)
           echo "📝 Articles: $MD | 🖼️ Covers: $JPG"
@@ -106,8 +103,6 @@ jobs:
       - name: 📰 Generate feed.xml
         id: feed
         run: |
-          cd dzen
-          # Set BASE_URL for correct GitHub image URLs (NO /dzen suffix!)
           export BASE_URL="https://raw.githubusercontent.com/${{ github.repository }}/main"
           if npx tsx cli.ts feed 2>/dev/null || node scripts/generate-feed.js 2>/dev/null; then
             echo "✅ feed.xml updated"
@@ -120,10 +115,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: 📤 Sync Feed to GitHub
-        run: |
-          cd dzen
-          # После генерации фида нужно еще раз пушнуть (только public/ и articles/)
-          npx tsx cli.ts sync --message="📰 Update feed.xml and articles" --paths="articles/,public/"
+        run: npx tsx cli.ts sync --message="📰 Update feed.xml and articles" --paths="articles/,public/"
 
       - name: 📦 Upload artifacts
         uses: actions/upload-artifact@v4
@@ -142,7 +134,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: generate
     timeout-minutes: 45
-    # Не запускаем если skip_publish=true
     if: |
       needs.generate.result == 'success' &&
       github.event.inputs.skip_publish != 'true'
@@ -152,7 +143,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-          ref: main   # Берём свежее после push из generate
+          ref: main
 
       - uses: actions/setup-node@v5
         with:
@@ -175,7 +166,6 @@ jobs:
 
       - name: 📤 Check feed.xml
         run: |
-          cd dzen
           if [ -f "public/feed.xml" ]; then
             ITEMS=$(grep -c "<item>" public/feed.xml || echo 0)
             echo "✅ feed.xml OK, articles: $ITEMS"
@@ -185,10 +175,10 @@ jobs:
           fi
 
       - name: 📦 Install deps
-        run: cd dzen && npm ci
+        run: npm ci
 
       - name: 🎬 Install Playwright
-        run: cd dzen && npx playwright install chromium --with-deps
+        run: npx playwright install chromium --with-deps
 
       - name: 🤖 Publish to Dzen
         id: publisher
@@ -197,13 +187,11 @@ jobs:
           HEADLESS: true
           DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
-          cd dzen
           CURRENT_HOUR=$(date -u +%H)
           if [ "$CURRENT_HOUR" -ge 23 ] || [ "$CURRENT_HOUR" -lt 5 ]; then
             echo "🌙 Night mode ($CURRENT_HOUR:00). Skipping."
             exit 0
           fi
-          # Increased timeout for image processing (10 min per article)
           timeout 600 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
           echo "exit_code=$?" >> $GITHUB_OUTPUT
         continue-on-error: true
@@ -211,15 +199,14 @@ jobs:
       - name: 📊 Results
         if: always()
         run: |
-          cd dzen && cat publish.log 2>/dev/null || true
+          cat publish.log 2>/dev/null || true
           CODE=${{ steps.publisher.outputs.exit_code }}
           [ "$CODE" = "0" ] && echo "✅ Published!" || echo "⚠️ Publisher finished with code $CODE"
 
       - name: 💾 Commit publish log
         if: always()
         run: |
-          cd dzen
-          npx tsx cli.ts sync --message="🤖 Auto-publish: $(date -u +'%Y-%m-%d %H:%M UTC')" --paths="!posts/PRODUCTION_READY/published_articles.txt,publish-*.log"
+          npx tsx cli.ts sync --message="🤖 Auto-publish: $(date -u +'%Y-%m-%d %H:%M UTC')" --paths="publish-*.log"
 
   # ============================================================
   # NOTIFY ON FAILURE
@@ -229,7 +216,7 @@ jobs:
     needs: [generate, publish]
     if: failure()
     steps:
-      - name: 🔔 Notify on failure
+      - name: 🔔 Notify
         run: echo "⚠️ FAILED: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: 📧 Email
