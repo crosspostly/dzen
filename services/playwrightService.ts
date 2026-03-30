@@ -152,20 +152,32 @@ export class PlaywrightService {
     await this.closeModals();
     await this.dumpState('step1_editor');
 
-    // Click "Add Publication"
+    // Click "Add Publication" - selectors from test scripts
     const addButtonSelectors = [
+      // Data attributes (primary)
       '[data-testid="add-publication-button"]',
-      'button[aria-label="Создать"]',
+      '[data-testid="addPublicationButton"]',
+      '[data-testid="create-article"]',
+      '[data-testid="new-article"]',
+      // Class-based
       '.new-publication-button',
+      '.add-publication-button',
+      '.create-button',
+      '.studio-header__button',
+      // Text-based
       'button:has-text("Создать")',
       'button:has-text("Добавить")',
+      'button:has-text("Публикация")',
+      // First button in header
+      '.studio-header button:first-child',
+      'header button:first-of-type',
     ];
-    
+
     let addButton = null;
     for (const sel of addButtonSelectors) {
       try {
-        addButton = await this.page.waitForSelector(sel, { timeout: 5000 });
-        if (addButton) {
+        addButton = await this.page.waitForSelector(sel, { timeout: 3000 });
+        if (addButton && await addButton.isVisible()) {
           this.log(`✅ Found add button with selector: ${sel}`);
           break;
         }
@@ -184,21 +196,32 @@ export class PlaywrightService {
     await this.page.waitForTimeout(3000);
     await this.closeModals();
     await this.dumpState('step2_menu_open');
-    
-    // Click "Write Article" / "Статья"
+
+    // Click "Write Article" / "Статья" - enhanced selectors from tests
     const writeSelectors = [
+      // Text based (primary)
       'text="Написать статью"',
       'text="Статья"',
       'span:has-text("Статья")',
       'div:has-text("Статья")',
+      // Class based
       '[class*="articleType"]:has-text("Статья")',
+      '[class*="article-card"]:has-text("Статья")',
+      '[class*="type-card"]:has-text("Статья")',
+      // Data attributes
+      '[data-testid="article-type"]',
+      '[data-testid="write-article"]',
+      '[data-testid="create-article"]',
+      // Aria labels
+      '[aria-label*="Статья"]',
+      '[aria-label*="написать"]',
     ];
-    
+
     let writeButton = null;
     for (const sel of writeSelectors) {
       try {
-        writeButton = await this.page.waitForSelector(sel, { timeout: 5000 });
-        if (writeButton) {
+        writeButton = await this.page.waitForSelector(sel, { timeout: 3000 });
+        if (writeButton && await writeButton.isVisible()) {
           this.log(`✅ Found write button with selector: ${sel}`);
           break;
         }
@@ -216,8 +239,31 @@ export class PlaywrightService {
       this.log('⚠️ Write button not found - checking if already in editor...');
     }
 
-    // Verify we're in editor
-    const editorCheck = await this.page.$('h1[contenteditable="true"], [placeholder*="Заголовок"]');
+    // Verify we're in editor - enhanced selectors from tests
+    const editorCheckSelectors = [
+      'h1[contenteditable="true"]',
+      '[placeholder*="Заголовок"]',
+      '[placeholder*="Название"]',
+      '[data-testid="title-input"]',
+      '[data-testid="article-title"]',
+      '[data-testid="content-editor"]',
+      '.title-input',
+      '.article-title-input',
+    ];
+
+    let editorCheck = null;
+    for (const selector of editorCheckSelectors) {
+      try {
+        editorCheck = await this.page.$(selector);
+        if (editorCheck) {
+          this.log(`✅ Editor verified with selector: ${selector}`);
+          break;
+        }
+      } catch (e) {
+        // Try next
+      }
+    }
+
     if (!editorCheck) {
       this.log('⚠️ Editor not detected, waiting longer...');
       await this.page.waitForTimeout(15000);
@@ -233,33 +279,100 @@ export class PlaywrightService {
     this.log('📝 Looking for inputs...');
     const inputs = await this.page.$$('input[type="text"], textarea, div[contenteditable="true"]');
     this.log(`Found ${inputs.length} input elements`);
-    
+
     if (inputs.length === 0) {
       await this.dumpState('no_inputs');
       throw new Error('No inputs found in editor');
     }
 
-    // 1. Title (Human-like typing)
-    if (inputs.length > 0) {
+    // 1. Title - with enhanced selectors from test scripts
+    const titleInputSelectors = [
+      'h1[contenteditable="true"]',
+      '[placeholder*="Заголовок"]',
+      '[placeholder*="Название"]',
+      '[data-testid="title-input"]',
+      '[data-testid="article-title"]',
+      '[data-testid="article-title-input"]',
+      '.title-input',
+      '.article-title-input',
+      'input[type="text"][aria-label*="Заголовок"]',
+    ];
+
+    let titleInput = null;
+    for (const selector of titleInputSelectors) {
+      try {
+        titleInput = await this.page.$(selector);
+        if (titleInput && await titleInput.isVisible()) {
+          this.log(`✅ Found title input: ${selector}`);
+          break;
+        }
+      } catch (e) {
+        // Try next
+      }
+    }
+
+    if (titleInput) {
       this.log('📝 Typing title...');
-      await inputs[0].focus();
-      await inputs[0].type(article.title, { delay: 100 });
+      await titleInput.focus();
+      await titleInput.type(article.title, { delay: 100 });
+    } else {
+      // Fallback to first input
+      if (inputs.length > 0) {
+        this.log('⚠️ Using first input for title...');
+        await inputs[0].focus();
+        await inputs[0].type(article.title, { delay: 100 });
+      }
     }
 
     // 2. Content (Copy-Paste with clipboard)
-    if (inputs.length > 1) {
+    const contentInputSelectors = [
+      '[data-testid="content-editor"]',
+      '[contenteditable="true"]',
+      '.editor-content',
+      '.article-content',
+      'textarea',
+    ];
+
+    let contentInput = null;
+    for (const selector of contentInputSelectors) {
+      try {
+        contentInput = await this.page.$(selector);
+        if (contentInput && await contentInput.isVisible()) {
+          this.log(`✅ Found content input: ${selector}`);
+          break;
+        }
+      } catch (e) {
+        // Try next
+      }
+    }
+
+    if (contentInput) {
       this.log('📝 Pasting content...');
-      await inputs[1].focus();
+      await contentInput.focus();
       await this.page.evaluate((text) => navigator.clipboard.writeText(text), article.content);
       await this.page.waitForTimeout(1000);
       await this.page.keyboard.press('Control+V');
       await this.page.waitForTimeout(1000);
       await this.page.keyboard.press('Enter');
-      
+
       // Scroll simulation
       await this.page.mouse.wheel(0, 500);
       await this.page.waitForTimeout(1000);
       await this.page.mouse.wheel(0, -500);
+    } else {
+      // Fallback to second input
+      if (inputs.length > 1) {
+        this.log('⚠️ Using second input for content...');
+        await inputs[1].focus();
+        await this.page.evaluate((text) => navigator.clipboard.writeText(text), article.content);
+        await this.page.waitForTimeout(1000);
+        await this.page.keyboard.press('Control+V');
+        await this.page.waitForTimeout(1000);
+        await this.page.keyboard.press('Enter');
+        await this.page.mouse.wheel(0, 500);
+        await this.page.waitForTimeout(1000);
+        await this.page.mouse.wheel(0, -500);
+      }
     }
 
     // 3. Image - вставка изображения через модальное окно
@@ -271,23 +384,30 @@ export class PlaywrightService {
       await this.closeModals();
       await this.page.waitForTimeout(1000);
 
-      // 🔘 Кнопка "Вставить изображение" (сбоку редактора)
+      // 🔘 Кнопка "Вставить изображение" (сбоку редактора) - enhanced selectors from tests
       const sideImageBtnSelectors = [
-        // Основной селектор из задачи
+        // Data attributes (primary from tests)
+        '[data-testid="upload-image"]',
+        '[data-testid="add-image"]',
+        // Main selector from task
         '.article-editor-desktop--side-toolbar__sideToolbar-2f button.article-editor-desktop--side-button__sideButton-1z',
-        // Кнопка с тултипом "Вставить изображение"
+        // Tooltip based
         '[data-tip="Вставить изображение"]',
+        // Aria labels
         'button[aria-label*="изображен"]',
         'button[aria-label*="Изображен"]',
         'button[aria-label*="image"]',
         'button[aria-label*="Image"]',
-        // Кнопка с SVG иконкой add_gallery
+        'button[aria-label*="Добавить фото"]',
+        // SVG icon based
         'button svg use[xlink:href="#add_gallery_e477--react"]',
         'button:has(svg use[*|href="#add_gallery"])',
-        // Боковая кнопка с иконкой
+        // Generic side button with icon
         '.article-editor-desktop--side-button__sideButton-1z',
-        // Общая кнопка с SVG
-        'button.article-editor-desktop--side-button__sideButton-1z'
+        'button.article-editor-desktop--side-button__sideButton-1z',
+        // Text based
+        'button:has-text("Загрузить")',
+        'button:has-text("Добавить фото")',
       ];
 
       let sideBtn = null;
@@ -377,12 +497,21 @@ export class PlaywrightService {
         // 🗂️ Загрузка локального файла через file input
         this.log('📁 Detected local file - using file upload method');
         
-        // Ждём появления file input в модальном окне
+        // Ждём появления file input в модальном окне - enhanced selectors from tests
         const fileInputSelectors = [
+          // Data attributes from tests
+          'input[type="file"][data-testid="upload-image"]',
+          'input[type="file"][data-testid="add-image"]',
+          // Standard file inputs
           'input[type="file"][accept*="image"]',
           'input[type="file"][accept*="image/*"]',
+          'input[type="file"][accept="image/*"]',
+          // Class based
           '.article-editor-desktop--image-popup__fileInput-35',
-          'input[type="file"]'
+          '.image-upload-input',
+          '.file-upload-input',
+          // Generic
+          'input[type="file"]',
         ];
         
         let fileInput = null;
@@ -449,19 +578,30 @@ export class PlaywrightService {
       }
       
       if (isHttpUrl || !isLocalFile) {
-        // 🔗 Вставка URL изображения
-        this.log('🔗 Using URL insertion method');
-        
+        // 🔗 Вставка URL изображения - enhanced selectors from tests
         const urlInputSelectors = [
+          // Data attributes from tests
+          'input[type="text"][data-testid="image-url"]',
+          'input[type="text"][data-testid="url-input"]',
+          // Placeholder based (Russian)
           'input[type="text"][placeholder*="Ссылк"]',
           'input[type="text"][placeholder*="ссылк"]',
           'input[type="text"][placeholder*="URL"]',
           'input[type="text"][placeholder*="url"]',
+          'input[type="text"][placeholder*="Вставьте ссылку"]',
+          // Class based
           '.article-editor-desktop--image-popup__urlInput-25 input',
+          '.image-url-input',
+          '.url-input',
+          // Generic visible text inputs
           'input[type="text"]:visible',
           'input:not([type]):visible',
+          // Aria labels
+          'input[aria-label*="URL"]',
+          'input[aria-label*="ссылк"]',
         ];
 
+        this.log('🔗 Using URL insertion method');
         let urlInput = null;
         for (const selector of urlInputSelectors) {
           try {
@@ -513,69 +653,85 @@ export class PlaywrightService {
   private async submitPublish(): Promise<{ success: boolean; url?: string }> {
     if (!this.page) throw new Error('Page not initialized');
 
-    // 1. First Publish Button
-    const firstBtnSelector = 'button[data-testid="article-publish-btn"]';
-    
-    try {
-      this.log('⏳ Waiting for publish button to be enabled...');
-      // Wait for button to be visible AND enabled (not disabled)
-      await this.page.waitForSelector(`${firstBtnSelector}:not([disabled])`, { timeout: 15000 });
-      
-      const firstBtn = await this.page.$(firstBtnSelector);
-      if (firstBtn) {
-        await firstBtn.click();
-        this.log('✅ Clicked first publish button');
-        await this.handleCaptcha();
-        await this.page.waitForTimeout(3000);
-        await this.dumpState('publish_modal');
-      } else {
-        throw new Error('Publish button missing after wait');
-      }
-    } catch (e) {
-      this.log(`⚠️ First publish button issue: ${(e as Error).message}`);
-      await this.dumpState('no_first_publish_btn');
-      
-      // Fallback: try finding it by text just in case
-      const textBtn = await this.page.$('button:has-text("Опубликовать")');
-      if (textBtn) {
-         const isDisabled = await textBtn.getAttribute('disabled') !== null;
-         this.log(`Fallback button found. Disabled: ${isDisabled}`);
-         if (!isDisabled) {
-            await textBtn.click();
-            await this.page.waitForTimeout(3000);
-         }
-      }
-    }
+    // 1. First Publish Button - with fallback selectors from test scripts
+    const firstBtnSelectors = [
+      'button[data-testid="article-publish-btn"]',  // Primary
+      '[data-testid="publish-button"]',              // Fallback from tests
+      '[data-testid="publish"]',                     // Fallback from tests
+      'button:has-text("Опубликовать")',             // Text fallback
+    ];
 
-    // 2. Second Publish Button (Modal)
-    const secondBtnSelector = 'button[data-testid="publish-btn"][type="submit"]';
-    
-    try {
-      const secondBtn = await this.page.waitForSelector(secondBtnSelector, { timeout: 10000 });
-      if (secondBtn) {
-        await secondBtn.click();
-        this.log('✅ Clicked confirmation button');
-        
-        // Long polling for captcha
-        await this.handleCaptcha(15);
-
-        // Validate via URL redirect
-        this.log('⏳ Waiting for redirect...');
-        try {
-          await this.page.waitForFunction(() => !window.location.href.includes('/editor/'), { timeout: 45000 });
-          const finalUrl = this.page.url();
-          this.log(`🔗 Published at: ${finalUrl}`);
-          return { success: true, url: finalUrl };
-        } catch (e) {
-          await this.dumpState('publish_timeout');
-          throw new Error('Publication timed out (no redirect)');
+    let firstBtn = null;
+    for (const selector of firstBtnSelectors) {
+      try {
+        this.log(`⏳ Trying first publish button: ${selector}`);
+        firstBtn = await this.page.waitForSelector(`${selector}:not([disabled])`, { timeout: 5000 });
+        if (firstBtn) {
+          this.log(`✅ Found first publish button: ${selector}`);
+          break;
         }
+      } catch (e) {
+        // Try next selector
       }
-    } catch (e) {
-      this.log('⚠️ Second publish button (modal) not found');
     }
 
-    await this.dumpState('no_second_publish_btn');
+    if (firstBtn) {
+      await firstBtn.click();
+      this.log('✅ Clicked first publish button');
+      await this.handleCaptcha();
+      await this.page.waitForTimeout(3000);
+      await this.dumpState('publish_modal');
+    } else {
+      this.log('❌ First publish button not found with any selector');
+      await this.dumpState('no_first_publish_btn');
+    }
+
+    // 2. Second Publish Button (Modal) - with fallback selectors from test scripts
+    const secondBtnSelectors = [
+      'button[data-testid="publish-btn"][type="submit"]',  // Primary
+      '[data-testid="publish-button"][type="submit"]',     // Fallback from tests
+      '[data-testid="publish"][type="submit"]',            // Fallback from tests
+      'button[type="submit"]:has-text("Опубликовать")',    // Text fallback
+      'button:has-text("Опубликовать")',                   // Generic text fallback
+    ];
+
+    let secondBtn = null;
+    for (const selector of secondBtnSelectors) {
+      try {
+        this.log(`⏳ Trying second publish button: ${selector}`);
+        secondBtn = await this.page.waitForSelector(selector, { timeout: 5000 });
+        if (secondBtn) {
+          this.log(`✅ Found second publish button: ${selector}`);
+          break;
+        }
+      } catch (e) {
+        // Try next selector
+      }
+    }
+
+    if (secondBtn) {
+      await secondBtn.click();
+      this.log('✅ Clicked confirmation button');
+
+      // Long polling for captcha
+      await this.handleCaptcha(15);
+
+      // Validate via URL redirect
+      this.log('⏳ Waiting for redirect...');
+      try {
+        await this.page.waitForFunction(() => !window.location.href.includes('/editor/'), { timeout: 45000 });
+        const finalUrl = this.page.url();
+        this.log(`🔗 Published at: ${finalUrl}`);
+        return { success: true, url: finalUrl };
+      } catch (e) {
+        await this.dumpState('publish_timeout');
+        throw new Error('Publication timed out (no redirect)');
+      }
+    } else {
+      this.log('⚠️ Second publish button (modal) not found with any selector');
+      await this.dumpState('no_second_publish_btn');
+    }
+
     return { success: false };
   }
 
