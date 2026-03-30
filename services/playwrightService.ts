@@ -42,6 +42,14 @@ export class PlaywrightService {
 
   private async dumpState(name: string) {
     if (!this.page) return;
+    
+    // Skip screenshots in CI to save time (optional)
+    const skipScreenshots = process.env.CI_SKIP_SCREENSHOTS === 'true';
+    if (skipScreenshots) {
+      this.log(`⏭️ Skipping screenshot: ${name}`);
+      return;
+    }
+    
     try {
       await this.page.screenshot({ path: path.join(process.cwd(), `${name}.png`), fullPage: true });
       const html = await this.page.content();

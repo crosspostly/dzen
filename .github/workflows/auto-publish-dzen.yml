@@ -70,6 +70,7 @@ jobs:
         env:
           CI: true
           HEADLESS: true
+          CI_SKIP_SCREENSHOTS: 'false'  # Set to 'true' to skip screenshots for speed
           DZEN_COOKIES_JSON: ${{ secrets.DZEN_COOKIES_JSON }}
         run: |
           CURRENT_HOUR=$(date -u +%H)
