@@ -152,24 +152,27 @@ export class PlaywrightService {
     await this.closeModals();
     await this.dumpState('step1_editor');
 
-    // Click "Add Publication" - WORKING selectors from production logs
+    // Click "Add Publication" - WORKING selectors from CI logs
     const addButtonSelectors = [
-      // ✅ WORKING: data-testid (primary)
+      // ✅ CI WORKING: header button first
+      'header button:first-of-type',
+      'header button:first-child',
+      // Data attributes
       '[data-testid="add-publication-button"]',
       '[data-testid="addPublicationButton"]',
-      // Fallback selectors
       '[data-testid="create-article"]',
-      '[data-testid="new-article"]',
+      // Class based
       '.studio-header__button',
-      'header button:first-of-type',
+      // Text based
       'button:has-text("Создать")',
       'button:has-text("Добавить")',
+      'button:has-text("Публикация")',
     ];
 
     let addButton = null;
     for (const sel of addButtonSelectors) {
       try {
-        addButton = await this.page.waitForSelector(sel, { timeout: 3000 });
+        addButton = await this.page.waitForSelector(sel, { timeout: 5000 });
         if (addButton && await addButton.isVisible()) {
           this.log(`✅ Found add button with selector: ${sel}`);
           break;
@@ -186,7 +189,8 @@ export class PlaywrightService {
     }
 
     await addButton.click();
-    await this.page.waitForTimeout(3000);
+    this.log('✅ Clicked add button, waiting for menu...');
+    await this.page.waitForTimeout(5000); // Increased wait time for CI
     await this.closeModals();
     await this.dumpState('step2_menu_open');
 
@@ -194,19 +198,27 @@ export class PlaywrightService {
     const writeSelectors = [
       // ✅ WORKING: text selector (primary)
       'text="Написать статью"',
-      // Fallback selectors
       'text="Статья"',
-      'button:has-text("Статья")',
+      // Fallback - menu items
       '[role="menuitem"]:has-text("Статья")',
+      '[role="button"]:has-text("Статья")',
+      'button:has-text("Статья")',
+      'div:has-text("Статья")',
+      'span:has-text("Статья")',
+      // Data attributes
       '[data-testid="article-type"]',
       '[data-testid="write-article"]',
+      // Aria labels
       '[aria-label*="Статья"]',
+      '[aria-label*="написать"]',
+      // Any element with "Статья" text
+      '*:has-text("Статья")',
     ];
 
     let writeButton = null;
     for (const sel of writeSelectors) {
       try {
-        writeButton = await this.page.waitForSelector(sel, { timeout: 2000 });
+        writeButton = await this.page.waitForSelector(sel, { timeout: 3000 });
         if (writeButton && await writeButton.isVisible()) {
           this.log(`✅ Found write button with selector: ${sel}`);
           break;
@@ -229,14 +241,20 @@ export class PlaywrightService {
 
     // Verify we're in editor - enhanced selectors from tests
     const editorCheckSelectors = [
+      // ✅ WORKING: contenteditable divs
+      'div[contenteditable="true"]',
       'h1[contenteditable="true"]',
+      // Placeholders
       '[placeholder*="Заголовок"]',
       '[placeholder*="Название"]',
+      // Data attributes
       '[data-testid="title-input"]',
       '[data-testid="article-title"]',
       '[data-testid="content-editor"]',
+      // Classes
       '.title-input',
       '.article-title-input',
+      '.editor-content',
     ];
 
     let editorCheck = null;
@@ -254,8 +272,25 @@ export class PlaywrightService {
 
     if (!editorCheck) {
       this.log('⚠️ Editor not detected, waiting longer...');
-      await this.page.waitForTimeout(15000);
+      await this.page.waitForTimeout(15000); // Increased wait for CI
       await this.closeModals();
+      
+      // Second attempt to find editor
+      for (const selector of editorCheckSelectors) {
+        try {
+          editorCheck = await this.page.$(selector);
+          if (editorCheck) {
+            this.log(`✅ Editor verified on second attempt: ${selector}`);
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (!editorCheck) {
+      this.log('❌ Editor still not detected - dumping state');
+      await this.dumpState('editor_not_found');
+      throw new Error('Editor not loaded after waiting');
     }
 
     this.log('✅ Editor ready');
@@ -267,10 +302,38 @@ export class PlaywrightService {
     this.log('📝 Looking for inputs...');
     
     // ✅ WORKING: contenteditable divs are the inputs
-    const allInputs = await this.page.$$('div[contenteditable="true"], h1[contenteditable="true"], textarea');
+    // Try multiple selector strategies
+    const allInputs = await this.page.$$('div[contenteditable="true"], h1[contenteditable="true"], textarea, [contenteditable="true"]');
     this.log(`Found ${allInputs.length} input elements`);
     
+    // Debug: if no inputs found, dump page structure
     if (allInputs.length === 0) {
+      this.log('⚠️ No contenteditable inputs found - checking page structure...');
+      
+      // Try to find ANY interactive element
+      const anyInputs = await this.page.$$('*');
+      const potentialInputs = [];
+      for (let i = 0; i < Math.min(anyInputs.length, 100); i++) {
+        try {
+          const el = anyInputs[i];
+          const tag = await el.evaluate(e => e.tagName);
+          const contentEditable = await el.evaluate(e => e.getAttribute('contenteditable'));
+          const role = await el.evaluate(e => e.getAttribute('role'));
+          const placeholder = await el.evaluate(e => (e as HTMLElement).getAttribute('placeholder') || '');
+          
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || contentEditable === 'true' || 
+              role === 'textbox' || placeholder.includes('Заголовок') || placeholder.includes('Название')) {
+            potentialInputs.push({ tag, contentEditable, role, placeholder });
+          }
+        } catch (e) {}
+      }
+      
+      if (potentialInputs.length > 0) {
+        this.log(`🔍 Found ${potentialInputs.length} potential inputs: ${JSON.stringify(potentialInputs.slice(0, 5))}`);
+      } else {
+        this.log('❌ No potential inputs found at all');
+      }
+      
       await this.dumpState('no_inputs');
       throw new Error('No inputs found in editor');
     }
