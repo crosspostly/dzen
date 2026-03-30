@@ -1,0 +1,34 @@
+{
+  "version": "4.0",
+  "generatedAt": 1774855414986,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 5,
+  "totalCharacters": 86661,
+  "totalImages": 5,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-30/nashel-v-mahachkale-hinkalnuyu-gde-portsiya-stoit-.jpg",
+      "articles/ethno-food-ritual/2026-03-30/vtoroy-rynok-mahachkaly-storgoval-golovu-kopchenog.jpg",
+      "articles/ethno-food-ritual/2026-03-30/vyrvalsya-iz-mahachkaly-k-kaspiyu-vzyal-goryachiy-.jpg",
+      "articles/ethno-food-ritual/2026-03-30/zashel-na-mahachkalinskiy-rynok-za-syrom-v-itoge-o.jpg",
+      "articles/ethno-food-ritual/2026-03-30/zashel-na-rynok-v-mahachkale-kupit-chudu-za-80-a-v.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-30/REPORT.md"
+  }
+}
