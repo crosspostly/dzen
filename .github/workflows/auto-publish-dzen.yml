@@ -78,20 +78,31 @@ jobs:
             echo "🌙 NIGHT MODE ACTIVE ($CURRENT_HOUR:00). Skipping."
             exit 0
           fi
-          # Increased timeout to 600s (10 min) for image upload processing
+          
+          echo "🚀 Starting publisher..."
           timeout 600 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
-          PUBLISHER_EXIT=$?
-          echo "publisher_status=$PUBLISHER_EXIT" >> $GITHUB_OUTPUT
+          PUBLISHER_EXIT=${PIPESTATUS[0]}
+          
+          echo "publisher_exit_code=$PUBLISHER_EXIT" >> $GITHUB_OUTPUT
           mv publish.log publish-$(date +%s).log || true
-        continue-on-error: true
+          
+          # Check if publisher succeeded
+          if [ $PUBLISHER_EXIT -ne 0 ]; then
+            echo "❌ Publisher failed with exit code $PUBLISHER_EXIT"
+            exit 1
+          fi
+          
+          echo "✅ Publisher completed successfully!"
+          exit 0
 
       - name: 📊 Check results
         if: always()
         run: |
-          if [ ${{ steps.publisher.outputs.publisher_status }} -eq 0 ]; then
+          if [ "${{ steps.publisher.outputs.publisher_exit_code }}" == "0" ]; then
             echo "✅ Publisher completed successfully!"
           else
-            echo "⚠️  Publisher completed with warnings or errors"
+            echo "❌ Publisher failed with exit code ${{ steps.publisher.outputs.publisher_exit_code }}"
+            echo "📸 Check debug screenshots in .github/debug-screenshots/"
           fi
 
       - name: 💾 Commit and push updates
@@ -105,20 +116,26 @@ jobs:
           cp *.html .github/debug-screenshots/ 2>/dev/null || true
           cp *.png .github/debug-screenshots/ 2>/dev/null || true
           
-          # Add published articles
-          git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
+          # Add published articles (only on success)
+          if [ "${{ steps.publisher.outputs.publisher_exit_code }}" == "0" ]; then
+            git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
+          fi
           
-          # Add debug screenshots
+          # Add debug screenshots (always)
           git add ".github/debug-screenshots/*.html" 2>/dev/null || true
           git add ".github/debug-screenshots/*.png" 2>/dev/null || true
           
-          # Add publish logs
+          # Add publish logs (always)
           git add "publish-*.log" 2>/dev/null || true
           
           if git diff --cached --quiet; then
             echo "ℹ️  No changes to commit"
           else
-            git commit -m "🤖 Auto-publish debug: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed"
+            if [ "${{ steps.publisher.outputs.publisher_exit_code }}" == "0" ]; then
+              git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)"
+            else
+              git commit -m "❌ Auto-publish FAILED: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)"
+            fi
             git pull --rebase origin main || (git rebase --abort && git pull origin main)
             git push origin main
             echo "✅ Successfully pushed debug artifacts!"
