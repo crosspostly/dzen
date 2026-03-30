@@ -80,3 +80,8 @@ promo_video/public/*.mp4
 
 # Cookies JSON
 config/cookies.json
+
+# Debug screenshots (local only - CI will save to .github/debug-screenshots)
+*.html
+*.png
+!.github/debug-screenshots/

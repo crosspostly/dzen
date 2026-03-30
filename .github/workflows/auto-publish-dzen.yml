@@ -99,15 +99,29 @@ jobs:
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "GitHub Actions Bot"
+          
+          # Save debug screenshots to separate directory
+          mkdir -p .github/debug-screenshots
+          cp *.html .github/debug-screenshots/ 2>/dev/null || true
+          cp *.png .github/debug-screenshots/ 2>/dev/null || true
+          
+          # Add published articles
           git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
+          
+          # Add debug screenshots
+          git add ".github/debug-screenshots/*.html" 2>/dev/null || true
+          git add ".github/debug-screenshots/*.png" 2>/dev/null || true
+          
+          # Add publish logs
           git add "publish-*.log" 2>/dev/null || true
+          
           if git diff --cached --quiet; then
             echo "ℹ️  No changes to commit"
           else
-            git commit -m "🤖 Auto-publish: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed"
+            git commit -m "🤖 Auto-publish debug: $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" || echo "⚠️  Commit failed"
             git pull --rebase origin main || (git rebase --abort && git pull origin main)
             git push origin main
-            echo "✅ Successfully pushed!"
+            echo "✅ Successfully pushed debug artifacts!"
           fi
 
   notify-on-error:
