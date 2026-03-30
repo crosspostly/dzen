@@ -537,98 +537,18 @@ export class PlaywrightService {
       }
 
       // 📥 Определяем тип источника изображения
-      const isLocalFile = article.imageUrl.startsWith('/') || article.imageUrl.startsWith('file://');
       const isHttpUrl = article.imageUrl.startsWith('http://') || article.imageUrl.startsWith('https://');
-      
+      const isLocalFile = !isHttpUrl && article.imageUrl;
+
       // Ждём появления модального окна
       await this.page.waitForTimeout(1000);
-      
-      if (isLocalFile) {
-        // 🗂️ Загрузка локального файла через file input
-        this.log('📁 Detected local file - using file upload method');
-        
-        // Ждём появления file input в модальном окне - WORKING selectors from production logs
-        const fileInputSelectors = [
-          // ✅ WORKING: generic image accept (primary)
-          'input[type="file"][accept*="image"]',
-          // Data attributes
-          'input[type="file"][data-testid="upload-image"]',
-          'input[type="file"][data-testid="add-image"]',
-          // Standard file inputs
-          'input[type="file"][accept*="image/*"]',
-          'input[type="file"][accept="image/*"]',
-          // Class based
-          '.article-editor-desktop--image-popup__fileInput-35',
-          '.image-upload-input',
-          // Generic
-          'input[type="file"]',
-        ];
-        
-        let fileInput = null;
-        for (const selector of fileInputSelectors) {
-          try {
-            // Пробуем дождаться появления элемента
-            fileInput = await this.page.waitForSelector(selector, { timeout: 3000 });
-            if (fileInput) {
-              this.log(`✅ Found file input after waiting: ${selector}`);
-              break;
-            }
-          } catch (e) {
-            // Try next selector
-          }
-        }
-        
-        // Если не нашли через waitForSelector, пробуем найти через $
-        if (!fileInput) {
-          for (const selector of fileInputSelectors) {
-            try {
-              fileInput = await this.page.$(selector);
-              if (fileInput) {
-                this.log(`✅ Found file input via $: ${selector}`);
-                break;
-              }
-            } catch (e) {}
-          }
-        }
-        
-        if (fileInput) {
-          await fileInput.setInputFiles(article.imageUrl);
-          this.log('✅ Image file uploaded!');
-          
-          // Ждём пока изображение загрузится и сохранится
-          this.log('⏳ Waiting for image to process and save...');
-          await this.page.waitForTimeout(8000);
-          
-          // Проверяем что изображение появилось в статье
-          const imageInArticle = await this.page.$('figure.zen-editor-block-image img');
-          if (imageInArticle) {
-            this.log('✅ Image appears in article content!');
-          } else {
-            this.log('⚠️ Image not found in article content');
-          }
-          
-          // Проверяем нет ли ошибки сохранения
-          const errorBlock = await this.page.$('.article-editor-desktop--error-block__visible-1s');
-          if (errorBlock) {
-            this.log('⚠️ Error block detected after image upload!');
-            // Пробуем нажать "Сохранить еще раз"
-            const retryBtn = await this.page.$('span:has-text("Сохранить еще раз")');
-            if (retryBtn) {
-              await retryBtn.click();
-              this.log('✅ Clicked retry save button');
-              await this.page.waitForTimeout(3000);
-            }
-          }
-          
-          await this.dumpState('file_uploaded');
-        } else {
-          this.log('⚠️ File input not found - trying URL input fallback...');
-          await this.dumpState('no_file_input');
-        }
-      }
-      
-      if (isHttpUrl || !isLocalFile) {
-        // 🔗 Вставка URL изображения - enhanced selectors from tests
+
+      if (isHttpUrl) {
+        // 🔗 Вставка по URL
+        this.log('🔗 Detected HTTP URL - using URL insertion method');
+        this.log(`   URL: ${article.imageUrl}`);
+
+        // Ищем поле для вставки URL - WORKING selectors from production logs
         const urlInputSelectors = [
           // Data attributes from tests
           'input[type="text"][data-testid="image-url"]',
@@ -637,7 +557,6 @@ export class PlaywrightService {
           'input[type="text"][placeholder*="Ссылк"]',
           'input[type="text"][placeholder*="ссылк"]',
           'input[type="text"][placeholder*="URL"]',
-          'input[type="text"][placeholder*="url"]',
           'input[type="text"][placeholder*="Вставьте ссылку"]',
           // Class based
           '.article-editor-desktop--image-popup__urlInput-25 input',
@@ -651,7 +570,6 @@ export class PlaywrightService {
           'input[aria-label*="ссылк"]',
         ];
 
-        this.log('🔗 Using URL insertion method');
         let urlInput = null;
         for (const selector of urlInputSelectors) {
           try {
@@ -662,7 +580,7 @@ export class PlaywrightService {
             }
           } catch (e) {}
         }
-        
+
         // Если не нашли через waitForSelector
         if (!urlInput) {
           for (const selector of urlInputSelectors) {
@@ -686,11 +604,107 @@ export class PlaywrightService {
           await this.page.keyboard.press('Enter');
           this.log('✅ Pressed Enter to confirm');
           await this.page.waitForTimeout(2000);
-          
-          await this.dumpState('url_inserted');
+
+          // Ждём пока изображение загрузится
+          this.log('⏳ Waiting for image to load from URL...');
+          await this.page.waitForTimeout(8000);
+
+          // Проверяем что изображение появилось в статье
+          const imageInArticle = await this.page.$('figure.zen-editor-block-image img');
+          if (imageInArticle) {
+            this.log('✅ Image appears in article content!');
+          } else {
+            this.log('⚠️ Image not found in article content');
+          }
+
+          await this.dumpState('url_image_uploaded');
         } else {
-          this.log('⚠️ URL input not found - image insertion failed');
+          this.log('⚠️ URL input not found - trying file upload fallback...');
           await this.dumpState('no_url_input');
+        }
+      }
+
+      if (isLocalFile) {
+        // 🗂️ Загрузка локального файла через file input
+        this.log('📁 Detected local file - using file upload method');
+
+        // Конвертируем относительный путь в абсолютный если нужно
+        let absoluteImagePath = article.imageUrl;
+        if (!path.isAbsolute(article.imageUrl) && !article.imageUrl.startsWith('file://')) {
+          absoluteImagePath = path.join(process.cwd(), article.imageUrl);
+          this.log(`🔄 Converted relative path to absolute: ${absoluteImagePath}`);
+        }
+
+        // Проверяем что файл существует
+        const fileExists = await fs.stat(absoluteImagePath).catch(() => null);
+        if (!fileExists) {
+          this.log(`⚠️ Image file not found: ${absoluteImagePath} - skipping image`);
+          await this.dumpState('image_not_found');
+        } else {
+          this.log(`📁 Image file exists: ${absoluteImagePath}`);
+
+          // Ждём появления file input в модальном окне - WORKING selectors from production logs
+          const fileInputSelectors = [
+            // ✅ WORKING: generic image accept (primary)
+            'input[type="file"][accept*="image"]',
+            // Data attributes
+            'input[type="file"][data-testid="upload-image"]',
+            'input[type="file"][data-testid="add-image"]',
+            // Standard file inputs
+            'input[type="file"][accept*="image/*"]',
+            'input[type="file"][accept="image/*"]',
+            // Class based
+            '.article-editor-desktop--image-popup__fileInput-35',
+            '.image-upload-input',
+            // Generic
+            'input[type="file"]',
+          ];
+
+          let fileInput = null;
+          for (const selector of fileInputSelectors) {
+            try {
+              fileInput = await this.page.waitForSelector(selector, { timeout: 3000 });
+              if (fileInput) {
+                this.log(`✅ Found file input after waiting: ${selector}`);
+                break;
+              }
+            } catch (e) {}
+          }
+
+          // Если не нашли через waitForSelector, пробуем найти через $
+          if (!fileInput) {
+            for (const selector of fileInputSelectors) {
+              try {
+                fileInput = await this.page.$(selector);
+                if (fileInput) {
+                  this.log(`✅ Found file input via $: ${selector}`);
+                  break;
+                }
+              } catch (e) {}
+            }
+          }
+
+          if (fileInput) {
+            await fileInput.setInputFiles(absoluteImagePath);
+            this.log('✅ Image file uploaded!');
+
+            // Ждём пока изображение загрузится и сохранится
+            this.log('⏳ Waiting for image to process and save...');
+            await this.page.waitForTimeout(8000);
+
+            // Проверяем что изображение появилось в статье
+            const imageInArticle = await this.page.$('figure.zen-editor-block-image img');
+            if (imageInArticle) {
+              this.log('✅ Image appears in article content!');
+            } else {
+              this.log('⚠️ Image not found in article content');
+            }
+
+            await this.dumpState('file_uploaded');
+          } else {
+            this.log('⚠️ File input not found - skipping image');
+            await this.dumpState('no_file_input');
+          }
         }
       }
       

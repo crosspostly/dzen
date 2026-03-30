@@ -28,7 +28,7 @@ const TEST_ARTICLE = {
 Просто проверяем что все селекторы работают правильно.
 
 Конец тестовой статьи.`,
-  imageUrl: path.join(process.cwd(), 'test-image.jpg'),
+  imageUrl: "https://raw.githubusercontent.com/crosspostly/dzen/main/articles/_smoke-test/2026-03-30/smoke-test-article-2026-03-30t06-54-31-115z.jpg",
 };
 
 // Create test image if not exists
@@ -86,21 +86,18 @@ async function loadCookies(): Promise<string> {
 async function main() {
   console.log('🧪 Starting Quick Publish Test\n');
   console.log('=' .repeat(60));
-  
-  try {
-    // Create test image
-    await createTestImage();
 
+  try {
     // Load cookies
     const cookies = await loadCookies();
-    
+
     console.log('\n📝 Test Article:');
     console.log(`   Title: ${TEST_ARTICLE.title.substring(0, 50)}...`);
     console.log(`   Content: ${TEST_ARTICLE.content.length} chars`);
-    console.log(`   Image: ${TEST_ARTICLE.imageUrl}`);
-    
+    console.log(`   Image URL: ${TEST_ARTICLE.imageUrl}`);
+
     console.log('\n🚀 Starting publish...\n');
-    
+
     const result = await playwrightService.publish(TEST_ARTICLE, {
       cookiesJson: cookies,
       headless: process.env.HEADLESS !== 'false',
