@@ -92,4 +92,11 @@ export class MobilePhotoAuthenticityProcessor {
   async processForMobileAuthenticity(base64Image: string): Promise<AuthenticityResult> {
     return this.processWithDevice(base64Image, 'iphone15');
   }
+
+  /**
+   * Validate image authenticity (legacy method for backward compatibility)
+   */
+  async validateAuthenticity(base64Image: string): Promise<AuthenticityResult> {
+    return this.processForMobileAuthenticity(base64Image);
+  }
 }

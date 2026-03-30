@@ -303,7 +303,12 @@ export class PlatformMentionCleaner {
         console.log(`   Pattern: ${rule.pattern.source.substring(0, 60)}...`);
 
         try {
-          cleanedContent = cleanedContent.replace(rule.pattern, rule.replacement);
+          // Type guard to handle string or function replacement
+          if (typeof rule.replacement === 'string') {
+            cleanedContent = cleanedContent.replace(rule.pattern, rule.replacement as string);
+          } else {
+            cleanedContent = cleanedContent.replace(rule.pattern, rule.replacement as (match: string) => string);
+          }
           issuesFixed += matches.length;
         } catch (error) {
           console.warn(

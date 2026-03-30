@@ -137,6 +137,8 @@ export interface ArticleMetadata {
     validationIssues: string[];
     validationWarnings: string[];
   };
+  // Article version (RAW or RESTORED)
+  articleVersion?: 'RAW' | 'RESTORED';
   // Image processing status
   imageProcessingStatus?: string;
   imageProcessingError?: string;

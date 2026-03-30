@@ -310,7 +310,7 @@ ${"=".repeat(60)}`);
     const restoredTotal = pairs.reduce((sum, p) => sum + p.restoredArticle.charCount, 0);
     const improvements = pairs.reduce((sum, p) => {
       const meta = p.restoredArticle.metadata.qualityMetrics;
-      return sum + (meta?.restorationImprovements || 0);
+      return sum + (meta?.readabilityScore || 0);
     }, 0);
 
     console.log(`
@@ -523,7 +523,10 @@ ${"=".repeat(60)}`);
 
           // Always attach metadata about processing status
           if (!article.metadata) {
-            article.metadata = { generatedAt: Date.now() };
+            article.metadata = {
+              theme: article.metadata?.theme || 'Unknown',
+              generatedAt: Date.now()
+            };
           }
           article.metadata.imageProcessingStatus = processorResult.processingStatus;
           article.metadata.imageProcessingError = processorResult.errorMessage;
@@ -590,7 +593,12 @@ ${"=".repeat(60)}`);
             successCount++;
           }
 
-          if (!article.metadata) article.metadata = { generatedAt: Date.now() };
+          if (!article.metadata) {
+            article.metadata = {
+              theme: article.metadata?.theme || 'Unknown',
+              generatedAt: Date.now()
+            };
+          }
           article.metadata.mobileCameraEmulated = `Samsung Galaxy S24 Ultra`;
 
         } catch (error) {

@@ -246,7 +246,7 @@ export class ContentSanitizer {
     }
 
     // Dialogue analysis
-    const dialogueMatches = cleaned.match(/—[^—\n]+/g) || [];
+    const dialogueMatches: string[] = cleaned.match(/—[^—\n]+/g) || [];
     const dialogueChars = dialogueMatches.reduce((sum, d) => sum + d.length, 0);
     const dialoguePercentage = (dialogueChars / cleaned.length) * 100;
 

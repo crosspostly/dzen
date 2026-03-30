@@ -141,7 +141,7 @@ export class ImageGeneratorAgent {
     const generatedImage: GeneratedImage = {
       id: `img_${idForMetadata}_${Date.now()}`,
       base64: base64Data,
-      mimeType,
+      mimeType: mimeType as "image/png" | "image/jpg",
       width: 1920,
       height: 1080,
       fileSize: Math.ceil(base64Data.length * 0.75),
@@ -152,8 +152,7 @@ export class ImageGeneratorAgent {
         articleId: typeof idForMetadata === 'string' ? idForMetadata : `article_${idForMetadata}`,
         sceneDescription: prompt.substring(0, 200),
         generationAttempts: 1,
-        fallbackUsed: model !== this.primaryModel,
-        dogReferenceUsed: !!DOG_REFERENCE_BASE64
+        fallbackUsed: model !== this.primaryModel
       }
     };
 

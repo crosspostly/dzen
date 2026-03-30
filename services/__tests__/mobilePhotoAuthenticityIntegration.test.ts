@@ -59,22 +59,21 @@ async function runIntegrationTest() {
     metadata: {
       generatedAt: Date.now(),
       theme: 'personal',
-      tone: 'intimate'
-    },
-    characters: {
-      mainCharacter: {
-        age: 35,
-        gender: 'female',
-        occupation: 'office worker'
-      }
+      angle: 'confession',
+      emotion: 'hope',
+      audience: 'Women 25-45'
     },
     charCount: 1500,
     coverImage: {
       base64: await createRealisticTestImage(),
       format: 'jpeg',
-      width: 1920,
-      height: 1080,
+      size: 100000,
       mimeType: 'image/jpeg'
+    },
+    stats: {
+      estimatedReadTime: 2,
+      qualityScore: 80,
+      aiDetectionScore: 20
     }
   };
 
@@ -101,7 +100,7 @@ async function runIntegrationTest() {
     console.log(`   ⚠️  Error: ${authenticityResult.errorMessage}`);
   }
 
-  console.log(`   ✅ Validation: ${processor.validateAuthenticity(authenticityResult) ? 'PASSED' : 'FAILED'}\n`);
+  console.log(`   ✅ Validation: ${authenticityResult.success ? 'PASSED' : 'FAILED'}\n`);
 
   // Test with different input types
   console.log(`📋 Testing edge cases...\n`);

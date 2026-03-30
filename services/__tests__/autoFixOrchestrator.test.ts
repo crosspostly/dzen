@@ -4,16 +4,19 @@
  */
 
 import { AutoFixOrchestrator } from '../autoFixOrchestrator';
-import { uniquenessService } from '../uniquenessService';
-import { episodeGeneratorService } from '../episodeGeneratorService';
+import { UniquenessService } from '../uniquenessService';
+import { EpisodeGeneratorService } from '../episodeGeneratorService';
 import { QualityValidator } from '../qualityValidator';
 import { LongFormArticle, Episode } from '../../types/ContentArchitecture';
 
 describe('AutoFixOrchestrator', () => {
   let orchestrator: AutoFixOrchestrator;
   let mockArticle: LongFormArticle;
+  let episodeGeneratorService: EpisodeGeneratorService;
 
   beforeEach(() => {
+    const uniquenessService = new UniquenessService();
+    episodeGeneratorService = new EpisodeGeneratorService();
     orchestrator = new AutoFixOrchestrator(
       uniquenessService,
       episodeGeneratorService,
@@ -29,7 +32,11 @@ describe('AutoFixOrchestrator', () => {
         angle: 'confession',
         emotion: 'shame',
         audience: 'Women 25-45',
-        episodes: []
+        episodes: [],
+        externalTensionArc: 'test arc',
+        internalEmotionArc: 'test emotion arc',
+        characterMap: {},
+        forbiddenClichés: []
       },
       episodes: [
         {
@@ -60,6 +67,9 @@ describe('AutoFixOrchestrator', () => {
         }
       ],
       lede: 'Test lede',
+      development: 'Test development',
+      climax: 'Test climax',
+      resolution: 'Test resolution',
       finale: 'Test finale',
       voicePassport: {
         apologyPattern: 'test',
@@ -84,10 +94,10 @@ describe('AutoFixOrchestrator', () => {
 
   describe('Problem Analysis', () => {
     test('должен корректно анализировать AI confidence и engagement', async () => {
-      const problems = orchestrator['analyzeProblems'](mockArticle);
-      
+      const problems = await orchestrator['analyzeProblems'](mockArticle);
+
       expect(problems).toHaveLength(2);
-      
+
       // Первый эпизод должен иметь высокий AI confidence
       const episode1Problem = problems.find(p => p.episodeId === 1);
       expect(episode1Problem).toBeDefined();
@@ -98,8 +108,8 @@ describe('AutoFixOrchestrator', () => {
     });
 
     test('должен определять engagement score для разных типов текста', async () => {
-      const problems = orchestrator['analyzeProblems'](mockArticle);
-      
+      const problems = await orchestrator['analyzeProblems'](mockArticle);
+
       // Проверяем, что оба эпизода имеют оценки engagement
       problems.forEach(problem => {
         expect(problem.engagementScore).toBeDefined();
@@ -234,10 +244,10 @@ describe('AutoFixOrchestrator', () => {
   });
 
   describe('Integration', () => {
-    test('должен использовать готовые методы из UniquenessService', () => {
+    test('должен использовать готовые методы из UniquenessService', async () => {
       // Проверяем, что orchestrator действительно использует analyzeEngagementScore
-      const problems = orchestrator['analyzeProblems'](mockArticle);
-      
+      const problems = await orchestrator['analyzeProblems'](mockArticle);
+
       // Если метод analyzeEngagementScore существует и работает,
       // мы должны получить валидные engagement scores
       problems.forEach(problem => {

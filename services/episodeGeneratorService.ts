@@ -253,6 +253,36 @@ export class EpisodeGeneratorService {
     });
     return response.candidates?.[0]?.content?.parts?.[0]?.text || "";
   }
+
+  /**
+   * Refine an existing episode based on a prompt
+   */
+  async refineEpisode(
+    episode: Episode,
+    outline: any,
+    refinementPrompt: string
+  ): Promise<Episode> {
+    try {
+      const response = await this.callGemini({
+        prompt: refinementPrompt,
+        model: "gemini-2.5-flash",
+        temperature: 0.85,
+      });
+
+      const refinedContent = response.trim();
+
+      return {
+        ...episode,
+        content: refinedContent,
+        charCount: refinedContent.length,
+        stage: "humanized" as const,
+        generatedAt: Date.now()
+      };
+    } catch (error) {
+      console.error(`Refine episode failed:`, (error as Error).message);
+      return episode;
+    }
+  }
 }
 
 export default EpisodeGeneratorService;

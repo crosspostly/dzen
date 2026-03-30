@@ -1204,11 +1204,11 @@ Respond as JSON:
   }
 
   private getFallbackDevelopment(outline: OutlineStructure): string {
-    return outline.episodes.slice(1, -4).map(ep => ep.content || '').join('\n\n');
+    return outline.episodes.slice(1, -4).map(ep => ep.hookQuestion || '').join('\n\n');
   }
 
   private getFallbackClimax(outline: OutlineStructure): string {
-    return outline.episodes.slice(-4, -1).map(ep => ep.content || '').join('\n\n');
+    return outline.episodes.slice(-4, -1).map(ep => ep.externalConflict || '').join('\n\n');
   }
 
   private getFallbackResolution(outline: OutlineStructure): string {
@@ -1216,11 +1216,11 @@ Respond as JSON:
   }
 
   private getFallbackLede(outline: OutlineStructure): string {
-    return outline.episodes[0]?.content || `${outline.theme}. Начало нашего пути.`;
+    return outline.episodes[0]?.hookQuestion || `${outline.theme}. Начало нашего пути.`;
   }
 
   private getFallbackFinale(outline: OutlineStructure): string {
-    return outline.episodes[outline.episodes.length - 1]?.content || "Завтра нас ждут новые дороги.";
+    return outline.episodes[outline.episodes.length - 1]?.openLoop || "Завтра нас ждут новые дороги.";
   }
 
   private getFallbackVoicePassport(): VoicePassport {

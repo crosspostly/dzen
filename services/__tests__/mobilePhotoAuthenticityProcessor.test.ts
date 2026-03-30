@@ -48,8 +48,8 @@ async function runTests() {
     if (result.errorMessage) {
       console.log(`   Error: ${result.errorMessage}`);
     }
-    
-    const isValid = processor.validateAuthenticity(result);
+
+    const isValid = result.success;
     console.log(`   Validation: ${isValid ? '✅ VALID' : '❌ INVALID'}\n`);
 
     // Test 2: Edge case - empty input
