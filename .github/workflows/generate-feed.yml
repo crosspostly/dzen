@@ -56,21 +56,18 @@ jobs:
         node-version: "24"
         cache: 'npm'
 
-    - name: Change to dzen/ directory
-      run: cd dzen && pwd
-
     - name: Cache node modules
       id: cache-node-modules
       uses: actions/cache@v4
       with:
-        path: dzen/node_modules
-        key: ${{ runner.os }}-node-modules-${{ hashFiles('dzen/**/package-lock.json') }}
+        path: node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-modules-
 
     - name: Install dependencies
       if: steps.cache-node-modules.outputs.cache-hit != 'true'
-      run: cd dzen && npm install
+      run: npm install
 
     - name: Set environment variables
       run: |
@@ -81,7 +78,6 @@ jobs:
 
     - name: Generate RSS feed
       run: |
-        cd dzen
         MODE="${{ github.event.inputs.mode || 'incremental' }}"
         VERBOSE="${{ github.event.inputs.verbose || 'false' }}"
         echo "🚀 Running RSS generator in $MODE mode..."
@@ -92,12 +88,11 @@ jobs:
         fi
 
     - name: Validate RSS feed
-      run: cd dzen && node scripts/validate-rss.js public/feed.xml
+      run: node scripts/validate-rss.js public/feed.xml
 
     - name: Commit and push if changed
       if: ${{ github.event.inputs.dry_run != 'true' }}
       run: |
-        cd dzen
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add public/feed.xml
