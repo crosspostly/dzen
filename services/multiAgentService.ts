@@ -775,37 +775,30 @@ RESPOND WITH ONLY VALID JSON:
   "plotBible": {
     "narrator": {
       "age": 55,
-      "gender": "female",
-      "tone": "conversational",
-      "voiceHabits": {
-        "apologyPattern": "Ну да ладно...",
-        "doubtPattern": "Не знаю, как сказать...",
-        "memoryTrigger": "Вспомнилось вдруг...",
-        "angerPattern": "Ну это уже чересчур!"
-      }
+      "gender": "male/female",
+      "tone": "experienced traveler, observant, calm",
+      "companion": "Батон (small white fluffy dog)"
     },
     "sensoryPalette": {
-      "details": ["пыль", "солнце", "камни"],
-      "smells": ["мясо", "кофе", "шерсть"],
-      "sounds": ["мотор", "лай", "ветер"],
-      "textures": ["шершавый", "холодный", "мягкий"],
-      "lightSources": ["закат", "лампа", "небо"]
+      "smells": ["пыль", "бензин", "специи", "жареное мясо"],
+      "sounds": ["рынок", "мотор", "ветер", "лай"],
+      "textures": ["камни", "ткань", "еда", "шерсть"]
     }
   },
   "characterMap": {
-    "Narrator": { "role": "protagonist", "arc": "discovery" },
-    "Baton": { "role": "companion", "arc": "emotional barometer" }
+    "Narrator": { "role": "traveler", "arc": "discovery" },
+    "Baton": { "role": "companion", "arc": "reacts to everything" }
   },
   "thematicCore": {
     "centralQuestion": "Что нас ждет за поворотом?",
     "emotionalArc": "${params.emotion}",
-    "resolutionStyle": "bittersweet"
+    "resolutionStyle": "satisfied traveler"
   },
   "episodes": [${episodeJson}
   ],
   "externalTensionArc": "Дорога и открытия",
   "internalEmotionArc": "От усталости к восторгу",
-  "forbiddenCliches": ["бездонные глаза", "луч солнца"]
+  "forbiddenCliches": ["бездонные глаза", "луч солнца", "захватывающий вид"]
 }
 \`\`\``;
 
