@@ -152,25 +152,18 @@ export class PlaywrightService {
     await this.closeModals();
     await this.dumpState('step1_editor');
 
-    // Click "Add Publication" - selectors from test scripts
+    // Click "Add Publication" - WORKING selectors from production logs
     const addButtonSelectors = [
-      // Data attributes (primary)
+      // ✅ WORKING: data-testid (primary)
       '[data-testid="add-publication-button"]',
       '[data-testid="addPublicationButton"]',
+      // Fallback selectors
       '[data-testid="create-article"]',
       '[data-testid="new-article"]',
-      // Class-based
-      '.new-publication-button',
-      '.add-publication-button',
-      '.create-button',
       '.studio-header__button',
-      // Text-based
+      'header button:first-of-type',
       'button:has-text("Создать")',
       'button:has-text("Добавить")',
-      'button:has-text("Публикация")',
-      // First button in header
-      '.studio-header button:first-child',
-      'header button:first-of-type',
     ];
 
     let addButton = null;
@@ -197,33 +190,17 @@ export class PlaywrightService {
     await this.closeModals();
     await this.dumpState('step2_menu_open');
 
-    // Click "Write Article" / "Статья" - enhanced selectors from tests
+    // Click "Write Article" / "Статья" - WORKING selectors from production logs
     const writeSelectors = [
-      // Text based (primary)
+      // ✅ WORKING: text selector (primary)
       'text="Написать статью"',
+      // Fallback selectors
       'text="Статья"',
-      'span:has-text("Статья")',
-      'div:has-text("Статья")',
       'button:has-text("Статья")',
-      'a:has-text("Статья")',
-      // Class based
-      '[class*="articleType"]:has-text("Статья")',
-      '[class*="article-card"]:has-text("Статья")',
-      '[class*="type-card"]:has-text("Статья")',
-      '[class*="menu-item"]:has-text("Статья")',
-      '[class*="dropdown-item"]:has-text("Статья")',
-      // Data attributes
+      '[role="menuitem"]:has-text("Статья")',
       '[data-testid="article-type"]',
       '[data-testid="write-article"]',
-      '[data-testid="create-article"]',
-      // Aria labels
       '[aria-label*="Статья"]',
-      '[aria-label*="написать"]',
-      // Role based
-      '[role="menuitem"]:has-text("Статья")',
-      '[role="button"]:has-text("Статья")',
-      // Fallback: any clickable with "Статья" text
-      '*:has-text("Статья")',
     ];
 
     let writeButton = null;
@@ -289,54 +266,24 @@ export class PlaywrightService {
 
     this.log('📝 Looking for inputs...');
     
-    // Enhanced input detection with multiple strategies
-    const allInputs = await this.page.$$('input[type="text"], textarea, div[contenteditable="true"], [contenteditable="true"], h1[contenteditable="true"]');
+    // ✅ WORKING: contenteditable divs are the inputs
+    const allInputs = await this.page.$$('div[contenteditable="true"], h1[contenteditable="true"], textarea');
     this.log(`Found ${allInputs.length} input elements`);
     
-    // Debug: log all potential input elements
-    const allElements = await this.page.$$('*');
-    const potentialInputs = [];
-    for (const el of allElements) {
-      try {
-        const tag = await el.evaluate(e => e.tagName);
-        const type = await el.evaluate(e => (e as HTMLInputElement).type || '');
-        const placeholder = await el.evaluate(e => (e as HTMLElement).getAttribute('placeholder') || '');
-        const contentEditable = await el.evaluate(e => e.getAttribute('contenteditable'));
-        const role = await el.evaluate(e => e.getAttribute('role'));
-        const ariaLabel = await el.evaluate(e => e.getAttribute('aria-label'));
-        const dataTestId = await el.evaluate(e => e.getAttribute('data-testid'));
-        
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || contentEditable === 'true' || 
-            placeholder.includes('Заголовок') || placeholder.includes('Название') ||
-            role === 'textbox' || ariaLabel?.includes('Заголовок') || dataTestId?.includes('title')) {
-          potentialInputs.push({ tag, type, placeholder, contentEditable, role, ariaLabel, dataTestId });
-        }
-      } catch (e) {}
-    }
-    
-    if (potentialInputs.length > 0) {
-      this.log(`🔍 Potential inputs found: ${potentialInputs.map(i => `${i.tag}[${i.placeholder || i.ariaLabel || i.dataTestId || 'no-attr'}]`).join(', ')}`);
-    }
-    
-    if (allInputs.length === 0 && potentialInputs.length === 0) {
+    if (allInputs.length === 0) {
       await this.dumpState('no_inputs');
       throw new Error('No inputs found in editor');
     }
 
-    // 1. Title - with enhanced selectors from test scripts
+    // 1. Title - first contenteditable div
     const titleInputSelectors = [
+      // ✅ WORKING: first contenteditable is usually title
+      'div[contenteditable="true"]:first-of-type',
       'h1[contenteditable="true"]',
       '[placeholder*="Заголовок"]',
       '[placeholder*="Название"]',
       '[data-testid="title-input"]',
       '[data-testid="article-title"]',
-      '[data-testid="article-title-input"]',
-      '.title-input',
-      '.article-title-input',
-      'input[type="text"][aria-label*="Заголовок"]',
-      'input[type="text"][aria-label*="Название"]',
-      '[role="textbox"][aria-label*="Заголовок"]',
-      '[role="textbox"][aria-label*="Название"]',
     ];
 
     let titleInput = null;
@@ -367,10 +314,10 @@ export class PlaywrightService {
 
     // 2. Content (Copy-Paste with clipboard)
     const contentInputSelectors = [
-      '[data-testid="content-editor"]',
+      // ✅ WORKING: contenteditable div
       '[contenteditable="true"]',
+      '[data-testid="content-editor"]',
       '.editor-content',
-      '.article-content',
       'textarea',
     ];
 
@@ -425,30 +372,21 @@ export class PlaywrightService {
       await this.closeModals();
       await this.page.waitForTimeout(1000);
 
-      // 🔘 Кнопка "Вставить изображение" (сбоку редактора) - enhanced selectors from tests
+      // 🔘 Кнопка "Вставить изображение" (сбоку редактора) - WORKING selectors from production logs
       const sideImageBtnSelectors = [
-        // Data attributes (primary from tests)
+        // ✅ WORKING: specific class combination (primary)
+        '.article-editor-desktop--side-toolbar__sideToolbar-2f button.article-editor-desktop--side-button__sideButton-1z',
+        // Data attributes
         '[data-testid="upload-image"]',
         '[data-testid="add-image"]',
-        // Main selector from task
-        '.article-editor-desktop--side-toolbar__sideToolbar-2f button.article-editor-desktop--side-button__sideButton-1z',
         // Tooltip based
         '[data-tip="Вставить изображение"]',
         // Aria labels
         'button[aria-label*="изображен"]',
-        'button[aria-label*="Изображен"]',
-        'button[aria-label*="image"]',
-        'button[aria-label*="Image"]',
         'button[aria-label*="Добавить фото"]',
-        // SVG icon based
-        'button svg use[xlink:href="#add_gallery_e477--react"]',
-        'button:has(svg use[*|href="#add_gallery"])',
-        // Generic side button with icon
+        // Generic side button
         '.article-editor-desktop--side-button__sideButton-1z',
         'button.article-editor-desktop--side-button__sideButton-1z',
-        // Text based
-        'button:has-text("Загрузить")',
-        'button:has-text("Добавить фото")',
       ];
 
       let sideBtn = null;
@@ -538,19 +476,19 @@ export class PlaywrightService {
         // 🗂️ Загрузка локального файла через file input
         this.log('📁 Detected local file - using file upload method');
         
-        // Ждём появления file input в модальном окне - enhanced selectors from tests
+        // Ждём появления file input в модальном окне - WORKING selectors from production logs
         const fileInputSelectors = [
-          // Data attributes from tests
+          // ✅ WORKING: generic image accept (primary)
+          'input[type="file"][accept*="image"]',
+          // Data attributes
           'input[type="file"][data-testid="upload-image"]',
           'input[type="file"][data-testid="add-image"]',
           // Standard file inputs
-          'input[type="file"][accept*="image"]',
           'input[type="file"][accept*="image/*"]',
           'input[type="file"][accept="image/*"]',
           // Class based
           '.article-editor-desktop--image-popup__fileInput-35',
           '.image-upload-input',
-          '.file-upload-input',
           // Generic
           'input[type="file"]',
         ];
@@ -696,10 +634,12 @@ export class PlaywrightService {
 
     // 1. First Publish Button - with fallback selectors from test scripts
     const firstBtnSelectors = [
-      'button[data-testid="article-publish-btn"]',  // Primary
-      '[data-testid="publish-button"]',              // Fallback from tests
-      '[data-testid="publish"]',                     // Fallback from tests
-      'button:has-text("Опубликовать")',             // Text fallback
+      // ✅ WORKING: data-testid (primary)
+      'button[data-testid="article-publish-btn"]',
+      // Fallback
+      '[data-testid="publish-button"]',
+      '[data-testid="publish"]',
+      'button:has-text("Опубликовать")',
     ];
 
     let firstBtn = null;
@@ -727,13 +667,15 @@ export class PlaywrightService {
       await this.dumpState('no_first_publish_btn');
     }
 
-    // 2. Second Publish Button (Modal) - with fallback selectors from test scripts
+    // 2. Second Publish Button (Modal) - WORKING selectors from production logs
     const secondBtnSelectors = [
-      'button[data-testid="publish-btn"][type="submit"]',  // Primary
-      '[data-testid="publish-button"][type="submit"]',     // Fallback from tests
-      '[data-testid="publish"][type="submit"]',            // Fallback from tests
-      'button[type="submit"]:has-text("Опубликовать")',    // Text fallback
-      'button:has-text("Опубликовать")',                   // Generic text fallback
+      // ✅ WORKING: data-testid + type (primary)
+      'button[data-testid="publish-btn"][type="submit"]',
+      // Fallback
+      '[data-testid="publish-button"][type="submit"]',
+      '[data-testid="publish"][type="submit"]',
+      'button[type="submit"]:has-text("Опубликовать")',
+      'button:has-text("Опубликовать")',
     ];
 
     let secondBtn = null;
