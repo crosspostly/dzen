@@ -4,6 +4,7 @@ import { playwrightService } from '../services/playwrightService';
 import fs from 'fs/promises';
 import path from 'path';
 import { execSync } from 'child_process';
+import https from 'https';
 
 // 📋 Configuration
 const CONFIG = {
@@ -12,7 +13,41 @@ const CONFIG = {
   feedPath: path.join(process.cwd(), 'public', 'feed.xml'),
   historyPath: path.join(process.cwd(), '!posts', 'PRODUCTION_READY', 'published_articles.txt'),
   headless: process.env.HEADLESS !== 'false',
+  tempImagesDir: path.join(process.cwd(), 'tmp', 'images'),
 };
+
+// 📥 Download image from URL to local file
+async function downloadImage(url: string, destPath: string): Promise<string | null> {
+  try {
+    console.log(`📥 Downloading image: ${url}`);
+    
+    // Create directory if not exists
+    await fs.mkdir(path.dirname(destPath), { recursive: true });
+    
+    // Download using https
+    return new Promise((resolve, reject) => {
+      const file = fs.createWriteStream(destPath);
+      https.get(url, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}`));
+          return;
+        }
+        response.pipe(file);
+        file.on('finish', () => {
+          file.close();
+          console.log(`✅ Image downloaded: ${destPath}`);
+          resolve(destPath);
+        });
+      }).on('error', (err) => {
+        fs.unlink(destPath, () => {});
+        reject(err);
+      });
+    });
+  } catch (error) {
+    console.error(`❌ Failed to download image: ${(error as Error).message}`);
+    return null;
+  }
+}
 
 // 📖 Get articles from feed.xml
 async function getArticlesFromFeed() {
@@ -211,16 +246,26 @@ async function main() {
     console.log(`\n📝 Publishing article: "${articleToPublish.title}"`);
     const processedContent = processArticleContent(articleToPublish.content);
 
-    // Resolve imageUrl to local path
+    // Resolve imageUrl to local file (download if URL)
     let finalImageUrl = articleToPublish.imageUrl;
 
     if (finalImageUrl) {
       console.log(`\n🖼️ Original imageUrl: ${finalImageUrl}`);
 
-      // Strategy 1: GitHub/raw.githubusercontent.com URLs → keep as URL (for CI)
+      // Strategy 1: GitHub/raw.githubusercontent.com URLs → download to local file
       if (finalImageUrl.includes('raw.githubusercontent.com') || finalImageUrl.includes('github.com')) {
-        console.log(`ℹ️ GitHub URL detected - will use URL insertion method`);
-        // Keep as-is for playwrightService to handle via URL input
+        const fileName = decodeURIComponent(path.basename(finalImageUrl)).trim();
+        const localPath = path.join(CONFIG.tempImagesDir, fileName);
+        
+        // Download image from GitHub
+        const downloadedPath = await downloadImage(finalImageUrl, localPath);
+        if (downloadedPath) {
+          finalImageUrl = downloadedPath;
+          console.log(`✅ Using downloaded image: ${finalImageUrl}`);
+        } else {
+          console.log(`⚠️ Failed to download image, continuing without`);
+          finalImageUrl = '';
+        }
       }
       // Strategy 2: dzen.ru URLs → extract filename and look in articles/
       else if (finalImageUrl.includes('dzen.ru')) {
