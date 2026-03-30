@@ -791,6 +791,78 @@ export class PlaywrightService {
     }
   }
 
+  private async tryInsertImageByUrl(imageUrl: string) {
+    this.log('🔗 Attempting to insert image by URL...');
+    
+    // Look for URL input field in the modal
+    const urlInputSelectors = [
+      'input[type="url"]',
+      'input[placeholder*="URL"]',
+      'input[placeholder*="ссылку"]',
+      'input[placeholder*="Ссылку"]',
+      '[data-testid="image-url-input"]',
+      '.image-url-input',
+      '.url-input',
+    ];
+    
+    let urlInput = null;
+    for (const selector of urlInputSelectors) {
+      try {
+        urlInput = await this.page!.$(selector);
+        if (urlInput && await urlInput.isVisible()) {
+          this.log(`✅ Found URL input: ${selector}`);
+          break;
+        }
+      } catch (e) {}
+    }
+    
+    if (urlInput) {
+      await urlInput.focus();
+      await urlInput.type(imageUrl, { delay: 50 });
+      this.log('✅ Typed image URL');
+      
+      // Look for insert/confirm button
+      const insertBtnSelectors = [
+        'button:has-text("Вставить")',
+        'button:has-text("Добавить")',
+        'button:has-text("Insert")',
+        '[data-testid="insert-image-btn"]',
+        '[type="submit"]',
+      ];
+      
+      let insertBtn = null;
+      for (const selector of insertBtnSelectors) {
+        try {
+          insertBtn = await this.page!.$(selector);
+          if (insertBtn && await insertBtn.isVisible()) {
+            this.log(`✅ Found insert button: ${selector}`);
+            break;
+          }
+        } catch (e) {}
+      }
+      
+      if (insertBtn) {
+        await insertBtn.click({ force: true });
+        this.log('✅ Clicked insert button');
+        await this.page!.waitForTimeout(5000);
+        
+        const imageInArticle = await this.page!.$('figure.zen-editor-block-image img');
+        if (imageInArticle) {
+          this.log('✅ Image inserted successfully!');
+        } else {
+          this.log('⚠️ Image not found after URL insertion');
+        }
+      } else {
+        this.log('⚠️ Insert button not found - trying Enter key');
+        await this.page!.keyboard.press('Enter');
+        await this.page!.waitForTimeout(5000);
+      }
+    } else {
+      this.log('⚠️ URL input not found in modal');
+      await this.dumpState('no_url_input');
+    }
+  }
+
   private async close() { if (this.browser) await this.browser.close(); }
 }
 
