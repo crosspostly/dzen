@@ -1,0 +1,34 @@
+{
+  "version": "4.0",
+  "generatedAt": 1774940090540,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 5,
+  "totalCharacters": 89345,
+  "totalImages": 5,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-03-31/rynok-v-mahachkale-baton-chut-s-uma-ne-soshel-ot-z.jpg",
+      "articles/ethno-food-ritual/2026-03-31/spustilsya-v-sulakskiy-kanon-na-katere-baton-ot-vo.jpg",
+      "articles/ethno-food-ritual/2026-03-31/uvidel-kaspiyskogo-monstra-vzhivuyu-baton-pytalsya.jpg",
+      "articles/ethno-food-ritual/2026-03-31/uvidel-sulakskiy-kanon-baton-oblayal-orlov-a-ya-ot.jpg",
+      "articles/ethno-food-ritual/2026-03-31/za-mahachkalu-baton-gornye-tropy-i-zapah-chabretsa.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-03-31/REPORT.md"
+  }
+}
