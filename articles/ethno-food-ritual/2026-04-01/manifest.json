@@ -1,0 +1,37 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775026639858,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 8,
+  "totalCharacters": 135730,
+  "totalImages": 8,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-04-01/dumal-budu-spat-v-mashine-v-itoge-hozyain-staroy-s.jpg",
+      "articles/ethno-food-ritual/2026-04-01/mahachkala-vostochnyy-rynok-otdal-500-rubley-za-ki.jpg",
+      "articles/ethno-food-ritual/2026-04-01/na-rynke-mahachkaly-otdal-poslednie-500-rubley-za-.jpg",
+      "articles/ethno-food-ritual/2026-04-01/prokatil-batona-na-katere-po-sulakskomu-kanonu-za-.jpg",
+      "articles/ethno-food-ritual/2026-04-01/rvanul-iz-mahachkaly-v-gory-taksist-za-2000-rubley.jpg",
+      "articles/ethno-food-ritual/2026-04-01/v-gornom-aule-net-ni-odnogo-kafe-zashel-v-pervyy-d.jpg",
+      "articles/ethno-food-ritual/2026-04-01/zabrel-na-vtoroy-rynok-v-mahachkale-sel-tarelku-hi.jpg",
+      "articles/ethno-food-ritual/2026-04-01/zaplatil-voditelyu-300-rubley-chtoby-sbezhat-iz-go.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-04-01/REPORT.md"
+  }
+}
