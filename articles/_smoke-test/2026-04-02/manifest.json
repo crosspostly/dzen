@@ -1,0 +1,23 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775110473812,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 1,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 60000
+  },
+  "articleCount": 1,
+  "totalCharacters": 200,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/_smoke-test/2026-04-02/smoke-test-article-2026-04-02t06-14-33-679z.jpg"
+    ],
+    "report": "articles/_smoke-test/2026-04-02/REPORT.md"
+  }
+}
