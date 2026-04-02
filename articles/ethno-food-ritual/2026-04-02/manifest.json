@@ -1,0 +1,36 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775111946678,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 115104,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-04-02/mahachkala-vtoroy-rynok-batonu-sunuli-v-past-kusok.jpg",
+      "articles/ethno-food-ritual/2026-04-02/podnyalsya-v-aul-prizrak-gamsutl-otdal-1000-rubley.jpg",
+      "articles/ethno-food-ritual/2026-04-02/sbezhal-iz-mahachkaly-v-gornyy-aul-zaplatil-500-ru.jpg",
+      "articles/ethno-food-ritual/2026-04-02/spustilsya-s-gor-na-mahachkalinskiy-rynok-otdal-50.jpg",
+      "articles/ethno-food-ritual/2026-04-02/sulakskiy-kanon-baton-zaskulil-ot-vysoty-a-ya-otda.jpg",
+      "articles/ethno-food-ritual/2026-04-02/zahodi-gostem-budesh-v-gornom-aule-nakormili-hinka.jpg",
+      "articles/ethno-food-ritual/2026-04-02/zashel-na-mahachkalinskiy-rynok-otdal-700-rubley-z.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-04-02/REPORT.md"
+  }
+}
