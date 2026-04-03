@@ -1,0 +1,37 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775198118461,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 8,
+  "totalCharacters": 127197,
+  "totalImages": 8,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-04-03/dumal-posle-kanona-menya-uzhe-ne-udivit-no-zaehal-.jpg",
+      "articles/ethno-food-ritual/2026-04-03/mahachkalinskiy-bazar-storgoval-za-500-rubley-golo.jpg",
+      "articles/ethno-food-ritual/2026-04-03/pritaschil-batona-i-kinzhal-za-3000-k-staromu-mast.jpg",
+      "articles/ethno-food-ritual/2026-04-03/solenyy-veter-rev-kaspiya-i-monstr-na-beregu-baton.jpg",
+      "articles/ethno-food-ritual/2026-04-03/sunulsya-s-batonom-na-vtoroy-rynok-mahachkaly-pony.jpg",
+      "articles/ethno-food-ritual/2026-04-03/vyrvalsya-iz-mahachkaly-v-sulakskiy-kanon-za-1500-.jpg",
+      "articles/ethno-food-ritual/2026-04-03/zashel-na-mahachkalinskiy-rynok-za-magnitikom-a-vy.jpg",
+      "articles/ethno-food-ritual/2026-04-03/zashel-v-mahachkalinskoe-kafe-za-hinkalom-na-350-r.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-04-03/REPORT.md"
+  }
+}
