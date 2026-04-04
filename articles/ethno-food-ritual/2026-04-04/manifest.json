@@ -1,0 +1,37 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775283645501,
+  "config": {
+    "articleCount": 8,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "defaultAngle": "observer",
+    "defaultEmotion": "inspiration",
+    "defaultAudience": "Active 50+, foodies, culture seekers",
+    "skipCleanupGates": false
+  },
+  "articleCount": 8,
+  "totalCharacters": 131664,
+  "totalImages": 8,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/ethno-food-ritual/2026-04-04/dagestanskiy-rynok-baton-chut-s-uma-ne-soshel-ot-z.jpg",
+      "articles/ethno-food-ritual/2026-04-04/prorvalsya-na-vtoroy-rynok-mahachkaly-baton-chut-n.jpg",
+      "articles/ethno-food-ritual/2026-04-04/proschay-kaspiy-rvanul-s-batonom-v-dagestanskie-go.jpg",
+      "articles/ethno-food-ritual/2026-04-04/uvidel-kak-v-dagestanskom-aule-pekut-hleb-v-staroy.jpg",
+      "articles/ethno-food-ritual/2026-04-04/vyshli-na-bereg-kaspiya-v-mahachkale-batona-sduvae.jpg",
+      "articles/ethno-food-ritual/2026-04-04/vyvel-batona-na-naberezhnuyu-mahachkaly-veter-s-ka.jpg",
+      "articles/ethno-food-ritual/2026-04-04/zashel-na-dagestanskiy-bazar-vzyal-kilogramm-urbec.jpg",
+      "articles/ethno-food-ritual/2026-04-04/zataschili-na-nastoyaschiy-avarskiy-hinkal-otdal-4.jpg"
+    ],
+    "report": "articles/ethno-food-ritual/2026-04-04/REPORT.md"
+  }
+}
