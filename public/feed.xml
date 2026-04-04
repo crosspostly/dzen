@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Путевой дневник о путешествиях со смыслом, честных ценах и верном псе Батоне.</description>
-    <lastBuildDate>Sat, 04 Apr 2026 08:42:49 +0300</lastBuildDate>
+    <lastBuildDate>Sat, 04 Apr 2026 13:00:06 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Ethno-Travel Edition)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[А вот он, Артем. Застыл посреди этого водоворота, будто на островке. Его взгляд — прикован к светящемуся прямоугольнику. Синяя точка, мельтешащие линии — вся наша судьба, значит, в руках бездушной...]]></description>
       <link>https://dzen-livid.vercel.app/articles/dobralsya-do-vtorogo-rynka-mahachkaly-otdal-150-ru-20260329</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/dobralsya-do-vtorogo-rynka-mahachkaly-otdal-150-ru-20260329</guid>
-      <pubDate>Sat, 04 Apr 2026 11:42:49 +0300</pubDate>
+      <pubDate>Sat, 04 Apr 2026 16:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[Дверь захлопнулась за нами с глухим, окончательным стуком, отрезая от мира и оставляя наедине с этой странной комнатой. Первое, что ударило, даже не в нос, а прямо в кости, был холод. Не тот...]]></description>
       <link>https://dzen-livid.vercel.app/articles/pervaya-noch-v-gunibe-snyal-komnatu-s-ledyanym-pol-20260329</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/pervaya-noch-v-gunibe-snyal-komnatu-s-ledyanym-pol-20260329</guid>
-      <pubDate>Sat, 04 Apr 2026 13:12:49 +0300</pubDate>
+      <pubDate>Sat, 04 Apr 2026 17:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[Машина ревела, словно раненый зверь, вгрызаясь в каменистый серпантин, который вился вверх, казалось, до самого неба. Каждый поворот, каждый виток был не просто испытанием для подвески, но и...]]></description>
       <link>https://dzen-livid.vercel.app/articles/promenyal-holodnyy-kaspiy-na-gory-dagestana-otvali-20260329</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/promenyal-holodnyy-kaspiy-na-gory-dagestana-otvali-20260329</guid>
-      <pubDate>Sat, 04 Apr 2026 11:42:49 +0300</pubDate>
+      <pubDate>Sat, 04 Apr 2026 16:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[Холодное утро. Открываешь дверь — и шагаешь прямо в облако. Не метафора, нет. Буквально. Мягкая, влажная, молочно-белая масса обволакивает, душит, забивает ноздри. Сырость мгновенно оседает на...]]></description>
       <link>https://dzen-livid.vercel.app/articles/snyal-komnatu-v-gunibe-za-1500-rubley-i-prosnulsya-20260329</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/snyal-komnatu-v-gunibe-za-1500-rubley-i-prosnulsya-20260329</guid>
-      <pubDate>Sat, 04 Apr 2026 13:12:49 +0300</pubDate>
+      <pubDate>Sat, 04 Apr 2026 17:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -103,7 +103,7 @@
       <description><![CDATA[Я ожидал гор, чистейшего воздуха, звенящей тишины, нарушаемой лишь ветром. С чего начинается настоящий Кавказ? Мои представления, сформированные книгами и чужими рассказами, разбились вдребезги о...]]></description>
       <link>https://dzen-livid.vercel.app/articles/spustilsya-na-gornyy-rynok-pod-gunibom-zaplatil-80-20260329</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/spustilsya-na-gornyy-rynok-pod-gunibom-zaplatil-80-20260329</guid>
-      <pubDate>Sat, 04 Apr 2026 14:42:49 +0300</pubDate>
+      <pubDate>Sat, 04 Apr 2026 19:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -124,7 +124,7 @@
       <description><![CDATA[Наше путешествие продолжалось. Я сидел на пассажирском сиденье, пристегнутый, как положено, но мои глаза и нос были свободны. И вот тут-то и началось самое непонятное. Дорога, по которой мы ехали,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/svernul-s-gornogo-serpantina-na-gustoy-zapah-peche-20260329</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/svernul-s-gornogo-serpantina-na-gustoy-zapah-peche-20260329</guid>
-      <pubDate>Sat, 04 Apr 2026 16:12:49 +0300</pubDate>
+      <pubDate>Sat, 04 Apr 2026 20:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -145,7 +145,7 @@
       <description><![CDATA[Батон, он-то знал, что делать. Тянул вперед, к вокзалу, к этой бездне шума и движения. Мы словно две песчинки, закрученные в вихре. 'Куда? Куда нас несет, Батон?' – прошептал я. А он лишь чихнул от...]]></description>
       <link>https://dzen-livid.vercel.app/articles/uehal-iz-mahachkaly-v-gory-otdal-500-rubley-za-mes-20260329</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/uehal-iz-mahachkaly-v-gory-otdal-500-rubley-za-mes-20260329</guid>
-      <pubDate>Sat, 04 Apr 2026 17:42:49 +0300</pubDate>
+      <pubDate>Sat, 04 Apr 2026 22:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -166,7 +166,7 @@
       <description><![CDATA[Но вот он, мой Батон, мой шерстяной барометр всех приключений – вдруг ожил. Приподнял голову, уши навострил. Его нос, влажный, уже чуял что-то, чего я еще не видел, не слышал. Море. Этот тонкий,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vyshel-k-seromu-kaspiyu-smyt-dorozhnuyu-pyl-otdal--20260329</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vyshel-k-seromu-kaspiyu-smyt-dorozhnuyu-pyl-otdal--20260329</guid>
-      <pubDate>Sat, 04 Apr 2026 19:12:49 +0300</pubDate>
+      <pubDate>Sat, 04 Apr 2026 23:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -187,7 +187,7 @@
       <description><![CDATA[Махачкала встретила меня оглушительным гулом и запахом чего-то острого – то ли специй, то ли бензина. Моя старенькая «Лада» с трудом пробиралась по узким улочкам, где машины, казалось, парковались...]]></description>
       <link>https://dzen-livid.vercel.app/articles/nashel-v-mahachkale-hinkalnuyu-gde-portsiya-stoit--20260330</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/nashel-v-mahachkale-hinkalnuyu-gde-portsiya-stoit--20260330</guid>
-      <pubDate>Sat, 04 Apr 2026 20:42:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 01:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -208,7 +208,7 @@
       <description><![CDATA[За окном, в сером дворе-колодце, уже начинала оживать обыденность. Чужие голоса. Гудки машин. Шум города, куда мы приехали, сам не знаю зачем. Или, может быть, знаю? Желание спрятаться, затаиться в...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vtoroy-rynok-mahachkaly-storgoval-golovu-kopchenog-20260330</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vtoroy-rynok-mahachkaly-storgoval-golovu-kopchenog-20260330</guid>
-      <pubDate>Sat, 04 Apr 2026 22:12:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 02:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -229,7 +229,7 @@
       <description><![CDATA[Каждый шаг давался с трудом, буквально выгрызая путь из-под ног. Бетонные обломки, словно кости какого-то гигантского, давно умершего существа, торчали из земли, перемежаясь с грудами ржавого...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vyrvalsya-iz-mahachkaly-k-kaspiyu-vzyal-goryachiy--20260330</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vyrvalsya-iz-mahachkaly-k-kaspiyu-vzyal-goryachiy--20260330</guid>
-      <pubDate>Sat, 04 Apr 2026 23:42:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 04:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -250,7 +250,7 @@
       <description><![CDATA[Куда он меня тащит? Вроде бы, к Второму рынку. Но каждая улочка здесь – лабиринт из запахов: морского бриза, борющегося с выхлопными газами; свежего хлеба, сменяющегося подгоревшим шашлыком. Батон,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zashel-na-mahachkalinskiy-rynok-za-syrom-v-itoge-o-20260330</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zashel-na-mahachkalinskiy-rynok-za-syrom-v-itoge-o-20260330</guid>
-      <pubDate>Sun, 05 Apr 2026 01:12:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 05:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -271,7 +271,7 @@
       <description><![CDATA[Машина стояла, надежно припаркованная где-то на задворках этого незнакомого города, а я вот уже который раз крутила головой, пытаясь определить, куда, черт возьми, идти. Приложение на телефоне...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zashel-na-rynok-v-mahachkale-kupit-chudu-za-80-a-v-20260330</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zashel-na-rynok-v-mahachkale-kupit-chudu-za-80-a-v-20260330</guid>
-      <pubDate>Sun, 05 Apr 2026 02:42:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 07:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -292,7 +292,7 @@
       <description><![CDATA[Мы шагнули на центральный рынок, и мир немедленно изменился. Легкий гул улицы растворился в оглушительной какофонии. Это был лабиринт узких рядов, едва широких, чтобы два человека могли разойтись,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/rynok-v-mahachkale-baton-chut-s-uma-ne-soshel-ot-z-20260331</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/rynok-v-mahachkale-baton-chut-s-uma-ne-soshel-ot-z-20260331</guid>
-      <pubDate>Sun, 05 Apr 2026 04:12:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 08:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -313,7 +313,7 @@
       <description><![CDATA[Капитан, Игорь, кажется, наслаждался скоростью. Его катер, вернее, наша маленькая, но юркая лодка, неслась по узким проходам между скалами, словно это была гоночная трасса, а не затерянный уголок...]]></description>
       <link>https://dzen-livid.vercel.app/articles/spustilsya-v-sulakskiy-kanon-na-katere-baton-ot-vo-20260331</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/spustilsya-v-sulakskiy-kanon-na-katere-baton-ot-vo-20260331</guid>
-      <pubDate>Sun, 05 Apr 2026 05:42:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 10:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -334,7 +334,7 @@
       <description><![CDATA[Но этот город не отпускал просто так. Едва мы выбрались из лабиринта старых кварталов, как нас обнял Дербент во всей его утренней красе — и суматохе. Пробки. Звуки клаксонов сплетались в...]]></description>
       <link>https://dzen-livid.vercel.app/articles/uvidel-kaspiyskogo-monstra-vzhivuyu-baton-pytalsya-20260331</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/uvidel-kaspiyskogo-monstra-vzhivuyu-baton-pytalsya-20260331</guid>
-      <pubDate>Sun, 05 Apr 2026 07:12:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 11:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -355,7 +355,7 @@
       <description><![CDATA[Парковка у смотровой площадки была адом, воплощенным в железе и пыли. Сотни машин, припаркованных как попало, перекрывали друг другу выезд, создавая какофонию сигналов и ругани, которую с трудом...]]></description>
       <link>https://dzen-livid.vercel.app/articles/uvidel-sulakskiy-kanon-baton-oblayal-orlov-a-ya-ot-20260331</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/uvidel-sulakskiy-kanon-baton-oblayal-orlov-a-ya-ot-20260331</guid>
-      <pubDate>Sun, 05 Apr 2026 08:42:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 13:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -376,7 +376,7 @@
       <description><![CDATA[Мы остановились у того, что местные, кажется, называли «кафе». Низкое строение из грубого камня, тяжелая деревянная дверь без единой вывески. Только тишина, да пыльная дорога, уходящая вдаль....]]></description>
       <link>https://dzen-livid.vercel.app/articles/za-mahachkalu-baton-gornye-tropy-i-zapah-chabretsa-20260331</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/za-mahachkalu-baton-gornye-tropy-i-zapah-chabretsa-20260331</guid>
-      <pubDate>Sun, 05 Apr 2026 10:12:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 14:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -397,7 +397,7 @@
       <description><![CDATA[Машина, припаркованная на узкой обочине, казалась еще теснее, чем обычно, в объятиях горной ночи. Запотевшие стекла превращали внешний мир в размытые пятна, нечеткие тени, сквозь которые пробивался...]]></description>
       <link>https://dzen-livid.vercel.app/articles/dumal-budu-spat-v-mashine-v-itoge-hozyain-staroy-s-20260401</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/dumal-budu-spat-v-mashine-v-itoge-hozyain-staroy-s-20260401</guid>
-      <pubDate>Sun, 05 Apr 2026 11:42:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 16:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -418,7 +418,7 @@
       <description><![CDATA[Ярагского улица… Это не просто дорога, это бурлящий котел из звуков, запахов и человеческих потоков, где каждый куда-то спешит, толкаясь локтями и сигналя клаксонами. Моя карта, аккуратно сложенная...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mahachkala-vostochnyy-rynok-otdal-500-rubley-za-ki-20260401</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mahachkala-vostochnyy-rynok-otdal-500-rubley-za-ki-20260401</guid>
-      <pubDate>Sun, 05 Apr 2026 13:12:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 17:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -439,7 +439,7 @@
       <description><![CDATA[Вход в крытый павильон оказался куда более суровым испытанием, чем я предполагал. Снаружи, под открытым небом, суета рынка казалась лишь фоновым шумом, этакой живой декорацией. Но стоило...]]></description>
       <link>https://dzen-livid.vercel.app/articles/na-rynke-mahachkaly-otdal-poslednie-500-rubley-za--20260401</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/na-rynke-mahachkaly-otdal-poslednie-500-rubley-za--20260401</guid>
-      <pubDate>Sun, 05 Apr 2026 14:42:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 19:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -460,7 +460,7 @@
       <description><![CDATA[Мы выбрались из-за последнего поворота тропы, и резкий, многоголосый шум мгновенно поглотил тишину леса, в которой мы провели последние дни. Это был живой, хаотичный гул: смех, крики, плеск воды,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/prokatil-batona-na-katere-po-sulakskomu-kanonu-za--20260401</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/prokatil-batona-na-katere-po-sulakskomu-kanonu-za--20260401</guid>
-      <pubDate>Sun, 05 Apr 2026 16:12:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 20:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -481,7 +481,7 @@
       <description><![CDATA[Мы уходили от города стремительно, словно вырывались из липкой паутины, где каждый перекресток был узлом, а каждый светофор – задержкой, связывающей тебя по рукам и ногам. Зеркала заднего вида, еще...]]></description>
       <link>https://dzen-livid.vercel.app/articles/rvanul-iz-mahachkaly-v-gory-taksist-za-2000-rubley-20260401</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/rvanul-iz-mahachkaly-v-gory-taksist-za-2000-rubley-20260401</guid>
-      <pubDate>Sun, 05 Apr 2026 17:42:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 22:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -502,7 +502,7 @@
       <description><![CDATA[Наконец-то мы приехали. Деревня, о которой я столько слышал, раскинулась передо мной во всей своей нетронутой красоте: зеленые холмы, домики с резными наличниками, тишина, нарушаемая лишь...]]></description>
       <link>https://dzen-livid.vercel.app/articles/v-gornom-aule-net-ni-odnogo-kafe-zashel-v-pervyy-d-20260401</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/v-gornom-aule-net-ni-odnogo-kafe-zashel-v-pervyy-d-20260401</guid>
-      <pubDate>Sun, 05 Apr 2026 19:12:49 +0300</pubDate>
+      <pubDate>Sun, 05 Apr 2026 23:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -523,7 +523,7 @@
       <description><![CDATA[Дорога из Москвы вытянула жилы, и я, признаться, пару раз ловил себя на мысли: бросить всё, найти первый попавшийся приличный отель, упасть без сил. Но ведь не за этим я сюда ехал, правда? Не за...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zabrel-na-vtoroy-rynok-v-mahachkale-sel-tarelku-hi-20260401</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zabrel-na-vtoroy-rynok-v-mahachkale-sel-tarelku-hi-20260401</guid>
-      <pubDate>Sun, 05 Apr 2026 20:42:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 01:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -544,7 +544,7 @@
       <description><![CDATA[Солнце клонилось к закату, раскрашивая небо в немыслимые оттенки оранжевого и пурпурного, словно чья-то невидимая кисть обмакнулась в палитру самого яркого пламени, когда мы наконец-то выбрались из...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zaplatil-voditelyu-300-rubley-chtoby-sbezhat-iz-go-20260401</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zaplatil-voditelyu-300-rubley-chtoby-sbezhat-iz-go-20260401</guid>
-      <pubDate>Sun, 05 Apr 2026 22:12:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 02:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -565,7 +565,7 @@
       <description><![CDATA[Мысль о том, чтобы взять Батона с собой в субботний продуктовый рынок, изначально казалась мне либо актом отчаянной храбрости, либо чистым безумием. Но оставить его одного дома, когда я знаю, как...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mahachkala-vtoroy-rynok-batonu-sunuli-v-past-kusok-20260402</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mahachkala-vtoroy-rynok-batonu-sunuli-v-past-kusok-20260402</guid>
-      <pubDate>Sun, 05 Apr 2026 23:42:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 04:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -586,7 +586,7 @@
       <description><![CDATA[Тряска в кабине началась почти сразу, как только мы свернули с относительно ровной грунтовки. Дорога – это громкое слово для того, что представляла собой узкая, петляющая колея, выбитая в скале....]]></description>
       <link>https://dzen-livid.vercel.app/articles/podnyalsya-v-aul-prizrak-gamsutl-otdal-1000-rubley-20260402</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/podnyalsya-v-aul-prizrak-gamsutl-otdal-1000-rubley-20260402</guid>
-      <pubDate>Mon, 06 Apr 2026 01:12:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 05:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -607,7 +607,7 @@
       <description><![CDATA[Дорога с каждой сотней метров становилась не просто хуже – она превращалась в издевательство над подвеской и нервами. Ухабы, казалось, были выложены специально, чтобы выбить дух из старенького...]]></description>
       <link>https://dzen-livid.vercel.app/articles/sbezhal-iz-mahachkaly-v-gornyy-aul-zaplatil-500-ru-20260402</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/sbezhal-iz-mahachkaly-v-gornyy-aul-zaplatil-500-ru-20260402</guid>
-      <pubDate>Mon, 06 Apr 2026 02:42:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 07:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -628,7 +628,7 @@
       <description><![CDATA[Мне всегда претили эти автобусные туры, где тебя выгружают на пять минут для обязательного селфи, а потом гонят дальше, по жесткому расписанию. Ни вздохнуть полной грудью, ни просто посидеть на...]]></description>
       <link>https://dzen-livid.vercel.app/articles/sulakskiy-kanon-baton-zaskulil-ot-vysoty-a-ya-otda-20260402</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/sulakskiy-kanon-baton-zaskulil-ot-vysoty-a-ya-otda-20260402</guid>
-      <pubDate>Mon, 06 Apr 2026 04:12:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 08:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -649,7 +649,7 @@
       <description><![CDATA[Рынок был живым, дышащим зверем. Не просто место, но некая сущность, пульсирующая тысячью сердцебиений и миллионом запахов, которые обрушивались на чувства сладостным, ошеломляющим штурмом. Воздух...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zashel-na-mahachkalinskiy-rynok-otdal-700-rubley-z-20260402</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zashel-na-mahachkalinskiy-rynok-otdal-700-rubley-z-20260402</guid>
-      <pubDate>Mon, 06 Apr 2026 05:42:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 10:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -670,7 +670,7 @@
       <description><![CDATA[Казалось, еще минута, и мы станем частью этого древнего камня. Улицы не просто сужались – они сжимались вокруг нас, как тиски. Я чувствовал, как бока моего верного, хоть и слегка помятого, «белого...]]></description>
       <link>https://dzen-livid.vercel.app/articles/dumal-posle-kanona-menya-uzhe-ne-udivit-no-zaehal--20260403</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/dumal-posle-kanona-menya-uzhe-ne-udivit-no-zaehal--20260403</guid>
-      <pubDate>Mon, 06 Apr 2026 07:12:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 11:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -691,7 +691,7 @@
       <description><![CDATA[Дверные проемы рынка распахнулись, словно порталы в другое измерение, и меня накрыло. Это был не просто вход, это был удар по всем рецепторам сразу. Где заканчивается город и начинается настоящая...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mahachkalinskiy-bazar-storgoval-za-500-rubley-golo-20260403</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mahachkalinskiy-bazar-storgoval-za-500-rubley-golo-20260403</guid>
-      <pubDate>Mon, 06 Apr 2026 08:42:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 13:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -712,7 +712,7 @@
       <description><![CDATA[...и вот мы стоим перед лотком, уставленным рядами пластиковых контейнеров, доверху наполненных густыми, маслянистыми массами всех оттенков коричневого. От почти черного, как смола, до...]]></description>
       <link>https://dzen-livid.vercel.app/articles/sunulsya-s-batonom-na-vtoroy-rynok-mahachkaly-pony-20260403</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/sunulsya-s-batonom-na-vtoroy-rynok-mahachkaly-pony-20260403</guid>
-      <pubDate>Mon, 06 Apr 2026 10:12:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 14:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -733,7 +733,7 @@
       <description><![CDATA[Земля, такая привычная, ровная, начала ускользать из-под колес с каждым новым витком. Серпантин взбирался все выше, и я, равнинный житель до мозга костей, чувствовал, как меняется не только...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vyrvalsya-iz-mahachkaly-v-sulakskiy-kanon-za-1500--20260403</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vyrvalsya-iz-mahachkaly-v-sulakskiy-kanon-za-1500--20260403</guid>
-      <pubDate>Mon, 06 Apr 2026 11:42:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 16:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -754,7 +754,7 @@
       <description><![CDATA['Заселение, пожалуйста,' — произнес я, протягивая паспорт женщине за стойкой, которая выглядела так, будто отработала здесь лет сто и уже ничего не ждала от жизни, кроме конца смены. Гостевой дом...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zashel-na-mahachkalinskiy-rynok-za-magnitikom-a-vy-20260403</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zashel-na-mahachkalinskiy-rynok-za-magnitikom-a-vy-20260403</guid>
-      <pubDate>Mon, 06 Apr 2026 13:12:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 17:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -775,7 +775,7 @@
       <description><![CDATA[Дверь распахнулась с легким звоном колокольчика, и в тот же миг Батон, мой маленький пушистый комок счастья, замер. Его нос, обычно влажный и любопытный, теперь был напряжен до предела, втягивая в...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zashel-v-mahachkalinskoe-kafe-za-hinkalom-na-350-r-20260403</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zashel-v-mahachkalinskoe-kafe-za-hinkalom-na-350-r-20260403</guid>
-      <pubDate>Mon, 06 Apr 2026 14:42:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 19:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -796,7 +796,7 @@
       <description><![CDATA[На центральном рынке всегда была особая атмосфера, смесь запахов специй, свежих овощей и чего-то неуловимо животного, что Батон обычно игнорировал с аристократическим презрением. Мы шли мимо рядов...]]></description>
       <link>https://dzen-livid.vercel.app/articles/dagestanskiy-rynok-baton-chut-s-uma-ne-soshel-ot-z-20260404</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/dagestanskiy-rynok-baton-chut-s-uma-ne-soshel-ot-z-20260404</guid>
-      <pubDate>Mon, 06 Apr 2026 16:12:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 20:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -817,7 +817,7 @@
       <description><![CDATA[Мы вошли в этот лабиринт из плоти и крови, и с первого же шага меня охватила волна того, что я могу описать только как первобытный шок. Батон, мой городской денди, обычно уверенно шагающий по...]]></description>
       <link>https://dzen-livid.vercel.app/articles/prorvalsya-na-vtoroy-rynok-mahachkaly-baton-chut-n-20260404</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/prorvalsya-na-vtoroy-rynok-mahachkaly-baton-chut-n-20260404</guid>
-      <pubDate>Mon, 06 Apr 2026 17:42:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 22:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -838,7 +838,7 @@
       <description><![CDATA[По правде говоря, город, когда ты всего лишь тридцать сантиметров от земли, выглядит совсем иначе, чем с высоты человеческого роста. Это мир бесконечных столбов, гигантских шагающих колонн, которые...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vyshli-na-bereg-kaspiya-v-mahachkale-batona-sduvae-20260404</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vyshli-na-bereg-kaspiya-v-mahachkale-batona-sduvae-20260404</guid>
-      <pubDate>Mon, 06 Apr 2026 19:12:49 +0300</pubDate>
+      <pubDate>Mon, 06 Apr 2026 23:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -859,7 +859,7 @@
       <description><![CDATA[Каково это — встретиться лицом к лицу с сердитым свинцовым морем? Вот он, этот момент, когда ты стоишь на узкой полоске суши, а перед тобой — бескрайняя, бурлящая бездна, отражающая низкое, серое...]]></description>
       <link>https://dzen-livid.vercel.app/articles/vyvel-batona-na-naberezhnuyu-mahachkaly-veter-s-ka-20260404</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/vyvel-batona-na-naberezhnuyu-mahachkaly-veter-s-ka-20260404</guid>
-      <pubDate>Mon, 06 Apr 2026 20:42:49 +0300</pubDate>
+      <pubDate>Tue, 07 Apr 2026 01:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -880,7 +880,7 @@
       <description><![CDATA[Базар обрушился на нас не просто шумом, а целой лавиной звуков, цветов и, главное, запахов. Каждый шаг был как погружение в новую, плотную волну ароматов: свежая зелень, влажная земля, острые...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zashel-na-dagestanskiy-bazar-vzyal-kilogramm-urbec-20260404</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zashel-na-dagestanskiy-bazar-vzyal-kilogramm-urbec-20260404</guid>
-      <pubDate>Mon, 06 Apr 2026 22:12:49 +0300</pubDate>
+      <pubDate>Tue, 07 Apr 2026 02:30:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -901,7 +901,7 @@
       <description><![CDATA[Машина, еле втиснувшись между щербатой, осыпающейся стеной старого дома и припаркованной с другой стороны видавшей виды «Нивой», наконец замерла. Я выдохнул, чувствуя, как напряжение медленно...]]></description>
       <link>https://dzen-livid.vercel.app/articles/zataschili-na-nastoyaschiy-avarskiy-hinkal-otdal-4-20260404</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/zataschili-na-nastoyaschiy-avarskiy-hinkal-otdal-4-20260404</guid>
-      <pubDate>Mon, 06 Apr 2026 23:42:49 +0300</pubDate>
+      <pubDate>Tue, 07 Apr 2026 04:00:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
