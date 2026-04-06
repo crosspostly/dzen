@@ -125,12 +125,13 @@ export class PlaywrightService {
     if (!this.page) throw new Error('Page not initialized');
     
     this.log('🌐 Navigating to Dzen editor...');
-    // Try direct editor URL first
-    await this.page.goto('https://dzen.ru/profile/editor/potemki#article-editor', { waitUntil: 'domcontentloaded' });
+    // Используем прямой URL для надежности
+    await this.page.goto('https://dzen.ru/profile/editor/potemki', { waitUntil: 'domcontentloaded' });
     await this.page.waitForTimeout(5000);
 
-    let url = this.page.url();
-    this.log(`📄 Page loaded: "${await this.page.title()}" (${url})`);
+    const title = await this.page.title();
+    const url = this.page.url();
+    this.log(`📄 Page loaded: "${title}" (${url})`);
 
     // Check for login redirection
     if (url.includes('passport.yandex')) {
@@ -138,13 +139,7 @@ export class PlaywrightService {
       throw new Error('Redirected to login page (cookies expired?)');
     }
 
-    // Check if we are already in the editor
-    if (url.includes('#article-editor')) {
-      this.log('✅ Already in editor, skipping navigation buttons');
-      return;
-    }
-
-    // Close modal if present
+    // Close modal if present (более широкие селекторы)
     const modalButton = await this.page.$('[data-testid="close-button"], [aria-label="Закрыть"]');
     if (modalButton) {
       this.log('Start modal found, closing...');
@@ -159,19 +154,16 @@ export class PlaywrightService {
       '[data-testid="add-publication-button"]', 
       'button[aria-label="Создать"]', 
       'button:has-text("Создать")',
-      '.new-publication-button',
-      'button:has(svg[viewBox*="0 0 24 24"])' // Common plus icon button
+      '.new-publication-button'
     ];
     let addButton = null;
     
     for (const sel of addButtonSelectors) {
-      try {
-        addButton = await this.page.$(sel);
-        if (addButton && await addButton.isVisible()) {
-          this.log(`Found add button with selector: ${sel}`);
-          break;
-        }
-      } catch (e) { /* ignore selector errors */ }
+      addButton = await this.page.$(sel);
+      if (addButton && await addButton.isVisible()) {
+        this.log(`Found add button with selector: ${sel}`);
+        break;
+      }
     }
 
     if (addButton) {
@@ -180,139 +172,100 @@ export class PlaywrightService {
       await this.dumpState('step2_menu_open');
       
       // Click "Write Article"
-      // Try multiple selectors
       const writeSelectors = [
         'text="Написать статью"', 
         'text="Статья"', 
         'button:has-text("Статья")',
-        '[data-testid="menu-item-article"]',
-        'a[href*="editor/new/article"]'
+        '[data-testid="menu-item-article"]'
       ];
       let writeButton = null;
 
       for (const sel of writeSelectors) {
-         try {
-           writeButton = await this.page.$(sel);
-           if (writeButton && await writeButton.isVisible()) {
-             this.log(`Found write button with selector: ${sel}`);
-             break;
-           }
-         } catch (e) { /* ignore */ }
+         writeButton = await this.page.$(sel);
+         if (writeButton && await writeButton.isVisible()) {
+           this.log(`Found write button with selector: ${sel}`);
+           break;
+         }
       }
 
       if (writeButton) {
         await writeButton.click();
         this.log('✅ "Write Article" clicked, waiting for editor...');
         await this.page.waitForTimeout(8000); // Wait for editor load
+        
+        await this.dumpState('step3_editor_loaded');
+
+        // Close overlays
+        await this.page.evaluate(() => {
+          const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, .article-editor-desktop--help-popup__overlay-3q');
+          overlays.forEach(el => { (el as HTMLElement).style.display = 'none'; el.remove(); });
+        });
+        await this.page.keyboard.press('Escape');
       } else {
-        // Fallback: try direct navigation to new article if buttons fail
-        this.log('⚠️ Write Article button not found, trying direct navigation...');
+        await this.dumpState('dump_menu');
+        // Если кнопка не найдена, пробуем прямой переход
+        this.log('⚠️ Write button not found, trying direct navigation...');
         await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'domcontentloaded' });
-        await this.page.waitForTimeout(8000);
+        await this.page.waitForTimeout(5000);
       }
     } else {
-      // Check if maybe we can go direct
-      this.log('⚠️ Add button not found, trying direct navigation to editor...');
-      await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'domcontentloaded' }).catch(() => {});
-      await this.page.waitForTimeout(8000);
+      // Может мы уже в редакторе?
+      if (!url.includes('editor/new/article')) {
+        this.log('⚠️ Add button not found, trying direct navigation...');
+        await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await this.page.waitForTimeout(5000);
+      }
     }
-
-    // Final check for editor load
-    await this.dumpState('step3_editor_loaded');
-
-    // Close overlays/tutorials
-    await this.page.evaluate(() => {
-      const selectors = [
-        '.ReactModal__Overlay', 
-        '.ReactModalPortal', 
-        '.article-editor-desktop--help-popup__overlay-3q',
-        '[class*="help-popup"]',
-        '[class*="overlay"]'
-      ];
-      selectors.forEach(sel => {
-        document.querySelectorAll(sel).forEach(el => { (el as HTMLElement).style.display = 'none'; el.remove(); });
-      });
-    });
-    await this.page.keyboard.press('Escape');
-    await this.page.waitForTimeout(1000);
   }
 
   private async fillArticle(article: ArticleData) {
     if (!this.page) throw new Error('Page not initialized');
 
     this.log('📝 Looking for inputs...');
-    await this.page.waitForTimeout(2000);
+    const inputs = await this.page.$$('input[type="text"], textarea, div[contenteditable="true"]');
+    this.log(`Found ${inputs.length} input elements`);
     
-    // Multi-stage input finding
-    const titleSelectors = [
-      'input[placeholder*="заголов"]',
-      'input[placeholder*="Название"]',
-      'div[contenteditable="true"]:first-of-type',
-      '.article-editor-desktop--editor-header__title-1Q'
-    ];
-    
-    let titleInput = null;
-    for (const sel of titleSelectors) {
-      titleInput = await this.page.$(sel);
-      if (titleInput && await titleInput.isVisible()) {
-        this.log(`Found title input: ${sel}`);
-        break;
-      }
-    }
-
-    if (!titleInput) {
-       // Fallback to generic find
-       const inputs = await this.page.$$('input[type="text"], div[contenteditable="true"]');
-       if (inputs.length > 0) titleInput = inputs[0];
-    }
-
-    if (!titleInput) {
+    if (inputs.length === 0) {
       await this.dumpState('no_inputs');
       throw new Error('No inputs found in editor');
     }
 
     // 1. Title (Human-like typing)
-    this.log('📝 Typing title...');
-    await titleInput.click();
-    await titleInput.focus();
-    await this.page.keyboard.press('Control+A');
-    await this.page.keyboard.press('Backspace');
-    await titleInput.type(article.title, { delay: 50 });
-    await this.page.waitForTimeout(1000);
-
-    // 2. Content (Copy-Paste)
-    this.log('📝 Pasting content...');
-    await this.page.keyboard.press('Tab'); // Move to content
-    await this.page.waitForTimeout(500);
-    
-    // Find content input specifically if Tab didn't work
-    const contentInput = await this.page.$('[role="textbox"], .notranslate, div[contenteditable="true"]:last-of-type');
-    if (contentInput) {
-      await contentInput.click();
-      await contentInput.focus();
+    if (inputs.length > 0) {
+      this.log('📝 Typing title...');
+      await inputs[0].focus();
+      await inputs[0].click();
+      await this.page.keyboard.press('Control+A');
+      await this.page.keyboard.press('Backspace');
+      await inputs[0].type(article.title, { delay: 50 });
     }
 
-    await this.page.evaluate((text) => navigator.clipboard.writeText(text), article.content);
-    await this.page.waitForTimeout(1000);
-    await this.page.keyboard.press('Control+V');
-    await this.page.waitForTimeout(1000);
-    await this.page.keyboard.press('Enter');
-    
-    // Scroll simulation
-    await this.page.mouse.wheel(0, 500);
-    await this.page.waitForTimeout(1000);
-    await this.page.mouse.wheel(0, -500);
+    // 2. Content (Copy-Paste)
+    if (inputs.length > 1) {
+      this.log('📝 Pasting content...');
+      await inputs[1].focus();
+      await inputs[1].click();
+      await this.page.evaluate((text) => navigator.clipboard.writeText(text), article.content);
+      await this.page.waitForTimeout(1000);
+      await this.page.keyboard.press('Control+V');
+      await this.page.waitForTimeout(1000);
+      await this.page.keyboard.press('Enter');
+      
+      // Scroll simulation
+      await this.page.mouse.wheel(0, 500);
+      await this.page.waitForTimeout(1000);
+      await this.page.mouse.wheel(0, -500);
+    }
 
     // 3. Image
     if (article.imageUrl) {
       this.log('🖼️ Inserting image...');
       
-      // Try multiple selectors for the image button
       const imageBtnSelectors = [
         'button[data-tip="Вставить изображение"]',
         'button[aria-label="Вставить изображение"]',
-        'button:has(svg[viewBox*="0 0 24 24"])',
-        '.article-editor-desktop--side-button__sideButton-1z'
+        '.article-editor-desktop--side-button__sideButton-1z',
+        'button:has(svg)'
       ];
 
       let imageBtn = null;
@@ -327,24 +280,16 @@ export class PlaywrightService {
       if (imageBtn) {
         await imageBtn.click();
         await this.page.waitForTimeout(2000);
-        await this.dumpState('image_dialog');
         
-        // Wait for input to appear
         const urlInput = await this.page.waitForSelector('input[type="text"][placeholder*="ссылка"]', { timeout: 5000 }).catch(() => null) || 
-                         await this.page.$('input[type="text"]'); // Fallback
+                         await this.page.$('input[type="text"]');
 
         if (urlInput) {
           await urlInput.fill(article.imageUrl);
           await urlInput.press('Enter');
-          await this.page.waitForTimeout(3000); // Wait for image to load
+          await this.page.waitForTimeout(3000);
           this.log('✅ Image URL submitted');
-        } else {
-          this.log('⚠️ Image input field not found after clicking button');
-          await this.dumpState('no_image_input');
         }
-      } else {
-        this.log('⚠️ Image button not found');
-        await this.dumpState('no_image_btn');
       }
     }
   }
@@ -352,12 +297,10 @@ export class PlaywrightService {
   private async submitPublish(): Promise<{ success: boolean; url?: string }> {
     if (!this.page) throw new Error('Page not initialized');
 
-    // 1. First Publish Button
     const firstBtnSelector = 'button[data-testid="article-publish-btn"]';
     
     try {
-      this.log('⏳ Waiting for publish button to be enabled...');
-      // Wait for button to be visible AND enabled (not disabled)
+      this.log('⏳ Waiting for publish button...');
       await this.page.waitForSelector(`${firstBtnSelector}:not([disabled])`, { timeout: 15000 });
       
       const firstBtn = await this.page.$(firstBtnSelector);
@@ -366,27 +309,11 @@ export class PlaywrightService {
         this.log('✅ Clicked first publish button');
         await this.handleCaptcha();
         await this.page.waitForTimeout(3000);
-        await this.dumpState('publish_modal');
-      } else {
-        throw new Error('Publish button missing after wait');
       }
     } catch (e) {
       this.log(`⚠️ First publish button issue: ${(e as Error).message}`);
-      await this.dumpState('no_first_publish_btn');
-      
-      // Fallback: try finding it by text just in case
-      const textBtn = await this.page.$('button:has-text("Опубликовать")');
-      if (textBtn) {
-         const isDisabled = await textBtn.getAttribute('disabled') !== null;
-         this.log(`Fallback button found. Disabled: ${isDisabled}`);
-         if (!isDisabled) {
-            await textBtn.click();
-            await this.page.waitForTimeout(3000);
-         }
-      }
     }
 
-    // 2. Second Publish Button (Modal)
     const secondBtnSelector = 'button[data-testid="publish-btn"][type="submit"]';
     
     try {
@@ -395,10 +322,8 @@ export class PlaywrightService {
         await secondBtn.click();
         this.log('✅ Clicked confirmation button');
         
-        // Long polling for captcha
         await this.handleCaptcha(15);
 
-        // Validate via URL redirect
         this.log('⏳ Waiting for redirect...');
         try {
           await this.page.waitForFunction(() => !window.location.href.includes('/editor/'), { timeout: 45000 });
@@ -406,15 +331,13 @@ export class PlaywrightService {
           this.log(`🔗 Published at: ${finalUrl}`);
           return { success: true, url: finalUrl };
         } catch (e) {
-          await this.dumpState('publish_timeout');
           throw new Error('Publication timed out (no redirect)');
         }
       }
     } catch (e) {
-      this.log('⚠️ Second publish button (modal) not found');
+      this.log('⚠️ Second publish button not found');
     }
 
-    await this.dumpState('no_second_publish_btn');
     return { success: false };
   }
 
@@ -424,14 +347,12 @@ export class PlaywrightService {
 
     for (let i = 0; i < maxAttempts; i++) {
       try {
-        // Main page
         const el = await this.page.$(selector);
         if (el) {
            await this.clickCaptcha(el);
            return;
         }
 
-        // Frames
         for (const frame of this.page.frames()) {
           const frameEl = await frame.$(selector);
           if (frameEl) {
@@ -447,7 +368,6 @@ export class PlaywrightService {
 
   private async clickCaptcha(element: any, frame: any = null) {
     try {
-      // Try clicking label parent first
       const label = await element.evaluateHandle((el: HTMLElement) => el.closest('label'));
       if (label) {
         await label.click();
