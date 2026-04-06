@@ -50,8 +50,7 @@ jobs:
           echo "✅ Secret 'DZEN_COOKIES_JSON' found! Size: $SECRET_SIZE characters"
           
           # Validate JSON format
-          echo "$DZEN_COOKIES_JSON" | python3 -m json.tool > /dev/null 2>&1
-          if [ $? -eq 0 ]; then
+          if echo "$DZEN_COOKIES_JSON" | python3 -m json.tool > /dev/null 2>&1; then
             echo "✅ Valid JSON format"
           else
             echo "⚠️  Warning: Cookies may not be valid JSON (might be single object)"
