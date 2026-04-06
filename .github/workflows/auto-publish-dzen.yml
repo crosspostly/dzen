@@ -97,9 +97,12 @@ jobs:
           CURRENT_HOUR=$(date -u +%H)
           if [ "$CURRENT_HOUR" -ge 23 ] || [ "$CURRENT_HOUR" -lt 07 ]; then
             echo "🌙 NIGHT MODE ACTIVE ($CURRENT_HOUR:00). Skipping publication."
+            echo "publisher_status=0" >> $GITHUB_OUTPUT
             exit 0
           fi
 
+          # Set pipefail to catch errors in the first command of the pipe
+          set -o pipefail
           
           # Run the new TypeScript script
           timeout 300 npx tsx scripts/publish-dzen.ts 2>&1 | tee publish.log
@@ -115,9 +118,11 @@ jobs:
       
       - name: 📊 Check results
         if: always()
+        env:
+          HISTORY_FILE: "!posts/PRODUCTION_READY/published_articles.txt"
         run: |
           echo "========================================"
-          # Night mode check (23:00 - 07:00 UTC)
+          if [ -f "$HISTORY_FILE" ]; then
             echo ""
             echo "📋 Last 3 published articles:"
             tail -3 "$HISTORY_FILE" | sed 's/^/   /'
@@ -126,10 +131,10 @@ jobs:
           fi
           
           echo ""
-          if [ ${{ steps.publisher.outputs.publisher_status }} -eq 0 ]; then
+          if [ "${{ steps.publisher.outputs.publisher_status }}" == "0" ]; then
             echo "✅ Publisher completed successfully!"
           else
-            echo "⚠️  Publisher completed with warnings or errors"
+            echo "⚠️  Publisher completed with warnings or errors (status: ${{ steps.publisher.outputs.publisher_status }})"
           fi
       
       - name: 💾 Commit and push updates
@@ -143,8 +148,9 @@ jobs:
           # Add history file
           git add "!posts/PRODUCTION_READY/published_articles.txt" 2>/dev/null || true
           
-          # Add logs if they exist
+          # Add logs and debug files if they exist
           git add "publish-*.log" 2>/dev/null || true
+          git add "error_state.html" "error_state.png" 2>/dev/null || true
           
           # Check if there's anything to commit
           if git diff --cached --quiet; then
