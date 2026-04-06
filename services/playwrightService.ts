@@ -125,12 +125,12 @@ export class PlaywrightService {
     if (!this.page) throw new Error('Page not initialized');
     
     this.log('🌐 Navigating to Dzen editor...');
-    await this.page.goto('https://dzen.ru/profile/editor/potemki', { waitUntil: 'domcontentloaded' });
+    // Try direct editor URL first
+    await this.page.goto('https://dzen.ru/profile/editor/potemki#article-editor', { waitUntil: 'domcontentloaded' });
     await this.page.waitForTimeout(5000);
 
-    const title = await this.page.title();
-    const url = this.page.url();
-    this.log(`📄 Page loaded: "${title}" (${url})`);
+    let url = this.page.url();
+    this.log(`📄 Page loaded: "${await this.page.title()}" (${url})`);
 
     // Check for login redirection
     if (url.includes('passport.yandex')) {
@@ -138,25 +138,40 @@ export class PlaywrightService {
       throw new Error('Redirected to login page (cookies expired?)');
     }
 
+    // Check if we are already in the editor
+    if (url.includes('#article-editor')) {
+      this.log('✅ Already in editor, skipping navigation buttons');
+      return;
+    }
+
     // Close modal if present
-    const modalButton = await this.page.$('[data-testid="close-button"]');
+    const modalButton = await this.page.$('[data-testid="close-button"], [aria-label="Закрыть"]');
     if (modalButton) {
       this.log('Start modal found, closing...');
       await modalButton.click();
+      await this.page.waitForTimeout(1000);
     }
 
     await this.dumpState('step1_editor');
 
     // Click "Add Publication"
-    const addButtonSelectors = ['[data-testid="add-publication-button"]', 'button[aria-label="Создать"]', '.new-publication-button'];
+    const addButtonSelectors = [
+      '[data-testid="add-publication-button"]', 
+      'button[aria-label="Создать"]', 
+      'button:has-text("Создать")',
+      '.new-publication-button',
+      'button:has(svg[viewBox*="0 0 24 24"])' // Common plus icon button
+    ];
     let addButton = null;
     
     for (const sel of addButtonSelectors) {
-      addButton = await this.page.$(sel);
-      if (addButton) {
-        this.log(`Found add button with selector: ${sel}`);
-        break;
-      }
+      try {
+        addButton = await this.page.$(sel);
+        if (addButton && await addButton.isVisible()) {
+          this.log(`Found add button with selector: ${sel}`);
+          break;
+        }
+      } catch (e) { /* ignore selector errors */ }
     }
 
     if (addButton) {
@@ -166,72 +181,127 @@ export class PlaywrightService {
       
       // Click "Write Article"
       // Try multiple selectors
-      const writeSelectors = ['text="Написать статью"', 'text="Статья"'];
+      const writeSelectors = [
+        'text="Написать статью"', 
+        'text="Статья"', 
+        'button:has-text("Статья")',
+        '[data-testid="menu-item-article"]',
+        'a[href*="editor/new/article"]'
+      ];
       let writeButton = null;
 
       for (const sel of writeSelectors) {
-         writeButton = await this.page.$(sel);
-         if (writeButton) break;
+         try {
+           writeButton = await this.page.$(sel);
+           if (writeButton && await writeButton.isVisible()) {
+             this.log(`Found write button with selector: ${sel}`);
+             break;
+           }
+         } catch (e) { /* ignore */ }
       }
 
       if (writeButton) {
         await writeButton.click();
         this.log('✅ "Write Article" clicked, waiting for editor...');
         await this.page.waitForTimeout(8000); // Wait for editor load
-        
-        await this.dumpState('step3_editor_loaded');
-
-        // Close overlays
-        await this.page.evaluate(() => {
-          const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, .article-editor-desktop--help-popup__overlay-3q');
-          overlays.forEach(el => { (el as HTMLElement).style.display = 'none'; el.remove(); });
-        });
-        await this.page.keyboard.press('Escape');
       } else {
-        await this.dumpState('dump_menu');
-        throw new Error('"Write Article" button not found');
+        // Fallback: try direct navigation to new article if buttons fail
+        this.log('⚠️ Write Article button not found, trying direct navigation...');
+        await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'domcontentloaded' });
+        await this.page.waitForTimeout(8000);
       }
     } else {
-      // Maybe we are already in the menu or on a different page structure
-      await this.dumpState('dump_no_add_btn');
-      throw new Error('"Add Publication" button not found');
+      // Check if maybe we can go direct
+      this.log('⚠️ Add button not found, trying direct navigation to editor...');
+      await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await this.page.waitForTimeout(8000);
     }
+
+    // Final check for editor load
+    await this.dumpState('step3_editor_loaded');
+
+    // Close overlays/tutorials
+    await this.page.evaluate(() => {
+      const selectors = [
+        '.ReactModal__Overlay', 
+        '.ReactModalPortal', 
+        '.article-editor-desktop--help-popup__overlay-3q',
+        '[class*="help-popup"]',
+        '[class*="overlay"]'
+      ];
+      selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => { (el as HTMLElement).style.display = 'none'; el.remove(); });
+      });
+    });
+    await this.page.keyboard.press('Escape');
+    await this.page.waitForTimeout(1000);
   }
 
   private async fillArticle(article: ArticleData) {
     if (!this.page) throw new Error('Page not initialized');
 
     this.log('📝 Looking for inputs...');
-    const inputs = await this.page.$$('input[type="text"], textarea, div[contenteditable="true"]');
-    this.log(`Found ${inputs.length} input elements`);
+    await this.page.waitForTimeout(2000);
     
-    if (inputs.length === 0) {
+    // Multi-stage input finding
+    const titleSelectors = [
+      'input[placeholder*="заголов"]',
+      'input[placeholder*="Название"]',
+      'div[contenteditable="true"]:first-of-type',
+      '.article-editor-desktop--editor-header__title-1Q'
+    ];
+    
+    let titleInput = null;
+    for (const sel of titleSelectors) {
+      titleInput = await this.page.$(sel);
+      if (titleInput && await titleInput.isVisible()) {
+        this.log(`Found title input: ${sel}`);
+        break;
+      }
+    }
+
+    if (!titleInput) {
+       // Fallback to generic find
+       const inputs = await this.page.$$('input[type="text"], div[contenteditable="true"]');
+       if (inputs.length > 0) titleInput = inputs[0];
+    }
+
+    if (!titleInput) {
       await this.dumpState('no_inputs');
       throw new Error('No inputs found in editor');
     }
 
     // 1. Title (Human-like typing)
-    if (inputs.length > 0) {
-      this.log('📝 Typing title...');
-      await inputs[0].focus();
-      await inputs[0].type(article.title, { delay: 100 });
-    }
+    this.log('📝 Typing title...');
+    await titleInput.click();
+    await titleInput.focus();
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
+    await titleInput.type(article.title, { delay: 50 });
+    await this.page.waitForTimeout(1000);
 
     // 2. Content (Copy-Paste)
-    if (inputs.length > 1) {
-      this.log('📝 Pasting content...');
-      await inputs[1].focus();
-      await this.page.evaluate((text) => navigator.clipboard.writeText(text), article.content);
-      await this.page.waitForTimeout(1000);
-      await this.page.keyboard.press('Control+V');
-      await this.page.waitForTimeout(1000);
-      await this.page.keyboard.press('Enter');
-      
-      // Scroll simulation
-      await this.page.mouse.wheel(0, 500);
-      await this.page.waitForTimeout(1000);
-      await this.page.mouse.wheel(0, -500);
+    this.log('📝 Pasting content...');
+    await this.page.keyboard.press('Tab'); // Move to content
+    await this.page.waitForTimeout(500);
+    
+    // Find content input specifically if Tab didn't work
+    const contentInput = await this.page.$('[role="textbox"], .notranslate, div[contenteditable="true"]:last-of-type');
+    if (contentInput) {
+      await contentInput.click();
+      await contentInput.focus();
     }
+
+    await this.page.evaluate((text) => navigator.clipboard.writeText(text), article.content);
+    await this.page.waitForTimeout(1000);
+    await this.page.keyboard.press('Control+V');
+    await this.page.waitForTimeout(1000);
+    await this.page.keyboard.press('Enter');
+    
+    // Scroll simulation
+    await this.page.mouse.wheel(0, 500);
+    await this.page.waitForTimeout(1000);
+    await this.page.mouse.wheel(0, -500);
 
     // 3. Image
     if (article.imageUrl) {
@@ -241,8 +311,8 @@ export class PlaywrightService {
       const imageBtnSelectors = [
         'button[data-tip="Вставить изображение"]',
         'button[aria-label="Вставить изображение"]',
-        '.article-editor-desktop--side-button__sideButton-1z', // Legacy class
-        'button:has(svg)' // Generic fallback (risky but better than nothing)
+        'button:has(svg[viewBox*="0 0 24 24"])',
+        '.article-editor-desktop--side-button__sideButton-1z'
       ];
 
       let imageBtn = null;
