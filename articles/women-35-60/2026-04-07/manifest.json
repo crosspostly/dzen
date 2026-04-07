@@ -1,0 +1,30 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775547151089,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 99035,
+  "totalImages": 4,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-07/mne-bylo-obidno-ya-stala-mebelyu-dlya-bossa-zabyvs.jpg",
+      "articles/women-35-60/2026-04-07/ya-terpela-unizheniya-za-staruyu-tsatsku-poka-ona-.jpg",
+      "articles/women-35-60/2026-04-07/mne-bylo-obidno-slyshat-gadosti-sosedki-ved-ya-vla.jpg",
+      "articles/women-35-60/2026-04-07/mne-bylo-bolno-ot-ego-slov-no-ya-molchala-on-vykin.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-07/REPORT.md"
+  }
+}
