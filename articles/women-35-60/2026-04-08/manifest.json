@@ -1,0 +1,29 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775633817428,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 94871,
+  "totalImages": 3,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-08/ya-byla-v-uzhase-kogda-v-sunduke-soseda-nashla-dne.jpg",
+      "articles/women-35-60/2026-04-08/ya-byla-razdavlena-slovami-muzha-poka-moy-brat-bli.jpg",
+      "articles/women-35-60/2026-04-08/mne-stalo-pusto-i-ya-reshil-ostavit-kvartiru-detya.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-08/REPORT.md"
+  }
+}
