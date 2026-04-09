@@ -1,0 +1,30 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775768440293,
+  "config": {
+    "articleCount": 10,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 10,
+  "totalCharacters": 172217,
+  "totalImages": 4,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-09/sestra-nazvala-menya-nischenkoy-a-cherez-chas-ryda.jpg",
+      "articles/women-35-60/2026-04-09/on-skazal-ty-mne-v-synovya-godishsya-no-cherez-ned.jpg",
+      "articles/women-35-60/2026-04-09/ona-smeyalas-nad-moim-sirotstvom-ne-znaya-chto-moy.jpg",
+      "articles/women-35-60/2026-04-09/ya-razvelas-s-muzhem-bankrotom-a-on-okazalsya-mill.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-09/REPORT.md"
+  }
+}
