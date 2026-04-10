@@ -1,0 +1,28 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775809460433,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 123731,
+  "totalImages": 2,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-10/obidno-ya-stroil-etot-zavod-tridtsat-let-a-novyy-d.jpg",
+      "articles/women-35-60/2026-04-10/ya-byla-v-yarosti-ot-staroy-razvalyuhi-brata-poka-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-10/REPORT.md"
+  }
+}
