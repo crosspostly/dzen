@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1775891707717,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 131967,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-11/ya-byla-v-shoke-ya-vskryla-dvoynoe-dno-v-stole-kot.jpg",
+      "articles/women-35-60/2026-04-11/triumf-ya-byla-seroy-myshyu-poka-ona-ne-uvidela-mo.jpg",
+      "articles/women-35-60/2026-04-11/mne-bylo-smeshno-ya-molchala-ona-ne-dogadyvalas-kt.jpg",
+      "articles/women-35-60/2026-04-11/ya-terpela-unizheniya-bossa-poka-staroe-foto-ego-z.jpg",
+      "articles/women-35-60/2026-04-11/ona-smeyalas-nad-glupoy-uborschitsey-poka-na-torga.jpg",
+      "articles/women-35-60/2026-04-11/mne-bylo-gorko-no-ya-znala-moya-staraya-moneta-sto.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-11/REPORT.md"
+  }
+}
