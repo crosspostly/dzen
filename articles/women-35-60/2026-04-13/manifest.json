@@ -1,0 +1,31 @@
+{
+  "version": "4.0",
+  "generatedAt": 1776069471277,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 142665,
+  "totalImages": 5,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-13/ya-rydala-ot-zhalosti-k-sosedke-poka-ne-zastala-ey.jpg",
+      "articles/women-35-60/2026-04-13/ya-rydala-ot-obidy-na-staroy-dache-poka-sosed-ne-p.jpg",
+      "articles/women-35-60/2026-04-13/obidno-ya-poluchila-lish-odnu-komnatu-no-v-ney-mat.jpg",
+      "articles/women-35-60/2026-04-13/s-obidoy-my-voshli-v-staryy-dom-materi-ne-znaya-ch.jpg",
+      "articles/women-35-60/2026-04-13/mne-bylo-bolno-ot-slov-muzha-no-on-esche-ne-videl-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-13/REPORT.md"
+  }
+}
