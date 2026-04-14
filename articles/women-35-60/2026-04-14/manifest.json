@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1776153635999,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 129775,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-14/yarost-ya-stala-ego-bossom-i-cherez-chas-uvolila-z.jpg",
+      "articles/women-35-60/2026-04-14/ya-obizhalsya-na-ottsa-no-v-ego-masterskoy-ya-nash.jpg",
+      "articles/women-35-60/2026-04-14/sosed-vysmeival-moy-garazh-svalku-no-nahodka-vnutr.jpg",
+      "articles/women-35-60/2026-04-14/mne-bylo-strashno-brat-napal-iz-za-nasledstva-no-c.jpg",
+      "articles/women-35-60/2026-04-14/gorko-chto-ya-byla-dlya-nih-razvalyuhoy-poka-moy-d.jpg",
+      "articles/women-35-60/2026-04-14/mne-bylo-obidno-ya-molcha-snosil-ih-shutki-pro-raz.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-14/REPORT.md"
+  }
+}
