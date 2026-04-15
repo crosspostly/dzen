@@ -1,0 +1,32 @@
+{
+  "version": "4.0",
+  "generatedAt": 1776240398790,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 121968,
+  "totalImages": 6,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-15/ya-plakala-ot-obidy-kogda-boss-vybrasyval-dokument.jpg",
+      "articles/women-35-60/2026-04-15/gorko-ya-terpela-ee-hamstvo-v-ocheredi-poka-ona-ne.jpg",
+      "articles/women-35-60/2026-04-15/mne-bylo-bolno-doedat-obedki-no-ya-znala-v-sumke-l.jpg",
+      "articles/women-35-60/2026-04-15/ya-byla-prosto-tenyu-poka-ne-uznala-chto-sosed-mil.jpg",
+      "articles/women-35-60/2026-04-15/serdtse-razryvalos-ya-otdala-docheri-vsyo-i-stala-.jpg",
+      "articles/women-35-60/2026-04-15/my-godami-smeyalis-nad-ego-nivoy-poka-etot-chudak-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-15/REPORT.md"
+  }
+}
