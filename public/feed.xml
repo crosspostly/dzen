@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Fri, 17 Apr 2026 09:20:33 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 17 Apr 2026 13:23:49 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[«Опять со своими ржавыми штуками, Марин?» — голос мужа, как скрежет ножа по тарелке. Я молчу. Под столом, в тайне от всех, мои пальцы трут старую медную монету. Шершавая, в зеленом налете. А над...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-gorko-no-ya-znala-moya-staraya-moneta-sto-20260411</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-gorko-no-ya-znala-moya-staraya-moneta-sto-20260411</guid>
-      <pubDate>Fri, 17 Apr 2026 12:20:33 +0300</pubDate>
+      <pubDate>Fri, 17 Apr 2026 16:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[— Ты вообще соображаешь, что делаешь? — Голос мужа (бывшего, слава Богу) резал уши почище этого чертова стимера. Я молчала. Что тут скажешь? Запах пережженного молока. Горький, липкий, он будто...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-smeshno-ya-molchala-ona-ne-dogadyvalas-kt-20260411</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-smeshno-ya-molchala-ona-ne-dogadyvalas-kt-20260411</guid>
-      <pubDate>Fri, 17 Apr 2026 13:50:33 +0300</pubDate>
+      <pubDate>Fri, 17 Apr 2026 17:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[«Ты что, слепая? Лена! Пятно!» — ее голос, как визг пылесоса, прямо в мозг. Я опустила глаза. Пол. Идеальный. Блестит. Хоть ешь с него. Но для нее — пятно. Всегда. Я для нее и была одно сплошное...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ona-smeyalas-nad-glupoy-uborschitsey-poka-na-torga-20260411</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ona-smeyalas-nad-glupoy-uborschitsey-poka-na-torga-20260411</guid>
-      <pubDate>Fri, 17 Apr 2026 12:20:33 +0300</pubDate>
+      <pubDate>Fri, 17 Apr 2026 16:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[— Марина, ты же музейный экспонат! Этот жакет... Скука. Ску-ка! — Стелла смеялась так звонко, что у меня в ушах зазвенело. Она стояла в дверях, цокая своими дорогущими шпильками по линолеуму, и...]]></description>
       <link>https://dzen-livid.vercel.app/articles/triumf-ya-byla-seroy-myshyu-poka-ona-ne-uvidela-mo-20260411</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/triumf-ya-byla-seroy-myshyu-poka-ona-ne-uvidela-mo-20260411</guid>
-      <pubDate>Fri, 17 Apr 2026 13:50:33 +0300</pubDate>
+      <pubDate>Fri, 17 Apr 2026 17:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -103,7 +103,7 @@
       <description><![CDATA[— Эту рухлядь — на помойку. Завтра же. Виктор пнул резную лапу грифона. Ботинком. Грязным, тяжёлым уличным ботинком по полированному дереву, которое помнило руки моего отца. Звук получился...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-byla-v-shoke-ya-vskryla-dvoynoe-dno-v-stole-kot-20260411</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-byla-v-shoke-ya-vskryla-dvoynoe-dno-v-stole-kot-20260411</guid>
-      <pubDate>Fri, 17 Apr 2026 15:20:33 +0300</pubDate>
+      <pubDate>Fri, 17 Apr 2026 19:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -124,7 +124,7 @@
       <description><![CDATA[— Ты вообще соображаешь, что ты написала?! — папка с отчетом больно ударила меня по ключице, и листы веером рассыпались по полу. Дешевый тонер. Пахнет пылью и чем-то горелым. Этот запах… он всегда...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-terpela-unizheniya-bossa-poka-staroe-foto-ego-z-20260411</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-terpela-unizheniya-bossa-poka-staroe-foto-ego-z-20260411</guid>
-      <pubDate>Fri, 17 Apr 2026 16:50:33 +0300</pubDate>
+      <pubDate>Fri, 17 Apr 2026 20:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -145,7 +145,7 @@
       <description><![CDATA[Он пах кожей и табаком. Я — ничем. Его ботинки блестели, мои дешёвые кеды скрипели по мрамору, выдавая меня с головой. Он взял папку. Всю мою жизнь на шершавых листах картона. И поставил на неё...]]></description>
       <link>https://dzen-livid.vercel.app/articles/galerist-nazval-moi-raboty-musorom-a-potom-upal-v--20260412</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/galerist-nazval-moi-raboty-musorom-a-potom-upal-v--20260412</guid>
-      <pubDate>Fri, 17 Apr 2026 18:20:33 +0300</pubDate>
+      <pubDate>Fri, 17 Apr 2026 22:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -166,7 +166,7 @@
       <description><![CDATA[Треск. Сухой, как будто ветка сломалась. Это лопнула моя дешевая сумка, и вся моя жалкая жизнь вывалилась наружу — прямо в грязную лужу. Тампоны, старые чеки, треснувшая помада… Я полезла собирать...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-bolno-chuvstvovat-sebya-nikem-no-cherez-c-20260412</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-bolno-chuvstvovat-sebya-nikem-no-cherez-c-20260412</guid>
-      <pubDate>Fri, 17 Apr 2026 19:50:33 +0300</pubDate>
+      <pubDate>Fri, 17 Apr 2026 23:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -187,7 +187,7 @@
       <description><![CDATA[Вы когда-нибудь чувствовали себя мебелью? Не просто ненужной вещью, а именно шкафом или стулом в собственном — подчеркиваю, своем — офисе? Серый февраль за окном, и во мне всё такое же... серое....]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-smeshno-slushat-ego-kriki-ved-ya-uzhe-pod-20260412</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-smeshno-slushat-ego-kriki-ved-ya-uzhe-pod-20260412</guid>
-      <pubDate>Fri, 17 Apr 2026 21:20:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 01:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -208,7 +208,7 @@
       <description><![CDATA[Утка на столе остыла. Вы когда-нибудь видели, как застывает утиный жир? Он покрывает кожу неровными белыми каплями. Похоже на восковые слезы. Красиво, если не знать, что это — мой проваленный...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-bolno-ot-slov-muzha-no-on-esche-ne-videl--20260413</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-bolno-ot-slov-muzha-no-on-esche-ne-videl--20260413</guid>
-      <pubDate>Fri, 17 Apr 2026 22:50:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 02:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -229,7 +229,7 @@
       <description><![CDATA[— Елена, ты почему еще не в своей комнате? — этот голос. Господи, как осколок стекла. Тонкий, острый, лезет прямо под кожу. Я сижу на полу. Холодное дерево, шершавая побелка под ногтями — крошится,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-ya-poluchila-lish-odnu-komnatu-no-v-ney-mat-20260413</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-ya-poluchila-lish-odnu-komnatu-no-v-ney-mat-20260413</guid>
-      <pubDate>Sat, 18 Apr 2026 00:20:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 04:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -250,7 +250,7 @@
       <description><![CDATA[— Маринке это не нужно, она и так перебьется, — шепот брата за дверью резанул по ушам больнее, чем скрежет старой железной кровати. Я стояла в комнате, где еще пахло холодным жиром от вчерашнего...]]></description>
       <link>https://dzen-livid.vercel.app/articles/s-obidoy-my-voshli-v-staryy-dom-materi-ne-znaya-ch-20260413</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/s-obidoy-my-voshli-v-staryy-dom-materi-ne-znaya-ch-20260413</guid>
-      <pubDate>Sat, 18 Apr 2026 01:50:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 05:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -271,7 +271,7 @@
       <description><![CDATA[— Ну, живи теперь королевой, Маш. — Виктор даже не смотрел в мою сторону. — Бизнес — мне, квартира — мне. А это тебе, в память об отце. Рассвет, понимаешь? Твой личный. Он захлопнул дверь...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-rydala-ot-obidy-na-staroy-dache-poka-sosed-ne-p-20260413</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-rydala-ot-obidy-na-staroy-dache-poka-sosed-ne-p-20260413</guid>
-      <pubDate>Sat, 18 Apr 2026 03:20:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 07:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -292,7 +292,7 @@
       <description><![CDATA[«Леночка, доченька, помираю ведь! Никто воды не подаст!» — этот скрежет в дверь каждое утро, как гвоздем по стеклу. Я открываю. В нос бьет густой, липкий запах хлорки и какого-то копеечного мыла....]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-rydala-ot-zhalosti-k-sosedke-poka-ne-zastala-ey-20260413</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-rydala-ot-zhalosti-k-sosedke-poka-ne-zastala-ey-20260413</guid>
-      <pubDate>Sat, 18 Apr 2026 04:50:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 08:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -313,7 +313,7 @@
       <description><![CDATA[— Положи здесь, Елена, и не отсвечивай! — Прораб сплюнул густую слюну прямо под мои ноги. Я молчала. Тяжесть мешка разрывала плечо, а в носу стоял едкий запах «Примы» и сырой извести. Разве я могла...]]></description>
       <link>https://dzen-livid.vercel.app/articles/gorko-chto-ya-byla-dlya-nih-razvalyuhoy-poka-moy-d-20260414</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/gorko-chto-ya-byla-dlya-nih-razvalyuhoy-poka-moy-d-20260414</guid>
-      <pubDate>Sat, 18 Apr 2026 06:20:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 10:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -334,7 +334,7 @@
       <description><![CDATA[Запах дешевого бензина. До тошноты, понимаешь? Он всегда возвращает меня туда, в тот вечер у Светки на даче. Я тогда приехала на своей «девятке» — ржавой, скрипучей, ну просто обнять и плакать....]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-obidno-ya-molcha-snosil-ih-shutki-pro-raz-20260414</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-obidno-ya-molcha-snosil-ih-shutki-pro-raz-20260414</guid>
-      <pubDate>Sat, 18 Apr 2026 07:50:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 11:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -355,7 +355,7 @@
       <description><![CDATA[— Лен, ну ты слышишь? Ты не занята? — Голос брата в трубке дребезжит, как наш старый холодильник на кухне. Настойчиво так, с хрипотцой. Словно он уже всё решил за меня. Я смотрю на липкую клеенку...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-strashno-brat-napal-iz-za-nasledstva-no-c-20260414</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-strashno-brat-napal-iz-za-nasledstva-no-c-20260414</guid>
-      <pubDate>Sat, 18 Apr 2026 09:20:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 13:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -376,7 +376,7 @@
       <description><![CDATA[— Слышь, соседка! Воняет твоей нищетой на весь мой газон! — Виктор швырнул пачку дешёвых освежителей прямо через забор. Синий пластик, «Морской бриз». Шлёп. Прямо в жирную, чавкающую грязь у моих...]]></description>
       <link>https://dzen-livid.vercel.app/articles/sosed-vysmeival-moy-garazh-svalku-no-nahodka-vnutr-20260414</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/sosed-vysmeival-moy-garazh-svalku-no-nahodka-vnutr-20260414</guid>
-      <pubDate>Sat, 18 Apr 2026 10:50:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 14:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -397,7 +397,7 @@
       <description><![CDATA[Ключи. Блестящие такие, сука, холодные... Они не просто легли на стол. Они ударили по нему, как гильотина. Трах! И всё. Отец развернулся и ушёл. Хлопок двери — и тишина, от которой в ушах...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-obizhalsya-na-ottsa-no-v-ego-masterskoy-ya-nash-20260414</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-obizhalsya-na-ottsa-no-v-ego-masterskoy-ya-nash-20260414</guid>
-      <pubDate>Sat, 18 Apr 2026 12:20:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 16:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -418,7 +418,7 @@
       <description><![CDATA[— Ну что, пришла? — спрашиваю саму себя, а голос... ну, как не мой. Треснутый какой-то. Стою. Дождь, зараза, мелкий такой, липкий. К волосам лезет, в глаза, за воротник капает — противно. Спина...]]></description>
       <link>https://dzen-livid.vercel.app/articles/yarost-ya-stala-ego-bossom-i-cherez-chas-uvolila-z-20260414</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/yarost-ya-stala-ego-bossom-i-cherez-chas-uvolila-z-20260414</guid>
-      <pubDate>Sat, 18 Apr 2026 13:50:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 17:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -439,7 +439,7 @@
       <description><![CDATA[Номер 127. Очередь. Бахилы шоркают по грязному линолеуму, скрипит старая лампа. А я сижу. На этом липком пластиковом стуле, в руках — шершавая бумага медкарты. Главврач, понимаешь? Я. Человек, что...]]></description>
       <link>https://dzen-livid.vercel.app/articles/gorko-ya-terpela-ee-hamstvo-v-ocheredi-poka-ona-ne-20260415</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/gorko-ya-terpela-ee-hamstvo-v-ocheredi-poka-ona-ne-20260415</guid>
-      <pubDate>Sat, 18 Apr 2026 15:20:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 19:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -460,7 +460,7 @@
       <description><![CDATA[— Бесполезный рот. Ты — просто бесполезный рот, Ира. Он швырнул пачку неоплаченных счетов прямо в мою тарелку с овсянкой. Один листок — розовый, за свет — медленно утонул в серой жиже. Я даже не...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-bolno-doedat-obedki-no-ya-znala-v-sumke-l-20260415</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-bolno-doedat-obedki-no-ya-znala-v-sumke-l-20260415</guid>
-      <pubDate>Sat, 18 Apr 2026 16:50:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 20:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -481,7 +481,7 @@
       <description><![CDATA[— Елена! Это что, отчет? Или ржавая развалюха твоего соседа?! — голос Артема резанул мертвую тишину опенспейса, как ржавая пила. Громко. Прямо при всех. Смех его «шестерок» ударил под дых, а я... я...]]></description>
       <link>https://dzen-livid.vercel.app/articles/my-godami-smeyalis-nad-ego-nivoy-poka-etot-chudak--20260415</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/my-godami-smeyalis-nad-ego-nivoy-poka-etot-chudak--20260415</guid>
-      <pubDate>Sat, 18 Apr 2026 18:20:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 22:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -502,7 +502,7 @@
       <description><![CDATA[Мороз сегодня — просто зверь. Кусает за щеки, совсем как в тот четверг, который я пыталась забыть десять лет. Я замерла у подъезда, выронив ключи. На обледенелой скамейке сидела она. Запах мокрой...]]></description>
       <link>https://dzen-livid.vercel.app/articles/serdtse-razryvalos-ya-otdala-docheri-vsyo-i-stala--20260415</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/serdtse-razryvalos-ya-otdala-docheri-vsyo-i-stala--20260415</guid>
-      <pubDate>Sat, 18 Apr 2026 19:50:33 +0300</pubDate>
+      <pubDate>Sat, 18 Apr 2026 23:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -523,7 +523,7 @@
       <description><![CDATA[— Лена! Есть чего пожрать?! И носки мои! Грязные! Под ноги тебе, епт! — и прилетает. Прямо в лицо. Ком шерстяной, вонючий, влажный какой-то. А я? А я ничего. Стою. Смотрю на трещину на потолке. Она...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-byla-prosto-tenyu-poka-ne-uznala-chto-sosed-mil-20260415</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-byla-prosto-tenyu-poka-ne-uznala-chto-sosed-mil-20260415</guid>
-      <pubDate>Sat, 18 Apr 2026 21:20:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 01:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -544,7 +544,7 @@
       <description><![CDATA[— Так надо, Елена. Ты же понимаешь. — Голос начальника, как скрип несмазанной двери, режет уши. Опять. Снова этот запах старой бумаги, въевшейся пыли и дешевого пластика. Я сижу в своем кресле,...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-plakala-ot-obidy-kogda-boss-vybrasyval-dokument-20260415</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-plakala-ot-obidy-kogda-boss-vybrasyval-dokument-20260415</guid>
-      <pubDate>Sat, 18 Apr 2026 22:50:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 02:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -565,7 +565,7 @@
       <description><![CDATA['Господи, неужели я здесь и умру?' — я произнесла это вслух, и мой голос просто утонул в жирной, серой пыли. Слышишь, как она шуршит? Она была везде. На липком боку шифоньера, на стопках газет за...]]></description>
       <link>https://dzen-livid.vercel.app/articles/bolno-ya-zhila-v-pyli-s-etim-hlamom-poka-podruga-n-20260416</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/bolno-ya-zhila-v-pyli-s-etim-hlamom-poka-podruga-n-20260416</guid>
-      <pubDate>Sun, 19 Apr 2026 00:20:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 04:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -586,7 +586,7 @@
       <description><![CDATA[Вы когда-нибудь чувствовали себя… мебелью? Вот просто. Столом, например. Или старой тумбочкой в углу, на которую все сваливают хлам. Я тогда думала — может, я просто сумасшедшая? Может, мне...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-byt-mebelyu-no-ya-poluchila-staryy-keys-a-e-20260416</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-byt-mebelyu-no-ya-poluchila-staryy-keys-a-e-20260416</guid>
-      <pubDate>Sun, 19 Apr 2026 01:50:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 05:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -607,7 +607,7 @@
       <description><![CDATA[— Ну что, Марина? Наследство делить будем? — Игорь стоял в дверях, и от него несло так, что глаза резало. Дешевый одеколон, бензин и какая-то застарелая, липкая наглость. Всего три дня с похорон....]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-chto-ya-terpel-naglyy-smeh-brata-poka-on-ne-20260416</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-chto-ya-terpel-naglyy-smeh-brata-poka-on-ne-20260416</guid>
-      <pubDate>Sun, 19 Apr 2026 03:20:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 07:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -628,7 +628,7 @@
       <description><![CDATA[— Елена Викторовна, ну что вы? Пустое место. От вас проку — ноль. Что есть, что нет... Голос Маргариты Степановны звенел. Как визг мела по доске. Прямо по нервам — шорк! А я? Я просто сидела....]]></description>
       <link>https://dzen-livid.vercel.app/articles/ona-nazvala-menya-obychnoy-no-ne-znala-chto-cherez-20260416</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ona-nazvala-menya-obychnoy-no-ne-znala-chto-cherez-20260416</guid>
-      <pubDate>Sun, 19 Apr 2026 04:50:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 08:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -649,7 +649,7 @@
       <description><![CDATA[Телефон на полированном столе завибрировал — настойчиво, мерзко, как муха в стакане. На экране высветилось: «Инна». Я сбросила. Опять. Сидела, вжимаясь в спинку кресла, и чувствовала, как воротник...]]></description>
       <link>https://dzen-livid.vercel.app/articles/sosedka-skazala-eto-hlam-a-potom-uvidela-ego-na-au-20260416</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/sosedka-skazala-eto-hlam-a-potom-uvidela-ego-na-au-20260416</guid>
-      <pubDate>Sun, 19 Apr 2026 06:20:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 10:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -670,7 +670,7 @@
       <description><![CDATA[— Мам, дай тысячу. Ну чё ты молчишь? — голос Кирилла, наглый, сонный, ввинчивается в утреннюю тишину как ржавое сверло. Я сижу на кухне. Смотрю на желтые пятна на потолке — будто кто-то плевался...]]></description>
       <link>https://dzen-livid.vercel.app/articles/gorko-slyshat-izdevki-vnuka-no-on-ne-znaet-pravdu--20260417</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/gorko-slyshat-izdevki-vnuka-no-on-ne-znaet-pravdu--20260417</guid>
-      <pubDate>Sun, 19 Apr 2026 07:50:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 11:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -691,7 +691,7 @@
       <description><![CDATA[Господи, этот звук... Скрип тормозов моей «Ласточки» на весь двор звучал как смертный приговор. Опять. Каждое утро я пыталась проскользнуть незаметно, вжаться в протертый велюр сиденья, лишь бы не...]]></description>
       <link>https://dzen-livid.vercel.app/articles/kazhdoe-utro-sosedka-po-parkovke-prezritelno-fyrka-20260417</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/kazhdoe-utro-sosedka-po-parkovke-prezritelno-fyrka-20260417</guid>
-      <pubDate>Sun, 19 Apr 2026 09:20:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 13:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -712,7 +712,7 @@
       <description><![CDATA[— Леночка, ну не смешите людей. Ваш этот... проект — это же просто женская забава. Ну, печеньки там, рюшечки. Займитесь лучше домом, честное слово, — Игорь Петрович улыбнулся так фальшиво, что у...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-byt-mebelyu-no-ya-otkryla-kofeynyu-i-teper--20260417</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-byt-mebelyu-no-ya-otkryla-kofeynyu-i-teper--20260417</guid>
-      <pubDate>Sun, 19 Apr 2026 10:50:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 14:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -733,7 +733,7 @@
       <description><![CDATA[— Чего застыла, Маш? Всё равно ведь ворота мхом поросли, — Виктор усмехнулся, не отрываясь от своего глянцевого черного джипа. Шланг в его руках шипел, как жирный гад. Сверкающие капли летели мне...]]></description>
       <link>https://dzen-livid.vercel.app/articles/shok-ya-pyat-let-byla-nenuzhnym-hlamom-a-teper-sos-20260417</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/shok-ya-pyat-let-byla-nenuzhnym-hlamom-a-teper-sos-20260417</guid>
-      <pubDate>Sun, 19 Apr 2026 12:20:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 16:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -754,7 +754,7 @@
       <description><![CDATA[«Принцесса в золотой клетке, а, Лен?» — голос золовки Люды. Сладкий. До тошноты. Мы стоим у МОЕЙ новой машины. Моей? Блестит, зараза, даже под этим больным осенним солнцем. А я молчу. Просто дышу....]]></description>
       <link>https://dzen-livid.vercel.app/articles/sosedke-ne-verilos-chto-ya-sama-zarabotala-na-mash-20260417</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/sosedke-ne-verilos-chto-ya-sama-zarabotala-na-mash-20260417</guid>
-      <pubDate>Sun, 19 Apr 2026 13:50:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 17:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -775,7 +775,7 @@
       <description><![CDATA[— Мать, деньги нужны. Быстро. Голос Артема — холодный, режущий, как зазубренный нож по стеклу. Он даже не смотрел на меня. Вломился в кухню, притащив с собой запах дешевого табака и колючий...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-onemela-ot-gorya-syn-szheg-staryy-komod-ne-znay-20260417</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-onemela-ot-gorya-syn-szheg-staryy-komod-ne-znay-20260417</guid>
-      <pubDate>Sun, 19 Apr 2026 15:20:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 19:23:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -796,7 +796,7 @@
       <description><![CDATA[— Твое искусство — это мусор, Марина. Просто грязные тряпки. Кому это нужно? — Дверь захлопнулась так, что посыпалась штукатурка. И всё. Тишина. Липкая, густая, как холодный жир на сковородке. Я...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-rydala-kogda-muzh-nazval-moi-kartiny-mazney-no--20260417</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-rydala-kogda-muzh-nazval-moi-kartiny-mazney-no--20260417</guid>
-      <pubDate>Sun, 19 Apr 2026 16:50:33 +0300</pubDate>
+      <pubDate>Sun, 19 Apr 2026 20:53:49 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
