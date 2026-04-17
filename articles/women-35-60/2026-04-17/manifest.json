@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1776413837193,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 131701,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-17/ya-onemela-ot-gorya-syn-szheg-staryy-komod-ne-znay.jpg",
+      "articles/women-35-60/2026-04-17/ya-rydala-kogda-muzh-nazval-moi-kartiny-mazney-no-.jpg",
+      "articles/women-35-60/2026-04-17/shok-ya-pyat-let-byla-nenuzhnym-hlamom-a-teper-sos.jpg",
+      "articles/women-35-60/2026-04-17/obidno-byt-mebelyu-no-ya-otkryla-kofeynyu-i-teper-.jpg",
+      "articles/women-35-60/2026-04-17/kazhdoe-utro-sosedka-po-parkovke-prezritelno-fyrka.jpg",
+      "articles/women-35-60/2026-04-17/sosedke-ne-verilos-chto-ya-sama-zarabotala-na-mash.jpg",
+      "articles/women-35-60/2026-04-17/gorko-slyshat-izdevki-vnuka-no-on-ne-znaet-pravdu-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-17/REPORT.md"
+  }
+}
