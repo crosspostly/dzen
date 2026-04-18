@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1776496923964,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 114888,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-18/obidno-chto-menya-schitali-nischenkoy-ved-na-moem-.jpg",
+      "articles/women-35-60/2026-04-18/mne-gorko-byt-privideniem-no-oni-ne-znali-pro-sekr.jpg",
+      "articles/women-35-60/2026-04-18/gnev-kipel-ya-gubila-ego-proekt-no-moy-chertezh-na.jpg",
+      "articles/women-35-60/2026-04-18/obidno-chto-ya-byla-dlya-neyo-nischey-v-etoy-ruhly.jpg",
+      "articles/women-35-60/2026-04-18/staruha-brosila-plemyannitsa-vybrasyvaya-na-pomoyk.jpg",
+      "articles/women-35-60/2026-04-18/sosedka-prezirala-moy-ponoshennyy-kostyum-poka-ne-.jpg",
+      "articles/women-35-60/2026-04-18/smeshno-no-segodnya-ya-nanimayu-togo-kto-desyat-le.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-18/REPORT.md"
+  }
+}
