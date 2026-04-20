@@ -1,0 +1,33 @@
+{
+  "version": "4.0",
+  "generatedAt": 1776674049006,
+  "config": {
+    "articleCount": 7,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 12000,
+    "skipCleanupGates": false
+  },
+  "articleCount": 7,
+  "totalCharacters": 137517,
+  "totalImages": 7,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-04-20/skvoz-bol-ya-vernulas-za-svoim-rebenkom-ne-odna-i-.jpg",
+      "articles/women-35-60/2026-04-20/ya-byla-v-uzhase-muzh-skryval-ot-menya-brata-kotor.jpg",
+      "articles/women-35-60/2026-04-20/mne-bylo-gorko-uhodit-s-chemodanom-no-smeh-mamy-v-.jpg",
+      "articles/women-35-60/2026-04-20/stydno-chto-ya-rugala-syna-za-starye-knigi-poka-ne.jpg",
+      "articles/women-35-60/2026-04-20/ya-byla-nischey-dlya-sosedki-poka-ne-spasla-psa-ko.jpg",
+      "articles/women-35-60/2026-04-20/poka-ona-zhalovalas-sosedke-kak-muzh-eyo-ignorirue.jpg",
+      "articles/women-35-60/2026-04-20/gnev-smenilsya-triumfom-ya-kupila-galereyu-iz-koto.jpg"
+    ],
+    "report": "articles/women-35-60/2026-04-20/REPORT.md"
+  }
+}
