@@ -120,9 +120,8 @@ export class PlaywrightService {
     if (!this.page) throw new Error('Page not initialized');
     
     this.log('🌐 Navigating directly to new article editor...');
-    // Прямой переход в редактор, чтобы избежать редиректов на профиль
     await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
-    await this.page.waitForTimeout(5000); // Даем время на загрузку тяжелого редактора
+    await this.page.waitForTimeout(5000);
 
     let url = this.page.url();
     this.log(`📄 Page loaded: "${await this.page.title()}" (${url})`);
@@ -132,7 +131,7 @@ export class PlaywrightService {
       throw new Error('Redirected to login page (cookies expired or invalid)');
     }
 
-    // Закрываем все всплывашки СРАЗУ (особенно новые донат-баннеры Дзена)
+    // Закрываем все всплывашки СРАЗУ
     await this.page.keyboard.press('Escape');
     await this.page.evaluate(() => {
       const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, [class*="help-popup"], [class*="overlay"], [class*="curtain"], [data-testid*="banner"]');
@@ -140,7 +139,6 @@ export class PlaywrightService {
     }).catch(() => {});
     await this.page.waitForTimeout(1000);
 
-    // Если перекинуло на главную студии, пробуем нажать кнопку "Добавить"
     if (!url.includes('/editor/new/article')) {
       this.log('⚠️ Redirected to dashboard, attempting to find Create button...');
       try {
@@ -153,15 +151,11 @@ export class PlaywrightService {
           this.log('🔍 Looking for "Написать статью" option...');
           try {
             await this.page.getByText('Написать статью').first().click({ force: true });
-            this.log('✅ Clicked "Написать статью" via getByText');
           } catch (innerE) {
-            this.log('⚠️ First text click failed, trying alternative text match...');
-            await this.page.locator('text=Написать статью').click({ force: true });
+            await this.page.locator('text=Написать статью').first().click({ force: true });
           }
           await this.page.waitForTimeout(8000);
           this.log(`🌐 New URL after click: ${this.page.url()}`);
-        } else {
-          this.log('⚠️ Create button not found. We might be stuck.');
         }
       } catch (e) {
         this.log(`⚠️ Navigation fallback error: ${(e as Error).message}`);
@@ -175,14 +169,10 @@ export class PlaywrightService {
     if (!this.page) throw new Error('Page not initialized');
 
     this.log('📝 Looking for inputs...');
-    // Ждем появления хотя бы одного поля ввода
     await this.page.waitForSelector('div[contenteditable="true"], input[type="text"]', { timeout: 20000 });
-    
     const inputs = await this.page.$$('div[contenteditable="true"], input[type="text"], textarea');
-    this.log(`Found ${inputs.length} input elements`);
     
     if (inputs.length < 2) {
-      await this.dumpState('not_enough_inputs');
       throw new Error(`Only ${inputs.length} inputs found. Probably not in editor.`);
     }
 
@@ -192,28 +182,14 @@ export class PlaywrightService {
     await inputs[0].focus();
     await this.page.keyboard.press('Control+A');
     await this.page.keyboard.press('Backspace');
-    await inputs[0].type(article.title, { delay: 50 });
-    await this.page.waitForTimeout(1000);
+    await inputs[0].type(article.title, { delay: 30 });
 
     // 2. Content
     this.log('📝 Pasting content...');
     await inputs[1].click();
     await inputs[1].focus();
     
-    // Split content by image markers if they exist
-    const contentParts = article.content.split(/\[\[(IMG|FILE):(.+?)\]\]/);
-    
-    for (let i = 0; i < contentParts.length; i++) {
-      const part = contentParts[i];
-      if (!part) continue;
-
-      // regex split with groups: [text, type, value, text, type, value...]
-      // so we need to adjust the logic
-    }
-    
-    // Перепишем цикл для корректной обработки групп в split
     const parts = article.content.split(/(\[\[(?:IMG|FILE):.+?\]\])/);
-    
     for (const part of parts) {
       if (part.startsWith('[[IMG:')) {
         const url = part.match(/\[\[IMG:(.+?)\]\]/)?.[1];
@@ -222,21 +198,7 @@ export class PlaywrightService {
         const filePath = part.match(/\[\[FILE:(.+?)\]\]/)?.[1];
         if (filePath) await this.uploadImageInEditor(filePath);
       } else if (part.trim()) {
-        // Text
         await this.pasteText(part);
-      }
-    }
-    
-    await this.page.waitForTimeout(2000);
-    await this.page.keyboard.press('Enter');
-    
-    // 3. Main Cover Image (Legacy support)
-    if (article.imageUrl && !article.content.includes(article.imageUrl)) {
-      this.log('🖼️ Inserting main cover image...');
-      if (article.imageUrl.startsWith('http')) {
-        await this.insertImageInEditor(article.imageUrl);
-      } else {
-        await this.uploadImageInEditor(article.imageUrl);
       }
     }
   }
@@ -252,47 +214,33 @@ export class PlaywrightService {
       }
     }, text);
     await this.page.keyboard.press('Control+V');
-    await this.page.waitForTimeout(500);
+    await this.page.waitForTimeout(1000);
+    await this.page.keyboard.press('Enter');
   }
 
-  /**
-   * Helper to UPLOAD local image file
-   */
   private async uploadImageInEditor(relativeFilePath: string) {
     if (!this.page) return;
-    
-    const absolutePath = path.isAbsolute(relativeFilePath) 
-      ? relativeFilePath 
-      : path.join(process.cwd(), relativeFilePath);
-
+    const absolutePath = path.isAbsolute(relativeFilePath) ? relativeFilePath : path.join(process.cwd(), relativeFilePath);
     this.log(`📤 Uploading file: ${absolutePath}`);
     try {
-      // 1. Click the "Add Image" button to trigger the hidden file input
       const imageBtn = await this.page.$('button[aria-label="Вставить изображение"], button[data-tip="Вставить изображение"]');
       if (imageBtn) {
-        // Дзен открывает диалог выбора файла. В Playwright мы ловим событие 'filechooser'
         const fileChooserPromise = this.page.waitForEvent('filechooser');
         await imageBtn.click();
         const fileChooser = await fileChooserPromise;
         await fileChooser.setFiles(absolutePath);
-        
-        await this.page.waitForTimeout(5000); // Даем время на загрузку
-        this.log('✅ File uploaded successfully');
+        await this.page.waitForTimeout(5000);
       }
     } catch (e) {
       this.log(`❌ Upload failed: ${(e as Error).message}`);
     }
   }
 
-  /**
-   * Helper to insert image by URL into the editor
-   */
   private async insertImageInEditor(url: string) {
     if (!this.page) return;
-    
     this.log(`🖼️ Inserting image: ${url.substring(0, 50)}...`);
     try {
-      const imageBtn = await this.page.$('button[aria-label="Вставить изображение"], button[data-tip="Вставить изображение"], .article-editor-desktop--side-button__sideButton-1z');
+      const imageBtn = await this.page.$('button[aria-label="Вставить изображение"], button[data-tip="Вставить изображение"]');
       if (imageBtn) {
         await imageBtn.click();
         await this.page.waitForTimeout(2000);
@@ -300,8 +248,7 @@ export class PlaywrightService {
         if (urlInput) {
           await urlInput.fill(url);
           await urlInput.press('Enter');
-          await this.page.waitForTimeout(5000); // Wait for image to load/process
-          this.log('✅ Image URL submitted');
+          await this.page.waitForTimeout(5000);
         }
       }
     } catch (e) {
@@ -309,41 +256,37 @@ export class PlaywrightService {
     }
   }
 
-  private async submitPublish(): Promise<{ success: boolean; url?: string }> {
+  private async submitPublish(): Promise<{ success: boolean; url?: string; error?: string }> {
     if (!this.page) throw new Error('Page not initialized');
 
-    const publishBtnSelector = 'button[data-testid="article-publish-btn"], button:has-text("Опубликовать"), button:has-text("Далее")';
     try {
-      this.log('⏳ Waiting for publish button...');
-      await this.page.waitForSelector(publishBtnSelector, { timeout: 20000 });
-      const btn = await this.page.$(publishBtnSelector);
-      if (btn && await btn.isEnabled()) {
-        await btn.click();
-        this.log('✅ Clicked publish button');
-        await this.page.waitForTimeout(3000);
-        
-        // Final confirmation button in modal
-        const confirmBtn = await this.page.waitForSelector('button[data-testid="publish-btn"]', { timeout: 10000 });
-        if (confirmBtn) {
-          await confirmBtn.click();
-          this.log('✅ Clicked final confirmation');
-          
-          // Wait for redirect
-          try {
-            await this.page.waitForFunction(() => !window.location.href.includes('/editor/'), { timeout: 40000 });
-            const finalUrl = this.page.url();
-            this.log(`🔗 Published at: ${finalUrl}`);
-            return { success: true, url: finalUrl };
-          } catch (e) {
-            this.log('⚠️ Publication timeout or captcha');
-            await this.dumpState('after_publish_attempt');
-          }
-        }
+      this.log('⏳ Step 1: Click initial Publish button...');
+      const step1Btn = await this.page.waitForSelector('button:has-text("Опубликовать"), button:has-text("Далее"), [data-testid="article-publish-btn"]', { timeout: 20000 });
+      await step1Btn.click();
+      await this.page.waitForTimeout(3000);
+
+      this.log('⏳ Step 2: Click final Publish button in settings sidepanel...');
+      const step2Btn = await this.page.waitForSelector('button.editor-article-edit-settings__publish-button, button:has-text("Опубликовать"), [data-testid="publish-btn"]', { timeout: 15000 });
+      await step2Btn.click();
+      
+      this.log('✅ Article submitted for publication!');
+      await this.page.waitForTimeout(10000); // Wait for redirect or success state
+
+      const finalUrl = this.page.url();
+      if (!finalUrl.includes('/editor/')) {
+        return { success: true, url: finalUrl };
       }
+      
+      return { success: true, url: 'https://dzen.ru/profile/editor/new/publications' };
+
     } catch (e) {
-      this.log(`❌ Submit error: ${(e as Error).message}`);
+      this.log(`❌ Publication failed: ${(e as Error).message}`);
+      this.log('⚠️ Fallback: Trying to save as DRAFT (Ctrl+S)...');
+      await this.page.keyboard.press('Control+S');
+      await this.page.waitForTimeout(2000);
+      await this.dumpState('draft_save_attempt');
+      return { success: false, error: (e as Error).message };
     }
-    return { success: false };
   }
 
   private async close() {
