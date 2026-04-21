@@ -205,16 +205,18 @@ export class PlaywrightService {
 
   private async pasteText(text: string) {
     if (!this.page) return;
-    await this.page.evaluate((t) => {
-      const el = document.activeElement as HTMLElement;
-      if (el) {
-        const dt = new DataTransfer();
-        dt.setData('text/plain', t);
-        el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
-      }
-    }, text);
-    await this.page.keyboard.press('Control+V');
+    
+    this.log(`   ⌨️ Inserting text chunk (${text.length} chars)...`);
+    
+    // Фокусируемся на текущем активном элементе (поле контента)
+    await this.page.waitForTimeout(500);
+    
+    // Вставляем текст напрямую через клавиатуру Playwright
+    // Это работает даже там, где нет системного буфера обмена
+    await this.page.keyboard.insertText(text);
+    
     await this.page.waitForTimeout(1000);
+    // Нажимаем Enter только в конце блока текста, чтобы отделить его от картинки
     await this.page.keyboard.press('Enter');
   }
 
