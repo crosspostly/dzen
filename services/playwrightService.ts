@@ -69,12 +69,14 @@ export class PlaywrightService {
     this.log('🚀 Initializing browser...');
     this.browser = await chromium.launch({
       headless: options.headless !== false,
-      args: ['--no-sandbox', '--disable-blink-features=AutomationControlled', '--disable-dev-shm-usage']
+      args: ['--no-sandbox', '--disable-blink-features=AutomationControlled', '--disable-dev-shm-usage', '--window-size=1920,1080']
     });
 
     this.context = await this.browser.newContext({
       viewport: { width: 1920, height: 1080 },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 YaBrowser/23.12.0.0 Safari/537.36',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      isMobile: false,
+      hasTouch: false,
       permissions: ['clipboard-read', 'clipboard-write']
     });
 
@@ -119,10 +121,10 @@ export class PlaywrightService {
     
     this.log('🌐 Navigating directly to new article editor...');
     // Прямой переход в редактор, чтобы избежать редиректов на профиль
-    await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'networkidle', timeout: 60000 });
-    await this.page.waitForTimeout(10000); // Даем время на загрузку тяжелого редактора
+    await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+    await this.page.waitForTimeout(5000); // Даем время на загрузку тяжелого редактора
 
-    const url = this.page.url();
+    let url = this.page.url();
     this.log(`📄 Page loaded: "${await this.page.title()}" (${url})`);
 
     if (url.includes('passport.yandex') || url.includes('login')) {
@@ -130,12 +132,41 @@ export class PlaywrightService {
       throw new Error('Redirected to login page (cookies expired or invalid)');
     }
 
-    // Закрываем все всплывашки
+    // Закрываем все всплывашки СРАЗУ (особенно новые донат-баннеры Дзена)
     await this.page.keyboard.press('Escape');
     await this.page.evaluate(() => {
-      const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, [class*="help-popup"], [class*="overlay"]');
+      const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, [class*="help-popup"], [class*="overlay"], [class*="curtain"], [data-testid*="banner"]');
       overlays.forEach(el => (el as HTMLElement).remove());
-    });
+    }).catch(() => {});
+    await this.page.waitForTimeout(1000);
+
+    // Если перекинуло на главную студии, пробуем нажать кнопку "Добавить"
+    if (!url.includes('/editor/new/article')) {
+      this.log('⚠️ Redirected to dashboard, attempting to find Create button...');
+      try {
+        const addBtn = await this.page.$('[data-testid="add-publication-button"], button[aria-label="Написать"], button[aria-label="Добавить"]');
+        if (addBtn) {
+          this.log('✅ Found Create button, clicking...');
+          await addBtn.click({ force: true });
+          await this.page.waitForTimeout(2000);
+          
+          this.log('🔍 Looking for "Написать статью" option...');
+          try {
+            await this.page.getByText('Написать статью').first().click({ force: true });
+            this.log('✅ Clicked "Написать статью" via getByText');
+          } catch (innerE) {
+            this.log('⚠️ First text click failed, trying alternative text match...');
+            await this.page.locator('text=Написать статью').click({ force: true });
+          }
+          await this.page.waitForTimeout(8000);
+          this.log(`🌐 New URL after click: ${this.page.url()}`);
+        } else {
+          this.log('⚠️ Create button not found. We might be stuck.');
+        }
+      } catch (e) {
+        this.log(`⚠️ Navigation fallback error: ${(e as Error).message}`);
+      }
+    }
 
     await this.dumpState('editor_ready');
   }
@@ -281,7 +312,7 @@ export class PlaywrightService {
   private async submitPublish(): Promise<{ success: boolean; url?: string }> {
     if (!this.page) throw new Error('Page not initialized');
 
-    const publishBtnSelector = 'button[data-testid="article-publish-btn"]';
+    const publishBtnSelector = 'button[data-testid="article-publish-btn"], button:has-text("Опубликовать"), button:has-text("Далее")';
     try {
       this.log('⏳ Waiting for publish button...');
       await this.page.waitForSelector(publishBtnSelector, { timeout: 20000 });
