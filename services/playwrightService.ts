@@ -20,7 +20,7 @@ export class PlaywrightService {
 
   async publish(article: ArticleData, options: PublishOptions): Promise<{ success: boolean; url?: string; error?: string }> {
     try {
-      this.log(`🤖 Starting PlaywrightService: "${article.title}"`);
+      this.log(`🤖 Starting Final Reliable Publisher: "${article.title}"`);
       await this.initBrowser(options);
       await this.loadCookies(options.cookiesJson);
       await this.navigateToEditor();
@@ -62,20 +62,18 @@ export class PlaywrightService {
 
   private async loadCookies(cookiesJson: string) {
     if (!this.context) return;
-    const rawCookies = JSON.parse(cookiesJson);
-    const validCookies = rawCookies.map((c: any) => {
-      const cookie = { ...c };
-      if (cookie.sameSite) {
-        const lower = String(cookie.sameSite).toLowerCase();
-        if (lower === 'no_restriction' || lower === 'none') cookie.sameSite = 'None';
-        else if (lower === 'lax') cookie.sameSite = 'Lax';
-        else if (lower === 'strict') cookie.sameSite = 'Strict';
-        else delete cookie.sameSite;
+    const cookies = JSON.parse(cookiesJson);
+    await this.context.addCookies(cookies.map((c: any) => {
+      const { hostOnly, session, storeId, id, ...validCookie } = c;
+      if (validCookie.sameSite) {
+        const s = String(validCookie.sameSite).toLowerCase();
+        if (s === 'no_restriction' || s === 'none') validCookie.sameSite = 'None';
+        else if (s === 'lax') validCookie.sameSite = 'Lax';
+        else if (s === 'strict') validCookie.sameSite = 'Strict';
+        else delete validCookie.sameSite;
       }
-      delete cookie.hostOnly; delete cookie.session; delete cookie.storeId; delete cookie.id;
-      return cookie;
-    });
-    await this.context.addCookies(validCookies);
+      return validCookie;
+    }));
   }
 
   private async navigateToEditor() {
@@ -84,9 +82,10 @@ export class PlaywrightService {
     await this.page.goto('https://dzen.ru/profile/editor/new/home', { waitUntil: 'networkidle', timeout: 60000 });
     await this.page.waitForTimeout(5000);
 
-    // Удаляем баннеры
+    // Закрываем всё лишнее (баннеры, донаты)
     await this.page.evaluate(() => {
-      document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, [class*="help-popup"], [data-testid*="banner"]').forEach(el => el.remove());
+      const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, [class*="help-popup"], [data-testid*="banner"], [class*="curtain"]');
+      overlays.forEach(el => (el as HTMLElement).remove());
     });
 
     this.log('🔍 Clicking Add button...');
@@ -100,33 +99,63 @@ export class PlaywrightService {
 
   private async fillArticle(article: ArticleData) {
     if (!this.page) return;
-    this.log('📝 Filling content...');
-    await this.page.waitForSelector('div[contenteditable="true"]', { timeout: 20000 });
-    const fields = await this.page.$$('div[contenteditable="true"], input[type="text"]');
+
+    this.log('📝 Filling article content...');
+    await this.page.waitForSelector('div[contenteditable="true"]', { timeout: 30000 });
     
-    // Title
+    const fields = await this.page.$$('div[contenteditable="true"], [role="textbox"]');
+    
+    // 1. Заголовок
+    this.log('   📝 Title...');
+    await fields[0].focus();
     await fields[0].fill(article.title);
     await this.page.waitForTimeout(1000);
-
-    // Content
-    await fields[1].fill(article.content);
-    await this.page.waitForTimeout(2000);
     await this.page.keyboard.press('Enter');
 
-    // Image
-    if (article.imageUrl) {
-      this.log('🖼️ Inserting image...');
-      const btn = await this.page.$('button[data-tip="Вставить изображение"], [aria-label*="изображение"]');
-      if (btn) {
-        await btn.click();
-        await this.page.waitForTimeout(2000);
-        const input = await this.page.$('input[placeholder*="ссылка"], input[type="text"]');
-        if (input) {
-          await input.fill(article.imageUrl);
-          await input.press('Enter');
-          await this.page.waitForTimeout(5000);
-        }
+    // 2. Тело статьи (пошаговая вставка для поддержки картинок)
+    const blocks = article.content.split(/(\[\[IMG:.+?\]\])/);
+    this.log(`   🧩 Split into ${blocks.length} blocks`);
+
+    for (const block of blocks) {
+      if (!block.trim()) continue;
+
+      if (block.startsWith('[[IMG:')) {
+        const url = block.match(/\[\[IMG:(.+?)\]\]/)?.[1];
+        if (url) await this.insertImageViaUrl(url);
+      } else {
+        this.log(`   ⌨️ Inserting text (${block.length} chars)...`);
+        // Используем insertText для сохранения фокуса и поддержки многострочности
+        await this.page.keyboard.insertText(block.trim());
+        await this.page.waitForTimeout(1000);
+        await this.page.keyboard.press('Enter');
+        await this.page.waitForTimeout(1000);
       }
+    }
+    
+    // 3. Финальная картинка (если есть и не была в блоках)
+    if (article.imageUrl && !article.content.includes(article.imageUrl)) {
+      await this.insertImageViaUrl(article.imageUrl);
+    }
+  }
+
+  private async insertImageViaUrl(url: string) {
+    if (!this.page) return;
+    this.log(`   🖼️ Inserting image: ${url.substring(0, 50)}...`);
+    try {
+      // Ищем кнопку картинки ровно как в publish.js
+      const btn = await this.page.waitForSelector('button[data-tip="Вставить изображение"], [aria-label*="изображение"]', { timeout: 10000 });
+      await btn.click();
+      await this.page.waitForTimeout(3000);
+      
+      const input = await this.page.waitForSelector('input[placeholder*="ссылка"], input[type="text"]', { timeout: 5000 });
+      await input.fill(url);
+      await this.page.waitForTimeout(1000);
+      await this.page.keyboard.press('Enter');
+      
+      this.log('   ✅ Image submitted');
+      await this.page.waitForTimeout(8000); // Даем Дзену время подгрузить картинку
+    } catch (e) {
+      this.log(`   ⚠️ Image failed: ${e.message}`);
     }
   }
 
@@ -136,11 +165,14 @@ export class PlaywrightService {
       this.log('⏳ Publishing...');
       await this.page.click('button:has-text("Опубликовать"), [data-testid="article-publish-btn"]');
       await this.page.waitForTimeout(3000);
+      
       const final = await this.page.waitForSelector('button.editor-article-edit-settings__publish-button, button:has-text("Опубликовать")', { timeout: 10000 });
       await final.click();
-      await this.page.waitForTimeout(5000);
+      await this.page.waitForTimeout(10000);
+      
       return { success: true, url: 'https://dzen.ru/profile/editor/new/publications' };
     } catch (e) {
+      this.log('❌ Submit failed, saving draft...');
       await this.page.keyboard.press('Control+s');
       return { success: false, error: (e as Error).message };
     }

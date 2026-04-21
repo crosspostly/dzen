@@ -4,7 +4,6 @@ import { playwrightService } from '../services/playwrightService';
 import fs from 'fs/promises';
 import path from 'path';
 
-// 📋 Configuration
 const CONFIG = {
   cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'LOCAL_FILE',
   cookiesPath: path.join(process.cwd(), 'config', 'cookies.json'),
@@ -13,12 +12,13 @@ const CONFIG = {
   headless: process.env.HEADLESS !== 'false'
 };
 
-// 🏄 Process HTML content - BACK TO BASICS (LEGACY STABLE)
 function processArticleContent(content: string) {
   if (!content) return '';
   
-  // Просто удаляем всё лишнее, оставляя только переносы строк
-  let processed = content
+  // 🆕 v2026: Превращаем все IMG в маркеры для пошагового заполнения
+  let processed = content.replace(/<img[^>]*src="(.+?)"[^>]*>/gi, '[[IMG:$1]]');
+
+  processed = processed
     .replace(/<p[^>]*>/gi, '\n\n')
     .replace(/<\/p>/gi, '')
     .replace(/<h[1-6][^>]*>/gi, '\n\n')
@@ -28,7 +28,7 @@ function processArticleContent(content: string) {
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<li[^>]*>/gi, '\n• ')
     .replace(/<\/li>/gi, '')
-    .replace(/<[^>]*>/g, '') // Удаляем ВСЕ теги
+    .replace(/<[^>]*>(?![^\[]*\]\])/g, '') // Удаляем HTML, но оставляем маркеры [[IMG:...]]
     .replace(/&nbsp;/g, ' ')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -62,24 +62,19 @@ async function savePublishedArticle(article: any, url: string) {
 }
 
 async function main() {
-  console.log('🤖 ==== AUTO-PUBLISHER (STABLE MODE) STARTING ====');
+  console.log('🤖 ==== AUTO-PUBLISHER (MULTI-IMAGE MODE) STARTING ====');
   
   try {
-    // 1. Load Cookies
     let cookiesJson = '';
     if (CONFIG.cookiesSource === 'ENVIRONMENT') {
       cookiesJson = process.env.DZEN_COOKIES_JSON || '';
-      console.log('🍪 Using cookies from Environment Variable');
     } else {
       cookiesJson = await fs.readFile(CONFIG.cookiesPath, 'utf8');
-      console.log('🍪 Using cookies from Local File');
     }
 
-    // 2. Load Feed
     console.log(`📄 Opening feed: ${CONFIG.feedPath}`);
     const feed = await fs.readFile(CONFIG.feedPath, 'utf8');
     
-    // Parse articles via regex (reliable)
     const articles: any[] = [];
     const itemMatches = feed.matchAll(/<item>([\s\S]*?)<\/item>/g);
     
@@ -99,7 +94,6 @@ async function main() {
       return;
     }
 
-    // 3. Filter unpublished
     const history = await getPublishedArticles();
     let toPublish = articles.find(a => !isArticlePublished(a.title, history));
 
@@ -109,12 +103,11 @@ async function main() {
     }
 
     console.log(`📝 Publishing: "${toPublish.title}"`);
-    const cleanContent = processArticleContent(toPublish.content);
+    const processedContent = processArticleContent(toPublish.content);
 
-    // 4. Run Playwright
     const result = await playwrightService.publish({
       title: toPublish.title,
-      content: cleanContent,
+      content: processedContent,
       imageUrl: toPublish.imageUrl
     }, {
       cookiesJson,
