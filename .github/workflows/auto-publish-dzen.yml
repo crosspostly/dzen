@@ -1,9 +1,8 @@
-name: 🤖 Auto-Publish to Dzen Every 3 Hours
+name: 🤖 Daily Dzen Publication (1 article/day)
 
 on:
   schedule:
-    - cron: '0 7,12,17,22 * * *'
-    - cron: '30 9,14,19 * * *'  
+    - cron: '0 5 * * *' # Every day at 05:00 UTC (08:00 AM MSK)
   workflow_dispatch:        # Manual trigger
 
 jobs:
