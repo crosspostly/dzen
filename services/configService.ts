@@ -154,8 +154,8 @@ export class ConfigService {
       },
       
       content_rules: {
-        min_chars: 10000,
-        max_chars: 12000,
+        min_chars: 3000,
+        max_chars: 4500,
         required_triggers: [
           'квартира',
           'деньги',

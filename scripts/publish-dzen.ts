@@ -54,7 +54,11 @@ async function getArticlesFromFeed() {
 function processArticleContent(content: string) {
   if (!content) return '';
   
+  // 🆕 v2026: Preserve IMG and FILE markers before stripping other HTML
   let processed = content
+    .replace(/<img[^>]*src="(.+?)"[^>]*>/gi, '[[IMG:$1]]');
+
+  processed = processed
     .replace(/<p[^>]*>/gi, '\n\n')
     .replace(/<\/p>/gi, '')
     .replace(/<h[1-6][^>]*>/gi, '\n\n')
@@ -65,7 +69,7 @@ function processArticleContent(content: string) {
     .replace(/<br>/gi, '\n')
     .replace(/<li[^>]*>/gi, '\n• ')
     .replace(/<\/li>/gi, '')
-    .replace(/<[^>]*>/g, '')
+    .replace(/<[^>]*>(?![^\[]*(?:\]\]))/g, '') // Strip HTML but keep markers
     .replace(/&nbsp;/g, ' ')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')

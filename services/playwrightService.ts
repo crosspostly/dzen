@@ -6,6 +6,7 @@ export interface ArticleData {
   title: string;
   content: string;
   imageUrl?: string;
+  extraImages?: Array<{url: string, index?: number}>;
 }
 
 export interface PublishOptions {
@@ -67,14 +68,14 @@ export class PlaywrightService {
   private async initBrowser(options: PublishOptions) {
     this.log('🚀 Initializing browser...');
     this.browser = await chromium.launch({
-      headless: options.headless !== false, // Default to true
+      headless: options.headless !== false,
       args: ['--no-sandbox', '--disable-blink-features=AutomationControlled', '--disable-dev-shm-usage']
     });
 
     this.context = await this.browser.newContext({
       viewport: { width: 1920, height: 1080 },
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 YaBrowser/23.12.0.0 Safari/537.36',
-      permissions: ['clipboard-read', 'clipboard-write'] // Crucial for copy-paste
+      permissions: ['clipboard-read', 'clipboard-write']
     });
 
     this.page = await this.context.newPage();
@@ -84,33 +85,25 @@ export class PlaywrightService {
     if (!this.context) throw new Error('Browser context not initialized');
     try {
       const rawCookies = JSON.parse(cookiesJson);
-      
-      // Sanitize cookies for Playwright
       const validCookies = rawCookies.map((c: any) => {
         const cookie = { ...c };
-        
-        // Fix sameSite: Playwright requires "Strict" | "Lax" | "None"
         if (cookie.sameSite) {
           const lower = String(cookie.sameSite).toLowerCase();
           if (lower === 'no_restriction' || lower === 'none') {
             cookie.sameSite = 'None';
-            cookie.secure = true; // 'None' requires Secure
+            cookie.secure = true;
           } else if (lower === 'lax') {
             cookie.sameSite = 'Lax';
           } else if (lower === 'strict') {
             cookie.sameSite = 'Strict';
           } else {
-            // Remove invalid/unknown values (e.g. 'unspecified') to let browser use default
             delete cookie.sameSite;
           }
         }
-        
-        // Remove other potentially problematic fields that appear in some exports
         delete cookie.hostOnly;
         delete cookie.session;
         delete cookie.storeId;
         delete cookie.id;
-        
         return cookie;
       });
 
@@ -124,261 +117,202 @@ export class PlaywrightService {
   private async navigateToEditor() {
     if (!this.page) throw new Error('Page not initialized');
     
-    this.log('🌐 Navigating to Dzen editor...');
-    // Используем прямой URL для надежности
-    await this.page.goto('https://dzen.ru/profile/editor/potemki', { waitUntil: 'domcontentloaded' });
-    await this.page.waitForTimeout(5000);
+    this.log('🌐 Navigating directly to new article editor...');
+    // Прямой переход в редактор, чтобы избежать редиректов на профиль
+    await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'networkidle', timeout: 60000 });
+    await this.page.waitForTimeout(10000); // Даем время на загрузку тяжелого редактора
 
-    const title = await this.page.title();
     const url = this.page.url();
-    this.log(`📄 Page loaded: "${title}" (${url})`);
+    this.log(`📄 Page loaded: "${await this.page.title()}" (${url})`);
 
-    // Check for login redirection
-    if (url.includes('passport.yandex')) {
+    if (url.includes('passport.yandex') || url.includes('login')) {
       await this.dumpState('login_redirect');
-      throw new Error('Redirected to login page (cookies expired?)');
+      throw new Error('Redirected to login page (cookies expired or invalid)');
     }
 
-    // Close modal if present (более широкие селекторы)
-    const modalButton = await this.page.$('[data-testid="close-button"], [aria-label="Закрыть"]');
-    if (modalButton) {
-      this.log('Start modal found, closing...');
-      await modalButton.click();
-      await this.page.waitForTimeout(1000);
-    }
+    // Закрываем все всплывашки
+    await this.page.keyboard.press('Escape');
+    await this.page.evaluate(() => {
+      const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, [class*="help-popup"], [class*="overlay"]');
+      overlays.forEach(el => (el as HTMLElement).remove());
+    });
 
-    await this.dumpState('step1_editor');
-
-    // Click "Add Publication"
-    const addButtonSelectors = [
-      '[data-testid="add-publication-button"]', 
-      'button[aria-label="Создать"]', 
-      'button:has-text("Создать")',
-      '.new-publication-button'
-    ];
-    let addButton = null;
-    
-    for (const sel of addButtonSelectors) {
-      addButton = await this.page.$(sel);
-      if (addButton && await addButton.isVisible()) {
-        this.log(`Found add button with selector: ${sel}`);
-        break;
-      }
-    }
-
-    if (addButton) {
-      await addButton.click();
-      await this.page.waitForTimeout(2000);
-      await this.dumpState('step2_menu_open');
-      
-      // Click "Write Article"
-      const writeSelectors = [
-        'text="Написать статью"', 
-        'text="Статья"', 
-        'button:has-text("Статья")',
-        '[data-testid="menu-item-article"]'
-      ];
-      let writeButton = null;
-
-      for (const sel of writeSelectors) {
-         writeButton = await this.page.$(sel);
-         if (writeButton && await writeButton.isVisible()) {
-           this.log(`Found write button with selector: ${sel}`);
-           break;
-         }
-      }
-
-      if (writeButton) {
-        await writeButton.click();
-        this.log('✅ "Write Article" clicked, waiting for editor...');
-        await this.page.waitForTimeout(8000); // Wait for editor load
-        
-        await this.dumpState('step3_editor_loaded');
-
-        // Close overlays
-        await this.page.evaluate(() => {
-          const overlays = document.querySelectorAll('.ReactModal__Overlay, .ReactModalPortal, .article-editor-desktop--help-popup__overlay-3q');
-          overlays.forEach(el => { (el as HTMLElement).style.display = 'none'; el.remove(); });
-        });
-        await this.page.keyboard.press('Escape');
-      } else {
-        await this.dumpState('dump_menu');
-        // Если кнопка не найдена, пробуем прямой переход
-        this.log('⚠️ Write button not found, trying direct navigation...');
-        await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'domcontentloaded' });
-        await this.page.waitForTimeout(5000);
-      }
-    } else {
-      // Может мы уже в редакторе?
-      if (!url.includes('editor/new/article')) {
-        this.log('⚠️ Add button not found, trying direct navigation...');
-        await this.page.goto('https://dzen.ru/profile/editor/new/article', { waitUntil: 'domcontentloaded' }).catch(() => {});
-        await this.page.waitForTimeout(5000);
-      }
-    }
+    await this.dumpState('editor_ready');
   }
 
   private async fillArticle(article: ArticleData) {
     if (!this.page) throw new Error('Page not initialized');
 
     this.log('📝 Looking for inputs...');
-    const inputs = await this.page.$$('input[type="text"], textarea, div[contenteditable="true"]');
+    // Ждем появления хотя бы одного поля ввода
+    await this.page.waitForSelector('div[contenteditable="true"], input[type="text"]', { timeout: 20000 });
+    
+    const inputs = await this.page.$$('div[contenteditable="true"], input[type="text"], textarea');
     this.log(`Found ${inputs.length} input elements`);
     
-    if (inputs.length === 0) {
-      await this.dumpState('no_inputs');
-      throw new Error('No inputs found in editor');
+    if (inputs.length < 2) {
+      await this.dumpState('not_enough_inputs');
+      throw new Error(`Only ${inputs.length} inputs found. Probably not in editor.`);
     }
 
-    // 1. Title (Human-like typing)
-    if (inputs.length > 0) {
-      this.log('📝 Typing title...');
-      await inputs[0].focus();
-      await inputs[0].click();
-      await this.page.keyboard.press('Control+A');
-      await this.page.keyboard.press('Backspace');
-      await inputs[0].type(article.title, { delay: 50 });
+    // 1. Title
+    this.log('📝 Typing title...');
+    await inputs[0].click();
+    await inputs[0].focus();
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Backspace');
+    await inputs[0].type(article.title, { delay: 50 });
+    await this.page.waitForTimeout(1000);
+
+    // 2. Content
+    this.log('📝 Pasting content...');
+    await inputs[1].click();
+    await inputs[1].focus();
+    
+    // Split content by image markers if they exist
+    const contentParts = article.content.split(/\[\[(IMG|FILE):(.+?)\]\]/);
+    
+    for (let i = 0; i < contentParts.length; i++) {
+      const part = contentParts[i];
+      if (!part) continue;
+
+      // regex split with groups: [text, type, value, text, type, value...]
+      // so we need to adjust the logic
     }
-
-    // 2. Content (Copy-Paste)
-    if (inputs.length > 1) {
-      this.log('📝 Pasting content...');
-      await inputs[1].focus();
-      await inputs[1].click();
-      await this.page.evaluate((text) => navigator.clipboard.writeText(text), article.content);
-      await this.page.waitForTimeout(1000);
-      await this.page.keyboard.press('Control+V');
-      await this.page.waitForTimeout(1000);
-      await this.page.keyboard.press('Enter');
-      
-      // Scroll simulation
-      await this.page.mouse.wheel(0, 500);
-      await this.page.waitForTimeout(1000);
-      await this.page.mouse.wheel(0, -500);
-    }
-
-    // 3. Image
-    if (article.imageUrl) {
-      this.log('🖼️ Inserting image...');
-      
-      const imageBtnSelectors = [
-        'button[data-tip="Вставить изображение"]',
-        'button[aria-label="Вставить изображение"]',
-        '.article-editor-desktop--side-button__sideButton-1z',
-        'button:has(svg)'
-      ];
-
-      let imageBtn = null;
-      for (const selector of imageBtnSelectors) {
-        imageBtn = await this.page.$(selector);
-        if (imageBtn && await imageBtn.isVisible()) {
-          this.log(`Found image button: ${selector}`);
-          break;
-        }
+    
+    // Перепишем цикл для корректной обработки групп в split
+    const parts = article.content.split(/(\[\[(?:IMG|FILE):.+?\]\])/);
+    
+    for (const part of parts) {
+      if (part.startsWith('[[IMG:')) {
+        const url = part.match(/\[\[IMG:(.+?)\]\]/)?.[1];
+        if (url) await this.insertImageInEditor(url);
+      } else if (part.startsWith('[[FILE:')) {
+        const filePath = part.match(/\[\[FILE:(.+?)\]\]/)?.[1];
+        if (filePath) await this.uploadImageInEditor(filePath);
+      } else if (part.trim()) {
+        // Text
+        await this.pasteText(part);
       }
+    }
+    
+    await this.page.waitForTimeout(2000);
+    await this.page.keyboard.press('Enter');
+    
+    // 3. Main Cover Image (Legacy support)
+    if (article.imageUrl && !article.content.includes(article.imageUrl)) {
+      this.log('🖼️ Inserting main cover image...');
+      if (article.imageUrl.startsWith('http')) {
+        await this.insertImageInEditor(article.imageUrl);
+      } else {
+        await this.uploadImageInEditor(article.imageUrl);
+      }
+    }
+  }
 
+  private async pasteText(text: string) {
+    if (!this.page) return;
+    await this.page.evaluate((t) => {
+      const el = document.activeElement as HTMLElement;
+      if (el) {
+        const dt = new DataTransfer();
+        dt.setData('text/plain', t);
+        el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+      }
+    }, text);
+    await this.page.keyboard.press('Control+V');
+    await this.page.waitForTimeout(500);
+  }
+
+  /**
+   * Helper to UPLOAD local image file
+   */
+  private async uploadImageInEditor(relativeFilePath: string) {
+    if (!this.page) return;
+    
+    const absolutePath = path.isAbsolute(relativeFilePath) 
+      ? relativeFilePath 
+      : path.join(process.cwd(), relativeFilePath);
+
+    this.log(`📤 Uploading file: ${absolutePath}`);
+    try {
+      // 1. Click the "Add Image" button to trigger the hidden file input
+      const imageBtn = await this.page.$('button[aria-label="Вставить изображение"], button[data-tip="Вставить изображение"]');
+      if (imageBtn) {
+        // Дзен открывает диалог выбора файла. В Playwright мы ловим событие 'filechooser'
+        const fileChooserPromise = this.page.waitForEvent('filechooser');
+        await imageBtn.click();
+        const fileChooser = await fileChooserPromise;
+        await fileChooser.setFiles(absolutePath);
+        
+        await this.page.waitForTimeout(5000); // Даем время на загрузку
+        this.log('✅ File uploaded successfully');
+      }
+    } catch (e) {
+      this.log(`❌ Upload failed: ${(e as Error).message}`);
+    }
+  }
+
+  /**
+   * Helper to insert image by URL into the editor
+   */
+  private async insertImageInEditor(url: string) {
+    if (!this.page) return;
+    
+    this.log(`🖼️ Inserting image: ${url.substring(0, 50)}...`);
+    try {
+      const imageBtn = await this.page.$('button[aria-label="Вставить изображение"], button[data-tip="Вставить изображение"], .article-editor-desktop--side-button__sideButton-1z');
       if (imageBtn) {
         await imageBtn.click();
         await this.page.waitForTimeout(2000);
-        
-        const urlInput = await this.page.waitForSelector('input[type="text"][placeholder*="ссылка"]', { timeout: 5000 }).catch(() => null) || 
-                         await this.page.$('input[type="text"]');
-
+        const urlInput = await this.page.waitForSelector('input[placeholder*="ссылка"], input[type="text"]', { timeout: 5000 });
         if (urlInput) {
-          await urlInput.fill(article.imageUrl);
+          await urlInput.fill(url);
           await urlInput.press('Enter');
-          await this.page.waitForTimeout(3000);
+          await this.page.waitForTimeout(5000); // Wait for image to load/process
           this.log('✅ Image URL submitted');
         }
       }
+    } catch (e) {
+      this.log(`⚠️ Failed to insert image: ${(e as Error).message}`);
     }
   }
 
   private async submitPublish(): Promise<{ success: boolean; url?: string }> {
     if (!this.page) throw new Error('Page not initialized');
 
-    const firstBtnSelector = 'button[data-testid="article-publish-btn"]';
-    
+    const publishBtnSelector = 'button[data-testid="article-publish-btn"]';
     try {
       this.log('⏳ Waiting for publish button...');
-      await this.page.waitForSelector(`${firstBtnSelector}:not([disabled])`, { timeout: 15000 });
-      
-      const firstBtn = await this.page.$(firstBtnSelector);
-      if (firstBtn) {
-        await firstBtn.click();
-        this.log('✅ Clicked first publish button');
-        await this.handleCaptcha();
+      await this.page.waitForSelector(publishBtnSelector, { timeout: 20000 });
+      const btn = await this.page.$(publishBtnSelector);
+      if (btn && await btn.isEnabled()) {
+        await btn.click();
+        this.log('✅ Clicked publish button');
         await this.page.waitForTimeout(3000);
-      }
-    } catch (e) {
-      this.log(`⚠️ First publish button issue: ${(e as Error).message}`);
-    }
-
-    const secondBtnSelector = 'button[data-testid="publish-btn"][type="submit"]';
-    
-    try {
-      const secondBtn = await this.page.waitForSelector(secondBtnSelector, { timeout: 10000 });
-      if (secondBtn) {
-        await secondBtn.click();
-        this.log('✅ Clicked confirmation button');
         
-        await this.handleCaptcha(15);
-
-        this.log('⏳ Waiting for redirect...');
-        try {
-          await this.page.waitForFunction(() => !window.location.href.includes('/editor/'), { timeout: 45000 });
-          const finalUrl = this.page.url();
-          this.log(`🔗 Published at: ${finalUrl}`);
-          return { success: true, url: finalUrl };
-        } catch (e) {
-          throw new Error('Publication timed out (no redirect)');
-        }
-      }
-    } catch (e) {
-      this.log('⚠️ Second publish button not found');
-    }
-
-    return { success: false };
-  }
-
-  private async handleCaptcha(maxAttempts = 5) {
-    if (!this.page) return;
-    const selector = '#not-robot-captcha-checkbox';
-
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        const el = await this.page.$(selector);
-        if (el) {
-           await this.clickCaptcha(el);
-           return;
-        }
-
-        for (const frame of this.page.frames()) {
-          const frameEl = await frame.$(selector);
-          if (frameEl) {
-            this.log('🤖 Captcha found in iframe');
-            await this.clickCaptcha(frameEl, frame);
-            return;
+        // Final confirmation button in modal
+        const confirmBtn = await this.page.waitForSelector('button[data-testid="publish-btn"]', { timeout: 10000 });
+        if (confirmBtn) {
+          await confirmBtn.click();
+          this.log('✅ Clicked final confirmation');
+          
+          // Wait for redirect
+          try {
+            await this.page.waitForFunction(() => !window.location.href.includes('/editor/'), { timeout: 40000 });
+            const finalUrl = this.page.url();
+            this.log(`🔗 Published at: ${finalUrl}`);
+            return { success: true, url: finalUrl };
+          } catch (e) {
+            this.log('⚠️ Publication timeout or captcha');
+            await this.dumpState('after_publish_attempt');
           }
         }
-        await this.page.waitForTimeout(1000);
-      } catch (e) { /* ignore */ }
-    }
-  }
-
-  private async clickCaptcha(element: any, frame: any = null) {
-    try {
-      const label = await element.evaluateHandle((el: HTMLElement) => el.closest('label'));
-      if (label) {
-        await label.click();
-      } else {
-        await element.click({ force: true });
       }
-      this.log('✅ Captcha clicked');
-      await this.page?.waitForTimeout(3000);
     } catch (e) {
-      this.log('⚠️ Failed to click captcha');
+      this.log(`❌ Submit error: ${(e as Error).message}`);
     }
+    return { success: false };
   }
 
   private async close() {

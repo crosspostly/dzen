@@ -10,7 +10,28 @@ export class SkazNarrativeEngine {
   // Русские частицы для инъекции (создают "человеческий" тон)
   private particles: string[] = [
     "ведь", "же", "ну", "вот", "вот только", "вот это", "-то", 
-    "да вот", "да что", "ну да", "ну и", "и то", "но вот"
+    "да вот", "да что", "ну да", "ну и", "и то", "но вот",
+    "знаете", "понимаете", "в общем-то", "так сказать", "как бы"
+  ];
+
+  // Обращения к читателю (Разрушение четвертой стены)
+  private readerAppeals: string[] = [
+    "Девочки, вы не поверите",
+    "Знаете, что я вам скажу?",
+    "Вы бы на моем месте тоже замерли",
+    "Сами понимаете, каково это",
+    "Вот честно, положа руку на сердце",
+    "Представьте себе на минуту",
+    "Скажите, я одна такая?",
+  ];
+
+  // Элементы "запинки" и подбора слов
+  private hesitations: string[] = [
+    "...как бы это точнее сказать...",
+    "...знаете...",
+    "...ну, в общем...",
+    "...даже не знаю, как описать...",
+    "...если вы понимаете, о чем я...",
   ];
 
   // 🔄 ZenMaster v4.0: URBAN words only (NO village dialect!)
@@ -40,7 +61,9 @@ export class SkazNarrativeEngine {
     "к сожалению", "как известно", "однако", "тем не менее",
     "в целом", "можно сказать", "в общем", "следует отметить",
     "стоит упомянуть", "необходимо подчеркнуть", "в заключение",
-    "исходя из", "в соответствии с", "на основании"
+    "исходя из", "в соответствии с", "на основании",
+    "это было непросто", "в тот момент я поняла", "жизнь разделилась на до и после",
+    "все началось с того", "ничто не предвещало беды"
   ];
 
   /**
@@ -77,21 +100,73 @@ export class SkazNarrativeEngine {
     let result = text;
 
     // 1. Инъекция русских частиц
-    result = this.injectParticles(result);
+    result = this.injectParticlesNaturally(result);
 
-    // 2. Синтаксическое нарушение (нарушение порядка слов)
+    // 2. Эффект запинки (Stumbling)
+    result = this.applyStumblingEffect(result);
+
+    // 3. Разрушение четвертой стены (Fourth Wall)
+    result = this.applyFourthWallBreak(result);
+
+    // 4. Синтаксическое нарушение (нарушение порядка слов)
     result = this.applySyntacticDislocation(result);
 
-    // 3. Добавляем диалектные слова
+    // 5. Добавляем диалектные слова
     result = this.injectDialectalWords(result);
 
-    // 4. Убираем клише
+    // 6. Убираем клише
     result = this.removeCliches(result);
 
-    // 5. Добавляем "человеческие" конструкции
+    // 7. Добавляем "человеческие" конструкции
     result = this.addHumanConstructions(result);
 
     return result;
+  }
+
+  /**
+   * Разрушение четвертой стены: Прямое обращение к читателю
+   */
+  private applyFourthWallBreak(text: string): string {
+    const paragraphs = text.split("\n\n");
+    if (paragraphs.length < 2) return text;
+
+    // Вставляем обращение во 2-й или 3-й абзац (где начинается завязка)
+    const index = Math.min(2, paragraphs.length - 1);
+    const appeal = this.selectRandomElement(this.readerAppeals);
+    
+    paragraphs[index] = appeal + "... " + paragraphs[index].charAt(0).toLowerCase() + paragraphs[index].slice(1);
+
+    return paragraphs.join("\n\n");
+  }
+
+  /**
+   * Эффект запинки: Имитация подбора слов
+   */
+  private applyStumblingEffect(text: string): string {
+    const sentences = text.split(/([.!?])/);
+    const result: string[] = [];
+
+    for (let i = 0; i < sentences.length; i += 2) {
+      let sentence = sentences[i];
+      
+      // Вставляем запинку в 15% предложений (где есть эмоциональные прилагательные)
+      if (Math.random() < 0.15 && sentence.length > 30) {
+        const words = sentence.split(/\s+/);
+        if (words.length > 5) {
+          const hesitation = this.selectRandomElement(this.hesitations);
+          const insertPoint = Math.floor(words.length * 0.7); // Ближе к концу для эффекта вывода
+          words.splice(insertPoint, 0, hesitation);
+          sentence = words.join(" ");
+        }
+      }
+
+      result.push(sentence);
+      if (i + 1 < sentences.length) {
+        result.push(sentences[i + 1]);
+      }
+    }
+
+    return result.join("");
   }
 
   /**

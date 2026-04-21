@@ -18,42 +18,38 @@
  */
 
 /**
- * Default character budget for LONGFORM articles (10000-12000 chars with spaces)
- * - Lede: ~600-900 chars (500-750 symbols without spaces)
- * - Episodes: adjustable based on episode count  
- * - Finale: ~1200-1800 chars (1000-1500 symbols without spaces)
+ * Default character budget for 2026 VIRAL articles (3500-4500 chars with spaces)
+ * - Lede: ~500 chars
+ * - Episodes: 3-5 segments
+ * - Finale: ~800 chars
  * 
- * Total: 12000 characters (with spaces) = ~10000 symbols (without spaces)
- * This aligns with editorial spec: "7000-10000 symbols" (non-space characters)
- * 
- * Note: "Символы без пробелов" = we count characters, not words
+ * Total: 4500 characters (with spaces) = ~3600 symbols (without spaces)
+ * This is the "Sweet Spot" for 2026 Dzen: 2-3 ad blocks, high read-through rate.
  */
-export const CHAR_BUDGET = 12000;
+export const CHAR_BUDGET = 4500;
 
 /**
- * SYMBOL_BUDGET_WITHOUT_SPACES - Editorial requirement from client spec
- * Client requires: 7000-10000 символов (без пробелов)
- * Our system: 12000 chars (with spaces) × 0.8 = ~9600 symbols (without spaces)
+ * SYMBOL_BUDGET_WITHOUT_SPACES - 2026 Optimized
+ * Targeting 3000-4000 symbols (without spaces)
  */
 export const SYMBOL_BUDGET_WITHOUT_SPACES = {
-  min: 7000,
-  max: 10000,
-  target: Math.round(CHAR_BUDGET * 0.8), // ~9600 symbols
-  currentFormat: "СЛЕДИМ ЗА СИМВОЛАМИ БЕЗ ПРОБЕЛОВ (используем CHAR_BUDGET × 0.8)"
+  min: 3000,
+  max: 4000,
+  target: Math.round(CHAR_BUDGET * 0.8), // ~3600 symbols
+  currentFormat: "2026 STANDARDS: HIGH RETENTION"
 };
 
 /**
  * Budget allocation guidelines (calculated dynamically)
- * These are RECOMMENDED defaults, not hardcoded constraints
  */
 export const BUDGET_ALLOCATIONS = {
-  LEDE_BUDGET_MIN: 600,
-  LEDE_BUDGET_MAX: 900,
-  FINALE_BUDGET_MIN: 1200,
-  FINALE_BUDGET_MAX: 1800,
-  AVG_EPISODE_CHARS_BASE: 1500, // Average per episode at 12 episodes (calculated dynamically)
-  MIN_EPISODES: 6,
-  MAX_EPISODES: 15,
+  LEDE_BUDGET_MIN: 400,
+  LEDE_BUDGET_MAX: 600,
+  FINALE_BUDGET_MIN: 700,
+  FINALE_BUDGET_MAX: 1000,
+  AVG_EPISODE_CHARS_BASE: 800, 
+  MIN_EPISODES: 3,
+  MAX_EPISODES: 6,
 } as const;
 
 /**

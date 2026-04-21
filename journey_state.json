@@ -1,0 +1,16 @@
+{
+  "lastArticleDate": "2026-03-10",
+  "currentRegion": "Caucasus",
+  "currentCountry": "Russia",
+  "currentCity": "Makhachkala",
+  "lastEvent": "Generated article: Добрался до аула-призрака Гамсутль: отдал 500 рублей за подъем на «буханке», теперь стою один среди руин, а белый Батон как привидение мелькает в пустых окнах домов.",
+  "companion": "Baton (Dog)",
+  "budgetRemaining": 45000,
+  "journeyHistory": [
+    {
+      "date": "2026-03-09",
+      "location": "Tbilisi, Georgia",
+      "event": "Crossed the border at Verkhny Lars."
+    }
+  ]
+}

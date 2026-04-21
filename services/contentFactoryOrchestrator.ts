@@ -15,6 +15,9 @@ import * as path from 'path';
 import { ArticleWorkerPool, BothModeResult } from './articleWorkerPool';
 import { ImageWorkerPool } from './imageWorkerPool';
 import { ImageProcessorService } from './imageProcessorService';
+import { VisualHookService } from './visualHookService';
+import { RelinkingService } from './relinkingService';
+import { ImageGeneratorAgent } from './imageGeneratorAgent';
 import { MobilePhotoAuthenticityProcessor, AuthenticityResult } from './mobilePhotoAuthenticityProcessor';
 import {
   ContentFactoryConfig,
@@ -161,6 +164,20 @@ ${"=".repeat(60)}`);
 
         console.log(`
 ✅ Stage 4 complete: All images processed for mobile authenticity
+`);
+
+        // 🆕 STAGE 5: Internal Visuals (v2026 Standards)
+        await this.generateInternalVisuals();
+
+        console.log(`
+✅ Stage 5 complete: Internal visuals generated and anchored
+`);
+
+        // 🆕 STAGE 6: Relinking (v2026 Retention)
+        await this.applyRelinking();
+
+        console.log(`
+✅ Stage 6 complete: Cross-linking applied
 `);
       }
 
@@ -1162,6 +1179,81 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
     const imageTime = imagesRemaining * 60; // 1 min per image
     
     this.progress.estimatedTimeRemaining = articleTime + imageTime;
+  }
+
+  /**
+   * 🖼️ v2026: Generate INTERNAL visuals based on text analysis
+   * Finds the best paragraphs and inserts [[IMG:URL]] markers.
+   */
+  private async generateInternalVisuals(): Promise<void> {
+    if (!this.config.includeImages || this.articles.length === 0) return;
+
+    console.log(`\n🔍 Analysing articles for internal visuals (v2026 Standards)...`);
+    const visualHookService = new VisualHookService();
+    const imageAgent = new ImageGeneratorAgent(this.apiKey);
+    const authenticityProcessor = new MobilePhotoAuthenticityProcessor();
+
+    for (const article of this.articles) {
+      const plan = visualHookService.analyzeText(article.content, article.id);
+      if (plan.hooks.length === 0) continue;
+
+      console.log(`   📝 Article "${article.title.substring(0, 30)}...": Found ${plan.hooks.length} visual hooks`);
+      
+      const paragraphs = article.content.split("\n\n");
+      
+      // Limit to 2 internal images to keep it lean
+      const hooksToProcess = plan.hooks.slice(0, 2);
+
+      for (const hook of hooksToProcess) {
+        try {
+          console.log(`      🖼️ Generating internal image for paragraph ${hook.paragraphIndex}...`);
+          
+          // Generate image
+          const generated = await imageAgent.generateCoverImage({
+            title: article.title,
+            ledeText: hook.text,
+            articleId: `${article.id}_hook_${hook.paragraphIndex}`,
+            plotBible: article.metadata.plotBible
+          });
+
+          // Save image locally (same as covers)
+          const imgDir = path.join(process.cwd(), 'public', 'articles', article.id.toString(), 'images');
+          await fs.promises.mkdir(imgDir, { recursive: true });
+          const imgName = `hook_${hook.paragraphIndex}.jpg`;
+          const imgPath = path.join(imgDir, imgName);
+          await fs.promises.writeFile(imgPath, Buffer.from(generated.base64, 'base64'));
+
+          // Insert FILE marker with relative path (will be resolved by publisher)
+          const relativePath = `public/articles/${article.id}/images/${imgName}`;
+          paragraphs[hook.paragraphIndex] = paragraphs[hook.paragraphIndex] + `\n\n[[FILE:${relativePath}]]`;
+          
+          console.log(`      ✅ Internal image generated: ${relativePath}`);
+        } catch (e) {
+          console.error(`      ❌ Failed to generate internal image: ${(e as Error).message}`);
+        }
+      }
+
+      // Reassemble content with markers
+      article.content = paragraphs.join("\n\n");
+    }
+  }
+
+  /**
+   * 🔗 v2026: Apply relinking (cross-linking) to articles
+   * Adds links to previously published articles to increase retention.
+   */
+  private async applyRelinking(): Promise<void> {
+    console.log(`\n🔗 Applying cross-linking (v2026 Retention Standards)...`);
+    const relinkingService = new RelinkingService();
+
+    for (const article of this.articles) {
+      const links = await relinkingService.getLinksForArticle(2);
+      if (links.length > 0) {
+        const relinkingBlock = relinkingService.generateRelinkingBlock(links);
+        article.content += relinkingBlock;
+        console.log(`   ✅ Relinked article "${article.title.substring(0, 30)}..." with ${links.length} previous posts`);
+      }
+    }
   }
 
   private printFinalSummary(): void {

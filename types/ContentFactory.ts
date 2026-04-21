@@ -305,7 +305,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     timeoutPerArticle: 300000,
     enableAntiDetection: true,
     enablePlotBible: true,
-    maxChars: 12000 // ✅ Single Source of Truth: Centralized budget
+    maxChars: 4500 // ✅ 2026 Optimized budget
   },
   "small-batch": {
     articleCount: 5,
@@ -317,7 +317,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     timeoutPerArticle: 300000,
     enableAntiDetection: true,
     enablePlotBible: true,
-    maxChars: 12000 // ✅ Single Source of Truth: Centralized budget
+    maxChars: 4500 // ✅ 2026 Optimized budget
   },
   "medium-batch": {
     articleCount: 25,
@@ -329,7 +329,7 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     timeoutPerArticle: 300000,
     enableAntiDetection: true,
     enablePlotBible: true,
-    maxChars: 12000 // ✅ Single Source of Truth: Centralized budget
+    maxChars: 4500 // ✅ 2026 Optimized budget
   },
   "large-batch": {
     articleCount: 100,
@@ -341,6 +341,6 @@ export const FactoryPresets: Record<string, ContentFactoryConfig> = {
     timeoutPerArticle: 300000,
     enableAntiDetection: false, // Faster
     enablePlotBible: true,
-    maxChars: 12000 // ✅ Single Source of Truth: Centralized budget
+    maxChars: 4500 // ✅ 2026 Optimized budget
   }
 };
