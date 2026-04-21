@@ -6,59 +6,19 @@ import path from 'path';
 
 // 📋 Configuration
 const CONFIG = {
-  cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'FILE',
+  cookiesSource: process.env.CI ? 'ENVIRONMENT' : 'LOCAL_FILE',
   cookiesPath: path.join(process.cwd(), 'config', 'cookies.json'),
   feedPath: path.join(process.cwd(), 'public', 'feed.xml'),
   historyPath: path.join(process.cwd(), '!posts', 'PRODUCTION_READY', 'published_articles.txt'),
-  headless: process.env.HEADLESS !== 'false',
+  headless: process.env.HEADLESS !== 'false'
 };
 
-// 📖 Get articles from feed.xml
-async function getArticlesFromFeed() {
-  try {
-    console.log(`📄 Opening feed: ${CONFIG.feedPath}`);
-    const feedContent = await fs.readFile(CONFIG.feedPath, 'utf8');
-    
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    const items = [];
-    let match;
-    
-    while ((match = itemRegex.exec(feedContent)) !== null) {
-      const itemContent = match[1];
-      
-      const titleMatch = itemContent.match(/<title><!\[CDATA\[(.+?)\]\]>/) || itemContent.match(/<title>(.+?)<\/title>/);
-      const title = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[(.+?)\]\]>/g, '$1').trim() : 'Without title';
-      
-      const linkMatch = itemContent.match(/<link>(.+?)<\/link>/);
-      const link = linkMatch ? linkMatch[1] : '';
-      
-      const mediaContentMatch = itemContent.match(/<media:content[^>]*url="(.+?)"[^>]*>/);
-      const enclosureMatch = itemContent.match(/<enclosure[^>]*url="(.+?)"[^>]*>/);
-      const imageUrl = mediaContentMatch ? mediaContentMatch[1] : (enclosureMatch ? enclosureMatch[1] : '');
-      
-      const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[([\s\S]+?)\]\]>/) || itemContent.match(/<content:encoded>([\s\S]+?)<\/content:encoded>/);
-      const descriptionMatch = itemContent.match(/<description><!\[CDATA\[([\s\S]+?)\]\]>/) || itemContent.match(/<description>([\s\S]+?)<\/description>/);
-      const content = contentMatch ? contentMatch[1] : (descriptionMatch ? descriptionMatch[1] : '');
-      
-      items.push({ title, link, imageUrl, content });
-    }
-    
-    return items;
-  } catch (error) {
-    console.error(`❌ Error reading feed: ${(error as Error).message}`);
-    return [];
-  }
-}
-
-// 🏄 Process HTML content
+// 🏄 Process HTML content - BACK TO BASICS (LEGACY STABLE)
 function processArticleContent(content: string) {
   if (!content) return '';
   
-  // 🆕 v2026: Preserve IMG and FILE markers before stripping other HTML
+  // Просто удаляем всё лишнее, оставляя только переносы строк
   let processed = content
-    .replace(/<img[^>]*src="(.+?)"[^>]*>/gi, '[[IMG:$1]]');
-
-  processed = processed
     .replace(/<p[^>]*>/gi, '\n\n')
     .replace(/<\/p>/gi, '')
     .replace(/<h[1-6][^>]*>/gi, '\n\n')
@@ -66,10 +26,9 @@ function processArticleContent(content: string) {
     .replace(/<div[^>]*>/gi, '\n')
     .replace(/<\/div>/gi, '\n')
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<br>/gi, '\n')
     .replace(/<li[^>]*>/gi, '\n• ')
     .replace(/<\/li>/gi, '')
-    .replace(/<[^>]*>(?![^\[]*(?:\]\]))/g, '') // Strip HTML but keep markers
+    .replace(/<[^>]*>/g, '') // Удаляем ВСЕ теги
     .replace(/&nbsp;/g, ' ')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -81,110 +40,97 @@ function processArticleContent(content: string) {
   return processed.trim();
 }
 
-async function loadCookies() {
-  // 1. Try Local File (Priority as per user request)
-  try {
-    if (await fs.stat(CONFIG.cookiesPath).catch(() => false)) {
-      const fileContent = await fs.readFile(CONFIG.cookiesPath, 'utf8');
-      if (fileContent && fileContent.length > 10) {
-         console.log('🍪 Using cookies from Local File (config/cookies.json)');
-         return fileContent;
-      }
-    }
-  } catch (e) {
-    // Continue to env var
-  }
-
-  // 2. Try Environment Variable (Fallback)
-  const envCookies = process.env.DZEN_COOKIES_JSON;
-  if (envCookies && envCookies.length > 10) {
-    console.log('🍪 Using cookies from Environment Variable (DZEN_COOKIES_JSON)');
-    return envCookies;
-  }
-
-  throw new Error('❌ Cookies not found in config/cookies.json file OR DZEN_COOKIES_JSON environment variable!');
-}
-
 async function getPublishedArticles() {
   try {
-    const content = await fs.readFile(CONFIG.historyPath, 'utf8');
-    const lines = content.split('\n').filter(line => line.trim());
-    return lines.map(line => {
-      const match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) - (.*?)(?: - https?:\/\/.+)?$/);
-      return match ? { date: match[1], title: match[2].trim() } : null;
-    }).filter(Boolean);
-  } catch (error) {
+    const data = await fs.readFile(CONFIG.historyPath, 'utf8');
+    return data.split('\n').filter(l => l.trim());
+  } catch (e) {
     return [];
   }
 }
 
-function isArticlePublished(articleTitle: string, publishedArticles: any[]) {
-  return publishedArticles.some(pub => pub.title.trim() === articleTitle.trim());
+function isArticlePublished(title: string, history: string[]) {
+  const cleanTitle = title.toLowerCase().trim();
+  return history.some(h => h.toLowerCase().includes(cleanTitle));
 }
 
 async function savePublishedArticle(article: any, url: string) {
-  const date = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  const entry = `${date} - ${article.title} - ${url}\n`;
-  try {
-    // Ensure directory exists
-    await fs.mkdir(path.dirname(CONFIG.historyPath), { recursive: true });
-    await fs.appendFile(CONFIG.historyPath, entry);
-    console.log(`✅ Saved to history: "${article.title.substring(0, 50)}"...`);
-  } catch (error) {
-    console.error(`❌ Error saving history: ${(error as Error).message}`);
-  }
+  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  const line = `${timestamp} - ${article.title} - ${url}\n`;
+  await fs.appendFile(CONFIG.historyPath, line);
+  console.log(`✅ Saved to history: "${article.title.substring(0, 50)}..."`);
 }
 
-// 🚀 Main
 async function main() {
-  console.log('🤖 ==== AUTO-PUBLISHER (TS) STARTING ====\n');
+  console.log('🤖 ==== AUTO-PUBLISHER (STABLE MODE) STARTING ====');
   
   try {
-    const cookiesJson = await loadCookies();
-    const publishedArticles = await getPublishedArticles();
-    const articles = await getArticlesFromFeed();
-    
-    if (articles.length === 0) {
-      console.log('❌ No articles found in feed.xml');
-      process.exit(0);
+    // 1. Load Cookies
+    let cookiesJson = '';
+    if (CONFIG.cookiesSource === 'ENVIRONMENT') {
+      cookiesJson = process.env.DZEN_COOKIES_JSON || '';
+      console.log('🍪 Using cookies from Environment Variable');
+    } else {
+      cookiesJson = await fs.readFile(CONFIG.cookiesPath, 'utf8');
+      console.log('🍪 Using cookies from Local File');
     }
+
+    // 2. Load Feed
+    console.log(`📄 Opening feed: ${CONFIG.feedPath}`);
+    const feed = await fs.readFile(CONFIG.feedPath, 'utf8');
     
-    // Find first unpublished
-    let articleToPublish = null;
-    for (const article of articles) {
-      if (!isArticlePublished(article.title, publishedArticles)) {
-        articleToPublish = article;
-        break;
+    // Parse articles via regex (reliable)
+    const articles: any[] = [];
+    const itemMatches = feed.matchAll(/<item>([\s\S]*?)<\/item>/g);
+    
+    for (const match of itemMatches) {
+      const item = match[1];
+      const title = item.match(/<title><!\[CDATA\[(.*?)\]\]>/)?.[1] || item.match(/<title>(.*?)<\/title>/)?.[1];
+      const content = item.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]>/)?.[1];
+      const imageUrl = item.match(/<media:content[^>]*url="(.*?)"[^>]*>/)?.[1];
+      
+      if (title && content) {
+        articles.push({ title, content, imageUrl });
       }
     }
-    
-    if (!articleToPublish) {
-      console.log('✅ All articles already published');
-      process.exit(0);
+
+    if (articles.length === 0) {
+      console.log('❌ No articles found in feed');
+      return;
     }
-    
-    console.log(`\n📝 Publishing article: "${articleToPublish.title}"`);
-    const processedContent = processArticleContent(articleToPublish.content);
-    
+
+    // 3. Filter unpublished
+    const history = await getPublishedArticles();
+    let toPublish = articles.find(a => !isArticlePublished(a.title, history));
+
+    if (!toPublish) {
+      console.log('✅ All articles from feed are already published');
+      return;
+    }
+
+    console.log(`📝 Publishing: "${toPublish.title}"`);
+    const cleanContent = processArticleContent(toPublish.content);
+
+    // 4. Run Playwright
     const result = await playwrightService.publish({
-      title: articleToPublish.title,
-      content: processedContent,
-      imageUrl: articleToPublish.imageUrl
+      title: toPublish.title,
+      content: cleanContent,
+      imageUrl: toPublish.imageUrl
     }, {
       cookiesJson,
       headless: CONFIG.headless
     });
-    
-    if (result.success && result.url) {
-      console.log(`\n🎉 SUCCESS! Published at: ${result.url}`);
-      await savePublishedArticle(articleToPublish, result.url);
+
+    if (result.success) {
+      console.log('🎉 SUCCESS!');
+      await savePublishedArticle(toPublish, result.url || 'N/A');
     } else {
-      console.error(`\n❌ FAILED: ${result.error}`);
+      console.error(`❌ FAILED: ${result.error}`);
       process.exit(1);
     }
-    
-  } catch (error) {
-    console.error(`\n❌ FATAL ERROR: ${(error as Error).message}`);
+
+  } catch (e) {
+    console.error(`💥 FATAL: ${(e as Error).message}`);
     process.exit(1);
   }
 }
