@@ -869,6 +869,17 @@ ${version ? `version: "${version}"` : ''}
           exportedFiles.push(jpgPath);
           console.log(`   🗼️  Cover: ${imageFileName} (${source}, device: ${article.metadata?.mobileCameraEmulated || 'unknown'})`);
         }
+
+        // ✅ v2026: Save INTERNAL images
+        if (article.internalImages && article.internalImages.length > 0) {
+          for (const img of article.internalImages) {
+            const imgPath = path.join(finalDir, img.filename);
+            const buffer = Buffer.from(img.base64, 'base64');
+            fs.writeFileSync(imgPath, buffer);
+            exportedFiles.push(imgPath);
+            console.log(`   🖼️  Internal image: ${img.filename}`);
+          }
+        }
       } catch (error) {
         console.error(`❌ Failed to export article ${i + 1}: ${(error as Error).message}`);
       }
@@ -1183,7 +1194,7 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
 
   /**
    * 🖼️ v2026: Generate INTERNAL visuals based on text analysis
-   * Finds the best paragraphs and inserts [[IMG:URL]] markers.
+   * Finds the best paragraphs and inserts [[IMG:filename]] markers.
    */
   private async generateInternalVisuals(): Promise<void> {
     if (!this.config.includeImages || this.articles.length === 0) return;
@@ -1191,7 +1202,6 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
     console.log(`\n🔍 Analysing articles for internal visuals (v2026 Standards)...`);
     const visualHookService = new VisualHookService();
     const imageAgent = new ImageGeneratorAgent(this.apiKey);
-    const authenticityProcessor = new MobilePhotoAuthenticityProcessor();
 
     for (const article of this.articles) {
       const plan = visualHookService.analyzeText(article.content, article.id);
@@ -1204,11 +1214,13 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
       // Limit to 2 internal images to keep it lean
       const hooksToProcess = plan.hooks.slice(0, 2);
 
+      // Initialize internalImages array
+      article.internalImages = [];
+
       for (const hook of hooksToProcess) {
         try {
           console.log(`      🖼️ Generating internal image for paragraph ${hook.paragraphIndex}...`);
           
-          // Generate image
           const generated = await imageAgent.generateCoverImage({
             title: article.title,
             ledeText: hook.text,
@@ -1216,24 +1228,23 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
             plotBible: article.metadata.plotBible
           });
 
-          // Save image locally (same as covers)
-          const imgDir = path.join(process.cwd(), 'public', 'articles', article.id.toString(), 'images');
-          await fs.promises.mkdir(imgDir, { recursive: true });
           const imgName = `hook_${hook.paragraphIndex}.jpg`;
-          const imgPath = path.join(imgDir, imgName);
-          await fs.promises.writeFile(imgPath, Buffer.from(generated.base64, 'base64'));
-
-          // Insert FILE marker with relative path (will be resolved by publisher)
-          const relativePath = `public/articles/${article.id}/images/${imgName}`;
-          paragraphs[hook.paragraphIndex] = paragraphs[hook.paragraphIndex] + `\n\n[[FILE:${relativePath}]]`;
           
-          console.log(`      ✅ Internal image generated: ${relativePath}`);
+          article.internalImages.push({
+            filename: imgName,
+            base64: generated.base64
+          });
+
+          // Insert marker directly into paragraphs
+          paragraphs[hook.paragraphIndex] = paragraphs[hook.paragraphIndex] + `\n\n[[IMG:${imgName}]]`;
+          
+          console.log(`      ✅ Internal image generated and anchored: ${imgName}`);
         } catch (e) {
           console.error(`      ❌ Failed to generate internal image: ${(e as Error).message}`);
         }
       }
 
-      // Reassemble content with markers
+      // CRITICAL: Reassemble content with markers
       article.content = paragraphs.join("\n\n");
     }
   }

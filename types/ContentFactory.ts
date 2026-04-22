@@ -98,6 +98,9 @@ export interface Article {
   // ✅ UPDATED v4.0: Single cover image
   coverImage?: CoverImage; // ONE cover image from title + lede
   
+  // ✅ v2026: Internal visuals
+  internalImages?: { filename: string; base64: string }[];
+
   metadata: ArticleMetadata;
   stats: ArticleStats;
 }

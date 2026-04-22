@@ -96,28 +96,32 @@ function cleanArticleMarkers(content) {
 
 /**
  * 🖼️ Обёртываем GitHub изображения в <figure> теги для Дзена
- * Если в контенте есть ссылки на raw.githubusercontent.com - обёрнут в <figure>
  * @param {string} html - HTML контент
  * @returns {string} HTML с изображениями в <figure>
  */
 function wrapGithubImagesInFigure(html) {
   if (!html) return html;
   
-  // Ищем img теги с GitHub URL'ами и обёртываем их в figure
-  // НО ТОЛЬКО если они не уже в figure!
-  html = html.replace(
+  // 🆕 v2026: More robust check to avoid double figure wrapping
+  // First, temporarily remove existing figures to not match images inside them
+  const figures = [];
+  let processedHtml = html.replace(/<figure>[\s\S]*?<\/figure>/g, (match) => {
+    figures.push(match);
+    return `__FIGURE_PLACEHOLDER_${figures.length - 1}__`;
+  });
+
+  // Wrap remaining bare images that point to GitHub
+  processedHtml = processedHtml.replace(
     /<img\s+src=["']https:\/\/raw\.githubusercontent\.com\/[^"']+["'][^>]*>/g,
-    (match) => {
-      // Проверяем, не уже ли этот img в figure
-      if (match.includes('<figure>')) {
-        return match; // Уже обёрнут, не трогаем
-      }
-      // Обёртываем в figure
-      return `<figure>${match}</figure>`;
-    }
+    (match) => `<figure>${match}</figure>`
   );
+
+  // Restore figures
+  figures.forEach((fig, index) => {
+    processedHtml = processedHtml.replace(`__FIGURE_PLACEHOLDER_${index}__`, fig);
+  });
   
-  return html;
+  return processedHtml;
 }
 
 /**
@@ -471,8 +475,14 @@ function toRFC822(date) {
 /**
  * Конвертировать markdown контент в HTML для Dzen
  */
-function markdownToHtml(markdown) {
+function markdownToHtml(markdown, basePathUrl = '') {
   let html = markdown;
+
+  // ✅ v2026: Convert [[IMG:filename]] markers to <img> tags
+  html = html.replace(/\[\[IMG:(.+?)\]\]/g, (match, filename) => {
+    const fullUrl = basePathUrl ? `${basePathUrl}/${filename}` : filename;
+    return `<figure><img src="${fullUrl}" width="900" style="max-width: 100%;"></figure>`;
+  });
   
   // Конвертируем заголовки
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
@@ -515,6 +525,15 @@ function markdownToHtml(markdown) {
   html = sanitizeForCdata(html);
 
   return html;
+}
+/**
+ * Построить базовый URL папки на GitHub
+ */
+function getBasePathUrl(articlePath) {
+  const articlesDir = path.join(process.cwd(), 'articles');
+  const relativePath = path.relative(articlesDir, articlePath);
+  const dirRelative = path.dirname(relativePath);
+  return `${BASE_URL}/articles/${dirRelative.replace(/\\/g, '/')}`;
 }
 
 /**
@@ -705,6 +724,7 @@ async function main() {
         }
 
         const imageUrl = getImageUrl(filePath);
+        const basePathUrl = getBasePathUrl(filePath);
         const imageSize = getImageSize(filePath);
         imageSizes.push(imageSize);
         
@@ -713,12 +733,17 @@ async function main() {
         let cleanTitle = cleanArticleMarkers(frontmatter.title);
         let cleanDescription = frontmatter.description ? cleanArticleMarkers(frontmatter.description) : getDescription(cleanBody);
         
-        let htmlContent = markdownToHtml(cleanBody);
+        let htmlContent = markdownToHtml(cleanBody, basePathUrl);
 
-        // ✅ ИНЪЕКЦИЯ ИЗОБРАЖЕНИЯ: Добавляем обложку в начало статьи
-        // Dzen требует, чтобы изображение было в теле статьи для корректного отображения
+        // ✅ ИНЪЕКЦИЯ ИЗОБРАЖЕНИЯ: Добавляем обложку ПОСЛЕ первого абзаца
         if (imageUrl) {
-            htmlContent = `<figure><img src="${imageUrl}" width="900" style="max-width: 100%;"></figure>\n${htmlContent}`;
+            const imgTag = `<figure><img src="${imageUrl}" width="900" style="max-width: 100%;"></figure>`;
+            const firstParaEnd = htmlContent.indexOf('</p>');
+            if (firstParaEnd !== -1) {
+              htmlContent = htmlContent.slice(0, firstParaEnd + 4) + '\n' + imgTag + '\n' + htmlContent.slice(firstParaEnd + 4);
+            } else {
+              htmlContent = imgTag + '\n' + htmlContent;
+            }
         }
 
         // ✅ ГЕНЕРАЦИЯ HTML-ЗАГЛУШКИ ДЛЯ ВАЛИДАТОРА
