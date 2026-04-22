@@ -90,11 +90,11 @@ async function getArticlesFromFeed() {
       const pubDate = dateMatch ? dateMatch[1] : '';
 
       // Извлекаем описание
-      const descMatch = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<description>(.*?)<\/description>/);
+      const descMatch = itemContent.match(/<description><!\[CDATA\[([\s\S]*?)\]\]>/) || itemContent.match(/<description>([\s\S]*?)<\/description>/);
       const description = descMatch ? descMatch[1] : '';
 
       // Извлекаем полный контент
-      const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[(.*?)\]\]>/) || itemContent.match(/<content:encoded>(.*?)<\/content:encoded>/);
+      const contentMatch = itemContent.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]>/) || itemContent.match(/<content:encoded>([\s\S]*?)<\/content:encoded>/);
       const content = contentMatch ? contentMatch[1] : description;
 
       items.push({
@@ -188,7 +188,7 @@ function processArticleContent(content) {
 
   // Запускаем браузер (Headless для совместимости с CI, можно менять на false для отладки)
   const browser = await chromium.launch({
-    headless: true, 
+    headless: true,
     args: [
       '--no-sandbox',
       '--disable-blink-features=AutomationControlled',

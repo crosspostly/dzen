@@ -5,7 +5,7 @@ const PublicationHistory = require('./modules/publication_history.js');
 // Функция для извлечения данных из XML с правильной обработкой текста
 async function getArticlesFromFeed() {
   try {
-    const feedContent = await fs.readFile('C:\\Users\\varsm\\OneDrive\\Desktop\\projects\\dzen\\public\\feed.xml', 'utf8');
+    const feedContent = await fs.readFile('./public/feed.xml', 'utf8');
     
     // Извлекаем статьи с помощью регулярных выражений
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
