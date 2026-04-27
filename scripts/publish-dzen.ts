@@ -10,7 +10,8 @@ const CONFIG = {
   cookiesPath: path.join(process.cwd(), 'config', 'cookies.json'),
   feedPath: path.join(process.cwd(), 'public', 'feed.xml'),
   historyPath: path.join(process.cwd(), '!posts', 'PRODUCTION_READY', 'published_articles.txt'),
-  headless: process.env.HEADLESS !== 'false'
+  headless: process.env.HEADLESS !== 'false',
+  maxArticlesPerDay: parseInt(process.env.MAX_ARTICLES_PER_DAY || '2')
 };
 
 // 🏄 Process HTML content - BACK TO BASICS (LEGACY STABLE)
@@ -47,6 +48,19 @@ async function getPublishedArticles() {
   } catch (e) {
     return [];
   }
+}
+
+function checkDailyLimit(history: string[]) {
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const todayCount = history.filter(line => line.startsWith(today)).length;
+  
+  if (todayCount >= CONFIG.maxArticlesPerDay) {
+    console.log(`🛑 DAILY LIMIT REACHED: Already published ${todayCount} articles today. Limit is ${CONFIG.maxArticlesPerDay}.`);
+    return false;
+  }
+  
+  console.log(`📊 Today's progress: ${todayCount}/${CONFIG.maxArticlesPerDay} articles published.`);
+  return true;
 }
 
 function isArticlePublished(title: string, history: string[]) {
@@ -101,7 +115,15 @@ async function main() {
 
     // 3. Filter unpublished
     const history = await getPublishedArticles();
+
+    // --- CHECK DAILY LIMIT ---
+    if (!checkDailyLimit(history)) {
+      return;
+    }
+    // -------------------------
+
     let toPublish = articles.find(a => !isArticlePublished(a.title, history));
+
 
     if (!toPublish) {
       console.log('✅ All articles from feed are already published');

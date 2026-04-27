@@ -39,7 +39,7 @@
   "publishing": {
     "enabled": true,
     "schedule": "0 10 * * 1,3,5",
-    "max_per_day": 1,
+    "max_per_day": 2,
     "draft_mode": true,
     "auto_publish": false
   },
