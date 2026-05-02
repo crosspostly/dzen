@@ -75,6 +75,22 @@ export class MobilePhotoAuthenticityProcessor {
   }
 
   /**
+   * Process with a specific device key (called from orchestrator with dynamic device selection)
+   */
+  async processWithDevice(
+    base64Image: string,
+    deviceKey: string,
+    _year?: number
+  ): Promise<AuthenticityResult> {
+    const validKeys = Object.keys(this.DEVICE_PROFILES) as Array<keyof typeof this.DEVICE_PROFILES>;
+    const key = validKeys.includes(deviceKey as any)
+      ? (deviceKey as keyof typeof this.DEVICE_PROFILES)
+      : 'iphone15';
+    this.selectedDevice = key;
+    return this.processForMobileAuthenticity(base64Image);
+  }
+
+  /**
    * Main method: Apply modern smartphone characteristics
    */
   async processForMobileAuthenticity(base64Image: string): Promise<AuthenticityResult> {
