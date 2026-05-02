@@ -70,10 +70,10 @@ jobs:
         run: |
           # Определение параметров в зависимости от триггера
           if [ "${{ github.event_name }}" == "schedule" ]; then
-            COUNT="2"
+            COUNT="1"
             CHANNEL="women-35-60"
             IMAGES="true"
-            echo "⏰ Запуск по расписанию: Используем настройки 2026 (2 статьи в день, буфер для 1 публикации)"
+            echo "⏰ Запуск по расписанию: 1 статья в день"
           else
             COUNT="${{ inputs.count }}"
             CHANNEL="${{ inputs.channel }}"
