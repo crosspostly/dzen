@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Sun, 03 May 2026 03:26:27 +0300</lastBuildDate>
+    <lastBuildDate>Sun, 03 May 2026 06:27:21 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[«Выкинь это дерьмо! Оно только место занимает!» — орал Артем, и от этого крика у меня внутри всё сжалось в тугой, холодный узел. Знаете, каково это — чувствовать себя мебелью в собственном доме? Не...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-schital-hobbi-ottsa-glupostyu-poka-ego-starye-m-20260502</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-schital-hobbi-ottsa-glupostyu-poka-ego-starye-m-20260502</guid>
-      <pubDate>Sun, 03 May 2026 06:26:27 +0300</pubDate>
+      <pubDate>Sun, 03 May 2026 09:27:21 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
