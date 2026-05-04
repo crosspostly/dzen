@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1777877136036,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 4500,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 14508,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-05-04/obidno-byt-prosto-buhgalterom-no-teper-ya-podpisyv.jpg"
+    ],
+    "report": "articles/women-35-60/2026-05-04/REPORT.md"
+  }
+}
