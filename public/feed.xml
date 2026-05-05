@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Tue, 05 May 2026 10:04:38 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 05 May 2026 13:58:50 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[«Выкинь это дерьмо! Оно только место занимает!» — орал Артем, и от этого крика у меня внутри всё сжалось в тугой, холодный узел. Знаете, каково это — чувствовать себя мебелью в собственном доме? Не...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-schital-hobbi-ottsa-glupostyu-poka-ego-starye-m-20260502</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-schital-hobbi-ottsa-glupostyu-poka-ego-starye-m-20260502</guid>
-      <pubDate>Tue, 05 May 2026 13:04:38 +0300</pubDate>
+      <pubDate>Tue, 05 May 2026 16:58:50 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[А вы знаете, каково это — быть мебелью? Не шикарным кожаным диваном, а старым, трухлявым шкафом в собственном подъезде. Знаете? Я вот сегодня прочувствовала. Каждой клеточкой, каждым нервом....]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-byt-seroy-myshyu-no-sosedka-ne-znala-chto-y-20260503</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-byt-seroy-myshyu-no-sosedka-ne-znala-chto-y-20260503</guid>
-      <pubDate>Tue, 05 May 2026 14:34:38 +0300</pubDate>
+      <pubDate>Tue, 05 May 2026 18:28:50 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[— Она у меня как инвентарь. Ну, знаете, удобный такой шкаф или табуретка. Стоит себе, кашу варит, отчеты свои дурацкие за копейки строчит. Полезная в хозяйстве вещь, — Вадим хохотнул, и этот звук —...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-byt-prosto-buhgalterom-no-teper-ya-podpisyv-20260504</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-byt-prosto-buhgalterom-no-teper-ya-podpisyv-20260504</guid>
-      <pubDate>Tue, 05 May 2026 13:04:38 +0300</pubDate>
+      <pubDate>Tue, 05 May 2026 16:58:50 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[— Ну что, Марья Сергеевна, — хмыкнул охранник, даже не отрываясь от сканворда. — Ключи на гвоздике. Жилет в каптерке. Не задерживайся, снега-то навалило — жуть, замучаешься грести. Я молча взяла...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-ya-stala-dvornikom-na-svoem-zavode-i-nikto--20260505</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-ya-stala-dvornikom-na-svoem-zavode-i-nikto--20260505</guid>
-      <pubDate>Tue, 05 May 2026 14:34:38 +0300</pubDate>
+      <pubDate>Tue, 05 May 2026 18:28:50 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
