@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1778049438614,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 4500,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 15682,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-05-06/ya-byla-mebelyu-dlya-machehi-no-nadpis-na-chasah-z.jpg"
+    ],
+    "report": "articles/women-35-60/2026-05-06/REPORT.md"
+  }
+}
