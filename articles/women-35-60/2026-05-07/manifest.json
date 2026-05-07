@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1778136120048,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 4500,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 11609,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-05-07/obidno-bylo-slyshat-ih-hamstvo-no-cherez-mesyats-y.jpg"
+    ],
+    "report": "articles/women-35-60/2026-05-07/REPORT.md"
+  }
+}
