@@ -121,14 +121,7 @@ export class ContentSanitizer {
       /— одним словом\.\.\./g,
       /\b— может быть, не совсем точно, но\.\.\.\b/g,
       /\b— не знаю почему, но\.\.\.\b/g,
-      /\bну и\b/g,
-      /\bда вот\b/g,
-      /\bвот только\b/g,
-      /\bвот это\b/g,
-      /\bвот что\b/g,
-      /\bну да\b/g,
-      /\bи то\b/g,
-      /\bно вот\b/g,
+      // Removed generic fragments that might collide with strategic neologisms
     ];
 
     // Strategy 1: Remove orphaned fragments that appear on their own line
@@ -272,7 +265,7 @@ export class ContentSanitizer {
 
     // Sensory details density
     const sensoryWords =
-      /\b(пахло|запах|цвет|красн|голос|слышал|прикоснулся|ощутил|шелест|шум|света|темн|теплый|холодный|мягкий|твердый|резкий|нежный)\w*/gi;
+      /\b(шелк|кожа|золото|мрамор|парфюм|сандал|мускус|ледяной|холодный|пронзительный|резкий|безупречный|роскошный|интеллектуальный|скальпель|препарировать)\w*/gi;
     const sensoryMatches = cleaned.match(sensoryWords) || [];
     const sensoryDensity = (sensoryMatches.length / (cleaned.length / 1000)) * 10;
 
@@ -324,6 +317,9 @@ export class ContentSanitizer {
       /думал[,]? что.*?но/gi,
       /была уверена.*?но/gi,
       /был уверен.*?но/gi,
+      /дошла себя/gi,
+      /включила сексофон/gi,
+      /препарировала/gi,
     ];
     
     let count = 0;

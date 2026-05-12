@@ -227,25 +227,25 @@ export class QualityValidator {
   }
   
   /**
-   * 🏠 Extract environment context (Russian apartment elements)
+   * 🏠 Extract environment context (Modern Luxury / Elite City elements)
    */
   private static extractEnvironmentContext(content: string): any {
     return {
-      hasRussianApartmentElements: /(хрущёвка|сталинка|брежневка|панельный|кирпичный|коммуналка|однушка|двушка|трёшка|подъезд|калитка|мусоропровод)/i.test(content),
-      hasNaturalBackground: /(обои|линолеум|паркет|мебель|шкаф|диван|стол|стул|окно|занавеска|торшер|люстра)/i.test(content),
-      hasClutter: /(грязн|мусор|беспорядок|разбросан|валяется|пыль|точки|пятн|запачкан|загрязнен)/i.test(content),
+      hasRussianApartmentElements: /(элитный ЖК|панорамные окна|мрамор|лобби|терасса|авто|кожаные сиденья|дизайнерский)/i.test(content),
+      hasNaturalBackground: /(шелк|атлас|бархат|золото|хрусталь|парфюм|сандал|мускус)/i.test(content),
+      hasClutter: /(препарировать|анализировать|диагностировать|паттерн|инфантилизм)/i.test(content),
     };
   }
   
   /**
-   * 💬 Extract skaz narrative markers
+   * 💬 Extract skaz narrative markers (Hostile Elegance version)
    */
   private static extractSkazMarkers(content: string): any {
     return {
-      hasConversationalOpenings: /(Знаешь|Понимаешь|Слушай|Видишь|Помнишь|Думаю|Кажется|Вроде|Наверное|Может|Возможно)/i.test(content),
-      hasImperfectSpeech: /(ну типа|как бы|словно|типа|короче|в общем|походу|походу|кста|кстат|блин|блин|пипец|пипец)/i.test(content),
-      hasOpinionatedStatements: /(я считаю|по-моему|мне кажется|на мой взгляд|я уверена|я убеждена|я полагаю|я думаю)/i.test(content),
-      hasDoubtExpressions: /(я не|я точно|не уверен|не уверена|может|возможно|сомневаюсь|сомневаюсь)/i.test(content),
+      hasConversationalOpenings: /(Знаете|Понимаете|Давайте будем честными|Препарируем|Смотрите|Задумайтесь)/i.test(content),
+      hasImperfectSpeech: /(дошла себя|куй в себе|сексофон|мужеловка|мозгоёлка|пронежность|бездаты)/i.test(content),
+      hasOpinionatedStatements: /(ледяное спокойствие|интеллектуальный скальпель|диагностический интерес|холодная ирония)/i.test(content),
+      hasDoubtExpressions: /(препарировала|разложила на атомы|унизила вежливостью|вышла победителем)/i.test(content),
     };
   }
   
@@ -364,14 +364,14 @@ export class QualityValidator {
   }
   
   /**
-   * 🇷🇺 Extract Russian cultural context
+   * 🇷🇺 Extract Russian cultural context (Hostile Elegance edition)
    */
   private static extractCulturalContext(content: string): any {
     return {
-      hasRussianNames: /(Александр|Сергей|Дмитрий|Андрей|Алексей|Максим|Владимир|Елена|Ольга|Татьяна|Ирина|Светлана|Мария)/i.test(content),
-      hasRussianLocations: /(Москв|Питер|Санкт|Новгород|Екат|Сибир|Урал|Кавказ|Дальний|Восток|Соч|Яросл|Курск|Воронеж|Тул|Калин|Твер|Ряз|Ленинград|Советский)/i.test(content),
-      hasRussianProducts: /(пряник|квас|водка|матрёшк|самовар|пел|ваф|балалайк|шапка|ушанка|валенк|папаха|кокошник|заливное|селёдка|икра|блины|пирожк|шуба|дубленк|пуховик|шуба|шапка|варежки|рукавицы)/i.test(content),
-      hasRussianSlang: /(блин|фигня|пипец|пипец|пипец|пипец|охрен|охрен|охрен|охрен|блин|блин|блин|блин)/i.test(content),
+      hasRussianNames: /(Марина|Ольга|Елена|Наталья|Светлана|Ирина|Виктория|Маргарита)/i.test(content),
+      hasRussianLocations: /(крупный город|элитный квартал|центр города|ЖК|лобби|ресторан на крыше)/i.test(content),
+      hasRussianProducts: /(шелк|кожа|золото|парфюм|кофе|мрамор|хрусталь)/i.test(content),
+      hasRussianSlang: /(мозгоёлка|мужеловка|сексофон|дошла себя|бездаты|благодатная)/i.test(content),
     };
   }
   

@@ -34,36 +34,33 @@ export class ImageGeneratorService {
    * - Dark/shocking content
    */
   async generateVisual(sceneDescription: string): Promise<string | null> {
-    // 🎯 ZenMaster v3.5 Prompt Formula
-    // Based on proven architecture for authentic Russian domestic photos
+    // 🎯 ZenMaster v5.0 Prompt Formula: "Barbaric Elegance"
+    // Based on the new provocative strategy: luxury, self-sufficiency, and sharp aesthetic
     const finalPrompt = `
-AUTHENTIC mobile phone photo, taken on mid-range smartphone (iPhone 2018-2020 or Samsung A-series).
-Russian interior/domestic context.
+AUTHENTIC cinematic photo, captured on a high-end smartphone (iPhone 15 Pro or similar).
+Modern Russian urban luxury aesthetic. 
 Subject: ${sceneDescription}
 
 REQUIREMENTS:
 - 16:9 aspect ratio, horizontal orientation
-- Natural lighting ONLY (window light, desk lamp, shadows - NO studio light)
-- Domestic realism (old curtains, Soviet furniture, tea cups, packs, realistic clutter)
-- Amateur framing (not professional composition)
-- Depth of field (slight background blur)
-- High realism with non-professional aesthetic
-- Slight digital noise (like real smartphone camera)
-- Authentic Russian woman typology (35-60 years, wrinkles, imperfect hair, simple clothes - halat, sweater, jacket)
-- Natural colors (NOT oversaturated)
+- Dramatic, sophisticated lighting (golden hour, soft window light, deep shadows)
+- Aesthetic of "Barbaric Elegance": high-quality materials (silk, leather, heavy gold jewelry, expensive textures)
+- Character: Stunningly well-groomed Russian woman (34-36 years old), profound and self-assured gaze, "intellectual scalpel" vibe.
+- Setting: Expensive modern interior (minimalist, textured walls, designer furniture) or high-end urban environment.
+- Amateur-chic framing: feels like a deliberate, high-quality social media post from a powerful woman.
+- Sharp focus on the character, slight cinematic depth of field.
+- Natural but rich colors (luxury palette: deep blacks, creams, gold, burgundy, cold silk tones).
 
 MUST AVOID:
-- Stock photography or glossy/professional look
-- Text, watermarks, or logos
-- Surrealism or strange proportions
-- Western style (no American kitchens with islands)
-- Blood, violence, or shocking content
-- Perfect models or professional posing
-- Studio lighting
-- Fancy interior design
+- Cheap or "neighbor-like" aesthetic.
+- Soviet furniture, old curtains, or domestic clutter.
+- Stock photography look or overly posed studio look.
+- Low-quality smartphone noise or heavy digital artifacts.
+- Western generic stock style or "perfect" AI models.
+- Watermarks, text, or logos.
 
-STYLE: "Like a photo from a neighbor's WhatsApp" - authentic, slightly imperfect, real life.
-RESULT: 4K detail but amateur aesthetic, like real home photo taken 2018-2020.
+STYLE: "Cold, expensive, and intellectual" - authentic luxury life of a self-made woman who has "reached herself" (дошла себя).
+RESULT: 8K hyper-realistic detail with a high-end personal brand aesthetic.
 `;
 
     try {

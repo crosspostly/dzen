@@ -1,16 +1,27 @@
 {
-  "lastArticleDate": "2026-03-10",
-  "currentRegion": "Caucasus",
+  "lastArticleDate": "2026-05-12",
+  "currentRegion": "Ural",
   "currentCountry": "Russia",
-  "currentCity": "Makhachkala",
-  "lastEvent": "Generated article: Добрался до аула-призрака Гамсутль: отдал 500 рублей за подъем на «буханке», теперь стою один среди руин, а белый Батон как привидение мелькает в пустых окнах домов.",
-  "companion": "Baton (Dog)",
+  "currentCity": "Yekaterinburg",
+  "lastEvent": "Архитектура проекта загружена. Система переведена в режим Hostile Elegance. Анализ готовности: 100%.",
+  "narrator": {
+    "age": 35,
+    "gender": "female",
+    "children": 3,
+    "status": "Self-made, divorced, resilient",
+    "aesthetic": "Heavy Luxury, Silk, Gold, Neon-Pink"
+  },
   "budgetRemaining": 45000,
   "journeyHistory": [
     {
-      "date": "2026-03-09",
-      "location": "Tbilisi, Georgia",
-      "event": "Crossed the border at Verkhny Lars."
+      "date": "2026-05-10",
+      "location": "Yekaterinburg, Loft Studio",
+      "event": "Окончательная деконструкция старых иллюзий. Формирование Семантического Щита."
+    },
+    {
+      "date": "2026-05-12",
+      "location": "Yekaterinburg, Private Office",
+      "event": "Запуск стратегии интеллектуального доминирования. Подготовка первой провокации."
     }
   ]
 }
