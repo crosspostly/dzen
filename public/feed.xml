@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Tue, 12 May 2026 03:28:04 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 12 May 2026 06:38:19 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[— Мариночка, этот твой антиквариат... он же буквально пахнет нафталином. Тебе не стыдно? Давай папа купит тебе нормальный Ролекс? — голос Ангелины, мачехи моей, был медовым, липким, как испорченное...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-byla-mebelyu-dlya-machehi-no-nadpis-na-chasah-z-20260506</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-byla-mebelyu-dlya-machehi-no-nadpis-na-chasah-z-20260506</guid>
-      <pubDate>Tue, 12 May 2026 06:28:04 +0300</pubDate>
+      <pubDate>Tue, 12 May 2026 09:38:19 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[— Женщина, у нас закрытая презентация. Вы дверью ошиблись, — голос Марины, старшего менеджера с золотым бейджем, резанул по ушам, как ржавая пила. Я замерла. Мое серое пальто, пропитанное запахом...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-bylo-slyshat-ih-hamstvo-no-cherez-mesyats-y-20260507</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-bylo-slyshat-ih-hamstvo-no-cherez-mesyats-y-20260507</guid>
-      <pubDate>Tue, 12 May 2026 07:58:04 +0300</pubDate>
+      <pubDate>Tue, 12 May 2026 11:08:19 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[— Ирина, ну что это за вид? Сумка ваша... бомжеватая. Фасад дома позорит! — Валентина Степановна процедила это сквозь зубы, как будто я была не соседкой, а кучей мусора на её стерильном крыльце. Я...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-byla-pozorom-nashego-doma-no-cherez-nedelyu-sos-20260508</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-byla-pozorom-nashego-doma-no-cherez-nedelyu-sos-20260508</guid>
-      <pubDate>Tue, 12 May 2026 06:28:04 +0300</pubDate>
+      <pubDate>Tue, 12 May 2026 09:38:19 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[— Слышь, художница! Кабачки лучше сажай, баба! Больше толку будет! — хриплый хохот соседа Гены полоснул по ушам, как ржавая пила. Я стояла у сарая, вцепившись в подрамник. Хотела просто поймать...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-bolno-slyshat-izdevki-no-ya-dokazala-moya-20260509</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-bolno-slyshat-izdevki-no-ya-dokazala-moya-20260509</guid>
-      <pubDate>Tue, 12 May 2026 07:58:04 +0300</pubDate>
+      <pubDate>Tue, 12 May 2026 11:08:19 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -103,7 +103,7 @@
       <description><![CDATA[— Ирка, ты даже мусор коллекционируешь? — Олег заржал так, что на чердаке пыль столбом поднялась. — Брось ты эту свинью, ей место на помойке! Я стояла, вцепившись в холодный, шершавый бок...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-bolno-slyshat-ih-smeh-nad-kopilkoy-no-kog-20260510</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-bolno-slyshat-ih-smeh-nad-kopilkoy-no-kog-20260510</guid>
-      <pubDate>Tue, 12 May 2026 09:28:04 +0300</pubDate>
+      <pubDate>Tue, 12 May 2026 12:38:19 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -124,7 +124,7 @@
       <description><![CDATA[это бывает, Девочки, вот знаете, как? Когда вроде живешь, а на самом деле — просто фон для чьей-то другой жизни. Вот у меня так было. да, В голове — серый шум, липкий туман, а на кухне запах...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-muzh-nazyval-moi-podelki-musorom-a-teper-on-20260511</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-muzh-nazyval-moi-podelki-musorom-a-teper-on-20260511</guid>
-      <pubDate>Tue, 12 May 2026 10:58:04 +0300</pubDate>
+      <pubDate>Tue, 12 May 2026 14:08:19 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
