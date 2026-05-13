@@ -987,6 +987,11 @@ No text, no filters, authentic moment.
   ): Promise<GeneratedImage> {
     const startTime = Date.now();
 
+    const imageConfig: any = {};
+    if (model !== this.fallbackModel) {
+      imageConfig.aspectRatio = "16:9";
+    }
+
     const response = await this.geminiClient.models.generateContent({
       model: model,
       contents: { 
@@ -998,9 +1003,7 @@ No text, no filters, authentic moment.
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 1024,
-        imageConfig: {
-          aspectRatio: "16:9"
-        } as any
+        imageConfig: Object.keys(imageConfig).length > 0 ? imageConfig : undefined
       }
     });
 

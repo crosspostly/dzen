@@ -1197,7 +1197,7 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
       const plan = visualHookService.analyzeText(article.content, article.id);
       if (plan.hooks.length === 0) continue;
 
-      console.log(`   📝 Article "${article.title.substring(0, 30)}...": Found ${plan.hooks.length} visual hooks`);
+      console.log(`   📝 Article "${(article.title || '').substring(0, 30)}...": Found ${plan.hooks.length} visual hooks`);
       
       const paragraphs = article.content.split("\n\n");
       
@@ -1251,7 +1251,7 @@ ${report.errors.length === 0 ? 'No errors ✅' : report.errors.map(e =>
       if (links.length > 0) {
         const relinkingBlock = relinkingService.generateRelinkingBlock(links);
         article.content += relinkingBlock;
-        console.log(`   ✅ Relinked article "${article.title.substring(0, 30)}..." with ${links.length} previous posts`);
+        console.log(`   ✅ Relinked article "${(article.title || '').substring(0, 30)}..." with ${links.length} previous posts`);
       }
     }
   }

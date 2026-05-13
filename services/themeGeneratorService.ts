@@ -157,7 +157,7 @@ GENERATE 1 NEW RUSSIAN HOOK (Just the text):`;
       try {
         // 🎯 ПЕРВАЯ ПОПЫТКА: основная модель
         response = await this.geminiClient.models.generateContent({
-          model: "gemini-2.5-flash",
+          model: "gemini-2.0-flash",
           contents: prompt,
           config: {
             temperature: 1.1, // Higher temperature for variety
@@ -170,11 +170,11 @@ GENERATE 1 NEW RUSSIAN HOOK (Just the text):`;
         console.warn(`${LOG.WARN} Primary model failed (${errorMessage}), trying fallback...`);
         
         // 🔄 ФОЛБЕК: если модель перегружена
-        if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE')) {
-          console.log(`${LOG.LOADING} Trying fallback to gemini-2.5-flash-lite...`);
+        if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.includes('UNAVAILABLE') || errorMessage.includes('429')) {
+          console.log(`${LOG.LOADING} Trying fallback to gemini-flash-latest...`);
           
           response = await this.geminiClient.models.generateContent({
-            model: "gemini-2.5-flash-lite", // 🔥 ФОЛБЕК МОДЕЛЬ
+            model: "gemini-flash-latest", // 🔥 ФОЛБЕК МОДЕЛЬ
             contents: prompt,
             config: {
               temperature: 0.95,

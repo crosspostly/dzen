@@ -73,11 +73,11 @@ export interface MultiAgentOptions {
 }
 
 // ============================================================================
-// FALLBACK MODEL CHAIN: primary -> gemini-2.5-pro -> gemini-2.5-flash -> gemini-2.5-flash-lite
+// FALLBACK MODEL CHAIN: primary -> gemini-2.0-flash -> gemini-flash-latest -> gemini-2.5-flash-lite
 // ============================================================================
 const FALLBACK_MODELS = [
-  "gemini-2.5-pro",
-  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-flash-latest",
   "gemini-2.5-flash-lite",
 ];
 
@@ -247,7 +247,7 @@ export class MultiAgentService {
     console.log("🗰 Generating title...");
     let title: string;
     try {
-      title = await this.generateTitle(outline, episodes[0]?.content.substring(0, 500) || "");
+      title = await this.generateTitle(outline, episodes[0]?.content?.substring(0, 500) || "");
       console.log(`✅ Title: "${title}"`);
     } catch (error) {
       title = this.safeTheme(outline.theme);
@@ -719,7 +719,7 @@ export class MultiAgentService {
     let exampleContext = '';
     const bestExample = this.getRelevantExample(params.theme);
     if (bestExample) {
-      exampleContext = `\n📚 ONE-SHOT EXAMPLE (INSPIRATION - DO NOT COPY):\nTitle: "${bestExample.title}"\nExcerpt: "${bestExample.content.substring(0, 800)}..."\n--------------------------------------------------`;
+      exampleContext = `\n📚 ONE-SHOT EXAMPLE (INSPIRATION - DO NOT COPY):\nTitle: "${bestExample.title}"\nExcerpt: "${(bestExample.content || '').substring(0, 800)}..."\n--------------------------------------------------`;
     }
 
     const prompt = `${basePrompt}\n\n${guidelines}\n\n${exampleContext}\n\n🎭 STORY ARCHITECT - GENERATE COMPLETE OUTLINE\n\nTASK: Create ${episodeCount}-episode narrative structure.\n\nINPUT:\n- Theme: "${params.theme}"\n- Angle: ${params.angle}\n- Emotion: ${params.emotion}\n- Audience: ${params.audience}\n- Archetype: ${params.heroArchetype || 'standard'}\n- Timeline: ${params.timeline || 'sudden'}\n\n${archetypeStructure}\n\nRESPOND WITH ONLY VALID JSON:\n\`\`\`json\n{\n  "theme": "${params.theme}",\n  "angle": "${params.angle}",\n  "emotion": "${params.emotion}",\n  "audience": "${params.audience}",\n  "plotBible": {\n    "narrator": { "age": 45, "gender": "female", "tone": "confessional", "voiceHabits": { "apologyPattern": "...", "doubtPattern": "...", "memoryTrigger": "...", "angerPattern": "..." } },\n    "sensoryPalette": { "details": ["d1","d2","d3","d4","d5"], "smells": ["s1","s2","s3"], "sounds": ["s1","s2","s3"], "textures": ["t1","t2","t3"], "lightSources": ["l1","l2","l3"] }\n  },\n  "characterMap": {},\n  "thematicCore": { "centralQuestion": "...", "emotionalArc": "${params.emotion}", "resolutionStyle": "triumphant" },\n  "episodes": [${episodeJson}\n  ],\n  "externalTensionArc": "...",\n  "internalEmotionArc": "...",\n  "forbiddenCliches": []\n}\n\`\`\``;
@@ -764,7 +764,7 @@ export class MultiAgentService {
     const guidelines = this.loadSharedGuidelines();
     const plotBibleSection = this.buildPlotBibleSection(outline.plotBible);
 
-    const prompt = `${basePrompt}\n\n${guidelines}\n\n📄 LEDE (600-900 chars)\n\n${plotBibleSection}\n\nARCHETYPE: ${this.heroArchetype || 'standard'}\n\n🎯 TASK: Rewrite into compelling LEDE.\nSource Episode: "${episode.content.substring(0, 1000)}..."\n\nStart with ACTION/DIALOGUE/QUESTION. End with intrigue. 600-900 chars.\nOUTPUT: Only text`;
+    const prompt = `${basePrompt}\n\n${guidelines}\n\n📄 LEDE (600-900 chars)\n\n${plotBibleSection}\n\nARCHETYPE: ${this.heroArchetype || 'standard'}\n\n🎯 TASK: Rewrite into compelling LEDE.\nSource Episode: "${(episode?.content || '').substring(0, 1000)}..."\n\nStart with ACTION/DIALOGUE/QUESTION. End with intrigue. 600-900 chars.\nOUTPUT: Only text`;
 
     return await this.callGemini({ prompt, model: "gemini-3-flash-preview", temperature: 0.95 });
   }
@@ -792,7 +792,7 @@ export class MultiAgentService {
     const guidelines = this.loadSharedGuidelines();
     const plotBibleSection = this.buildPlotBibleSection(outline.plotBible);
 
-    const prompt = `${basePrompt}\n\n${guidelines}\n\n📄 FINALE (1200-1800 chars)\n\n🏆 ARCHETYPE: ${this.heroArchetype || 'standard'}\nVICTORY TYPE: ${victory}\n\n${plotBibleSection}\n${victoryExampleMap[victory]}\n\n❌ FORBIDDEN: "Может быть...", "А вы как думаете?"\n✅ REQUIRED: Firm conclusion, CAPS victory statement, final challenge question.\n\n🎯 TASK: Rewrite into powerful FINALE.\nSource Episode: "${episode.content.substring(0, 1500)}..."\n\n1200-1800 chars. OUTPUT: Only text`;
+    const prompt = `${basePrompt}\n\n${guidelines}\n\n📄 FINALE (1200-1800 chars)\n\n🏆 ARCHETYPE: ${this.heroArchetype || 'standard'}\nVICTORY TYPE: ${victory}\n\n${plotBibleSection}\n${victoryExampleMap[victory]}\n\n❌ FORBIDDEN: "Может быть...", "А вы как думаете?"\n✅ REQUIRED: Firm conclusion, CAPS victory statement, final challenge question.\n\n🎯 TASK: Rewrite into powerful FINALE.\nSource Episode: "${(episode?.content || '').substring(0, 1500)}..."\n\n1200-1800 chars. OUTPUT: Only text`;
 
     return await this.callGemini({ prompt, model: "gemini-3-flash-preview", temperature: 0.9 });
   }

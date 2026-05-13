@@ -52,12 +52,13 @@ export class TextRestorationService {
     console.log(`\n🔧 [RESTORATION] Starting text restoration...`);
     
     const improvements: Improvement[] = [];
-    const diagnostics = await this.analyzeText(article);
+    const fullContent = article.processedContent || this.assembleContent(article);
+    const diagnostics = await this.analyzeText(fullContent);
     
     console.log(`   📊 Diagnostics: ${diagnostics.parasiteCount} parasites, ${diagnostics.brokenSentences} broken sentences`);
     
     // Шаг 1: Удалить паразитные маркеры
-    let content = await this.removeParasites(article.processedContent || this.assembleContent(article), improvements);
+    let content = await this.removeParasites(fullContent, improvements);
     
     // Шаг 2: Восстановить логику предложений
     content = await this.fixBrokenSentences(content, improvements);

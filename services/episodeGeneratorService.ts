@@ -23,8 +23,8 @@ export interface EpisodeGeneratorOptions {
 // FALLBACK MODEL CHAIN
 // ============================================================================
 const EPISODE_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.5-pro",
+  "gemini-2.0-flash",
+  "gemini-flash-latest",
   "gemini-2.5-flash-lite",
 ];
 
