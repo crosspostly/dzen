@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1779091803053,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 4500,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 13634,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-05-18/ya-byla-v-yarosti-ne-budu-platit-za-pohorony-uznav.jpg"
+    ],
+    "report": "articles/women-35-60/2026-05-18/REPORT.md"
+  }
+}
