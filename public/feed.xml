@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Thu, 21 May 2026 03:54:24 +0300</lastBuildDate>
+    <lastBuildDate>Thu, 21 May 2026 07:56:03 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[Его попытка манипуляции была настолько примитивна, что вызвала у меня лишь диагностический интерес. Ресурсный дефицит в терминальной стадии — это всегда скучно. Я смотрела на него сквозь призму...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-byla-v-shoke-kogda-vygnala-staruyu-uborschitsu--20260515</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-byla-v-shoke-kogda-vygnala-staruyu-uborschitsu--20260515</guid>
-      <pubDate>Thu, 21 May 2026 06:54:24 +0300</pubDate>
+      <pubDate>Thu, 21 May 2026 10:56:03 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[«Слишком вызывающе для сиделки», — цедит он, изучая мой маникюр с видом разочарованного эстета. Его попытка манипуляции настолько примитивна, что вызывает у меня лишь холодный диагностический...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smeshno-ya-byla-lish-sidelkoy-poka-on-ne-uznal-kto-20260516</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smeshno-ya-byla-lish-sidelkoy-poka-on-ne-uznal-kto-20260516</guid>
-      <pubDate>Thu, 21 May 2026 08:24:24 +0300</pubDate>
+      <pubDate>Thu, 21 May 2026 12:26:03 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[«Твои идеи — это просто ПМС, дорогая». Его голос вибрировал от плохо скрываемой неуверенности, а влажные от дешевого офисного кофе ладони оставляли позорные следы на полированном столе. Его попытка...]]></description>
       <link>https://dzen-livid.vercel.app/articles/s-obidoy-ya-ushla-ot-zhadnogo-bossa-no-cherez-chas-20260517</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/s-obidoy-ya-ushla-ot-zhadnogo-bossa-no-cherez-chas-20260517</guid>
-      <pubDate>Thu, 21 May 2026 06:54:24 +0300</pubDate>
+      <pubDate>Thu, 21 May 2026 10:56:03 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[Запах смерти всегда вытаскивает на поверхность зловоние алчности. В кабинете нотариуса этот аромат был особенно густым, маскируясь под дешевый освежитель воздуха, как маскируют трупный смрад в...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-byla-v-yarosti-ne-budu-platit-za-pohorony-uznav-20260518</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-byla-v-yarosti-ne-budu-platit-za-pohorony-uznav-20260518</guid>
-      <pubDate>Thu, 21 May 2026 08:24:24 +0300</pubDate>
+      <pubDate>Thu, 21 May 2026 12:26:03 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -103,7 +103,7 @@
       <description><![CDATA[«Ты никому не будешь нужна с тремя детьми!» — этот заученный речитатив, выплюнутый в пустоту эхом его шагов, вызвал у меня лишь легкую брезгливость. Забавно, как мужчины в момент своего тотального...]]></description>
       <link>https://dzen-livid.vercel.app/articles/smeshno-chto-ya-slushala-ego-gadosti-pro-detey-pok-20260519</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/smeshno-chto-ya-slushala-ego-gadosti-pro-detey-pok-20260519</guid>
-      <pubDate>Thu, 21 May 2026 09:54:24 +0300</pubDate>
+      <pubDate>Thu, 21 May 2026 13:56:03 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
