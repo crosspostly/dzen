@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1779518335368,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 4500,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 15022,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-05-23/obidno-bylo-terpet-eyo-nasmeshki-poka-moy-staryy-b.jpg"
+    ],
+    "report": "articles/women-35-60/2026-05-23/REPORT.md"
+  }
+}
