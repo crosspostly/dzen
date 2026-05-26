@@ -1,0 +1,27 @@
+{
+  "version": "4.0",
+  "generatedAt": 1779782145462,
+  "config": {
+    "articleCount": 1,
+    "parallelEpisodes": 3,
+    "imageGenerationRate": 1,
+    "includeImages": true,
+    "qualityLevel": "standard",
+    "outputFormat": "zen",
+    "timeoutPerArticle": 300000,
+    "enableAntiDetection": true,
+    "enablePlotBible": true,
+    "maxChars": 4500,
+    "skipCleanupGates": false
+  },
+  "articleCount": 1,
+  "totalCharacters": 12717,
+  "totalImages": 1,
+  "outputPaths": {
+    "articles": [],
+    "images": [
+      "articles/women-35-60/2026-05-26/mne-bylo-bezumno-obidno-no-ya-molchala-poka-sosed-.jpg"
+    ],
+    "report": "articles/women-35-60/2026-05-26/REPORT.md"
+  }
+}
