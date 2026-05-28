@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Thu, 28 May 2026 08:00:52 +0300</lastBuildDate>
+    <lastBuildDate>Thu, 28 May 2026 08:06:06 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[Он что-то оживленно доказывал, брызгая слюной на дорогой фарфор, а она — она лишь нервно теребила край салфетки, превращая его в лохмотья. Его попытка манипуляции была настолько примитивна, что...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obida-zhgla-menya-kogda-mat-vygnala-menya-no-tekst-20260522</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obida-zhgla-menya-kogda-mat-vygnala-menya-no-tekst-20260522</guid>
-      <pubDate>Thu, 28 May 2026 11:00:52 +0300</pubDate>
+      <pubDate>Thu, 28 May 2026 11:06:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA[Сухое щелканье зажигалки S.T. Dupont прозвучало в тишине кабинета как щелчок взводимого курка. Виктория — наш местный эталон «корпоративной этики» — вперилась взглядом в мое запястье. «Какая...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-bylo-terpet-eyo-nasmeshki-poka-moy-staryy-b-20260523</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-bylo-terpet-eyo-nasmeshki-poka-moy-staryy-b-20260523</guid>
-      <pubDate>Thu, 28 May 2026 12:30:52 +0300</pubDate>
+      <pubDate>Thu, 28 May 2026 12:36:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -61,7 +61,7 @@
       <description><![CDATA[Ее взгляд на мой старый «Иж» был диагностическим шедевром. В этом элитном ЖК, где каждый фасад кричит о выверенном статусе, поцарапанный хром моего мотоцикла выглядит как открытый перелом в чистой...]]></description>
       <link>https://dzen-livid.vercel.app/articles/menya-unizhali-za-staryy-izh-poka-ne-uvideli-kto-p-20260524</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/menya-unizhali-za-staryy-izh-poka-ne-uvideli-kto-p-20260524</guid>
-      <pubDate>Thu, 28 May 2026 11:00:52 +0300</pubDate>
+      <pubDate>Thu, 28 May 2026 11:06:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -82,7 +82,7 @@
       <description><![CDATA[Сервиз «Мадонна», засаленная футболка брата и запах жареной курицы, густо замешанный на материнской жертвенности. Его челюсть движется ритмично, по-коровьи — он поглощает лучший кусок, пока мать...]]></description>
       <link>https://dzen-livid.vercel.app/articles/obidno-byt-lishney-poetomu-ya-zabrala-svoe-i-ostav-20260525</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/obidno-byt-lishney-poetomu-ya-zabrala-svoe-i-ostav-20260525</guid>
-      <pubDate>Thu, 28 May 2026 12:30:52 +0300</pubDate>
+      <pubDate>Thu, 28 May 2026 12:36:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -103,7 +103,7 @@
       <description><![CDATA[Его крик, этот первобытный выброс тестостерона, бился в мои окна, как в стекло инкубатора. Сосед орал так, что резонировали даже хрустальные бокалы в серванте. «Ты, мать-одиночка с тремя ртами! Мои...]]></description>
       <link>https://dzen-livid.vercel.app/articles/mne-bylo-bezumno-obidno-no-ya-molchala-poka-sosed--20260526</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/mne-bylo-bezumno-obidno-no-ya-molchala-poka-sosed--20260526</guid>
-      <pubDate>Thu, 28 May 2026 14:00:52 +0300</pubDate>
+      <pubDate>Thu, 28 May 2026 14:06:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -124,7 +124,7 @@
       <description><![CDATA[«Вам останется ровно то, что вы способны заработать», — мой голос в этом пыльном склепе семейной жадности звучал как скальпель хирурга, вскрывающий застарелый гнойник. Черный шелк платья вызывающе...]]></description>
       <link>https://dzen-livid.vercel.app/articles/oni-prezirali-menya-poka-ya-ne-vskryla-etot-staryy-20260527</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/oni-prezirali-menya-poka-ya-ne-vskryla-etot-staryy-20260527</guid>
-      <pubDate>Thu, 28 May 2026 15:30:52 +0300</pubDate>
+      <pubDate>Thu, 28 May 2026 15:36:06 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
