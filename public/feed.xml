@@ -10,7 +10,7 @@
     <!-- ✅ ЗАДАЧА 3: Добавить atom:link в channel -->
     <atom:link href="https://dzen-livid.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
     <description>Личные истории и переживания из жизни</description>
-    <lastBuildDate>Wed, 03 Jun 2026 12:42:58 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 03 Jun 2026 19:50:42 +0300</lastBuildDate>
     <language>ru</language>
     <generator>ZenMaster RSS Generator v2.10 (Scheduled Publishing: NOW + 3h, +90min intervals)</generator>
 
@@ -19,7 +19,7 @@
       <description><![CDATA[«Я тебе всю жизнь отдала!» — этот крик, похожий на скрежет ржавого железа по стеклу, заполнил мой кабинет, вязко оседая на дорогих портьерах. Я наблюдала за этим фарсом с отстраненным интересом...]]></description>
       <link>https://dzen-livid.vercel.app/articles/gorkaya-pravda-ya-otdala-emu-zhizn-no-zaveschanie--20260531</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/gorkaya-pravda-ya-otdala-emu-zhizn-no-zaveschanie--20260531</guid>
-      <pubDate>Wed, 03 Jun 2026 15:42:58 +0300</pubDate>
+      <pubDate>Wed, 03 Jun 2026 22:50:42 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
@@ -40,7 +40,7 @@
       <description><![CDATA['Твой допотопный айфон сейчас сам эвакуатор вызовет?' — его ухмылка была настолько примитивна, что вызвала лишь легкий диагностический интерес. Ресурсный дефицит в терминальной стадии — это всегда...]]></description>
       <link>https://dzen-livid.vercel.app/articles/ya-terpel-smeh-zheny-nad-starym-telefonom-poka-zvo-20260601</link>
       <guid isPermaLink="true">https://dzen-livid.vercel.app/articles/ya-terpel-smeh-zheny-nad-starym-telefonom-poka-zvo-20260601</guid>
-      <pubDate>Wed, 03 Jun 2026 17:12:58 +0300</pubDate>
+      <pubDate>Thu, 04 Jun 2026 00:20:42 +0300</pubDate>
       <media:rating scheme="urn:simple">nonadult</media:rating>
       
       <!-- ✅ v2.10: Категории для валидации -->
