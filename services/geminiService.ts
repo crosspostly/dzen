@@ -1,6 +1,7 @@
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 import { ProjectConfig } from "./configService";
 import { ExampleArticle } from "./examplesService";
+import { ImageGeneratorService } from "./imageGeneratorService";
 
 export interface GenerationChunk {
   section: 'plan' | 'hook' | 'development' | 'climax' | 'resolution';
@@ -22,9 +23,11 @@ export interface ArticleGenerationResult {
 
 export class GeminiService {
   private ai: GoogleGenAI;
+  private imageGenerator: ImageGeneratorService;
 
   constructor() {
     this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    this.imageGenerator = new ImageGeneratorService();
   }
 
   /**
@@ -58,6 +61,75 @@ export class GeminiService {
       );
       return ["Ошибка тем"];
     }
+  }
+
+  /**
+   * 🎯 UI метод: генерирует статью (упрощённый интерфейс для App.tsx)
+   * Принимает только { theme, customHint }, остальные параметры - дефолтные
+   */
+  async generateArticleData(params: { theme: string; customHint?: string }): Promise<{
+    title: string;
+    content: string;
+    imageScenes: string[];
+  }> {
+    const { theme, customHint = '' } = params;
+
+    // Дефолтная конфигурация для UI
+    const defaultConfig: ProjectConfig = {
+      channel_id: 'ui-default',
+      channel_name: 'UI Generator',
+      channel_url: '',
+
+      audience: {
+        age_range: '50-65',
+        primary_emotions: ['justice', 'family', 'indignation'],
+        values: ['добро побеждает зло', 'справедливость'],
+        forbidden_topics: ['politics', 'war'],
+      },
+
+      content_rules: {
+        min_chars: 8000,
+        max_chars: 10000,
+        required_triggers: ['квартира', 'деньги', 'семья'],
+        avoid_phrases: ['как известно', 'GPT', 'ChatGPT'],
+        tone: 'confession',
+      },
+
+      publishing: {
+        enabled: false,
+        schedule: '0 10 * * *',
+        max_per_day: 1,
+        draft_mode: true,
+        auto_publish: false,
+      },
+
+      examples_count: 2,
+      gemini_model: 'gemini-3-flash-preview',
+      temperature: 0.95,
+    };
+
+    // Примеры для контекста (пустые для UI)
+    const examples: ExampleArticle[] = [];
+
+    // Вызываем основной метод генерации
+    const result = await this.generateArticleDataChunked({
+      theme: customHint ? `${theme}. ${customHint}` : theme,
+      config: defaultConfig,
+      examples,
+    });
+
+    return {
+      title: result.title,
+      content: result.content,
+      imageScenes: result.imageScenes,
+    };
+  }
+
+  /**
+   * 🎨 UI метод: генерирует изображение по описанию сцены
+   */
+  async generateVisual(scene: string): Promise<string | null> {
+    return await this.imageGenerator.generateVisual(scene);
   }
 
   /**
